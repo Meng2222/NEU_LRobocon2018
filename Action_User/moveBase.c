@@ -27,7 +27,15 @@
   * @param  
   * @retval None
   */
-
+void RevolveAround(uint16_t radius, uint16_t speed)
+{
+	static int PulseR = 0;
+	static int PulseL = 0;
+	PulseR = ((((2*radius - WHEEL_TREAD - WHEEL_WIDTH) * speed)/(2*radius)) * COUNTS_PER_ROUND)/(WHEEL_DIAMETER * 3.141);
+	PulseL = ((radius+((WHEEL_WIDTH+WHEEL_TREAD)/2))/(radius-((WHEEL_WIDTH+WHEEL_TREAD)/2))) * PulseR;
+	VelCrl(CAN2, 1, PulseR);	//右轮(正为向前)
+	VelCrl(CAN2, 2, -PulseL);	//左轮(负为向前)
+}
 
 
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/

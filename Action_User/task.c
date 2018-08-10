@@ -10,6 +10,7 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "moveBase.h"
 
 /*
 ===============================================================
@@ -51,14 +52,20 @@ void ConfigTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
+	TIM_Init(TIM2, 100, 840, 0x01, 0x03);
+	CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
+	CAN_Config(CAN2, 500, GPIOB, GPIO_Pin_5, GPIO_Pin_6);
+	ElmoInit(CAN2);
+	VelLoopCfg(CAN2, 1, 8000, 8000);
+	VelLoopCfg(CAN2, 2, 8000, 8000);
+	MotorOn(CAN2, 1);
+	MotorOn(CAN2, 2);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
 void WalkTask(void)
 {
-
 	CPU_INT08U os_err;
 	os_err = os_err;
 
@@ -66,5 +73,6 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		RevolveAround(600, 750);  //(半径(mm), 速度(mm/s))
 	}
 }

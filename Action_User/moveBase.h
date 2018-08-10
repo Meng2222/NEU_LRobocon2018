@@ -55,6 +55,7 @@
 #define WHEEL_TREAD (355.4f)
 
 
+#include "elmo.h"
 /**
   * @}
   */
@@ -62,7 +63,7 @@
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
-
+void RevolveAround(uint16_t radius, uint16_t speed);
 
 
 
