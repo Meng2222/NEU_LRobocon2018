@@ -71,7 +71,17 @@
 */
 void GoStraight(float speed);
 
+/**MakeCircle 让小车走直线
+*  speed 为小车中心线速度(单位mm/s);
+*  radius 为小车中心转弯半径(mm)
+*/
+void MakeCircle(float speed, float radius);
 
+/**WheelSpeed 让单个轮子转动
+*  speed 为轮子转动速度(单位mm/s);
+*  ElmoNum 为所选轮子编号
+*/
+void WheelSpeed(float speed, uint8_t ElmoNum);
 
 
 #endif /* ___H */

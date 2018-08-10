@@ -29,13 +29,21 @@
   */
 void GoStraight(float speed)
 {
-    float frequency = 0;
-    frequency = ((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER));
-    VelCrl(CAN2, 1, frequency);
-    VelCrl(CAN2, 2, frequency);
+    WheelSpeed(speed, 1);
+    WheelSpeed(speed, 2);
 }    
 
-void Go
+void MakeCircle(float speed, float radius)
+{
+    WheelSpeed(((speed / radius) * (radius - (WHEEL_TREAD / 2))), 1);
+    WheelSpeed(((speed / radius) * (radius + (WHEEL_TREAD / 2))), 2);
+}
 
+void WheelSpeed(float speed, uint8_t ElmoNum)
+{
+    float frequency = 0;
+    frequency = ((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER));
+    VelCrl(CAN2, ElmoNum, frequency);
+}
 
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
