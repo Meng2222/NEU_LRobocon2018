@@ -82,6 +82,6 @@ void WalkTask(void)
         /**转圈
         *  参数分别为小车中心线速度(单位mm/s),小车中心转弯半径(mm),小车转动的方向(RIGHT,LEFT)
         */
-        MakeCircle(500, 400, RIGHT);
+        MakeCircle(1000, 1000, RIGHT);
 	}
 }
