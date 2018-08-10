@@ -8,6 +8,7 @@
 #include "usart.h"
 #include "can.h"
 #include "elmo.h"
+#include "moveBase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 
@@ -53,6 +54,16 @@ void ConfigTask(void)
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	
+	TIM_Init(TIM2, 999, 84, 0x01, 0x03);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	ElmoInit(CAN2);
+	
+	VelLoopCfg(CAN2, 0x01, 2000, 2000);
+	VelLoopCfg(CAN2, 0x02, 2000, 2000);
+	
+	MotorOn(CAN2, 0x01);
+	MotorOn(CAN2, 0x02);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
@@ -61,10 +72,11 @@ void WalkTask(void)
 
 	CPU_INT08U os_err;
 	os_err = os_err;
-
+	
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		Round(-1.0,1.0);
 	}
 }

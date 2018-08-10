@@ -17,7 +17,7 @@
 #ifndef __MOVEBASE_H
 #define __MOVEBASE_H
 
-
+#include <stdint.h>
 
 /* Includes ------------------------------------------------------------------*/
 
@@ -39,20 +39,20 @@
   * @{
   */
 
-//#define 
+#define PI 3.14
 
 //电机旋转一周的脉冲数
 #define COUNTS_PER_ROUND (4096)
 //轮子直径（单位：mm）
-#define WHEEL_DIAMETER (106.8f)
+#define WHEEL_DIAMETER (120.0f)
 //调试小车车长（单位：mm）
-#define MOVEBASE_LENGTH (500.0f)
+#define MOVEBASE_LENGTH (492.0f)
 //调试小车车宽(单位：mm)
-#define MOVEBASE_WIDTH (403.0f)
+#define MOVEBASE_WIDTH (490.0f)
 //轮子宽度（单位：mm）
-#define WHEEL_WIDTH (46.0f)
+#define WHEEL_WIDTH (40.0f)
 //两个轮子中心距离（单位：mm）
-#define WHEEL_TREAD (355.4f)
+#define WHEEL_TREAD (424.0f)
 
 
 /**
@@ -64,8 +64,8 @@
 /* Exported functions --------------------------------------------------------*/
 
 
-
-
+void Straight(float speed);
+void Round(float rightSpeed,float radius);
 
 #endif /* ___H */
 
