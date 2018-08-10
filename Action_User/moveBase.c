@@ -27,7 +27,15 @@
   * @param  
   * @retval None
   */
+void GoStraight(float speed)
+{
+    float frequency = 0;
+    frequency = ((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER));
+    VelCrl(CAN2, 1, frequency);
+    VelCrl(CAN2, 2, frequency);
+}    
 
+void Go
 
 
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
