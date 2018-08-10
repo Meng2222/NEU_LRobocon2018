@@ -52,13 +52,23 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	TIM_Init(TIM2,999,83,0,0);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	
+	ElmoInit(CAN2);
+	VelLoopCfg(CAN2,1,40000000,40000000);
+	VelLoopCfg(CAN2,2,40000000,40000000);
+	MotorOn(CAN2,2);
+	MotorOn(CAN2,1);
+//	MotorOff(CAN2,2);
+//	MotorOff(CAN2,1);
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
 void WalkTask(void)
 {
-
 	CPU_INT08U os_err;
 	os_err = os_err;
 
@@ -66,5 +76,7 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		VelCrl(CAN2,1,4096);
+		VelCrl(CAN2,2,4096);
 	}
 }
