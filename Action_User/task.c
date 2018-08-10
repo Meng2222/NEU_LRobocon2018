@@ -75,7 +75,7 @@ void WalkTask(void)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
         /**走直线
-        *  参数为小车走直线的速度(单位mm/s);
+        *  参数为小车走直线的速度(单位mm/s)
         */
         //GoStraight(500);
 
