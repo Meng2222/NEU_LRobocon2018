@@ -64,11 +64,11 @@ void WalkTask(void)
 
 	CPU_INT08U os_err;
 	os_err = os_err;
-    MotorOn(CAN1, ELMO_BROADCAST_ID);
+    MotorOn(CAN2, ELMO_BROADCAST_ID);
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-        GoStraight(10);
+        GoStraight(100);
 	}
 }

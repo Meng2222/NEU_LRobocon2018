@@ -41,8 +41,8 @@ void MakeCircle(float speed, float radius)
 
 void WheelSpeed(float speed, uint8_t ElmoNum)
 {
-    float frequency = 0;
-    frequency = ((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER));
+    int32_t frequency = 0;
+    frequency = (int32_t)((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER));
     VelCrl(CAN2, ElmoNum, frequency);
 }
 
