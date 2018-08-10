@@ -56,6 +56,8 @@
 #define WHEEL_TREAD (355.4f)
 //圆周率
 #define PI (3.14f)
+//定义转弯方向
+typedef enum {LEFT, RIGHT} direction;
 
 /**
   * @}
@@ -71,11 +73,12 @@
 */
 void GoStraight(float speed);
 
-/**MakeCircle 让小车走直线
+/**MakeCircle 让小车转圈
 *  speed 为小车中心线速度(单位mm/s);
 *  radius 为小车中心转弯半径(mm)
+*  direction 为小车转动的方向,其值可以为RIGHT,LEFT
 */
-void MakeCircle(float speed, float radius);
+void MakeCircle(float speed, float radius, direction drt);
 
 /**WheelSpeed 让单个轮子转动
 *  speed 为轮子转动速度(单位mm/s);

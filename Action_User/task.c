@@ -53,22 +53,35 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-    CAN_Config(CAN2, 921600, GPIOB, GPIO_Pin_5, GPIO_Pin_6);
+    TIM_Init(TIM2, 999, 83, 0x00, 0x00);
+    CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
+    CAN_Config(CAN2, 500, GPIOB, GPIO_Pin_5, GPIO_Pin_6);
 	ElmoInit(CAN2);
-    VelLoopCfg(CAN2, ELMO_BROADCAST_ID, 80000000, -80000000);
+    VelLoopCfg(CAN2, 1, 80000000, 80000000);
+    SetVelLimit(CAN2, 1, 80000000, -80000000);
+    VelLoopCfg(CAN2, 2, 80000000, 80000000);
+    SetVelLimit(CAN2, 2, 80000000, -80000000);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
 void WalkTask(void)
 {
-
 	CPU_INT08U os_err;
 	os_err = os_err;
-    MotorOn(CAN2, ELMO_BROADCAST_ID);
+    MotorOn(CAN2, 1);
+    MotorOn(CAN2, 2);
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-        GoStraight(100);
+        /**走直线
+        *  参数为小车走直线的速度(单位mm/s);
+        */
+        //GoStraight(500);
+
+        /**转圈
+        *  参数分别为小车中心线速度(单位mm/s),小车中心转弯半径(mm),小车转动的方向(RIGHT,LEFT)
+        */
+        MakeCircle(500, 400, RIGHT);
 	}
 }
