@@ -10,6 +10,9 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "moveBase.h"
+#define PAI 3.14
+
 
 /*
 ===============================================================
@@ -18,10 +21,18 @@
 */
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
-
+int cnt=0;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
-
+/*
+==================================================================================
+						自定义添加函数
+*/
+void  go_straight(float V,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx);
+void  go_round(float V,float R,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx);
+/*
+==================================================================================
+*/
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -52,9 +63,26 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
+	TIM_Init(TIM2, 999, 83, 0x01, 0x03);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	//驱动器初始化
+	ElmoInit( CAN2);
+	//速度环和位置环初始化
+	//右轮
+	VelLoopCfg(CAN2, 1, 100, 100);
+	PosLoopCfg(CAN2, 1, 100, 100,4095);
+	//左轮
+	VelLoopCfg(CAN2, 2, 100, 100);
+	PosLoopCfg(CAN2, 2, 100, 100,4095);
+	//电机使能
+	MotorOn(CAN2, 01);
+	MotorOn(CAN2, 02);
 	OSTaskSuspend(OS_PRIO_SELF);
+
+	
 }
+
 
 void WalkTask(void)
 {
@@ -66,5 +94,18 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+//		cnt++;
+//		if(cnt<50)
+//		go_straight(1);
+//		if(cnt>=50)
+		go_round( 1,1,01,02,CAN2);
+//		if(cnt==2000)
+//		cnt=0;
 	}
 }
+
+
+
+
+
+
