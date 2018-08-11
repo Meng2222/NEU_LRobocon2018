@@ -39,6 +39,7 @@ extern  void  App_Task(void);
 static  void  App_TaskStart(void);
 static 	void  ConfigTask(void);
 static 	void  WalkTask(void);
+static 	void  Walk_Virer(int radius,int multiple);
 
 
 /*
@@ -50,6 +51,8 @@ static 	void  WalkTask(void);
 #define  APP_TASK_START_PRIO						10u
 #define  Config_TASK_START_PRIO						11u
 #define  Walk_TASK_PRIO								12u
+#define  Walk_Virer_TASK_PRIO							13u
+
 
 
 
@@ -63,6 +66,8 @@ static 	void  WalkTask(void);
 #define  APP_TASK_START_STK_SIZE					256u
 #define  Config_TASK_START_STK_SIZE					256u
 #define  Walk_TASK_STK_SIZE							512u
+#define  Walk_Virer_TASK_STK_SIZE							512u
+
 
 /*
 *********************************************************************************************************

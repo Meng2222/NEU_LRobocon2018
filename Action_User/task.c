@@ -10,6 +10,7 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "moveBase.h"
 
 /*
 ===============================================================
@@ -21,6 +22,7 @@ OS_EVENT *PeriodSem;
 
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
+static OS_STK Walk_VirerStk[Walk_Virer_TASK_STK_SIZE];
 
 void App_Task()
 {
@@ -40,6 +42,10 @@ void App_Task()
 						  (void *)0,
 						  (OS_STK *)&WalkTaskStk[Walk_TASK_STK_SIZE - 1],
 						  (INT8U)Walk_TASK_PRIO);
+	os_err = OSTaskCreate((void (*)(void *))Walk_Virer,
+						  (void *)0,
+						  (OS_STK *)&Walk_VirerStk[Walk_Virer_TASK_STK_SIZE - 1],
+						  (INT8U)Walk_Virer_TASK_PRIO);
 }
 
 /*
@@ -52,10 +58,26 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
+	TIM_Init(TIM2,999,83,1,0);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	ElmoInit(CAN2);
+	VelLoopCfg(CAN2,1,1,1);
+	VelLoopCfg(CAN2,2,1,1);
+	VelCrl(CAN2,1,1);
+	VelCrl(CAN2,2,1);
+	MotorOn(CAN2,1);
+	MotorOn(CAN2,2);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-
+float speed1,speed2;
+void  Walk_Virer(int radius,int multiple)
+{
+	speed1=(radius+WHEEL_TREAD/2)*multiple;
+	speed2=(radius-WHEEL_TREAD/2)*multiple;
+	VelCrl(CAN2,1,speed1);
+	VelCrl(CAN2,2,-speed2);
+}
 void WalkTask(void)
 {
 
@@ -66,5 +88,6 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		Walk_Virer(500,20);
 	}
 }
