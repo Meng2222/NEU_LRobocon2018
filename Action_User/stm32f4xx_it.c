@@ -42,32 +42,7 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-typedef struct{
-	float x;
-	float y;
-	float angle;
-}Pos_t;
-static float angle=0,xpos=0,ypos=0;
-void SetAngle(float val)
-{
-	angle=val;
-}
-void SetXpos(float val)
-{
-	xpos=val;
-}
-void SetYpos(float val)
-{
-	ypos=val;
-}
-float GetXpos(void)
-{
-	return xpos;
-}
-float GetYpos(void)
-{
-	return ypos;
-}
+
 uint8_t CAN1Buffer[8] = {0};
 void CAN1_RX0_IRQHandler(void)
 {
@@ -269,9 +244,38 @@ void USART2_IRQHandler(void)
 	OSIntExit();
 }
 
+
+typedef struct{
+	float x;
+	float y;
+	float angle;
+}Pos_t;
+static float angle=0,xpos=0,ypos=0;
+void SetAngle(float val)
+{
+	angle=val;
+}
+void SetXpos(float val)
+{
+	xpos=val;
+}
+void SetYpos(float val)
+{
+	ypos=val;
+}
+float GetXpos(void)
+{
+	return xpos;
+}
+float GetYpos(void)
+{
+	return ypos;
+}
+//定位系统串口接收中断8
 void USART3_IRQHandler(void) //更新频率200Hz
 {
 	static uint8_t ch;
+	
 	static union {
 		uint8_t data[24];
 		float ActVal[6];

@@ -63,7 +63,7 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	TIM_Init(TIM2, 1000-1, 83, 0, 2);
 	USART3_Init(115200);
-	USART4_Init(921600);  
+	UART4_Init(921600);  
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	ElmoInit(CAN2);
@@ -108,16 +108,8 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem,0,&os_err);
-		time++;
-		stage=time/100;
-		switch(stage)
-		{
-			case 4:turn(0,PI/2); break;
-			case 9:turn(0,PI/2); break;
-			case 14:turn(0,PI/2); break;
-			case 19:turn(0,PI/2); break;
-			default:walk_direct(0.5); break;
-		}
+			turn(0,PI/2); break;
+			walk_direct(0.5);
 		if(time>2000)
 			time=0;
 	}
