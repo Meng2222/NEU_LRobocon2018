@@ -69,7 +69,7 @@ void driveGyro(void)
 {
 	while(!isOKFlag)
 	{
-		delay_ms(5);
+		TIM_Delayms(TIM4,5);
 		USART_SendData(USART3,'A');
 		USART_SendData(USART3,'T');
 		USART_SendData(USART3,'\r');
@@ -81,8 +81,8 @@ void driveGyro(void)
 
 
 float kp = 10;
-float ki = 0.1;
-float kd = 1;
+float ki = 0.01;
+float kd = 0.1;
 float lastAngle = 0;
 float velocity = 0;
 float ITerm = 0;
@@ -118,14 +118,15 @@ void PID_Angle(u8 status,float Angle_Set,float Angle)
 	if(velocity > velocityMax) velocity = velocityMax;
     else if(velocity < velocityMin) velocity = velocityMin;
 	lastAngle = Angle;
-	VelCrl(CAN2,1,-((4096/378)*velocity));
-	VelCrl(CAN2,2,-((4096/378)*velocity));
+	lastStatus = status;
+	VelCrl(CAN2,1,((4096/378)*(velocity)));
+	VelCrl(CAN2,2,((4096/378)*(velocity)));
 }
 
-extern union 
+extern union u8andfloat
 {   
 	uint8_t data[24];
-	float ActVal[6];  
+	float ActVal[6];
 }posture;
 
 
@@ -176,7 +177,8 @@ void ConfigTask(void)
 	MotorOn(CAN2,2);                                                 //左电机使能
 	USART3_Init(115200);
 	UART4_Init(921600);
-	driveGyro();
+	TIM_Delayms(TIM4,10000);
+//	driveGyro();
 //	MotorOff(CAN2,2);                                                //左电机失能
 //	MotorOff(CAN2,1);                                                //右电机失能
 	
@@ -192,17 +194,13 @@ void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;                                                 //防报错
-	OSSemSet(PeriodSem, 0, &os_err);                                 //信号量归零
+	OSSemSet(PeriodSem, 0, &os_err);                            	 //信号量归零
+	int angle_set = 0;
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
 //		WalkRound(ACW,1000,1000);                                    //转圈，逆时针，速度1000mm/s,半径1000mm
-		PID_Angle(Auto,0,angle);
-		for(int i=0;i<4;i++)
-		{
-			USART_SendData(UART4,posture.data[i]);
-		}
-		USART_SendData(UART4,'\n');
+		PID_Angle(Auto,angle_set,posture.ActVal[0]);
 	}
 }
 
