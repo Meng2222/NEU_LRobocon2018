@@ -36,8 +36,6 @@ void Straight(float speed)
 	
 	VelCrl(CAN2, 0x01,pulseNum);
 	VelCrl(CAN2, 0x02,-pulseNum);
-	
-		
 }
 
 /**
@@ -73,6 +71,33 @@ void Round(float rightSpeed,float radius)
 		
 		VelCrl(CAN2, 0x01,rightPulseNum);
 		VelCrl(CAN2, 0x02,leftPulseNum);
+	}
+}
+
+/**
+  * @brief  走直线
+  * @note	
+  * @param  speed：给定速度
+  * @retval None
+  */
+
+void Turn(uint8_t dir,float angle)
+{
+	int32_t pulseNum;
+	float getAngle;
+	float speed;
+	PidPara(1.0,0.1,0.1);
+	getAngle=GetAngle();
+	speed=Pid(getAngle,angle,ON);
+	if(dir)
+	{
+		pulseNum=(speed*4095*1000)/(PI*WHEEL_DIAMETER);
+		VelCrl(CAN2, 0x01,pulseNum);
+	}
+	else
+	{
+		pulseNum=-(speed*4095*1000)/(PI*WHEEL_DIAMETER);
+		VelCrl(CAN2, 0x02,-pulseNum);
 	}
 }
 

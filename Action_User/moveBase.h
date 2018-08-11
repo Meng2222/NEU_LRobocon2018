@@ -18,6 +18,8 @@
 #define __MOVEBASE_H
 
 #include <stdint.h>
+#include "pid.h"
+#include "stm32f4xx_it.h"
 
 /* Includes ------------------------------------------------------------------*/
 
@@ -40,6 +42,8 @@
   */
 
 #define PI 3.14
+#define TURN_RIGHT 0
+#define TURN_LEFT  1
 
 //电机旋转一周的脉冲数
 #define COUNTS_PER_ROUND (4096)
@@ -66,7 +70,7 @@
 
 void Straight(float speed);
 void Round(float rightSpeed,float radius);
-
+void Turn(uint8_t dir,float anlage);
 #endif /* ___H */
 
 

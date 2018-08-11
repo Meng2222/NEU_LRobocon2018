@@ -47,7 +47,9 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
-
+float GetAngle(void);
+float GetPosX(void);
+float GetPosY(void);
 #ifdef __cplusplus
 }
 #endif

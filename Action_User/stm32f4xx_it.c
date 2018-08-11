@@ -98,7 +98,7 @@ extern OS_EVENT *PeriodSem;
 
 void TIM2_IRQHandler(void)
 {
-#define PERIOD_COUNTER 10
+#define PERIOD_COUNTER 5
 
 	//用来计数10次，产生10ms的定时器
 	static uint8_t periodCounter = PERIOD_COUNTER;
@@ -327,19 +327,145 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-void USART3_IRQHandler(void)
+typedef struct
 {
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
+	float angle;
+	float x;
+	float y;
+}pos_t;
 
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-	}
+static float angle;
+static float x;
+static float y;
 
-	OSIntExit();
+pos_t pos;
+extern uint8_t isOKFlag;
+
+void USART3_IRQHandler(void) //更新频率 200Hz 
+{ 
+	 static uint8_t ch; 
+	 static union { 
+	 uint8_t data[24]; 
+	 float ActVal[6]; 
+	 } posture; 
+	 
+	 static uint8_t count = 0; 
+	 static uint8_t i = 0; 
+	 
+	 if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET) 
+	 { 
+		 USART_ClearITPendingBit(USART3,USART_IT_ORE_ER); 
+		 USART_ReceiveData(USART3); 
+	 } 
+	 
+	 if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET) 
+	 { 
+		 USART_ClearITPendingBit(USART3, USART_IT_RXNE); 
+		 ch = USART_ReceiveData(USART3); 
+		 switch (count) 
+		 { 
+			 case 0: 
+				 if (ch == 0x0d) 
+				 count++; 
+				 else if(ch=='O') 
+				 count=5; 
+				 else 
+				 count = 0; 
+				 break; 
+
+			 
+
+			 case 1: 
+				 if (ch == 0x0a) 
+				 { 
+				 i = 0; 
+				 count++; 
+				 } 
+				 else 
+				 count = 0; 
+				 break; 
+
+			 
+
+			 case 2: 
+				 posture.data[i] = ch; 
+				 i++; 
+				 if (i >= 22) 
+				 { 
+					 i = 0; 
+					 count++; 
+				 } 
+				 break; 
+
+			 
+
+			 case 3: 
+				 if (ch == 0x0a) 
+				 count++; 
+				 else 
+				 count = 0; 
+				 break; 
+
+			 
+
+			 case 4: 
+				 if (ch == 0x0d) 
+				 { 
+					 pos.angle =posture.ActVal[0] ;//角度 
+					 posture.ActVal[1] = posture.ActVal[1]; 
+					 posture.ActVal[2] = posture.ActVal[2]; 
+					 pos.x = posture.ActVal[3];//x 
+					 pos.y = posture.ActVal[4];//y 
+					 posture.ActVal[5] = posture.ActVal[5]; 
+				 } 
+				 count = 0; 
+				 break; 
+			 case 5: 
+				 count = 0; 
+				 if(ch=='K') 
+				 isOKFlag=1; 
+				 break; 
+			 
+			 default: 
+			 count = 0; 
+
+
+			 break; 
+		 } 
+	 } 
+	 else 
+	 { 
+		 USART_ClearITPendingBit(USART3, USART_IT_RXNE); 
+		 USART_ReceiveData(USART3); 
+	 } 
+ 
+ 
+ 
+} 
+void SetAngle(void)
+{
+	angle=pos.angle;
+}
+void SetX(void)
+{
+	x=pos.x;
+}
+void SetY(void)
+{
+	y=pos.y;
+}
+
+float GetAngle(void)
+{
+	return angle;
+}
+float GetPosX(void)
+{
+	return x;
+}
+float GetPosY(void)
+{
+	return y;
 }
 
 void UART5_IRQHandler(void)
@@ -375,7 +501,8 @@ void NMI_Handler(void)
   * @param  None
   * @retval None
   */
-void HardFault_Handler(void)
+voi
+	3d HardFault_Handler(void)
 {
 
 	/* Go to infinite loop when Hard Fault exception occurs */

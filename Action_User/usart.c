@@ -64,6 +64,7 @@ void USART3_Init(uint32_t BaudRate)
 	USART_ClearFlag(USART3, USART_FLAG_TC);
 	
 	USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);//开启相关中断
+	USART_ITConfig(USART3, USART_IT_ORE_ER, ENABLE);
 
 	//Usart1 NVIC 配置
 	NVIC_InitStructure.NVIC_IRQChannel = USART3_IRQn;//串口3中断通道
@@ -154,8 +155,8 @@ void UART4_Init(uint32_t BaudRate)
 
 	//Usart1 NVIC 配置
     NVIC_InitStructure.NVIC_IRQChannel = UART4_IRQn;//串口1中断通道
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0;//抢占优先级3
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority =1;		//子优先级3
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=1;//抢占优先级3
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority =2;		//子优先级3
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQ通道使能
 	NVIC_Init(&NVIC_InitStructure);	//根据指定的参数初始化VIC寄存器
 
@@ -198,8 +199,8 @@ void USART1_Init(uint32_t BaudRate)
 
 	//Usart1 NVIC 配置
     NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;//串口1中断通道
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0;//抢占优先级3
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority =2;		//子优先级3
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0;//抢占优先级0
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority =2;		//子优先级2
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQ通道使能
 	NVIC_Init(&NVIC_InitStructure);	//根据指定的参数初始化VIC寄存器
 
@@ -242,8 +243,8 @@ void USART2_Init(uint32_t BaudRate)
 
 	//Usart1 NVIC 配置
     NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;//串口1中断通道
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0;//抢占优先级3
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority =2;		//子优先级3
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0;//抢占优先级0
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority =2;		//子优先级2
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQ通道使能
 	NVIC_Init(&NVIC_InitStructure);	//根据指定的参数初始化VIC寄存器
 
@@ -452,4 +453,13 @@ char *itoa(int value, char *string, int radix)
     return string;
 
 } 
+
+
+
+
+
+
+
+
+
  

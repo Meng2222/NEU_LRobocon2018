@@ -23,6 +23,8 @@ OS_EVENT *PeriodSem;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 
+uint8_t isOKFlag;
+
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -52,31 +54,80 @@ void ConfigTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
+	
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
-	TIM_Init(TIM2, 999, 84, 0x01, 0x03);
-	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	ElmoInit(CAN2);
-	
-	VelLoopCfg(CAN2, 0x01, 2000, 2000);
-	VelLoopCfg(CAN2, 0x02, 2000, 2000);
-	
-	MotorOn(CAN2, 0x01);
-	MotorOn(CAN2, 0x02);
+	Init();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
+
+//5ms 运行一次；
 void WalkTask(void)
 {
 
 	CPU_INT08U os_err;
 	os_err = os_err;
+
+	float pos_Angle;
+	float pos_X;
+	float pos_Y;
 	
+	uint16_t angle;
+	uint16_t x;
+	uint16_t y;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		Round(-1.0,1.0);
+		pos_Angle=GetAngle();
+		pos_X=GetPosX();
+		pos_Y=GetPosY();
+		angle=pos_Angle*1000;
+		x=pos_X*1000;
+		y=pos_Y*1000;
+
+		USART_OUT(UART4, "%d\t",angle);
+		USART_OUT(UART4, "%d\t",x);
+		USART_OUT(UART4, "%d\r\n",y);
 	}
+}
+
+
+//初始化函数
+void Init(void)
+{
+	TIM_Init(TIM2, 999, 84, 0x01, 0x03);
+//	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+//	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	USART3_Init(115200);
+	UART4_Init(921600);
+	CarOne();
+//	delay_ms(10000);
+//	ElmoInit(CAN2);
+//	
+//	VelLoopCfg(CAN2, 0x01, 2000, 2000);
+//	VelLoopCfg(CAN2, 0x02, 2000, 2000);
+//	
+//	MotorOn(CAN2, 0x01);
+//	MotorOn(CAN2, 0x02);
+}
+
+
+//车1定位系统初始化
+void CarOne(void)
+{
+	while(!isOKFlag)
+	{
+		delay_ms(5);
+		USART_SendData(USART3,'A');
+		USART_SendData(USART3,'T');
+		USART_SendData(USART3,'\r');
+		USART_SendData(USART3,'\n');
+	}
+	USART_SendData(UART4, 'o');
+	USART_SendData(UART4, 'k');
+	USART_SendData(UART4, '\r');
+	USART_SendData(UART4, '\n');
+	
+	isOKFlag=0;
 }
