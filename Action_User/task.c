@@ -116,7 +116,6 @@ void WalkTask(void)
 
 		OSSemPend(PeriodSem, 0, &os_err);
 		//straight(0.2);
-		T++;
 		if(T>=400)
 		{
 			T=0;
