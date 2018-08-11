@@ -61,7 +61,7 @@ void ConfigTask(void)
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_1);
 	TIM_Init(TIM2, 100, 840, 0x01, 0x03);
-	USART3_Init(115200);
+	USART3_Init(115200); //定位系统串口
 	UART4_Init(921600);	//蓝牙串口
 	CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
 	CAN_Config(CAN2, 500, GPIOB, GPIO_Pin_5, GPIO_Pin_6);
@@ -70,7 +70,7 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2, 2, 8000, 8000);
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
-	delay_ms(8000);	//延时8s 用于启动定位系统
+	delay_ms(10000);	//延时10s 用于启动定位系统
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
@@ -94,6 +94,8 @@ void BluetoothTask(void)
 	while (1)
 	{
 		OSSemPend(BluetoothSem, 0, &os_err);
-		
+		USART_OUT(USART1, (uint8_t*)"angle = %d",(int)GetAngle());
+		USART_OUT(USART1, (uint8_t*)"x = %d",(int)GetXpos());
+		USART_OUT(USART1, (uint8_t*)"y = %d",(int)GetYpos());
 	}
 }

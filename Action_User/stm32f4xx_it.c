@@ -40,6 +40,7 @@
 #include "elmo.h"
 #include "moveBase.h"
 
+
 extern OS_EVENT *PeriodSem;
 extern OS_EVENT *BluetoothSem;
 float angle = 0;
@@ -54,11 +55,13 @@ float avel = 0;
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
-
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	uint32_t RecieveId = 0; 
+	uint8_t ReceiveTemp[8] = {0};
+	uint8_t Length = 0;
+	CAN_RxMsg(CAN1, &RecieveId, ReceiveTemp, &Length);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -81,11 +84,13 @@ void CAN1_RX0_IRQHandler(void)
 void CAN2_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
-
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	uint32_t RecieveId = 0; 
+	uint8_t ReceiveTemp[8] = {0};
+	uint8_t Length = 0;
+	CAN_RxMsg(CAN1, &RecieveId, ReceiveTemp, &Length);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -107,7 +112,7 @@ void TIM2_IRQHandler(void)
 
 	//用来计数10次，产生10ms的定时器
 	static uint8_t periodCounter = PERIOD_COUNTER;
-
+	static uint8_t BluetoothCounter = 0;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
@@ -116,13 +121,19 @@ void TIM2_IRQHandler(void)
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 
-		//实现10ms 发送1次信号量
+		//10ms触发一次走行程序
 		periodCounter--;
 		if (periodCounter == 0)
 		{
 			OSSemPost(PeriodSem);
-			OSSemPost(BluetoothSem);
 			periodCounter = PERIOD_COUNTER;
+		}
+		//100ms通过蓝牙发送一次定位系统数据
+		BluetoothCounter++;
+		if(BluetoothCounter == 100)
+		{
+			OSSemPost(BluetoothSem);
+			BluetoothCounter = 0;
 		}
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 	}
@@ -347,14 +358,8 @@ void USART3_IRQHandler(void)
 		} posture;
 	static uint8_t count = 0;
 	static uint8_t i = 0;
-	if(USART_GetITStatus(UART5,USART_IT_ORE_ER) ==SET)
+	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(UART4,USART_IT_ORE_ER);
-		USART_ReceiveData(USART3);
-	}
-	if (USART_GetITStatus(USART1, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
 		ch = USART_ReceiveData(USART3);
 		switch (count)
 		{
@@ -407,11 +412,7 @@ void USART3_IRQHandler(void)
 				count = 0;
 			break;
 		}
-	}
-	else
-	{
-		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
-		USART_ReceiveData(USART3);
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
 	}
 	OSIntExit();
 }
