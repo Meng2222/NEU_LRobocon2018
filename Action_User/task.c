@@ -22,7 +22,23 @@ OS_EVENT *PeriodSem;
 pos_t xya;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
-
+static float set_x=0;
+static float set_y=0;
+static float set_angle=0;
+int iSOKFlag=0;
+static int car;
+void driveGyro(void)
+{
+	while(!iSOKFlag)
+	{
+		delay_ms(5);
+		USART_SendData(USART3,'A');
+		USART_SendData(USART3,'T');
+		USART_SendData(USART3,'\r');
+		USART_SendData(USART3,'\n');
+	}
+	iSOKFlag=0;
+}
 void App_Task()
 {
 	CPU_INT08U os_err;
