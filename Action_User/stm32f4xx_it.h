@@ -33,6 +33,7 @@
 extern "C" {
 #endif
 
+#include "stm32f4xx.h"
 /* Includes ------------------------------------------------------------------*/
 
 /* Exported types ------------------------------------------------------------*/
@@ -47,6 +48,8 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
+u8 isOKSend(void);
+void resetOK(void);
 
 #ifdef __cplusplus
 }
