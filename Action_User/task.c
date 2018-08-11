@@ -19,6 +19,7 @@
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
 
+pos_t xya;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 
@@ -52,7 +53,9 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	TIM_Init(TIM2,1000-1,84-1,0x01,0x03);
+	TIM_Init(TIM2,1000-1,84-1,0x010,0x03);
+	USART3_Init(115200);
+	UART4_Init(921600);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	ElmoInit(CAN2);
@@ -60,6 +63,12 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2,2,10000,10000);
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
+	if(car==1)
+	{	
+     driveGyro();
+		
+	}else if (car==4)
+     delay_s(10);	
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
@@ -67,7 +76,7 @@ static int Right_cr1;
 static int Left_cr2;
 void WalkTask(void)
 {
-    void Vout(float,float,char);
+    void go(float);
 	CPU_INT08U os_err;
 	os_err = os_err;
 
@@ -75,37 +84,72 @@ void WalkTask(void)
 	while (1)
 	{		
 		OSSemPend(PeriodSem,  0, &os_err);
-		Vout(-0.5,1,'c');
+		USART_SendData(UART4,'0'+xya.x);
+		USART_SendData(UART4,'0'+xya.y);
+		USART_SendData(UART4,'0'+xya.angle);
+		USART_SendData(UART4,'\r');
+		USART_SendData(UART4,'\n');
+		go(0.337);
 		VelCrl(CAN2,1,Right_cr1);
 		VelCrl(CAN2,2,Left_cr2);
 	}
 }
-void Vout(float r,float v,char status)
+void turn(float);	
+void go(float v)
 {   
-	float R=r*1000;
+    
 	float V=v*1000;
 	
-	switch(status)
-	{
-		case 'g':
-		Right_cr1=4096*V/377;
-		Left_cr2=-Right_cr1;
- 		break;
-		case 'b':
-		Right_cr1=-4096*V/377;
-		Left_cr2=-Right_cr1;
-		break;
-		case 'c':
-		if(R>0)	
-		{
-		  Right_cr1=(V/R)*(R-245)*4096/377;
-	   	  Left_cr2=-(V/R)*(R+245)*4096/377;
-		}else if (R<0)
-		{
-			Right_cr1=-(V/R)*(-R+245)*4096/377;
-		    Left_cr2=(V/R)*(-R-245)*4096/377;
-		}
-		break;
+
+	if(fabs(xya.x-set_x)<2000&&fabs(xya.y-set_y)<2000)
+	{	
+		Right_cr1=4096*V/377;		
+	    Left_cr2=-Right_cr1;
 	}
+	else if(fabs(xya.x-set_x)>=2000&&fabs(xya.y-set_y)>=2000)
+	{
+		turn(v);
+	}
+		
+}
+void turn(float v)
+{ 
+	float V=v*1000;
 	
+	if(xya.angle==180)
+	set_angle=-xya.angle;
+	else set_angle=xya.angle;	
+    
+	while(1)
+	{
+     if(xya.angle-set_angle<90)		
+	 {Right_cr1=V/217*434*4096/377;
+	  Left_cr2=0;
+	 }else if(xya.angle-set_angle>=90) 
+	 {
+		 set_x=xya.x;
+		 set_y=xya.y;
+		 break;
+		 
+	 }
+    }
+}
+	
+
+static float setangle;
+static float Kp;
+static float Ki;
+static float Kd;
+static float Aout=0;
+static float nowerror=0;
+static float lasterror=0;
+static float adderror=0;
+void Anglepid(void)
+{   
+	lasterror=nowerror;
+	nowerror=setangle-xya.angle;
+	adderror+=nowerror;
+	Aout+=Kp*nowerror;
+	Aout+=Ki*adderror;
+	Aout+=Kd*(nowerror-lasterror);	
 }
