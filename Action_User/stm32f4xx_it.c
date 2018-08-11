@@ -98,9 +98,9 @@ extern OS_EVENT *PeriodSem;
 
 void TIM2_IRQHandler(void)
 {
-#define PERIOD_COUNTER 10
+#define PERIOD_COUNTER 5
 
-	//用来计数10次，产生10ms的定时器
+	//用来计数10次，产生5ms的定时器
 	static uint8_t periodCounter = PERIOD_COUNTER;
 
 	OS_CPU_SR cpu_sr;
@@ -219,7 +219,7 @@ void USART1_IRQHandler(void)
 	}
 	OSIntExit();
 }
-
+ 
 void USART2_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -234,7 +234,10 @@ void USART2_IRQHandler(void)
 	OSIntExit();
 }
 
-void USART6_IRQHandler(void) //更新频率200Hz
+
+
+
+void USART3_IRQHandler(void) //更新频率200Hz
 {
 	static uint8_t ch;
 	static union {
@@ -248,10 +251,10 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 
-	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
+	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
-		ch = USART_ReceiveData(USART6);
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		ch = USART_ReceiveData(USART3);
 		switch (count)
 		{
 		case 0:
@@ -293,13 +296,16 @@ void USART6_IRQHandler(void) //更新频率200Hz
 		case 4:
 			if (ch == 0x0d)
 			{
-
 				posture.ActVal[0] = posture.ActVal[0];
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
 				posture.ActVal[3] = posture.ActVal[3];
 				posture.ActVal[4] = posture.ActVal[4];
 				posture.ActVal[5] = posture.ActVal[5];
+				action.x=posture.ActVal[0];
+				action.y=posture.ActVal[3];
+				action.angle=posture.ActVal[4];
+				
 			}
 			count = 0;
 			break;
@@ -311,32 +317,32 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	else
 	{
-		USART_ClearITPendingBit(USART6, USART_IT_PE);
-		USART_ClearITPendingBit(USART6, USART_IT_TXE);
-		USART_ClearITPendingBit(USART6, USART_IT_TC);
-		USART_ClearITPendingBit(USART6, USART_IT_ORE_RX);
-		USART_ClearITPendingBit(USART6, USART_IT_IDLE);
-		USART_ClearITPendingBit(USART6, USART_IT_LBD);
-		USART_ClearITPendingBit(USART6, USART_IT_CTS);
-		USART_ClearITPendingBit(USART6, USART_IT_ERR);
-		USART_ClearITPendingBit(USART6, USART_IT_ORE_ER);
-		USART_ClearITPendingBit(USART6, USART_IT_NE);
-		USART_ClearITPendingBit(USART6, USART_IT_FE);
-		USART_ReceiveData(USART6);
+		USART_ClearITPendingBit(USART3, USART_IT_PE);
+		USART_ClearITPendingBit(USART3, USART_IT_TXE);
+		USART_ClearITPendingBit(USART3, USART_IT_TC);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(USART3, USART_IT_IDLE);
+		USART_ClearITPendingBit(USART3, USART_IT_LBD);
+		USART_ClearITPendingBit(USART3, USART_IT_CTS);
+		USART_ClearITPendingBit(USART3, USART_IT_ERR);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(USART3, USART_IT_NE);
+		USART_ClearITPendingBit(USART3, USART_IT_FE);
+		USART_ReceiveData(USART3);
 	}
 	OSIntExit();
 }
 
-void USART3_IRQHandler(void)
+void USART6_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
 	}
 
 	OSIntExit();

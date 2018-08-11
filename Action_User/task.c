@@ -30,6 +30,8 @@ static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 */
 void  go_straight(float V,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx);
 void  go_round(float V,float R,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx);
+float straight(float setValue,float feedbackValue);
+float turn(float setValue,float feedbackValue);
 /*
 ==================================================================================
 */
@@ -79,28 +81,60 @@ void ConfigTask(void)
 	MotorOn(CAN2, 01);
 	MotorOn(CAN2, 02);
 	OSTaskSuspend(OS_PRIO_SELF);
+	//定位系统串口初始化
+     USART6_Init(115200);
+    delay_s(10);
 
 	
 }
-
+int mission=0;
 
 void WalkTask(void)
 {
-
 	CPU_INT08U os_err;
 	os_err = os_err;
-
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-//		cnt++;
-//		if(cnt<50)
-//		go_straight(1);
-//		if(cnt>=50)
-		go_round( 1,1,01,02,CAN2);
-//		if(cnt==2000)
-//		cnt=0;
+		//直行
+		if(mission==1&&action.angle<=1&&action.angle>=-1)
+		{
+			straight(2,action.x);
+		}
+		if(mission==2&&action.angle<=91&&action.angle>=89)
+		{
+			straight(2,action.x);
+		}
+		if(mission==3&&action.angle<=180&&action.angle<=-1)
+		{
+			straight(2,action.x);
+		}
+		if(mission==4&&action.angle>=-91&&action.angle<=-89)
+		{
+			straight(2,action.x);
+		}
+		//转向
+		if(action.x==2&&mission==1)
+		{
+			turn(90,action.angle);
+		}
+		if(action.x==2&&mission==2)
+		{
+			turn(180,action.angle);
+		}
+		if(action.x==2&&mission==3)
+		{
+			turn(0,action.angle);
+		}
+		if(action.x==2&&mission==4)
+		{
+			turn(0,action.angle);
+		}
+
+		
+		
+		
 	}
 }
 
