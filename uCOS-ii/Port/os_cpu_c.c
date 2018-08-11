@@ -220,7 +220,30 @@ OS_STK *OSTaskStkInit (void (*task)(void *p_arg), void *p_arg, OS_STK *ptos, INT
     stk       = ptos;                            /* Load stack pointer                                 */
 
                                                  /* Registers stacked as if auto-saved on exception    */
-    *(stk)    = (INT32U)0x01000000uL;            /* xPSR                                               */
+	 
+	  #if(__FPU_PRESENT == 1)&&(__FPU_USED == 1) 
+        *--stk = (INT32U)0x00000000u;                        /*unknow register                                         */ 
+        *--stk = (INT32U)0x00000000u;                        /*FPSCR                                                   */ 
+        *--stk = (INT32U)0x15151515u;                        /*S15                                                     */ 
+        *--stk = (INT32U)0x14141414u;                        /*S14                                                     */ 
+        *--stk = (INT32U)0x13131313u;                        /*S13                                                     */ 
+        *--stk = (INT32U)0x12121212u;                        /*S12                                                     */ 
+        *--stk = (INT32U)0x11111111u;                        /*S11                                                     */ 
+        *--stk = (INT32U)0x10101010u;                        /*S10                                                     */ 
+        *--stk = (INT32U)0x09090909u;                        /*S09                                                     */ 
+        *--stk = (INT32U)0x08080808u;                        /*S08                                                     */ 
+        *--stk = (INT32U)0x07070707u;                        /*S07                                                     */ 
+        *--stk = (INT32U)0x06060606u;                        /*S06                                                     */ 
+        *--stk = (INT32U)0x05050505u;                        /*S05                                                     */ 
+        *--stk = (INT32U)0x04040404u;                        /*S04                                                     */ 
+        *--stk = (INT32U)0x03030303u;                        /*S03                                                     */ 
+        *--stk = (INT32U)0x02020202u;                        /*S02                                                     */ 
+        *--stk = (INT32U)0x01010101u;                        /*S01                                                     */ 
+        *--stk = (INT32U)0x00000000u;                        /*S00                                                     */ 
+     #endif 
+				
+				
+    *(--stk)    = (INT32U)0x01000000uL;            /* xPSR                                               */
     *(--stk)  = (INT32U)task;                    /* Entry Point                                        */
     *(--stk)  = (INT32U)OS_TaskReturn;           /* R14 (LR)                                           */
     *(--stk)  = (INT32U)0x12121212uL;            /* R12                                                */
@@ -229,6 +252,28 @@ OS_STK *OSTaskStkInit (void (*task)(void *p_arg), void *p_arg, OS_STK *ptos, INT
     *(--stk)  = (INT32U)0x01010101uL;            /* R1                                                 */
     *(--stk)  = (INT32U)p_arg;                   /* R0 : argument                                      */
 
+
+
+ #if(__FPU_PRESENT == 1)&&(__FPU_USED == 1) 
+        *--stk = (INT32U)0x31313131u;                        /*S31                                                     */ 
+        *--stk = (INT32U)0x30303030u;                        /*S30                                                     */ 
+        *--stk = (INT32U)0x29292929u;                        /*S29                                                     */ 
+        *--stk = (INT32U)0x28282828u;                        /*S28                                                     */ 
+        *--stk = (INT32U)0x27272727u;                        /*S27                                                     */ 
+        *--stk = (INT32U)0x26262626u;                        /*S26                                                     */ 
+        *--stk = (INT32U)0x25252525u;                        /*S25                                                     */ 
+        *--stk = (INT32U)0x24242424u;                        /*S24                                                     */ 
+        *--stk = (INT32U)0x23232323u;                        /*S23                                                     */ 
+        *--stk = (INT32U)0x22222222u;                        /*S22                                                     */ 
+        *--stk = (INT32U)0x21212121u;                        /*S21                                                     */ 
+        *--stk = (INT32U)0x20202020u;                        /*S20                                                     */ 
+        *--stk = (INT32U)0x19191919u;                        /*S19                                                     */ 
+        *--stk = (INT32U)0x18181818u;                        /*S18                                                     */ 
+        *--stk = (INT32U)0x17171717u;                        /*S17                                                     */ 
+        *--stk = (INT32U)0x16161616u;                        /*S16                                                     */ 
+ #endif         
+		
+		
                                                  /* Remaining registers saved on process stack         */
     *(--stk)  = (INT32U)0x11111111uL;            /* R11                                                */
     *(--stk)  = (INT32U)0x10101010uL;            /* R10                                                */
@@ -240,6 +285,9 @@ OS_STK *OSTaskStkInit (void (*task)(void *p_arg), void *p_arg, OS_STK *ptos, INT
     *(--stk)  = (INT32U)0x04040404uL;            /* R4                                                 */
 
     return (stk);
+
+
+
 }
 
 

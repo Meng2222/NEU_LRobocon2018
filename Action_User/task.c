@@ -15,6 +15,7 @@
 
 #define CAR 1
 
+
 /*
 ===============================================================
 						信号量定义
@@ -68,11 +69,9 @@ void ConfigTask(void)
     TIM_Init(TIM2, 999, 83, 0x00, 0x00);
     CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
     CAN_Config(CAN2, 500, GPIOB, GPIO_Pin_5, GPIO_Pin_6);
-	ElmoInit(CAN2);
     VelLoopCfg(CAN2, 1, 80000000, 80000000);
-    SetVelLimit(CAN2, 1, 80000000, -80000000);
     VelLoopCfg(CAN2, 2, 80000000, 80000000);
-    SetVelLimit(CAN2, 2, 80000000, -80000000);
+	ElmoInit(CAN2);
     USART3_Init(115200);
     UART4_Init(921600);
     if(CAR == 1)
@@ -88,6 +87,7 @@ void ConfigTask(void)
         delay_s(10);
     }
 	OSTaskSuspend(OS_PRIO_SELF);
+	
 }
 
 //int32_t GetX(void)
@@ -153,6 +153,7 @@ void WalkTask(void)
     PIDCtrlInit();
 	while (1)
 	{
+
 		OSSemPend(PeriodSem, 0, &os_err);
         counter++;
         if(counter >= 200)
