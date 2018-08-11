@@ -60,7 +60,9 @@
 /**
   * @}
   */
-
+#define P 25
+#define I 0.1f
+#define D 0
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
@@ -74,6 +76,7 @@ float GetAngle(void);
 float GetXpos(void);
 float GetYpos(void);
 void RevolveAngle(float angle);
+void GoStraight(float speed);
 
 
 
