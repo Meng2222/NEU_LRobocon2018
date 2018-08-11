@@ -82,7 +82,7 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		RectangleAround(2000, 2000, 750);
+		//RectangleAround(2000, 2000, 750);
 	}
 }
 
@@ -95,7 +95,7 @@ void BluetoothTask(void)
 	{
 		OSSemPend(BluetoothSem, 0, &os_err);
 		USART_OUT(USART1, (uint8_t*)"angle = %d",(int)GetAngle());
-		USART_OUT(USART1, (uint8_t*)"x = %d",(int)GetXpos());
-		USART_OUT(USART1, (uint8_t*)"y = %d",(int)GetYpos());
+		USART_OUT(USART1, (uint8_t*)" x = %d",(int)GetXpos());
+		USART_OUT(USART1, (uint8_t*)" y = %d \r\n",(int)GetYpos());
 	}
 }
