@@ -279,10 +279,6 @@ void USART3_IRQHandler(void) //更新频率200Hz
 			break;
 
 		case 2:
-			if (i >= 10)
-			{
-				i = 0;
-			}
 			posture.data[i] = (uint8_t)ch;
 			testPin = i;
 			i++;
@@ -304,12 +300,12 @@ void USART3_IRQHandler(void) //更新频率200Hz
 			if (ch == 0x0d)
 			{
 
-//				Pos.angle = posture.ActVal[0];
-//				posture.ActVal[1] = posture.ActVal[1];
-//				posture.ActVal[2] = posture.ActVal[2];
-//				Pos.x = posture.ActVal[3];
-//				Pos.y = posture.ActVal[4];
-//				posture.ActVal[5] = posture.ActVal[5];
+				Pos.angle = posture.ActVal[0];
+				posture.ActVal[1] = posture.ActVal[1];
+				posture.ActVal[2] = posture.ActVal[2];
+				Pos.x = posture.ActVal[3];
+				Pos.y = posture.ActVal[4];
+				posture.ActVal[5] = posture.ActVal[5];
 			}
 			count = 0;
 			break;

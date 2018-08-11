@@ -86,8 +86,8 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-//		USART_OUT(UART4,(uint8_t*)"%d\t\r\n",intoUSART3);
-//		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
+		USART_OUT(UART4,(uint8_t*)"%d\t\r\n",intoUSART3);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
 	//	USART_OUT(UART4,(uint8_t*)"%d\t\r\n",10);	
 		//WalkLine2PID(500,0);
 		
