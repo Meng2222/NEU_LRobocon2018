@@ -11,7 +11,7 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
-
+extern Pos_t a;
 /*
 ===============================================================
 						信号量定义
@@ -48,6 +48,14 @@ void App_Task()
    初始化任务
    ===============================================================
    */
+void Motor_Init(void)
+{
+	ElmoInit(CAN2);
+	VelLoopCfg(CAN2,1,8000,8000);
+	VelLoopCfg(CAN2,2,8000,8000);
+	MotorOn(CAN2,1);
+	MotorOn(CAN2,2);
+}
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
@@ -56,16 +64,29 @@ void ConfigTask(void)
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	TIM_Init(TIM2,999,83,0,3);
-	ElmoInit(CAN2);
-	VelLoopCfg(CAN2,1,8000,8000);
-	VelLoopCfg(CAN2,2,8000,8000);
-	MotorOn(CAN2,1);
-	MotorOn(CAN2,2);
+	USART3_Init(115200);
+    Motor_Init();
+	TIM_Delayms(TIM3,10000);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-void WalkStright(float mult)
+int Uk(float error,float Kp,float Ki,float Kd)
 {
-	float speed;
+	static  float err[50];
+	static int i=0;
+	float u,sum;
+	int sumCount;
+	err[i]=error;
+	for(sumCount=0;sumCount<=i;sumCount++)
+	     sum=sum+err[sumCount];
+	u=Kp*err[i]+Ki*sum+Kd*(err[i]-err[i-1]);
+      i++;
+     return u;
+}
+void WalkStright(void)//直线走
+{
+	float speed,errorAng,mult;
+	errorAng=a.angle;
+	mult=Uk(errorAng,10,0,0);
 	speed=4096.f*mult/(WHEEL_DIAMETER*PI);
 	VelCrl(CAN2,1,speed);
 	VelCrl(CAN2,2,-speed);
@@ -88,6 +109,7 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-        WalkAround(200,500);
+
+//        WalkAround(200,500);
 	}
 }
