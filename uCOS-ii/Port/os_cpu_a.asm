@@ -219,7 +219,13 @@ PendSV_Handler
     CPSID   I                                                   ; Prevent interruption during context switch
     MRS     R0, PSP                                             ; PSP is process stack pointer
     CBZ     R0, PendSV_Handler_nosave                     ; Skip register save the first time
-
+	
+	
+    ;if enable the FPU 
+    SUBS    R0, R0, #0X40 
+        VSTM    R0, {S16-S31} 
+		
+		
     SUBS    R0, R0, #0x20                                       ; Save remaining regs r4-11 on process stack
     STM     R0, {R4-R11}
 
@@ -247,10 +253,16 @@ PendSV_Handler_nosave
     LDR     R0, [R2]                                            ; R0 is new process SP; SP = OSTCBHighRdy->OSTCBStkPtr;
     LDM     R0, {R4-R11}                                        ; Restore r4-11 from new process stack
     ADDS    R0, R0, #0x20
+	
+   ;if enable FPU 
+	VLDM    R0, {S16-S31} 
+	ADDS    R0, R0, #0X40 
+		
+		
     MSR     PSP, R0                                             ; Load PSP with new process SP
     ORR     LR, LR, #0x04                                       ; Ensure exception return uses process stack
     CPSIE   I
-    BX      LR                                                  ; Exception return will restore remaining context
+    BX      LR                                                      ; Exception return will restore remaining context
 
 
 CPU_IntDis

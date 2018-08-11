@@ -46,7 +46,7 @@
 #define TURN_LEFT  1
 
 //电机旋转一周的脉冲数
-#define COUNTS_PER_ROUND (4096)
+#define COUNTS_PER_ROUND (4096.0f)
 //轮子直径（单位：mm）
 #define WHEEL_DIAMETER (120.0f)
 //调试小车车长（单位：mm）
@@ -56,7 +56,13 @@
 //轮子宽度（单位：mm）
 #define WHEEL_WIDTH (40.0f)
 //两个轮子中心距离（单位：mm）
+<<<<<<< HEAD
 #define WHEEL_TREAD (424.0f)
+=======
+#define WHEEL_TREAD (434.0f)
+
+#define Pi 3.1415926
+>>>>>>> master
 
 
 /**

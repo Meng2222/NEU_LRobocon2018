@@ -8,9 +8,29 @@
 #include "usart.h"
 #include "can.h"
 #include "elmo.h"
+<<<<<<< HEAD
 #include "moveBase.h"
+=======
+#include "movebase.h"
+>>>>>>> master
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+
+#define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
+
+/*
+一个脉冲是4096/(120*Pi)
+定义输入速度mm/s和半径mm
+*/
+float ratio1,ratio2;
+void vel_radious(float vel,float radious)
+{
+	ratio1=(radious+WHEEL_TREAD/2)/radious;
+	ratio2=(radious-WHEEL_TREAD/2)/radious;
+	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
+	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
+}
+
 
 /*
 ===============================================================
@@ -54,10 +74,27 @@ void ConfigTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
+<<<<<<< HEAD
+=======
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
+
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	
+	VelLoopCfg(CAN2,1, 5000, 5000);				//驱动器速度环初始化
+	VelLoopCfg(CAN2,2, 5000, 5000);
+	
+	ElmoInit(CAN2);								//驱动器初始化
+	MotorOn(CAN2,1);							//电机使能（通电）
+	MotorOn(CAN2,2);
+	
+>>>>>>> master
 	
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	Init();
 	OSTaskSuspend(OS_PRIO_SELF);
+	
 }
 
 
@@ -78,7 +115,9 @@ void WalkTask(void)
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
+
 		OSSemPend(PeriodSem, 0, &os_err);
+<<<<<<< HEAD
 		pos_Angle=GetAngle();
 		pos_X=GetPosX();
 		pos_Y=GetPosY();
@@ -89,6 +128,9 @@ void WalkTask(void)
 		USART_OUT(UART4, "%d\t",angle);
 		USART_OUT(UART4, "%d\t",x);
 		USART_OUT(UART4, "%d\r\n",y);
+=======
+		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
+>>>>>>> master
 	}
 }
 
