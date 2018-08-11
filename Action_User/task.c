@@ -21,7 +21,7 @@ OS_EVENT *PeriodSem;
 
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
-
+static OS_STK controlsrStk[controlsr_TASK_STK_SIZE];
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -40,6 +40,10 @@ void App_Task()
 						  (void *)0,
 						  (OS_STK *)&WalkTaskStk[Walk_TASK_STK_SIZE - 1],
 						  (INT8U)Walk_TASK_PRIO);
+	os_err = OSTaskCreate((void (*)(void *))controlsrTask,
+						  (void *)0,
+						  (OS_STK *)&controlsrStk[controlsr_TASK_STK_SIZE - 1],
+						  (INT8U)controlsr_TASK_PRIO);
 }
 
 /*
@@ -52,13 +56,21 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
+	TIM_Init(TIM1,9999,83,0x01,0x03);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	ElmoInit(CAN2);
+	VelLoopCfg(CAN2,1,4095,4095);
+	VelLoopCfg(CAN2,2,4095,4095);
+	//PosLoopCfg(CAN2,1,500,500,500);
+	//PosCrl(CAN2,1,RELATIVE_MODE,pos);
+	MotorOn(CAN2,1);
+	MotorOn(CAN2,2);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-
+extern int vleft,vright;
 void WalkTask(void)
 {
-
 	CPU_INT08U os_err;
 	os_err = os_err;
 
@@ -66,5 +78,17 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		VelCrl(CAN2, 1,vright);   ////右轮
+		VelCrl(CAN2, 2,-vleft);
 	}
+}
+int speed,vleft,vright;
+void controlsrTask(void)
+{
+	CPU_INT08U os_err;
+	os_err = os_err;
+	int r=1;                       ///////输入r的值
+	vright=4095;               ///////输入v的值
+	vleft=(1+0.474/r)*vright;
+	OSTaskSuspend(OS_PRIO_SELF);
 }

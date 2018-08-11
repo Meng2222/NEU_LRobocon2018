@@ -122,7 +122,8 @@ void TIM2_IRQHandler(void)
 	}
 	OSIntExit();
 }
-
+//OS_EVENT *PeriodSem;
+////////////////////////定时器1发送消息定时中断////////////////////////////////
 void TIM1_UP_TIM10_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -132,6 +133,7 @@ void TIM1_UP_TIM10_IRQHandler(void)
 	if (TIM_GetITStatus(TIM1, TIM_IT_Update) == SET)
 	{
 		TIM_ClearITPendingBit(TIM1, TIM_IT_Update);
+		OSSemPost (PeriodSem);
 	}
 	OSIntExit();
 }

@@ -41,7 +41,7 @@ void MotorOn(CAN_TypeDef* CANx, uint8_t ElmoNum)
 
 	TxMessage.DLC=8;
 
- 	TxMessage.Data[0] = *(unsigned long*)&data[0][0]&0xff;
+ 	TxMessage.Data[0] =  *(unsigned long*)&data[0][0]&0xff;
 	TxMessage.Data[1] = (*(unsigned long*)&data[0][0]>>8)&0xff;
 	TxMessage.Data[2] = (*(unsigned long*)&data[0][0]>>16)&0xff;
 	TxMessage.Data[3] = (*(unsigned long*)&data[0][0]>>24)&0xff;
@@ -61,6 +61,7 @@ void MotorOn(CAN_TypeDef* CANx, uint8_t ElmoNum)
 		if(timeout > 60000)
 		{
 			//在这里应加入异常处理
+			
 			
 		}
 	}
