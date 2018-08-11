@@ -52,19 +52,60 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	TIM_Init(TIM2,1000-1,84-1,0x01,0x03);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	ElmoInit(CAN2);
+	VelLoopCfg(CAN2,1,10000,10000);
+	VelLoopCfg(CAN2,2,10000,10000);
+	MotorOn(CAN2,1);
+	MotorOn(CAN2,2);
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-
+static int Right_cr1;
+static int Left_cr2;
 void WalkTask(void)
 {
-
+    void Vout(float,float,char);
 	CPU_INT08U os_err;
 	os_err = os_err;
 
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
-	{
-		OSSemPend(PeriodSem, 0, &os_err);
+	{		
+		OSSemPend(PeriodSem,  0, &os_err);
+		Vout(-0.5,1,'c');
+		VelCrl(CAN2,1,Right_cr1);
+		VelCrl(CAN2,2,Left_cr2);
 	}
+}
+void Vout(float r,float v,char status)
+{   
+	float R=r*1000;
+	float V=v*1000;
+	
+	switch(status)
+	{
+		case 'g':
+		Right_cr1=4096*V/377;
+		Left_cr2=-Right_cr1;
+ 		break;
+		case 'b':
+		Right_cr1=-4096*V/377;
+		Left_cr2=-Right_cr1;
+		break;
+		case 'c':
+		if(R>0)	
+		{
+		  Right_cr1=(V/R)*(R-245)*4096/377;
+	   	  Left_cr2=-(V/R)*(R+245)*4096/377;
+		}else if (R<0)
+		{
+			Right_cr1=-(V/R)*(-R+245)*4096/377;
+		    Left_cr2=(V/R)*(-R-245)*4096/377;
+		}
+		break;
+	}
+	
 }
