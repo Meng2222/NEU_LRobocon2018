@@ -331,9 +331,10 @@ void USART6_IRQHandler(void) //更新频率200Hz
 }
 
 extern int isOKFlag;
+float angle=0,posX=0,posY=0;
 void USART3_IRQHandler(void) //更新频率 200Hz
 {
-	float angle=0,posX=0,posY=0;
+
   static uint8_t ch;
   static union 
 	{

@@ -8,9 +8,26 @@
 #include "usart.h"
 #include "can.h"
 #include "elmo.h"
+#include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "status.h"
+
+#define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
+
+/*
+一个脉冲是4096/(120*Pi)
+定义输入速度mm/s和半径mm
+*/
+float ratio1,ratio2;
+void vel_radious(float vel,float radious)
+{
+	ratio1=(radious+WHEEL_TREAD/2)/radious;
+	ratio2=(radious-WHEEL_TREAD/2)/radious;
+	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
+	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
+}
+
 
 /*
 ===============================================================
@@ -54,6 +71,7 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+
 //	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//can1初始化
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);//can2初始化
@@ -77,12 +95,14 @@ void ConfigTask(void)
 //	SetSmoothFactor(CAN2,0x001,100);//设置驱动器平滑输出
 	MotorOn(CAN2,1);//电机初始化
 	MotorOn(CAN2,2);
-	driveGyro();
+//	driveGyro();//车1
+	delay_s(10);//车4
 	OSTaskSuspend(OS_PRIO_SELF);
+	
 }
 extern struct position pos_t;
 int T=0;
-float setangle=90;
+float setangle=0;
 void WalkTask(void)
 {
 	
@@ -93,23 +113,27 @@ void WalkTask(void)
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
+
 		OSSemPend(PeriodSem, 0, &os_err);
-		straight(0.5);
+		//straight(0.2);
 		T++;
 		if(T>=400)
 		{
 			T=0;
-			setangle+=90;
-			if(setangle>=360)
+			setangle+=0;
+			if(setangle>=180)
+			{
 				setangle-=360;
+			}
 		}
 		angle=GetAngle();
 		SpeedDiff=AnglePID(angle,setangle);
-		VelCrl(CAN2,0x01,exchange(0.5)-SpeedDiff);
-		VelCrl(CAN2,0x02,-exchange(0.5)-SpeedDiff);
-		if(T%50==0)
+		VelCrl(CAN2,0x01,exchange(0.5)+SpeedDiff);
+		VelCrl(CAN2,0x02,-exchange(0.5)+SpeedDiff);
+		if(T%10==0)
 		{
-			USART_OUT(UART4, "angle:%d	set:%d	diff:%d\n",(int)(angle),(int)(setangle),(int)(SpeedDiff));
+			USART_OUT(UART4, "angle:%d set:%d	0x01:%d	0x02:%d\n",(int)(angle),(int)(setangle),(int)(exchange(0.5)-SpeedDiff),(int)(exchange(0.5)+SpeedDiff));
 		}
+
 	}
 }

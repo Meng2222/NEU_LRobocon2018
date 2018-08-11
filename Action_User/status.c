@@ -101,9 +101,9 @@ float LastAngleErr=0;
 float AnglePID(float Angle,float SetAngle)
 {
 	struct PID Ang;
-	Ang.p=200;
+	Ang.p=10;
 	Ang.i=0;
-	Ang.d=10;
+	Ang.d=1;
 	float err=0,u=0,i=0;
 	err=SetAngle-Angle;
 	i+=err;
