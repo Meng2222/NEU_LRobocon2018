@@ -52,19 +52,36 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
+	//定时器10ms pwm CAN通信 右1左2 轮子CAN2  引脚
+	TIM_Init(TIM2,999,83,0,0);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	ElmoInit(CAN2);
+	VelLoopCfg(CAN2,1,1000,0);
+	VelLoopCfg(CAN2,2,1000,0);
+	MotorOn(CAN2,1);
+	MotorOn(CAN2,2);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-
+int vel1,vel2;
 void WalkTask(void)
 {
-
 	CPU_INT08U os_err;
 	os_err = os_err;
-
 	OSSemSet(PeriodSem, 0, &os_err);
+	void Round(float speed,float R);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		/**VelCrl(CAN2,1,4096);
+		VelCrl(CAN2,2,-4096);**/
+		Round(1,1);
+		VelCrl(CAN2,1,vel1);
+		VelCrl(CAN2,2,vel2);
 	}
+}
+void Round(float speed,float R)
+{
+	vel1=(int)(10865*speed*(R-0.217)/R);
+  vel2=-(int)(10865*speed*(R+0.217)/R);
 }
