@@ -11,6 +11,9 @@
 #include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "moveBase.h"
+#define PAI 3.14
+
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
 
@@ -35,10 +38,20 @@ void vel_radious(float vel,float radious)
 */
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
-
+int cnt=0;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
-
+/*
+==================================================================================
+						自定义添加函数
+*/
+void  go_straight(float V,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx);
+void  go_round(float V,float R,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx);
+float straight(float setValue,float feedbackValue);
+float turn(float setValue,float feedbackValue);
+/*
+==================================================================================
+*/
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -69,6 +82,7 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+<<<<<<< HEAD
 	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
 
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
@@ -83,20 +97,88 @@ void ConfigTask(void)
 	
 	
 	OSTaskSuspend(OS_PRIO_SELF);
+=======
+	TIM_Init(TIM2, 999, 83, 0x01, 0x03);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	//驱动器初始化
+	ElmoInit( CAN2);
+	//速度环和位置环初始化
+	//右轮
+	VelLoopCfg(CAN2, 1, 100, 100);
+	PosLoopCfg(CAN2, 1, 100, 100,4095);
+	//左轮
+	VelLoopCfg(CAN2, 2, 100, 100);
+	PosLoopCfg(CAN2, 2, 100, 100,4095);
+	//电机使能
+	MotorOn(CAN2, 01);
+	MotorOn(CAN2, 02);
+	OSTaskSuspend(OS_PRIO_SELF);
+	//定位系统串口初始化
+     USART6_Init(115200);
+    delay_s(10);
+
+>>>>>>> NieWeijian
 	
 }
+int mission=0;
 
 void WalkTask(void)
 {
-
 	CPU_INT08U os_err;
 	os_err = os_err;
-
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
+<<<<<<< HEAD
 		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
+=======
+		//直行
+		if(mission==1&&action.angle<=1&&action.angle>=-1)
+		{
+			straight(2,action.x);
+		}
+		if(mission==2&&action.angle<=91&&action.angle>=89)
+		{
+			straight(2,action.x);
+		}
+		if(mission==3&&action.angle<=180&&action.angle<=-1)
+		{
+			straight(2,action.x);
+		}
+		if(mission==4&&action.angle>=-91&&action.angle<=-89)
+		{
+			straight(2,action.x);
+		}
+		//转向
+		if(action.x==2&&mission==1)
+		{
+			turn(90,action.angle);
+		}
+		if(action.x==2&&mission==2)
+		{
+			turn(180,action.angle);
+		}
+		if(action.x==2&&mission==3)
+		{
+			turn(0,action.angle);
+		}
+		if(action.x==2&&mission==4)
+		{
+			turn(0,action.angle);
+		}
+
+		
+		
+		
+>>>>>>> NieWeijian
 	}
 }
+
+
+
+
+
+

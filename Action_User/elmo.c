@@ -194,6 +194,7 @@ void PosCrl(CAN_TypeDef* CANx, uint8_t ElmoNum,uint8_t posMode,int32_t pos)
 * @author ACTION
 * @note 只有在电机失能时可以配置该参数
 */
+
 void SetUnitMode(CAN_TypeDef* CANx, uint8_t ElmoNum, uint8_t unitMode)
 {
 
