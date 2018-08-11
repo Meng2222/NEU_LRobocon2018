@@ -149,7 +149,7 @@ void UART4_Init(uint32_t BaudRate)
 	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;	//收发模式
     USART_Init(UART4, &USART_InitStructure); //初始化串口1
 	
-	USART_ClearFlag(UART4, USART_FLAG_TC);
+	//USART_ClearFlag(UART4, USART_FLAG_TC);
 	
 
 	//Usart1 NVIC 配置

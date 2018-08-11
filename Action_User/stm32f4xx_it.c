@@ -42,7 +42,8 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-
+//uint8_t CAN1Buffer[8]= {0};
+//uint8_t CAN2Buffer[8]= {0};
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -50,7 +51,9 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	
+	//MY_CAN_RxMsg(CAN1,CAN1Buffer,8);
+	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -77,7 +80,9 @@ void CAN2_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	
+	//MY_CAN_RxMsg(CAN2,CAN2Buffer,8);
+	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -233,25 +238,27 @@ void USART2_IRQHandler(void)
 	}
 	OSIntExit();
 }
-
-void USART6_IRQHandler(void) //更新频率200Hz
-{
-	static uint8_t ch;
-	static union {
+Pos_t Pos;
+int intoUSART3 =0;
+int testPin = 0;
+union {
 		uint8_t data[24];
 		float ActVal[6];
-	} posture;
+} posture;
+void USART3_IRQHandler(void) //更新频率200Hz
+{
+	static uint8_t ch;	
 	static uint8_t count = 0;
 	static uint8_t i = 0;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
-	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
+    intoUSART3++;
+	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
-		ch = USART_ReceiveData(USART6);
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		ch = USART_ReceiveData(USART3);
 		switch (count)
 		{
 		case 0:
@@ -267,14 +274,17 @@ void USART6_IRQHandler(void) //更新频率200Hz
 				i = 0;
 				count++;
 			}
-			else if (ch == 0x0d)
-				;
 			else
 				count = 0;
 			break;
 
 		case 2:
-			posture.data[i] = ch;
+			if (i >= 10)
+			{
+				i = 0;
+			}
+			posture.data[i] = (uint8_t)ch;
+			testPin = i;
 			i++;
 			if (i >= 24)
 			{
@@ -294,12 +304,12 @@ void USART6_IRQHandler(void) //更新频率200Hz
 			if (ch == 0x0d)
 			{
 
-				posture.ActVal[0] = posture.ActVal[0];
-				posture.ActVal[1] = posture.ActVal[1];
-				posture.ActVal[2] = posture.ActVal[2];
-				posture.ActVal[3] = posture.ActVal[3];
-				posture.ActVal[4] = posture.ActVal[4];
-				posture.ActVal[5] = posture.ActVal[5];
+//				Pos.angle = posture.ActVal[0];
+//				posture.ActVal[1] = posture.ActVal[1];
+//				posture.ActVal[2] = posture.ActVal[2];
+//				Pos.x = posture.ActVal[3];
+//				Pos.y = posture.ActVal[4];
+//				posture.ActVal[5] = posture.ActVal[5];
 			}
 			count = 0;
 			break;
@@ -311,36 +321,107 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	else
 	{
-		USART_ClearITPendingBit(USART6, USART_IT_PE);
-		USART_ClearITPendingBit(USART6, USART_IT_TXE);
-		USART_ClearITPendingBit(USART6, USART_IT_TC);
-		USART_ClearITPendingBit(USART6, USART_IT_ORE_RX);
-		USART_ClearITPendingBit(USART6, USART_IT_IDLE);
-		USART_ClearITPendingBit(USART6, USART_IT_LBD);
-		USART_ClearITPendingBit(USART6, USART_IT_CTS);
-		USART_ClearITPendingBit(USART6, USART_IT_ERR);
-		USART_ClearITPendingBit(USART6, USART_IT_ORE_ER);
-		USART_ClearITPendingBit(USART6, USART_IT_NE);
-		USART_ClearITPendingBit(USART6, USART_IT_FE);
-		USART_ReceiveData(USART6);
+		USART_ClearITPendingBit(USART3, USART_IT_PE);
+		USART_ClearITPendingBit(USART3, USART_IT_TXE);
+		USART_ClearITPendingBit(USART3, USART_IT_TC);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(USART3, USART_IT_IDLE);
+		USART_ClearITPendingBit(USART3, USART_IT_LBD);
+		USART_ClearITPendingBit(USART3, USART_IT_CTS);
+		USART_ClearITPendingBit(USART3, USART_IT_ERR);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(USART3, USART_IT_NE);
+		USART_ClearITPendingBit(USART3, USART_IT_FE);
+		USART_ReceiveData(USART3);
 	}
 	OSIntExit();
 }
+//void USART3_IRQHandler(void) //更新频率 200Hz
+//{
+//	static uint8_t ch;
+//	static union {
+//		uint8_t data[24];
+//		float ActVal[6];
+//		} posture;
+//	static uint8_t count = 0;
+//	static uint8_t i = 0;
+//	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
+//	{
+//		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
+//		USART_ReceiveData(USART3);
+//	}
+//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+//	{
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+//		ch = USART_ReceiveData(USART3);
+//		switch (count)
+//		{
+//			case 0:
+//				if (ch == 0x0d)
+//					count++;
+//				else
+//					count = 0;
+//				break;
+//			case 1:
+//				if (ch == 0x0a)
+//				{
+//					i = 0;
+//					count++;
+//				}
+//				else
+//					count = 0;break;
+//			case 2:
+//				posture.data[i] = ch;
+//				i++;
+//				if (i >= 24)
+//				{
+//					i = 0;
+//					count++;
+//				}
+//				break;
+//			case 3:
+//				if (ch == 0x0a)
+//					count++;
+//				else
+//					count = 0;
+//				break;
+//			case 4:
+//				if (ch == 0x0d)
+//				{
+//					Pos.angle =posture.ActVal[0] ;//角度
+//					posture.ActVal[1] = posture.ActVal[1];
+//					posture.ActVal[2] = posture.ActVal[2];
+//					Pos.x = posture.ActVal[3];//x
+//					Pos.y = posture.ActVal[4];//y
+//					posture.ActVal[5] = posture.ActVal[5];
+//				}
+//				count = 0;
+//					break;
+//			default:
+//				count = 0;
+//				break;
+//		}
+//	}
+//	else
+//	{
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+//		USART_ReceiveData(USART3);
+//	}
+//}
+//void USART3_IRQHandler(void)
+//{
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
 
-void USART3_IRQHandler(void)
-{
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
+//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+//	{
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+//	}
 
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-	}
-
-	OSIntExit();
-}
+//	OSIntExit();
+//}
 
 void UART5_IRQHandler(void)
 {
@@ -381,6 +462,8 @@ void HardFault_Handler(void)
 	/* Go to infinite loop when Hard Fault exception occurs */
 	while (1)
 	{
+				USART_OUT(UART4,(uint8_t*)" HardFault %d  testPin%d\t\r\n",intoUSART3,testPin);
+
 	}
 }
 
