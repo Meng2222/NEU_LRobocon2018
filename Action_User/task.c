@@ -82,13 +82,14 @@ void WalkTask(void)
 		VelCrl(CAN2, 2,-vleft);
 	}
 }
-int speed,vleft,vright;
+int speed,vleft,vright,v;
 void controlsrTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
 	int r=1;                       ///////输入r的值
-	vright=4095;               ///////输入v的值
+	int v=120;										 ///////输入v的值
+	vright=v*4095/120;               
 	vleft=(1+0.474/r)*vright;
 	OSTaskSuspend(OS_PRIO_SELF);
 }
