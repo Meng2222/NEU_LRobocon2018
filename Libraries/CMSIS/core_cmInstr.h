@@ -50,7 +50,7 @@
 
 /*------------------ RealView Compiler -----------------*/
 #if   defined ( __CC_ARM )
-  #include "cmsis_armcc.h"
+#include "cmsis_armcc.h"
 
 /*------------------ ARM Compiler V6 -------------------*/
 #elif defined(__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
