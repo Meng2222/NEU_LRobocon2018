@@ -42,7 +42,9 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-
+uint8_t CAN1Buffer[8] = {0};
+uint8_t lenth = 8;
+uint32_t CAN1_ID = 0x01;
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -50,6 +52,9 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
+	
+	CAN_RxMsg(CAN1,&CAN1_ID,CAN1Buffer,&lenth);
+	
 
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
@@ -70,6 +75,8 @@ void CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
+uint8_t CAN2Buffer[8] = {0};
+uint32_t CAN2_ID = 0x02;
 void CAN2_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -77,6 +84,8 @@ void CAN2_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
+	
+	CAN_RxMsg(CAN2,&CAN2_ID,CAN2Buffer,&lenth);
 
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
