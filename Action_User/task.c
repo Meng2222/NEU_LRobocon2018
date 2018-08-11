@@ -11,6 +11,9 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
+#include "PID.H"
+
+#define CAR 1
 
 /*
 ===============================================================
@@ -20,8 +23,17 @@
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
 
-static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
-static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
+_Bool isOKFlag = 0;
+
+typedef struct
+{
+    float posX;
+    float posY;
+    float angle;
+}Pos;
+
+Pos Pos_t;
+Pos ExPos_t;
 
 void App_Task()
 {
@@ -61,27 +73,101 @@ void ConfigTask(void)
     SetVelLimit(CAN2, 1, 80000000, -80000000);
     VelLoopCfg(CAN2, 2, 80000000, 80000000);
     SetVelLimit(CAN2, 2, 80000000, -80000000);
+    USART3_Init(115200);
+    UART4_Init(921600);
+    if(CAR == 1)
+    {
+        while(!isOKFlag)
+        {
+            delay_ms(5);
+            USART_OUT(USART3, (uint8_t *)"AT\r\n");
+        };
+    }
+    else if(CAR == 4)
+    {
+        delay_s(10);
+    }
 	OSTaskSuspend(OS_PRIO_SELF);
 }
+
+//int32_t GetX(void)
+//{
+//    return (int32_t)Pos_t.posX;
+//}
+
+//int32_t GetY(void)
+//{
+//    return (int32_t)Pos_t.posY;
+//}
+int32_t GetA(void)
+{
+    return (int32_t)Pos_t.angle;
+}
+
+void circle(int32_t Num)
+{
+    if(Num != 0)
+    {
+        Num /= 2000;
+        MakeCircle(Num , Num , LEFT);
+    }
+}
+
+//void straight(int32_t Num)
+//{
+//    GoStraight((float)Num);
+//}
 
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
+    uint16_t counter = 0;
     MotorOn(CAN2, 1);
     MotorOn(CAN2, 2);
 	OSSemSet(PeriodSem, 0, &os_err);
+//    PIDCtrlStructure PidX;
+//    PIDCtrlStructure PidY;
+    PIDCtrlStructure PidA;
+    ExPos_t.angle = 0;
+//    ExPos_t.posX = 0;
+//    ExPos_t.posY = 2000;
+//    PidX.KP = 100;
+//    PidX.KI = 1;
+//    PidX.KD = 10000;
+//    PidX.GetVar = GetX;
+//    PidX.ExOut = ExPos_t.posX;
+//    PidX.Ctrl = circle;
+//    PidY.KP = 100;
+//    PidY.KI = 1;
+//    PidY.KD = 10000;
+//    PidY.GetVar = GetY;
+//    PidY.ExOut = ExPos_t.posY;
+//    PidY.Ctrl = straight;
+    PidA.KP = 1000;
+    PidA.KI = 10;
+    PidA.KD = 10000;
+    PidA.GetVar = GetA;
+    PidA.ExOut = ExPos_t.angle;
+    PidA.Ctrl = circle;
+    PIDCtrlInit();
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-        /**走直线
-        *  参数为小车走直线的速度(单位mm/s)
-        */
-        //GoStraight(500);
-
-        /**转圈
-        *  参数分别为小车中心线速度(单位mm/s),小车中心转弯半径(mm),小车转动的方向(RIGHT,LEFT)
-        */
-        MakeCircle(1000, 1000, RIGHT);
+        counter++;
+        if(counter >= 200)
+        {
+            USART_OUT(UART4, (uint8_t *)"%d\n", GetA());
+            if(ExPos_t.angle >= 180)
+            {
+                ExPos_t.angle = -180;
+            }
+            ExPos_t.angle += 90;
+            PidA.ExOut = ExPos_t.angle;
+            PIDCtrlInit();
+            counter = 0;
+        }
+        GoStraight(500);
+        PIDCtrl(&PidA);
 	}
 }
