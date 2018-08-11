@@ -43,6 +43,62 @@
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
 
+
+/*
+编写Set函数和Get函数
+*/
+
+static float angle=0,xpos=0,ypos=0;
+static int isOKFlag=0;
+
+void SetAngle(float val)
+{
+	angle=val;
+}
+
+void SetXpos(float val)
+{
+	xpos=val;
+}
+
+void SetYpos(float val)
+{
+	ypos=val;
+}
+
+float GetXpos(void)
+{
+	return xpos;
+}
+
+float GetYpos(void)
+{
+	return ypos;
+}
+
+int IsSendOK(void)
+{
+	return isOKFlag;
+}
+
+void SetOKFlagZero(void)
+{
+	isOKFlag=0;
+}
+
+void driveGyro(void)
+{
+	while(!IsSendOK())
+	{
+		delay_ms(5);
+		USART_SendData(USART3,'A');
+		USART_SendData(USART3,'T');
+		USART_SendData(USART3,'\r');
+		USART_SendData(USART3,'\n');
+		SetOKFlagZero();
+	}
+}
+
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -50,7 +106,7 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+										//这里需要写接收数据
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -162,17 +218,102 @@ void TIM5_IRQHandler(void)
 	OSIntExit();
 }
 
-void TIM3_IRQHandler(void)
+//void TIM3_IRQHandler(void)
+//{
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
+//	if (TIM_GetITStatus(TIM3, TIM_IT_Update) == SET)
+//	{
+//		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+//	}
+//	OSIntExit();
+//}
+
+void USART3_IRQHandler(void) // 更新频率 200Hz
 {
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
-	if (TIM_GetITStatus(TIM3, TIM_IT_Update) == SET)
+	static uint8_t ch;
+	static union 
 	{
-		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+		uint8_t data[24];
+		float ActVal[6];
+	} posture;
+	static uint8_t count = 0;
+	static uint8_t i = 0;
+	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
+	{
+		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
+		USART_ReceiveData(USART3);
 	}
-	OSIntExit();
+	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+	{
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		ch = USART_ReceiveData(USART3);
+	switch (count)
+	{
+		case 0:
+			if (ch == 0x0d)
+			count++;
+			else if(ch=='O')
+			count=5;
+			else
+			count = 0;
+		break;
+		case 1:
+			if (ch == 0x0a)
+			{
+			i = 0;
+			count++;
+			}
+			else
+			count = 0;
+		break;
+		case 2:
+			posture.data[i] = ch;
+			i++;
+			if (i >= 24)
+			{
+			i = 0;
+			count++;
+			}
+		break;
+		case 3:
+			if (ch == 0x0a)
+			count++;
+			else
+			count = 0;
+			break;
+		case 4:
+			if (ch == 0x0d)
+			{
+				angle =posture.ActVal[0] ;// 角度
+				posture.ActVal[1] = posture.ActVal[1];
+				posture.ActVal[2] = posture.ActVal[2];
+				xpos = posture.ActVal[3];//x
+				ypos = posture.ActVal[4];//y
+				posture.ActVal[5] = posture.ActVal[5];
+				SetXpos(xpos);
+				SetYpos(ypos);
+				SetAngle(angle);
+			}
+			count = 0;
+		break;
+		case 5:
+			count = 0;
+			if(ch=='K')
+			isOKFlag=1;
+		break;
+		default:
+			
+		break;
+	}
+	}
+	else
+	{
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		USART_ReceiveData(USART3);
+	}
 }
 
 void TIM4_IRQHandler(void)
@@ -327,20 +468,20 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-void USART3_IRQHandler(void)
-{
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
+//void USART3_IRQHandler(void)
+//{
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
 
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-	}
+//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+//	{
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+//	}
 
-	OSIntExit();
-}
+//	OSIntExit();
+//}
 
 void UART5_IRQHandler(void)
 {

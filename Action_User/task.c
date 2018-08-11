@@ -13,11 +13,21 @@
 #include "stm32f4xx_usart.h"
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
-
+void Compute();
+void SetSampleTime(int NewSampleTime);
+void SetTuning(float Kp,float Ki,float Kd);
 /*
 一个脉冲是4096/(120*Pi)
 定义输入速度mm/s和半径mm
 */
+
+unsigned long lastTime;
+float Input,Output,Setpoint;
+float errSum,lastInput;
+
+
+
+
 float ratio1,ratio2;
 void vel_radious(float vel,float radious)
 {
@@ -26,6 +36,7 @@ void vel_radious(float vel,float radious)
 	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
 	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
 }
+
 
 
 /*
@@ -71,6 +82,7 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
 
+	USART3_Init(115200);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	
@@ -97,6 +109,17 @@ void WalkTask(void)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
-		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
+//		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
+		VelCrl(CAN2,1,-4346);				//4346pulse/s，即400mm/s
+		VelCrl(CAN2,2,4346);
+		delay_ms(5000);
+		vel_radious(200,WHEEL_TREAD/2);		//以小车右轮为原点，中心到右轮距离为半径即R=L/2
 	}
 }
+
+void Compute()
+{}
+void SetTuning(float Kp,float Ki,float Kd)
+{}
+void SetSampleTime(int NewSampleTime)
+{}
