@@ -17,9 +17,8 @@
 #define ROBOT_WIDTH (490.0f)       //调试小车车宽(mm)
 #define WHEEL_WIDTH (40.0f)        //轮子宽度(mm)
 #define WHEEL_TREAD (434.0f)       //两个轮子的中心距离(mm)
-#define R (1000.0f)                //单位 mm
-#define VEL (4096.0f)              //r/s
-
+#define PI (3.14)
+#define CIRCLE_LENGTH (PI*WHEEL_DIAMETER) //车轮转一圈走的距离
 
 /*
 ===============================================================
@@ -63,6 +62,8 @@ void ConfigTask(void)
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	TIM_Init(TIM2, 1000-1, 83, 0, 2);
+	USART3_Init(115200);
+	USART4_Init(921600);  
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	ElmoInit(CAN2);
@@ -73,30 +74,55 @@ void ConfigTask(void)
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
+void walk_direct(float v) //左轮速度,单位m/s
+{
+	float vel=0,temp_vel=0.;
+	temp_vel=COUNT_PER_ROUND*v/CIRCLE_LENGTH;
+	vel=1000*temp_vel;
+	VelCrl(CAN2,1,vel); //设置右轮速度
+	VelCrl(CAN2,2,-vel); //设置左轮速度
+}
 
+float value(float r)//求取两个轮子的速度比值
+{
+	float value=0,r1=0,r2=0;
+	r1=r+(WHEEL_TREAD/2);
+	r2=r-(WHEEL_TREAD/2);
+	value=r1/r2;
+	return value;
+}
+void turn(float r,float L_w)//转弯的弯道的半径，左轮的角速度
+{
+	float L_vel=0,R_vel=0;
+	L_vel=-L_w*WHEEL_TREAD*COUNT_PER_ROUND/CIRCLE_LENGTH/2;
+	R_vel=L_vel*value(0);
+	VelCrl(CAN2,1,R_vel);
+	VelCrl(CAN2,2,-L_vel);
+}
 void WalkTask(void)
 {
-	float value(float r);
-	float VEL_1;
+	int time=0,stage=0;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
-		OSSemPend(PeriodSem, 0, &os_err);
-			VEL_1=VEL*value(R);
-			VelCrl(CAN2,1,VEL_1);
-			VelCrl(CAN2,2,-VEL);
+		OSSemPend(PeriodSem,0,&os_err);
+		time++;
+		stage=time/100;
+		switch(stage)
+		{
+			case 4:turn(0,PI/2); break;
+			case 9:turn(0,PI/2); break;
+			case 14:turn(0,PI/2); break;
+			case 19:turn(0,PI/2); break;
+			default:walk_direct(0.5); break;
+		}
+		if(time>2000)
+			time=0;
 	}
 }
-float value(float r)
-{
-	float value,r1,r2;
-	r1=r+(WHEEL_TREAD/2);
-	r2=r-(WHEEL_TREAD/2)-(ROBOT_LENGTH/2);
-	value=r1/r2;
-	return value;
-}
+
 
 	
 	
