@@ -27,6 +27,11 @@
   * @param  
   * @retval None
   */
+  
+static float angle = 0;
+static float xpos = 0;
+static float ypos = 0;
+
 void RevolveAround(uint16_t radius, uint16_t speed)
 {
 	static int PulseR = 0;
@@ -35,6 +40,36 @@ void RevolveAround(uint16_t radius, uint16_t speed)
 	PulseL = ((radius+((WHEEL_WIDTH+WHEEL_TREAD)/2))/(radius-((WHEEL_WIDTH+WHEEL_TREAD)/2))) * PulseR;
 	VelCrl(CAN2, 1, PulseR);	//右轮(正为向前)
 	VelCrl(CAN2, 2, -PulseL);	//左轮(负为向前)
+}
+
+void SetAngle(float val)
+{
+	angle = val;
+}
+
+void SetXpos(float val)
+{
+	xpos = val;
+}
+
+void SetYpos(float val)
+{
+	ypos = val;
+}
+
+float GetAngle(void)
+{
+	return angle;
+}
+
+float GetXpos(void)
+{
+	return xpos;
+}
+
+float GetYpos(void)
+{
+	return ypos;
 }
 
 

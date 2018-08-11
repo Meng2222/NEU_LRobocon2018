@@ -64,6 +64,13 @@
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 void RevolveAround(uint16_t radius, uint16_t speed);
+void SetAngle(float val);
+void SetXpos(float val);
+void SetYpos(float val);
+float GetAngle(void);
+float GetXpos(void);
+float GetYpos(void);
+
 
 
 
