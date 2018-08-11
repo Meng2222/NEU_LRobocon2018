@@ -16,11 +16,14 @@
 						信号量定义
 ===============================================================
 */
-#define KP 500.0f
+#define KP 20.0f
 #define KI 0.0f
 #define KD 0.0f
 extern Pos_t Pos;
 float errorAngle = 0;
+float phase1 = 0,phase2 = 0,Uout = 0;
+char flag = 0;
+char Dir = 0;
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
 void WalkLine(float speed);
@@ -67,15 +70,14 @@ void ConfigTask(void)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	ElmoInit(CAN2);
-	VelLoopCfg(CAN2, 1, 50000, 50000);
-	VelLoopCfg(CAN2, 2, 50000, 50000);
+	VelLoopCfg(CAN2, 1, 500000, 500000);
+	VelLoopCfg(CAN2, 2, 500000, 500000);
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
-//	TIM_Delayms(TIM1, 10000);
+	delay_s(10);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-extern int intoUSART3;
-extern int testPin;
+
 void WalkTask(void)
 {
 
@@ -86,11 +88,56 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		USART_OUT(UART4,(uint8_t*)"%d\t\r\n",intoUSART3);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t",(int)flag,(int)Dir);
 		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
-	//	USART_OUT(UART4,(uint8_t*)"%d\t\r\n",10);	
-		//WalkLine2PID(500,0);
+		//USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\r\n",(int)Pos.angle,(int)errorAngle,(int)phase1,(int)phase2);
+		//USART_OUT(UART4,(uint8_t*)"%d\t\r\n",(int)PID_Compentate(errorAngle));
+		if(Pos.y >= 950 && Dir == 1)
+		{
+			flag = 1;
+		}
+		else if(Pos.x >=950&& Dir == 0)
+		{
+			flag = 2;
+		}
+		else if(Pos.y <= 50&& Dir == 1)
+		{
+			flag = 3;
+		}
+		else if(Pos.x <= 50&& Dir == 0)
+		{
+			flag = 0;
+		}
+		switch(flag)
+		{	
+			case 0:
+				{
+					WalkLine2PID(400,0);
+					if(Pos.y >=930)
+						Dir = 1;
+				}break;
+			case 1:
+				{
+					WalkLine2PID(400,-90);
+					if(Pos.x >=930)
+						Dir = 0;
+				}break;
+			case 2:
+				{
+					
+					WalkLine2PID(400,-180);
+					if(Pos.y <= 70)
+						Dir = 1;
+				}break;
+			case 3:
+				{
+					WalkLine2PID(400,90);
+					if(Pos.x <= 70)
+						Dir = 0;
+				}break;	
+				
 		
+		}			
 	}
 }
 
@@ -112,12 +159,13 @@ void WalkLine(float vel)
 */
 void WalkLine2PID(float vel,float setAngle)
 {
-	float phase1 = 0,phase2 = 0,Uout = 0;
-	errorAngle = setAngle - Pos.angle;
-	if(errorAngle >= 0 && errorAngle <= 180)
-		Uout = PID_Compentate(errorAngle);
+	if(errorAngle > 180.0f)
+		errorAngle = 360.0f - errorAngle;
+	else if(errorAngle < -180.0f)
+		errorAngle = 360.0f + errorAngle;
 	else
-		Uout = PID_Compentate(-errorAngle);
+		errorAngle = setAngle - Pos.angle;
+	Uout = PID_Compentate(errorAngle);
 	phase1 = 4096.f * (vel + Uout)/ (WHEEL_DIAMETER * PI);
 	phase2 = 4096.f * (vel - Uout)/ (WHEEL_DIAMETER * PI);
 	VelCrl(CAN2,1,phase1);

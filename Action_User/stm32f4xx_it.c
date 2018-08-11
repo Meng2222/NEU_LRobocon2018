@@ -239,22 +239,21 @@ void USART2_IRQHandler(void)
 	OSIntExit();
 }
 Pos_t Pos;
-int intoUSART3 =0;
-int testPin = 0;
-union {
-		uint8_t data[24];
-		float ActVal[6];
-} posture;
+
+
 void USART3_IRQHandler(void) //更新频率200Hz
 {
 	static uint8_t ch;	
 	static uint8_t count = 0;
 	static uint8_t i = 0;
+	static union {
+		uint8_t data[24];
+		float ActVal[6];
+} posture;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-    intoUSART3++;
 	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
@@ -280,7 +279,6 @@ void USART3_IRQHandler(void) //更新频率200Hz
 
 		case 2:
 			posture.data[i] = (uint8_t)ch;
-			testPin = i;
 			i++;
 			if (i >= 24)
 			{
@@ -458,7 +456,6 @@ void HardFault_Handler(void)
 	/* Go to infinite loop when Hard Fault exception occurs */
 	while (1)
 	{
-				USART_OUT(UART4,(uint8_t*)" HardFault %d  testPin%d\t\r\n",intoUSART3,testPin);
 
 	}
 }
