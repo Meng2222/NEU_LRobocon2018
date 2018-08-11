@@ -10,6 +10,7 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "moveBase.h"
 
 /*
 ===============================================================
@@ -52,19 +53,41 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	TIM_Init(TIM2,999,83,0,3);
+	ElmoInit(CAN2);
+	VelLoopCfg(CAN2,1,8000,8000);
+	VelLoopCfg(CAN2,2,8000,8000);
+	MotorOn(CAN2,1);
+	MotorOn(CAN2,2);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-
+void WalkStright(float mult)
+{
+	float speed;
+	speed=4096.f*mult/(WHEEL_DIAMETER*PI);
+	VelCrl(CAN2,1,speed);
+	VelCrl(CAN2,2,-speed);
+}
+void WalkAround(float mult,float radius)
+{
+	float speed1,speed2,buff1,buff2;
+	buff1=(radius+WHEEL_TREAD/2)*mult/radius;
+	buff2=(radius-WHEEL_TREAD/2)*mult/radius;
+	speed1=COUNTS_PER_ROUND*buff1/(WHEEL_DIAMETER*PI);
+	speed2=COUNTS_PER_ROUND*buff2/(WHEEL_DIAMETER*PI);
+	VelCrl(CAN2,1,speed1);
+	VelCrl(CAN2,2,-speed2);
+}	
 void WalkTask(void)
 {
-
 	CPU_INT08U os_err;
 	os_err = os_err;
-
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+        WalkAround(200,500);
 	}
 }
