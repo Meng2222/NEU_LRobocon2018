@@ -16,7 +16,7 @@ void TIM_Init(TIM_TypeDef *TIMx, uint16_t arr, uint16_t psr, uint16_t prepri, ui
 void TIM_Delayms(TIM_TypeDef *TIMx, uint32_t DelayMs);
 void TIM_Delayus(TIM_TypeDef *TIMx, uint16_t Delayus);
 void TIM_Delay100us(TIM_TypeDef *TIMx, uint16_t Delay100us);
-
+void TIM2_Int_Init(u16 arr, u16 psc);
 void TIM3_Pwm_Init(u32 arr, u32 psc);
 void TIM4_Pwm_Init(u32 arr, u32 psc);
 void SetCompare(uint8_t Num, float Percent);

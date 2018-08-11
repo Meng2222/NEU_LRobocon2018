@@ -22,6 +22,12 @@ OS_EVENT *PeriodSem;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 
+
+
+static void ConfigTask(void);
+static void  WalkTask(void);
+
+	
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -49,22 +55,37 @@ void App_Task()
    */
 void ConfigTask(void)
 {
+	
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	VelLoopCfg(CAN2,1,4000,0);
+	VelLoopCfg(CAN2,2,4000,0);
+	
+	MotorOn(CAN2,1);
+	MotorOn(CAN2,2);
+	ElmoInit(CAN2);
+	
+	TIM_Init(TIM2,1000-1,84-1,0x00,0x01);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
 void WalkTask(void)
 {
-
+	
 	CPU_INT08U os_err;
 	os_err = os_err;
 
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
-	{
+	{	
 		OSSemPend(PeriodSem, 0, &os_err);
+		VelCrl(CAN2,1,10870);
+		VelCrl(CAN2,2,-3625);
+		
+		
 	}
 }
