@@ -249,6 +249,12 @@ void USART3_IRQHandler(void) //更新频率200Hz
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 
+	if(USART_GetITStatus(USART3,USART_IT_ORE_ER)==SET)
+	{
+		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
+		USART_ReceiveData(USART3);
+	}
+	
 	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
@@ -302,6 +308,7 @@ void USART3_IRQHandler(void) //更新频率200Hz
 				xya.x=posture.ActVal[3];
 	            xya.y=posture.ActVal[4];
 				posture.ActVal[5] = posture.ActVal[5];
+					
 			}
 			count = 0;
 			break;
@@ -318,17 +325,8 @@ void USART3_IRQHandler(void) //更新频率200Hz
 	}
 	else
 	{
-		USART_ClearITPendingBit(USART3, USART_IT_PE);
-		USART_ClearITPendingBit(USART3, USART_IT_TXE);
-		USART_ClearITPendingBit(USART3, USART_IT_TC);
-		USART_ClearITPendingBit(USART3, USART_IT_ORE_RX);
-		USART_ClearITPendingBit(USART3, USART_IT_IDLE);
-		USART_ClearITPendingBit(USART3, USART_IT_LBD);
-		USART_ClearITPendingBit(USART3, USART_IT_CTS);
-		USART_ClearITPendingBit(USART3, USART_IT_ERR);
-		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
-		USART_ClearITPendingBit(USART3, USART_IT_NE);
-		USART_ClearITPendingBit(USART3, USART_IT_FE);
+
+		USART_ClearITPendingBit(USART3,USART_IT_RXNE);
 		USART_ReceiveData(USART3);
 	}
 	OSIntExit();

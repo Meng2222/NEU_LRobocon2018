@@ -26,7 +26,7 @@ static float set_x=0;
 static float set_y=0;
 static float set_angle=0;
 int iSOKFlag=0;
-static int car;
+static int car=1;
 void driveGyro(void)
 {
 	while(!iSOKFlag)
@@ -95,19 +95,18 @@ void WalkTask(void)
     void go(float);
 	CPU_INT08U os_err;
 	os_err = os_err;
-
+    int x;
+	int y;
+	int angle;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{		
 		OSSemPend(PeriodSem,  0, &os_err);
-		USART_SendData(UART4,'0'+xya.x);
-		USART_SendData(UART4,'0'+xya.y);
-		USART_SendData(UART4,'0'+xya.angle);
-		USART_SendData(UART4,'\r');
-		USART_SendData(UART4,'\n');
-		go(0.337);
-		VelCrl(CAN2,1,Right_cr1);
-		VelCrl(CAN2,2,Left_cr2);
+		x=(int)xya.x;
+		y=(int)xya.y;
+		angle=(int)xya.angle;
+		USART_OUT(UART4,(uint8_t*)"x=%d,y=%d,angle=%d\r\n",x,y,angle);
+		go(0.674);		
 	}
 }
 void turn(float);	
@@ -121,6 +120,8 @@ void go(float v)
 	{	
 		Right_cr1=4096*V/377;		
 	    Left_cr2=-Right_cr1;
+		VelCrl(CAN2,1,Right_cr1);
+		VelCrl(CAN2,2,Left_cr2);
 	}
 	else if(fabs(xya.x-set_x)>=2000&&fabs(xya.y-set_y)>=2000)
 	{
@@ -139,8 +140,11 @@ void turn(float v)
 	while(1)
 	{
      if(xya.angle-set_angle<90)		
-	 {Right_cr1=V/217*434*4096/377;
-	  Left_cr2=0;
+	 {
+		 Right_cr1=V/217*434*4096/377;
+	     Left_cr2=0;
+		 VelCrl(CAN2,1,Right_cr1);
+		 VelCrl(CAN2,2,Left_cr2);
 	 }else if(xya.angle-set_angle>=90) 
 	 {
 		 set_x=xya.x;
