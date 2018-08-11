@@ -55,12 +55,13 @@ void ConfigTask(void)
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 //	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//can1初始化
-			RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
-
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);//can2初始化
+	USART3_Init(115200);
+	UART4_Init(921600);
 	TIM_Init(TIM2,10*1000-1,83,0x01,0x03);
-//	MotorOff(CAN2,0x001);//电机失能
-//	MotorOff(CAN2,0x002);
+	MotorOff(CAN2,0x001);//电机失能
+	MotorOff(CAN2,0x002);
 	ElmoInit(CAN2);//驱动初始化
 	VelLoopCfg(CAN2,1,2000,2000);//速度环初始化
 	VelLoopCfg(CAN2,2,2000,2000);
@@ -74,16 +75,18 @@ void ConfigTask(void)
 //	SetUnitMode(CAN2,0x001, SPEED_CONTROL_MODE);//配置驱动器为速度控制模式
 //	SetUnitMode(CAN2,0x002, SPEED_CONTROL_MODE);
 //	SetSmoothFactor(CAN2,0x001,100);//设置驱动器平滑输出
-
 	MotorOn(CAN2,1);//电机初始化
 	MotorOn(CAN2,2);
-	
+	driveGyro();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-
+extern struct position pos_t;
+int T=0;
+float setangle=90;
 void WalkTask(void)
 {
-
+	
+	float SpeedDiff=0,angle=0;
 	CPU_INT08U os_err;
 	os_err = os_err;
 
@@ -91,7 +94,22 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		circular(2,0.5,Left);
-		//straight(2);
+		straight(0.5);
+		T++;
+		if(T>=400)
+		{
+			T=0;
+			setangle+=90;
+			if(setangle>=360)
+				setangle-=360;
+		}
+		angle=GetAngle();
+		SpeedDiff=AnglePID(angle,setangle);
+		VelCrl(CAN2,0x01,exchange(0.5)-SpeedDiff);
+		VelCrl(CAN2,0x02,-exchange(0.5)-SpeedDiff);
+		if(T%50==0)
+		{
+			USART_OUT(UART4, "angle:%d	set:%d	diff:%d\n",(int)(angle),(int)(setangle),(int)(SpeedDiff));
+		}
 	}
 }

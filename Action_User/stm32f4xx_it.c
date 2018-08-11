@@ -38,6 +38,7 @@
 #include "can.h"
 #include "gpio.h"
 #include "elmo.h"
+#include "status.h"
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
@@ -72,12 +73,14 @@ void CAN1_RX0_IRQHandler(void)
   */
 void CAN2_RX0_IRQHandler(void)
 {
+	uint8_t a[2];
+	uint8_t len=2;
 	OS_CPU_SR cpu_sr;
 
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	CAN_RxMsg(CAN2,0,a,&len);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -327,18 +330,94 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-void USART3_IRQHandler(void)
+extern int isOKFlag;
+void USART3_IRQHandler(void) //更新频率 200Hz
 {
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
-
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+	float angle=0,posX=0,posY=0;
+  static uint8_t ch;
+  static union 
 	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-	}
-
+    uint8_t data[24];
+    float ActVal[6];
+  } posture;
+  static uint8_t count = 0;
+  static uint8_t i = 0;
+  if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
+  {
+    USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
+    USART_ReceiveData(USART3);
+  }
+  if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+  {
+    USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+    ch = USART_ReceiveData(USART3);
+    switch (count)
+    {
+    case 0:
+      if (ch == 0x0d)
+        count++;
+      else if(ch=='O')
+        count=5;
+      else
+        count = 0;
+      break;
+    case 1:
+      if (ch == 0x0a)
+      {
+        i = 0;
+        count++;
+      }else if(ch == 0x0d)
+			{
+				
+			}
+      else
+        count = 0;
+      break;
+    case 2:
+      posture.data[i] = ch;
+      i++;
+      if (i >= 24)
+      {
+        i = 0;
+        count++;
+      }
+      break;
+    case 3:
+      if (ch == 0x0a)
+        count++;
+      else
+        count = 0;
+      break;
+    case 4:
+      if (ch == 0x0d)
+      {
+        angle =posture.ActVal[0] ;//角度
+        posture.ActVal[1] = posture.ActVal[1];
+        posture.ActVal[2] = posture.ActVal[2];
+        posX = posture.ActVal[3];//x
+        posY = posture.ActVal[4];//y
+        //avel=posture.ActVal[5] = posture.ActVal[5];
+        SetXpos(posX);
+        SetYpos(posY);
+        SetAngle(angle);
+      }
+      count = 0;
+      break;
+    case 5:
+      count = 0;
+      if(ch=='K')
+        isOKFlag=1;
+      break;
+    default:
+      count = 0;
+      break;
+    }
+  }
+  else
+  {
+    USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+    USART_ReceiveData(USART3);
+  }
 	OSIntExit();
 }
 

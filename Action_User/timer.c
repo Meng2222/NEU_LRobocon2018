@@ -457,6 +457,22 @@ void TIM_Delayms(TIM_TypeDef *TIMx, uint32_t DelayMs)
 		TIM_Delay100us(TIMx, 10);
 	}
 }
+/**
+  * @brief  accurency time delay dunction with TIMx
+  * @param  TIMx: where x can be 1-14. 
+  * @param  DelayS:
+  * @retval None
+  * @authonr Calcus Lee
+  */
+void TIM_DelayS(TIM_TypeDef *TIMx, uint32_t DelayS)
+{
+	uint32_t i = 0;
+
+	for (i = 0; i < DelayS; i++)
+	{
+		TIM_Delayms(TIMx, 1000);
+	}
+}
 
 void TIM3_Pwm_Init(u32 arr, u32 psc)
 {

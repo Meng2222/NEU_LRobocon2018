@@ -16,6 +16,7 @@ void TIM_Init(TIM_TypeDef *TIMx, uint16_t arr, uint16_t psr, uint16_t prepri, ui
 void TIM_Delayms(TIM_TypeDef *TIMx, uint32_t DelayMs);
 void TIM_Delayus(TIM_TypeDef *TIMx, uint16_t Delayus);
 void TIM_Delay100us(TIM_TypeDef *TIMx, uint16_t Delay100us);
+void TIM_DelayS(TIM_TypeDef *TIMx, uint32_t DelayS);
 
 void TIM3_Pwm_Init(u32 arr, u32 psc);
 void TIM4_Pwm_Init(u32 arr, u32 psc);
