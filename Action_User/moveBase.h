@@ -53,7 +53,8 @@
 #define WHEEL_WIDTH (46.0f)
 //两个轮子中心距离（单位：mm）
 #define WHEEL_TREAD (355.4f)
-
+//车轮周长(mm)
+#define WHEEL_CIRCUMFERENCE (1116.3f)
 
 #include "elmo.h"
 /**
@@ -63,14 +64,16 @@
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
-void RevolveAround(uint16_t radius, uint16_t speed);
+void CircleAround(float radius, float speed); //(半径(mm)), 速度(mm/s))
+void RectangleAround(float length, float width, float speed); //(长(mm), 宽(mm), 速度(mm/s))
+float AnglePID(float Kp, float Ki, float Kd, float AngleSet, float AngleActual);
 void SetAngle(float val);
 void SetXpos(float val);
 void SetYpos(float val);
 float GetAngle(void);
 float GetXpos(void);
 float GetYpos(void);
-
+void RevolveAngle(float angle);
 
 
 

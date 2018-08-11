@@ -41,6 +41,7 @@
 #include "moveBase.h"
 
 extern OS_EVENT *PeriodSem;
+extern OS_EVENT *BluetoothSem;
 float angle = 0;
 float posX = 0;
 float posY = 0;
@@ -120,6 +121,7 @@ void TIM2_IRQHandler(void)
 		if (periodCounter == 0)
 		{
 			OSSemPost(PeriodSem);
+			OSSemPost(BluetoothSem);
 			periodCounter = PERIOD_COUNTER;
 		}
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
@@ -347,8 +349,8 @@ void USART3_IRQHandler(void)
 	static uint8_t i = 0;
 	if(USART_GetITStatus(UART5,USART_IT_ORE_ER) ==SET)
 	{
-	USART_ClearITPendingBit(UART4,USART_IT_ORE_ER);
-	USART_ReceiveData(USART3);
+		USART_ClearITPendingBit(UART4,USART_IT_ORE_ER);
+		USART_ReceiveData(USART3);
 	}
 	if (USART_GetITStatus(USART1, USART_IT_RXNE) == SET)
 	{
