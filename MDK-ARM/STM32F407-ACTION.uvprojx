@@ -426,6 +426,11 @@
               <FileType>1</FileType>
               <FilePath>..\Action_User\moveBase.c</FilePath>
             </File>
+            <File>
+              <FileName>walk.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\walk.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

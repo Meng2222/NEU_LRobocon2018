@@ -60,8 +60,6 @@ void MotorOn(CAN_TypeDef* CANx, uint8_t ElmoNum)
 		timeout++;
 		if(timeout > 60000)
 		{
-			//在这里应加入异常处理
-			
 		}
 	}
 }
