@@ -47,8 +47,7 @@
 /*
 编写Set函数和Get函数
 */
-
-static float angle=0,xpos=0,ypos=0;
+float angle=0,xpos=0,ypos=0;
 static int isOKFlag=0;
 
 void SetAngle(float val)
@@ -64,6 +63,11 @@ void SetXpos(float val)
 void SetYpos(float val)
 {
 	ypos=val;
+}
+
+float GetAngle(void)
+{
+	return angle;
 }
 
 float GetXpos(void)
@@ -99,6 +103,12 @@ void driveGyro(void)
 	}
 }
 
+
+
+uint8_t disacard[]={0};
+uint32_t a;
+uint8_t b;
+
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -106,7 +116,9 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-										//这里需要写接收数据
+	
+	CAN_RxMsg(CAN1,&a,disacard,&b);								//这里需要写接收数据
+	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -133,7 +145,9 @@ void CAN2_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	
+	CAN_RxMsg(CAN2,&a,disacard,&b);	
+	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);

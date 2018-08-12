@@ -13,7 +13,16 @@
 #include "stm32f4xx_usart.h"
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
-void Compute();
+
+//typedef struct
+//{
+//	float x;
+//	float y;
+//	float angle;
+//} Pos;
+
+
+void Compute(void);
 void SetSampleTime(int NewSampleTime);
 void SetTuning(float Kp,float Ki,float Kd);
 /*
@@ -22,10 +31,12 @@ void SetTuning(float Kp,float Ki,float Kd);
 */
 
 unsigned long lastTime;
-float Input,Output,Setpoint;
-float errSum,lastInput;
-
-
+float Input,Output,Setpoint=0;
+float errSum,lastInput,lasterror;
+float Kp,Ki,Kd;
+int SampleTime=1000;
+extern float angle,xpos,ypos;
+//Pos carpos;
 
 
 float ratio1,ratio2;
@@ -36,6 +47,19 @@ void vel_radious(float vel,float radious)
 	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
 	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
 }
+
+void walk_stragiht(void)
+{
+	VelCrl(CAN2,1,-2173);				//2173pulse/s，即200mm/s
+	VelCrl(CAN2,2,2173);
+}
+
+void walk_around(void)
+{
+	vel_radious(200,WHEEL_TREAD/2);		//以小车右轮为原点，中心到右轮距离为半径即R=L/2	
+}
+
+
 
 
 
@@ -80,9 +104,11 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	
 	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
-
+	UART4_Init(921600);
 	USART3_Init(115200);
+	
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	
@@ -93,7 +119,7 @@ void ConfigTask(void)
 	MotorOn(CAN2,1);							//电机使能（通电）
 	MotorOn(CAN2,2);
 	
-	
+	delay_s(10);								//等待10s挂起
 	OSTaskSuspend(OS_PRIO_SELF);
 	
 }
@@ -107,19 +133,31 @@ void WalkTask(void)
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
-
 		OSSemPend(PeriodSem, 0, &os_err);
+		USART_OUT(UART4,(uint8_t*)"angle=%d\t\t",(int)GetAngle());
+		USART_OUT(UART4,(uint8_t*)"xpos=%d\t\t",(int)GetXpos());
+		USART_OUT(UART4,(uint8_t*)"ypos=%d\r\n",(int)GetYpos());
 //		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
-		VelCrl(CAN2,1,-4346);				//4346pulse/s，即400mm/s
-		VelCrl(CAN2,2,4346);
-		delay_ms(5000);
-		vel_radious(200,WHEEL_TREAD/2);		//以小车右轮为原点，中心到右轮距离为半径即R=L/2
+
+//		delay_ms(5000);
+
 	}
 }
 
-void Compute()
-{}
+void Compute(void)				//PID控制
+{
+	Input=GetAngle();
+	float error = Setpoint - Input;
+	errSum+=error;
+	float dErr=error-lasterror;
+	Output=Kp*error+Ki*errSum+Kd*dErr;
+	lasterror=error;
+}
 void SetTuning(float Kp,float Ki,float Kd)
-{}
-void SetSampleTime(int NewSampleTime)
-{}
+{
+	double SampleTimeInSec=((double)SampleTime)/1000;
+	Kp=Kp;
+	Ki=Ki*SampleTimeInSec;
+	Kd=Kd*SampleTimeInSec;
+}
+
