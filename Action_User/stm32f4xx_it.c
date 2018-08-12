@@ -44,6 +44,8 @@
 /******************************************************************************/
 //uint8_t CAN1Buffer[8]= {0};
 //uint8_t CAN2Buffer[8]= {0};
+char pposokflag = 0;
+char isOKFlag = 0;
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -263,6 +265,8 @@ void USART3_IRQHandler(void) //更新频率200Hz
 		case 0:
 			if (ch == 0x0d)
 				count++;
+			else if(ch == 'O')
+				count = 5;
 			else
 				count = 0;
 			break;
@@ -297,7 +301,7 @@ void USART3_IRQHandler(void) //更新频率200Hz
 		case 4:
 			if (ch == 0x0d)
 			{
-
+				pposokflag = 1;
 				Pos.angle = posture.ActVal[0];
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
@@ -307,7 +311,11 @@ void USART3_IRQHandler(void) //更新频率200Hz
 			}
 			count = 0;
 			break;
-
+		case 5:
+			count = 0;
+		if(ch == 'K')
+			isOKFlag = 1;
+			break;
 		default:
 			count = 0;
 			break;

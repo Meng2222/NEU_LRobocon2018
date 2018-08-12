@@ -16,14 +16,15 @@
 						信号量定义
 ===============================================================
 */
-#define KP 23.0f
+#define KP 20.0f
 #define KI 0.0f
-#define KD 0.0f
+#define KD 1.0f
+#define CARNUM  4 
+extern char pposokflag;
 extern Pos_t Pos;
 float errorAngle = 0;
 float phase1 = 0,phase2 = 0,Uout = 0;
 char flag = 0;
-char Dir = 0;
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
 void WalkLine(float speed);
@@ -32,7 +33,18 @@ void WalkRound(float vel,float radius,char side);
 float PID_Compentate(float err);
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
-
+extern char isOKFlag;
+void driveGyro(void){
+	while(!isOKFlag)
+	{
+		delay_ms(5);
+		USART_SendData(USART3,'A');
+		USART_SendData(USART3,'T');
+		USART_SendData(USART3,'\r');
+		USART_SendData(USART3,'\n');
+	}
+	isOKFlag = 0;
+}
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -58,6 +70,12 @@ void App_Task()
    初始化任务
    ===============================================================
    */
+typedef struct {
+	float x;
+	float y;
+}PosNow_t;//定义转换位置时存当时位置
+PosNow_t PosNow;
+char posFlag = 0;//需要存位置标志
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
@@ -74,70 +92,89 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2, 2, 500000, 500000);
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
+	delay_s(2);
+	#if CARNUM == 1
+	driveGyro();
+	while(!pposokflag);
+	#elif CARNUM == 4
 	delay_s(10);
+	#endif
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
 void WalkTask(void)
 {
-
+	
 	CPU_INT08U os_err;
 	os_err = os_err;
-
+	int cnt = 0;
+	PosNow_t PosNow = {
+		.x = 0,
+		.y = 0
+	};
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		USART_OUT(UART4,(uint8_t*)"%d\t%d\t",(int)flag,(int)Dir);
-		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
-		//USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\r\n",(int)Pos.angle,(int)errorAngle,(int)phase1,(int)phase2);
-		//USART_OUT(UART4,(uint8_t*)"%d\t\r\n",(int)PID_Compentate(errorAngle));
-		if(Pos.y >= 900 && Dir == 1)
+		cnt++;
+		if(cnt>=10)
 		{
-			flag = 1;
+			USART_OUT(UART4,(uint8_t*)"%d\t",(int)flag);
+			USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
+			USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",(int)phase1,(int)phase2);
+			cnt = 0;
 		}
-		else if(Pos.x >=900&& Dir == 0)
+#if CARNUM == 4
+		if(posFlag == 1)
 		{
-			flag = 2;
-		}
-		else if(Pos.y <= 100&& Dir == 1)
-		{
-			flag = 3;
-		}
-		else if(Pos.x <= 100&& Dir == 0)
-		{
-			flag = 0;
+			PosNow.x = Pos.x;
+			PosNow.y = Pos.y;
+			posFlag = 0;
 		}
 		switch(flag)
-		{	
+		{
 			case 0:
+			{
+				WalkLine2PID(400,0);
+				if(Pos.y >= PosNow.y + 1340)
 				{
-					WalkLine2PID(400,0);
-					if(Pos.y >=900)
-						Dir = 1;
-				}break;
+					flag = 1;
+					posFlag = 1;
+				}
+			}break;
 			case 1:
+			{
+				WalkLine2PID(400,-90);
+				if(Pos.x >= PosNow.x + 1340)
 				{
-					WalkLine2PID(400,-90);
-					if(Pos.x >=900)
-						Dir = 0;
-				}break;
+					flag = 2;
+					posFlag = 1;
+				}
+			}break;
 			case 2:
+			{
+				WalkLine2PID(400,-180);
+				if(Pos.y <= PosNow.y - 1340)
 				{
-					
-					WalkLine2PID(400,-180);
-					if(Pos.y <= 100)
-						Dir = 1;
-				}break;
+					flag = 3;
+					posFlag = 1;
+				}
+			}break;
 			case 3:
+			{
+				WalkLine2PID(400,90);
+				if(Pos.x <= PosNow.x - 1340)
 				{
-					WalkLine2PID(400,90);
-					if(Pos.x <= 100)
-						Dir = 0;
-				}break;	
-				
+					flag = 0;
+					posFlag = 1;
+				}
+			}break;
+			default: 
+				break;	
 		
-		}			
+		}
+		#elif CARNUM == 1
+		#endif
 	}
 }
 
@@ -161,7 +198,7 @@ void WalkLine2PID(float vel,float setAngle)
 {
 	errorAngle = setAngle - Pos.angle;
 	if(errorAngle > 180.0f)
-		errorAngle = 360.0f - errorAngle;
+		errorAngle = errorAngle - 360.0f;
 	else if(errorAngle < -180.0f)
 		errorAngle = 360.0f + errorAngle;		
 	Uout = PID_Compentate(errorAngle);
