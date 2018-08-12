@@ -328,14 +328,12 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	OSIntExit();
 }
-typedef struct{
-	float posX;
-	float posY;
-	float angle;
-}Pos_t;
-Pos_t position;
+
+
 float avel;
 int isOKFlag;
+int posokflag;
+struct Pos_t position;
 void USART3_IRQHandler(void) //更新频率 200Hz 
 {  
   static uint8_t ch;  
@@ -395,11 +393,12 @@ void USART3_IRQHandler(void) //更新频率 200Hz
     case 4:   
 			if (ch == 0x0d)  
 			{ 
+				posokflag=1;
 			  position.angle =posture.ActVal[0] ;//角度  
 				posture.ActVal[1] = posture.ActVal[1];    
 				posture.ActVal[2] = posture.ActVal[2];    
-				position.posX = posture.ActVal[3];//x    
-				position.posY = posture.ActVal[4];//y      
+				position.X = posture.ActVal[3];//x    
+				position.Y = posture.ActVal[4];//y      
 				avel=posture.ActVal[5] = posture.ActVal[5];      
 			}    
 			count = 0;    
