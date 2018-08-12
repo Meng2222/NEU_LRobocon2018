@@ -16,7 +16,7 @@
 						信号量定义
 ===============================================================
 */
-#define KP 20.0f
+#define KP 23.0f
 #define KI 0.0f
 #define KD 0.0f
 extern Pos_t Pos;
@@ -92,19 +92,19 @@ void WalkTask(void)
 		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
 		//USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\r\n",(int)Pos.angle,(int)errorAngle,(int)phase1,(int)phase2);
 		//USART_OUT(UART4,(uint8_t*)"%d\t\r\n",(int)PID_Compentate(errorAngle));
-		if(Pos.y >= 950 && Dir == 1)
+		if(Pos.y >= 900 && Dir == 1)
 		{
 			flag = 1;
 		}
-		else if(Pos.x >=950&& Dir == 0)
+		else if(Pos.x >=900&& Dir == 0)
 		{
 			flag = 2;
 		}
-		else if(Pos.y <= 50&& Dir == 1)
+		else if(Pos.y <= 100&& Dir == 1)
 		{
 			flag = 3;
 		}
-		else if(Pos.x <= 50&& Dir == 0)
+		else if(Pos.x <= 100&& Dir == 0)
 		{
 			flag = 0;
 		}
@@ -113,26 +113,26 @@ void WalkTask(void)
 			case 0:
 				{
 					WalkLine2PID(400,0);
-					if(Pos.y >=930)
+					if(Pos.y >=900)
 						Dir = 1;
 				}break;
 			case 1:
 				{
 					WalkLine2PID(400,-90);
-					if(Pos.x >=930)
+					if(Pos.x >=900)
 						Dir = 0;
 				}break;
 			case 2:
 				{
 					
 					WalkLine2PID(400,-180);
-					if(Pos.y <= 70)
+					if(Pos.y <= 100)
 						Dir = 1;
 				}break;
 			case 3:
 				{
 					WalkLine2PID(400,90);
-					if(Pos.x <= 70)
+					if(Pos.x <= 100)
 						Dir = 0;
 				}break;	
 				
@@ -159,12 +159,11 @@ void WalkLine(float vel)
 */
 void WalkLine2PID(float vel,float setAngle)
 {
+	errorAngle = setAngle - Pos.angle;
 	if(errorAngle > 180.0f)
 		errorAngle = 360.0f - errorAngle;
 	else if(errorAngle < -180.0f)
-		errorAngle = 360.0f + errorAngle;
-	else
-		errorAngle = setAngle - Pos.angle;
+		errorAngle = 360.0f + errorAngle;		
 	Uout = PID_Compentate(errorAngle);
 	phase1 = 4096.f * (vel + Uout)/ (WHEEL_DIAMETER * PI);
 	phase2 = 4096.f * (vel - Uout)/ (WHEEL_DIAMETER * PI);
