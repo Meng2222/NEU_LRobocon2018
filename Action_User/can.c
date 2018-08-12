@@ -243,6 +243,7 @@ void CAN_Config(CAN_TypeDef *CANx,
 		GPIO_AF_CANx = GPIO_AF_CAN2;
 		CAN_FilterInitStructure.CAN_FilterNumber = 14; //Filter 14
 		NVIC_InitStructure.NVIC_IRQChannel = CAN2_RX0_IRQn;
+		RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 		RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN2, ENABLE);
 		break;
 	}

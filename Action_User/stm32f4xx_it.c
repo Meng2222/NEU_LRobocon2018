@@ -42,9 +42,11 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-
+uint8_t Msg[8];
+uint8_t len=4;
 void CAN1_RX0_IRQHandler(void)
 {
+	CAN_RxMsg(CAN2 , 0 , Msg , &len);
 	OS_CPU_SR cpu_sr;
 
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
@@ -72,6 +74,7 @@ void CAN1_RX0_IRQHandler(void)
   */
 void CAN2_RX0_IRQHandler(void)
 {
+	CAN_RxMsg(CAN2 , 0 , Msg , &len);
 	OS_CPU_SR cpu_sr;
 
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
@@ -94,9 +97,10 @@ void CAN2_RX0_IRQHandler(void)
 /*************定时器2******start************/
 //每1ms调用一次
 
-extern OS_EVENT *PeriodSem;
 
-void TIM2_IRQHandler(void)
+extern OS_EVENT *PeriodSem;
+int t=0;
+void TIM2_IRQHandler(void)//定时器中断
 {
 #define PERIOD_COUNTER 10
 
@@ -107,10 +111,9 @@ void TIM2_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-
+		 t++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
@@ -170,7 +173,8 @@ void TIM3_IRQHandler(void)
 	OS_EXIT_CRITICAL();
 	if (TIM_GetITStatus(TIM3, TIM_IT_Update) == SET)
 	{
-		TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+		
+	TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
 	}
 	OSIntExit();
 }
@@ -327,19 +331,93 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-void USART3_IRQHandler(void)
+float Ang;
+float X;
+float Y;
+float avel;
+extern int isOKFlag;
+void USART3_IRQHandler(void)//更新频率200Hz
 {
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
-
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
+	
+	static uint8_t ch;
+	static union
+	{ 
+	uint8_t data[24];
+	float ActVal[6];
+	} posture;
+	static uint8_t count = 0;
+	static uint8_t i = 0;
+	
+	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
+	{   
+		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
+		USART_ReceiveData(USART3);
+	}
+	
 	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-	}
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);   
+		ch = USART_ReceiveData(USART3);   
+		switch (count)   
+		{  
+			case 0:
+				if (ch == 0x0d)     count++;
+			    else if(ch=='O')    count=5;
+				else     count = 0;    
+			    break; 
+			 
+			case 1:
+				if (ch == 0x0a)    {     i = 0;     count++;    }
+				else     count = 0; 
+				break;
 
-	OSIntExit();
+			case 2:
+				posture.data[i] = ch;    
+			    i++;
+				if (i >= 24)    {     i = 0;     count++;    }
+				break;
+
+			case 3:
+				if (ch == 0x0a)     count++;
+				else     count = 0;
+				break;
+
+			case 4:
+				if (ch == 0x0d)
+				{
+				 Ang=posture.ActVal[0] ;//角度
+				 posture.ActVal[1] = posture.ActVal[1];
+				 posture.ActVal[2] = posture.ActVal[2];
+				 X = posture.ActVal[3];//x
+				 Y = posture.ActVal[4];//y
+				 avel=posture.ActVal[5]=posture.ActVal[5];
+//				 SetXpos(posX);
+//				 SetYpos(posY);
+//				 SetAngle(angle);
+				}
+				count = 0;
+				break;
+			case 5:
+				count=0;
+			    if(ch=='K')
+					isOKFlag=1;
+				break;
+
+			default:
+				count = 0;
+				break;
+		}
+	}
+	else
+	{
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		USART_ReceiveData(USART3);
+	}
+//	OSIntExit();
 }
 
 void UART5_IRQHandler(void)
