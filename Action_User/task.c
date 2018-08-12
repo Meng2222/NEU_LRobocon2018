@@ -11,7 +11,6 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
-extern Pos_t a;
 /*
 ===============================================================
 						信号量定义
@@ -63,10 +62,11 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	TIM_Init(TIM2,999,83,0,3);
-	USART3_Init(115200);
-    Motor_Init();
+	TIM_Init(TIM2,999,83,0,0);
 	TIM_Delayms(TIM3,10000);
+	USART3_Init(115200);   //定位器串口
+	UART4_Init(921600);    //蓝牙串口
+    Motor_Init();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 int Uk(float error,float Kp,float Ki,float Kd)
@@ -82,13 +82,13 @@ int Uk(float error,float Kp,float Ki,float Kd)
       i++;
      return u;
 }
-void WalkStright(void)//直线走
+void WalkStright(float mult)//直线走
 {
-	float speed,errorAng,mult;
-	errorAng=a.angle;
-	mult=Uk(errorAng,10,0,0);
+	float speed,errorAng,u;
+	errorAng=GetAngle();
+	u=Uk(errorAng,5,0,0);
 	speed=4096.f*mult/(WHEEL_DIAMETER*PI);
-	VelCrl(CAN2,1,speed);
+	VelCrl(CAN2,1,u+speed);
 	VelCrl(CAN2,2,-speed);
 }
 void WalkAround(float mult,float radius)
@@ -109,7 +109,9 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-
-//        WalkAround(200,500);
+		USART_OUT(UART4,(uint8_t*)"angle=%d",(int)GetAngle());
+		USART_OUT(UART4,(uint8_t*)"x=%d",(int)GetXpos());
+		USART_OUT(UART4,(uint8_t*)"y=%d\r\n",(int)GetYpos());
+        WalkStright(0);
 	}
 }

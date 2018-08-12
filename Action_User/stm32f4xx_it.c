@@ -45,12 +45,13 @@
 
 void CAN1_RX0_IRQHandler(void)
 {
+	unsigned char buff1[3];
 	OS_CPU_SR cpu_sr;
 
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+    CAN_RxMsg(CAN1,buff1,3);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -73,11 +74,11 @@ void CAN1_RX0_IRQHandler(void)
 void CAN2_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
-
+    unsigned char buff2[3];
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+    CAN_RxMsg(CAN2,buff2,3);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -190,15 +191,13 @@ void TIM4_IRQHandler(void)
 
 void UART4_IRQHandler(void)
 {
-
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
 	if (USART_GetITStatus(UART4, USART_IT_RXNE) == SET)
 	{
-
+       
 		USART_ClearITPendingBit(UART4, USART_IT_RXNE);
 	}
 	OSIntExit();
@@ -326,10 +325,36 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	OSIntExit();
 }
-Pos_t a;
+static float angle=0,xpos=0,ypos=0;
+void SetAngle(float val)
+{
+   angle=val;
+}
+void SetXpos(float val)
+{
+    xpos=val;
+}
+void SetYpos(float val)
+{
+    ypos=val;
+}
+float GetAngle(void)
+{
+    return angle;
+}
+float GetXpos(void)
+{
+    return xpos;
+}
+float GetYpos(void)
+{
+    return ypos;
+}
+
 void USART3_IRQHandler(void) //更新频率 200Hz
 {
 	static uint8_t ch;
+	static float Angle=0,posX=0,posY=0;
 	static union 
 	{
 		uint8_t data[24];
@@ -382,11 +407,14 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 			case 4:
 			if (ch == 0x0d)
 			{
-			a.angle =posture.ActVal[0] ;//角度
+			Angle =posture.ActVal[0] ;//角度
 			posture.ActVal[1] = posture.ActVal[1];
 			posture.ActVal[2] = posture.ActVal[2];
-			a.x = posture.ActVal[3];//x
-			a.y = posture.ActVal[4];//y
+			posX = posture.ActVal[3];//x
+			posY = posture.ActVal[4];//y
+			SetXpos(posX);
+			SetYpos(posY);
+			SetAngle(Angle);
 			}
 		count = 0;
 		break;

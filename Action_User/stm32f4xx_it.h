@@ -47,15 +47,16 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
+void SetAngle(float val);
+void SetXpos(float val);
+void SetYpos(float val);
+float GetAngle(void);
+float GetXpos(void);
+float GetYpos(void);
 #ifdef __cplusplus
 }
 #endif
-typedef struct
-{
-	float x;
-	float y;
-	float angle;
-}Pos_t;
+
 #endif /* __STM32F4xx_IT_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
