@@ -47,6 +47,7 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
+_Bool GetOkFlag(void);
 
 #ifdef __cplusplus
 }

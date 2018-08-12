@@ -13,7 +13,7 @@
 #include "moveBase.h"
 #include "PID.H"
 
-#define CAR 1
+#define CAR4
 
 
 /*
@@ -23,8 +23,6 @@
 */
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
-
-_Bool isOKFlag = 0;
 
 typedef struct
 {
@@ -74,31 +72,28 @@ void ConfigTask(void)
 	ElmoInit(CAN2);
     USART3_Init(115200);
     UART4_Init(921600);
-    if(CAR == 1)
+#ifdef CAR1
+    while(GetOkFlag())
     {
-        while(!isOKFlag)
-        {
-            delay_ms(5);
-            USART_OUT(USART3, (uint8_t *)"AT\r\n");
-        };
-    }
-    else if(CAR == 4)
-    {
-        delay_s(10);
-    }
+        delay_ms(5);
+        USART_OUT(USART3, (uint8_t *)"AT\r\n");
+    };
+#endif
+#ifdef CAR4
+    delay_s(10);
+#endif
 	OSTaskSuspend(OS_PRIO_SELF);
-	
 }
 
-//int32_t GetX(void)
-//{
-//    return (int32_t)Pos_t.posX;
-//}
+int32_t GetX(void)
+{
+    return (int32_t)Pos_t.posX;
+}
 
-//int32_t GetY(void)
-//{
-//    return (int32_t)Pos_t.posY;
-//}
+int32_t GetY(void)
+{
+    return (int32_t)Pos_t.posY;
+}
 int32_t GetA(void)
 {
     return (int32_t)Pos_t.angle;
@@ -106,10 +101,18 @@ int32_t GetA(void)
 
 void circle(int32_t Num)
 {
+    USART_OUT(UART4, (uint8_t *)"%d\n", Num);
     if(Num != 0)
     {
         Num /= 2000;
-        MakeCircle(Num , Num , LEFT);
+        if(Num > 0)
+        {
+            MakeCircle(Num, 500 , LEFT);
+        }
+        else
+        {
+            MakeCircle(-1 * Num, -500, RIGHT);
+        }
     }
 }
 
@@ -144,31 +147,38 @@ void WalkTask(void)
 //    PidY.GetVar = GetY;
 //    PidY.ExOut = ExPos_t.posY;
 //    PidY.Ctrl = straight;
-    PidA.KP = 1000;
-    PidA.KI = 10;
-    PidA.KD = 10000;
+    PidA.KP = 100;
+    PidA.KI = 20;
+    PidA.KD = 200;
     PidA.GetVar = GetA;
     PidA.ExOut = ExPos_t.angle;
     PidA.Ctrl = circle;
     PIDCtrlInit();
 	while (1)
 	{
-
 		OSSemPend(PeriodSem, 0, &os_err);
         counter++;
-        if(counter >= 200)
+        if(counter >= 400)
         {
-            USART_OUT(UART4, (uint8_t *)"%d\n", GetA());
-            if(ExPos_t.angle >= 180)
+            USART_OUT(UART4, (uint8_t *)"%d    ", GetX());
+            USART_OUT(UART4, (uint8_t *)"%d    ", GetY());
+            USART_OUT(UART4, (uint8_t *)"%d    \n", GetA());
+            if(ExPos_t.angle <= -180)
             {
-                ExPos_t.angle = -180;
+                ExPos_t.angle = 180;
             }
-            ExPos_t.angle += 90;
+            ExPos_t.angle -= 90;
             PidA.ExOut = ExPos_t.angle;
             PIDCtrlInit();
             counter = 0;
         }
-        GoStraight(500);
-        PIDCtrl(&PidA);
+        if(ExPos_t.angle - GetA() == 0)
+        {
+            //GoStraight(500);
+        }
+        else
+        {
+            PIDCtrl(&PidA);
+        }
 	}
 }

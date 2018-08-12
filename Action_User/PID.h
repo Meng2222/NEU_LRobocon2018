@@ -8,6 +8,7 @@ static int32_t err = 0;
 static int32_t iSum = 0;
 static int32_t lasterr = 0;
 static int32_t dDiff = 0;
+static int32_t varGetted = 0;
 
 typedef struct
 {
@@ -21,5 +22,6 @@ typedef struct
 
 void PIDCtrl(PIDCtrlStructure *);
 void PIDCtrlInit(void);
+int32_t ExRep(int32_t ExAngle, int32_t GetA);
 
 #endif

@@ -334,6 +334,9 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
+_Bool isOKFlag = 0;
+
+
 void USART3_IRQHandler(void)
 {
     extern _Bool isOKFlag;
@@ -447,6 +450,16 @@ void USART3_IRQHandler(void)
 		USART_ReceiveData(USART3);
 	}
 	OSIntExit();
+}
+
+_Bool GetOkFlag(void)
+{
+    if(isOKFlag)
+    {
+        isOKFlag = 0;
+        return 1;
+    }
+    return 0;
 }
 
 void UART5_IRQHandler(void)
