@@ -27,6 +27,7 @@ static float set_y=0;
 static float set_angle=0;
 int iSOKFlag=0;
 static int car=1;
+static int n=0;
 void driveGyro(void)
 {
 	while(!iSOKFlag)
@@ -36,6 +37,7 @@ void driveGyro(void)
 		USART_SendData(USART3,'T');
 		USART_SendData(USART3,'\r');
 		USART_SendData(USART3,'\n');
+	
 	}
 	iSOKFlag=0;
 }
@@ -64,12 +66,13 @@ void App_Task()
    初始化任务
    ===============================================================
    */
+extern uint8_t opsFlag;
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	TIM_Init(TIM2,1000-1,84-1,0x010,0x03);
+	TIM_Init(TIM2,1000-1,84-1,0x00,0x00);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
@@ -79,12 +82,16 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2,2,10000,10000);
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
+	delay_s(2);
+	
 	if(car==1)
 	{	
      driveGyro();
-		
+     USART_OUT(UART4,(uint8_t*)"OKOPSOPS");
+	 while(!opsFlag);
 	}else if (car==4)
      delay_s(10);	
+	
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
@@ -106,7 +113,7 @@ void WalkTask(void)
 		y=(int)xya.y;
 		angle=(int)xya.angle;
 		USART_OUT(UART4,(uint8_t*)"x=%d,y=%d,angle=%d\r\n",x,y,angle);
-		go(0.674);		
+		go(0.377);		
 	}
 }
 void turn(float);	
@@ -116,15 +123,18 @@ void go(float v)
 	float V=v*1000;
 	
 
-	if(fabs(xya.x-set_x)<2000&&fabs(xya.y-set_y)<2000)
+	if(fabs(xya.x-set_x)<1000&&fabs(xya.y-set_y)<1000)
 	{	
 		Right_cr1=4096*V/377;		
 	    Left_cr2=-Right_cr1;
 		VelCrl(CAN2,1,Right_cr1);
 		VelCrl(CAN2,2,Left_cr2);
+		
+		
 	}
-	else if(fabs(xya.x-set_x)>=2000&&fabs(xya.y-set_y)>=2000)
-	{
+	else if(fabs(xya.x-set_x)>=1000||fabs(xya.y-set_y)>=1000)
+	{   
+		
 		turn(v);
 	}
 		
@@ -133,20 +143,37 @@ void turn(float v)
 { 
 	float V=v*1000;
 	
-	if(xya.angle==180)
-	set_angle=-xya.angle;
-	else set_angle=xya.angle;	
-    
+	if(n==0)
+        set_angle=0;
+	else if(n==1)
+		set_angle=-90;
+	else if(n==2)
+		set_angle=180;
+	else if(n==3)
+	{
+		n=-1;
+		set_angle=90;
+    }
 	while(1)
 	{
-     if(xya.angle-set_angle<90)		
-	 {
+     if(fabs(xya.angle-set_angle)<90)		
+	 {   
+		 int x;
+	     int y;
+	     int angle;
+		 int Set_angle;
 		 Right_cr1=V/217*434*4096/377;
 	     Left_cr2=0;
 		 VelCrl(CAN2,1,Right_cr1);
 		 VelCrl(CAN2,2,Left_cr2);
-	 }else if(xya.angle-set_angle>=90) 
-	 {
+		 x=(int)xya.x;
+		 y=(int)xya.y;
+		 angle=(int)xya.angle;
+		 Set_angle=(int)set_angle;
+		USART_OUT(UART4,(uint8_t*)"x=%d,y=%d,angle=%d,set_angle=%d\r\n",x,y,angle,set_angle);
+		 
+	 }else if(fabs(xya.angle-set_angle)>=90) 
+	 {   n++;
 		 set_x=xya.x;
 		 set_y=xya.y;
 		 break;
@@ -158,7 +185,6 @@ void turn(float v)
 
 static float setangle;
 static float Kp;
-static float Ki;
 static float Kd;
 static float Aout=0;
 static float nowerror=0;
@@ -170,6 +196,5 @@ void Anglepid(void)
 	nowerror=setangle-xya.angle;
 	adderror+=nowerror;
 	Aout+=Kp*nowerror;
-	Aout+=Ki*adderror;
 	Aout+=Kd*(nowerror-lasterror);	
 }

@@ -235,6 +235,7 @@ void USART2_IRQHandler(void)
 }
 extern pos_t xya;
 extern int iSOKFlag;
+uint8_t opsFlag = 0;
 void USART3_IRQHandler(void) //更新频率200Hz
 {
 	static uint8_t ch;
@@ -301,7 +302,7 @@ void USART3_IRQHandler(void) //更新频率200Hz
 		case 4:
 			if (ch == 0x0d)
 			{
-
+				opsFlag = 1;
 				xya.angle = posture.ActVal[0];
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
