@@ -14,6 +14,7 @@
 #define CW 1
 #define manual 1
 #define Auto 0
+
 /*
 ===============================================================
 						信号量定义
@@ -86,6 +87,7 @@ int angle_set = 0;
 //}
 
 extern u8 isOKFlag;
+extern u8 issendOK;
 void driveGyro(void)
 {
 	while(!isOKFlag)
@@ -97,6 +99,8 @@ void driveGyro(void)
 		USART_SendData(USART3,'\n');
 	}
 	isOKFlag = 0;
+	while(!issendOK);
+	issendOK = 0;
 }
 
 float kp = 20;
@@ -208,9 +212,8 @@ void PID_Coordinate(float x0,float y0,int v)
 	if(posture.ActVal[3]>x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(90-((atan((y0-posture.ActVal[4])/(posture.ActVal[3]-x0)))*(180/3.141592))),posture.ActVal[0],v);
 	if(posture.ActVal[3]<x0 && posture.ActVal[4]>y0) PID_Angle(Auto,(-90-((atan((posture.ActVal[4]-y0)/(x0-posture.ActVal[3])))*(180/3.141592))),posture.ActVal[0],v);
 	if(posture.ActVal[3]<x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(-90+((atan((y0-posture.ActVal[4])/(x0-posture.ActVal[3])))*(180/3.141592))),posture.ActVal[0],v);
-	if((x0-100)<posture.ActVal[3] && posture.ActVal[3]<(x0+100) && (y0-100)<posture.ActVal[4] && posture.ActVal[4]<(y0+100)) coordinateCnt++;
+	if((x0-50)<posture.ActVal[3] && posture.ActVal[3]<(x0+50) && (y0-50)<posture.ActVal[4] && posture.ActVal[4]<(y0+50)) coordinateCnt++;
 }
-
 
 /*
 ===============================================================
@@ -259,8 +262,12 @@ void ConfigTask(void)
 	MotorOn(CAN2,2);                                                 //左电机使能
 	USART3_Init(115200);
 	UART4_Init(921600);
+	#if CarNumber == 4
 	TIM_Delayms(TIM4,15000);
-//	driveGyro();
+	#elif CarNumber == 1
+	TIM_Delayms(TIM4,5000);
+	driveGyro();
+	#endif
 //	MotorOff(CAN2,2);                                                //左电机失能
 //	MotorOff(CAN2,1);                                                //右电机失能
 	
@@ -281,30 +288,80 @@ void WalkTask(void)
 	int lasttime = 0;
 	int time = 0;
 	angle_set = 0;
+//	int x_last = 0;
+//	int y_last = 0;
+//	int v = 0;
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
 
 		cnt++;
-
 		if(cnt>799) cnt = 0;
-		switch (coordinateCnt)
-		{
-			case 0:
-				PID_Coordinate(0,0,1000);
-				break;
-			case 1:
-				PID_Coordinate(0,2000,1000);
-				break;
-			case 2:
-				PID_Coordinate(-2000,2000,1000);
-				break;
-			case 3:
-				PID_Coordinate(-2000,0,1000);
-				break;
-		}
-		if(coordinateCnt == 4) coordinateCnt=0;
+		
+//pid坐标
 
+//		switch (coordinateCnt)
+//		{
+//			case 0:
+//				PID_Coordinate(0,0,500);
+//				break;
+//			case 1:
+//				PID_Coordinate(1500,1500,500);
+//				break;
+//			case 2:
+//				PID_Coordinate(1000,2000,1000);
+//				break;
+//			case 3:
+//				PID_Coordinate(0,1500,1000);
+//				break;
+//			case 4:
+//				PID_Coordinate(-1000,2000,1000);
+//				break;
+//			case 5:
+//				PID_Coordinate(-1500,1500,1000);
+//				break;
+//		}
+//		if(coordinateCnt == 6) coordinateCnt=0;
+
+		
+		
+//			pid方向
+//		if(posture.ActVal[3]-x_last > 1800 || posture.ActVal[3]-x_last < -1800 || posture.ActVal[4]-y_last > 1800 || posture.ActVal[4]-y_last < -1800)
+//		{
+//			coordinateCnt++;
+//			x_last = posture.ActVal[3];
+//			y_last = posture.ActVal[4];
+//		}
+//		
+//		switch (coordinateCnt)
+//		{
+//			case 0:
+//				angle_set = 0;
+//				v = 0;
+//				if(posture.ActVal[0]>-5 && posture.ActVal[0]<5) v=500;
+//				PID_Angle(Auto,angle_set,posture.ActVal[0],v);
+//				break;
+//			case 1:
+//				angle_set = 90;
+//				v = 0;
+//				if(posture.ActVal[0]>85 && posture.ActVal[0]<95) v=500;
+//				PID_Angle(Auto,angle_set,posture.ActVal[0],v);
+//				break;
+//			case 2:
+//				angle_set = 180;
+//				v = 0;
+//				if(posture.ActVal[0]>175 || posture.ActVal[0]<-175) v=500;
+//				PID_Angle(Auto,angle_set,posture.ActVal[0],v);
+//				break;
+//			case 3:
+//				angle_set = -90;
+//				v = 0;
+//				if(posture.ActVal[0]>-95 && posture.ActVal[0]<-85) v=500;
+//				PID_Angle(Auto,angle_set,posture.ActVal[0],v);
+//				break;
+//		}
+//		if(coordinateCnt == 4) coordinateCnt=0;
+		
 		time = cnt/10;
 		if(lasttime != time)
 		{
@@ -312,6 +369,10 @@ void WalkTask(void)
 			USART_OUT(UART4,(uint8_t*)"x = %d  ", (int)posture.ActVal[3]);
 			USART_OUT(UART4,(uint8_t*)"y = %d  ", (int)posture.ActVal[4]);
 			USART_OUT(UART4,(uint8_t*)"v = %d  ", (int)velocity);
+										         
+//			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[3]);
+//			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[4]);
+			
 			USART_SendData(UART4,'\r');
 			USART_SendData(UART4,'\n');
 			lasttime = time;

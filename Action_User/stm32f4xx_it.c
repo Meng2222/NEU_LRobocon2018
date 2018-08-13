@@ -39,6 +39,7 @@
 #include "gpio.h"
 #include "elmo.h"
 
+
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
@@ -561,7 +562,7 @@ void DebugMon_Handler(void)
 
 
 u8 isOKFlag = 0;
-
+u8 issendOK = 0;
 float angle = 0;
 
 union u8andfloat
@@ -569,6 +570,12 @@ union u8andfloat
 	uint8_t data[24];
 	float ActVal[6];  
 }posture;
+
+union
+{
+	uint8_t data[24];
+	float ActVal[6];
+}receieve;
 void USART3_IRQHandler(void) //更新频率 200Hz 
 { 
 	static uint8_t ch;  	  
@@ -603,7 +610,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 			else count = 0;   
 			break;  
 		case 2:    
-			posture.data[i] = ch;  
+			receieve.data[i] = ch;  
 			i++;   
 			if (i >= 24)  
 			{   
@@ -618,16 +625,26 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 		case 4:  
 			if (ch == 0x0d)  
 			{    
-				angle = posture.ActVal[0] ;//角度    
-				posture.ActVal[1] = posture.ActVal[1];    
-				posture.ActVal[2] = posture.ActVal[2];     
-				posture.ActVal[3] = posture.ActVal[3];//x    
-				posture.ActVal[4] = posture.ActVal[4];//y      
-				posture.ActVal[5] = posture.ActVal[5];     
+				#if CarNumber == 4
+				posture.ActVal[0] = receieve.ActVal[0] ;//角度    
+				posture.ActVal[1] = receieve.ActVal[1];    
+				posture.ActVal[2] = receieve.ActVal[2];     
+				posture.ActVal[3] = receieve.ActVal[3];//x    
+				posture.ActVal[4] = receieve.ActVal[4];//y      
+				posture.ActVal[5] = receieve.ActVal[5];
+				#elif CarNumber == 1
+				posture.ActVal[0] = -receieve.ActVal[0] ;//角度    
+				posture.ActVal[1] = receieve.ActVal[1];    
+				posture.ActVal[2] = receieve.ActVal[2];     
+				posture.ActVal[3] = receieve.ActVal[4];//x  
+				posture.ActVal[4] = -receieve.ActVal[3];//y 				     
+				posture.ActVal[5] = receieve.ActVal[5];				
+				#endif
 		//		SetXpos(posX);     
 		//		SetYpos(posY);     
 		//		SetAngle(angle);    
-			} 
+			} 			
+			issendOK = 1;
 			count = 0;    
 			break;   
 		case 5:    
