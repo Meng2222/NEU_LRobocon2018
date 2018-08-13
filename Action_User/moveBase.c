@@ -75,30 +75,124 @@ void Round(float rightSpeed,float radius)
 }
 
 /**
-  * @brief  走直线
+  * @brief  PID 转弯
   * @note	
-  * @param  speed：给定速度
+* @param  angle：给定角度,为正左转，为负右转
+  * @param  getAngle：现在的角度
   * @retval None
   */
 
-void Turn(uint8_t dir,float angle)
+void Turn(float angle)
 {
-	int32_t pulseNum;
-	float getAngle;
-	float speed;
-	PidPara(1.0,0.1,0.1);
+	int32_t pulseNum=0;
+	int32_t bPulseNum=(700*4095)/(PI*WHEEL_DIAMETER);
+	float getAngle=0;
+	float speed=0;
 	getAngle=GetAngle();
-	speed=Pid(getAngle,angle,ON);
-	if(dir)
+	speed=Pid(angle,getAngle);	
+	
+	pulseNum=(speed*4095)/(PI*WHEEL_DIAMETER);
+	VelCrl(CAN2, 0x01,bPulseNum+pulseNum);
+	VelCrl(CAN2, 0x02,pulseNum-bPulseNum);
+//	if(err > 0.0)
+//	{
+//		VelCrl(CAN2, 0x01,pulseNum);
+//		VelCrl(CAN2, 0x02,0);
+//	}
+//	else
+//	{
+//		VelCrl(CAN2, 0x01,0);
+//		VelCrl(CAN2, 0x02,pulseNum);
+//	}
+
+
+}	
+ 
+/**
+  * @brief  PID 回正
+  * @note	
+  * @param  angle：给定角度
+  * @param  getAngle：现在的角度
+  * @retval None
+  */
+
+void BTP(float angle)
+{
+	int32_t pulseNum=0;
+	int32_t bPulseNum=(700*4095)/(PI*WHEEL_DIAMETER);
+	float getAngle=0;
+	float speed=0;
+	getAngle=GetAngle();
+	
+	speed=Pid(angle,getAngle);
+	pulseNum=(speed*4095)/(PI*WHEEL_DIAMETER);
+	
+	VelCrl(CAN2, 0x01,bPulseNum+pulseNum);
+	VelCrl(CAN2, 0x02,pulseNum-bPulseNum);
+
+}
+
+/**
+  * @brief  走方形
+  * @note	
+  * @param  
+  * @retval None
+  */
+
+void Square(void)
+{
+	float x;
+	float y;
+	
+	static uint8_t flg=0;
+	x=GetPosX();
+	y=GetPosY();
+	
+	if(flg == 0)
 	{
-		pulseNum=(speed*4095*1000)/(PI*WHEEL_DIAMETER);
-		VelCrl(CAN2, 0x01,pulseNum);
+		if(y > 1600.0)
+		{
+			flg++;
+		}
+		else
+		{
+			Turn(0.0);
+		}
 	}
-	else
+	else if(flg == 1)
 	{
-		pulseNum=-(speed*4095*1000)/(PI*WHEEL_DIAMETER);
-		VelCrl(CAN2, 0x02,-pulseNum);
+		if(x > 1600.0)
+		{
+			flg++;
+		}
+		else
+		{
+			Turn(-90.0);
+		}
 	}
+	else if(flg == 2)
+	{
+		if(y < 400.0)
+		{
+			flg++;
+		}
+		else
+		{
+			Turn(-180.0);
+		}
+	}
+	else if(flg == 3)
+	{
+		if(x < 400.0)
+		{
+			flg=0;
+		}
+		else
+		{
+			Turn(90.0);
+		}
+	}
+	
 }
 
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/

@@ -1,35 +1,39 @@
 #include "pid.h"
 
-static float outMax;
-static float outMin;
-float kp;
-float ki;
-float kd;
+static float outMax=800;
+static float outMin=-800;
+static float kp;
+static float ki;
+static float kd;
 
-float Pid(uint16_t valueNow,uint16_t valueSet,uint8_t swt)
+
+float Pid(float valueSet,float valueNow)
 {
-	static float valueOut=0;
+	
 	float err=0;
+	float valueOut=0;
 	static float errLast=0;
 	static float iTerm=0;
-	if(PidSwitch(swt) == 0) return valueOut;
-	else if(PidSwitch(swt) == 2)
-	{
-		iTerm=valueOut; 
-		if(iTerm> outMax) iTerm= outMax; 
-		else if(iTerm< outMin) iTerm= outMin; 
-	}
-	
+
 	err=valueSet-valueNow;
-	iTerm+=ki*err;
+	if(err > 180)
+	{
+		err=err-360;
+	}
+	else if(err < -180)
+	{
+		err=360+err;
+	}
+	iTerm+=(ki*err);
+
+	if(iTerm > outMax) iTerm=outMax;
+	if(iTerm < outMin) iTerm=outMin;
 	
 	valueOut=(kp*err)+iTerm+(kd*(err-errLast));
+	
 	if(valueOut > outMax) valueOut=outMax;
 	if(valueOut < outMin) valueOut=outMin;
-	
-	
 	errLast=err;
-	
 	return valueOut;
 }
 
@@ -40,14 +44,14 @@ uint8_t PidSwitch(uint8_t sw)
 	if(!sw) 
 	{
 		swLast=sw; 
-		return 0;
+		return 0; 
 	}
-	if(sw != swLast) 
+	if((sw == 1) && (sw != swLast)) 
 	{
 		swLast=sw; 
 		return 2;
 	}
-	else
+	else if ((sw == 1) && (swLast == sw))
 	{
 		swLast=sw; 
 		return 1;

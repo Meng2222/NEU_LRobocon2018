@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include "pid.h"
 #include "stm32f4xx_it.h"
+#include "usart.h"
 
 /* Includes ------------------------------------------------------------------*/
 
@@ -41,7 +42,7 @@
   * @{
   */
 
-#define PI 3.14
+#define PI (3.1415926)
 #define TURN_RIGHT 0
 #define TURN_LEFT  1
 
@@ -56,13 +57,8 @@
 //轮子宽度（单位：mm）
 #define WHEEL_WIDTH (40.0f)
 //两个轮子中心距离（单位：mm）
-<<<<<<< HEAD
 #define WHEEL_TREAD (424.0f)
-=======
-#define WHEEL_TREAD (434.0f)
 
-#define Pi 3.1415926
->>>>>>> master
 
 
 /**
@@ -76,7 +72,10 @@
 
 void Straight(float speed);
 void Round(float rightSpeed,float radius);
-void Turn(uint8_t dir,float anlage);
+void Turn(float angle);
+void BTP(float angle);
+void Square(void);
+
 #endif /* ___H */
 
 

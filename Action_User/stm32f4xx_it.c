@@ -50,7 +50,7 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -72,12 +72,18 @@ void CAN1_RX0_IRQHandler(void)
   */
 void CAN2_RX0_IRQHandler(void)
 {
+	uint8_t CAN2Buffer[4];
+	CanRxMsg RxMessage;
+	uint8_t* len;
+	uint8_t length=4;
+	len=&length;
 	OS_CPU_SR cpu_sr;
 
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	CAN_RxMsg(CAN2,0,CAN2Buffer,len
+	);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -327,18 +333,10 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-typedef struct
-{
-	float angle;
-	float x;
-	float y;
-}pos_t;
 
-static float angle;
-static float x;
-static float y;
 
-pos_t pos;
+static float angle=0,posX=0,posY=0;
+
 extern uint8_t isOKFlag;
 
 void USART3_IRQHandler(void) //更新频率 200Hz 
@@ -390,7 +388,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 			 case 2: 
 				 posture.data[i] = ch; 
 				 i++; 
-				 if (i >= 22) 
+				 if (i >= 24) 
 				 { 
 					 i = 0; 
 					 count++; 
@@ -404,18 +402,16 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 				 count++; 
 				 else 
 				 count = 0; 
-				 break; 
-
-			 
-
+				 break;
 			 case 4: 
 				 if (ch == 0x0d) 
 				 { 
-					 pos.angle =posture.ActVal[0] ;//角度 
+					 isOKFlag=1;
+					 angle =posture.ActVal[0] ;//角度 
 					 posture.ActVal[1] = posture.ActVal[1]; 
 					 posture.ActVal[2] = posture.ActVal[2]; 
-					 pos.x = posture.ActVal[3];//x 
-					 pos.y = posture.ActVal[4];//y 
+					 posX = posture.ActVal[3];//x 
+					 posY = posture.ActVal[4];//y 
 					 posture.ActVal[5] = posture.ActVal[5]; 
 				 } 
 				 count = 0; 
@@ -442,18 +438,6 @@ void USART3_IRQHandler(void) //更新频率 200Hz
  
  
 } 
-void SetAngle(void)
-{
-	angle=pos.angle;
-}
-void SetX(void)
-{
-	x=pos.x;
-}
-void SetY(void)
-{
-	y=pos.y;
-}
 
 float GetAngle(void)
 {
@@ -461,11 +445,11 @@ float GetAngle(void)
 }
 float GetPosX(void)
 {
-	return x;
+	return posX;
 }
 float GetPosY(void)
 {
-	return y;
+	return posY;
 }
 
 void UART5_IRQHandler(void)
