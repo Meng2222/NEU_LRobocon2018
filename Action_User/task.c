@@ -28,6 +28,13 @@ static float set_angle=0;
 int iSOKFlag=0;
 static int car=1;
 static int n=0;
+static float setangle;
+static float Kp=300;
+static float Kd=10;
+static float Aout=0;
+static float nowerror=0;
+static float lasterror=0;
+static float adderror=0;
 void driveGyro(void)
 {
 	while(!iSOKFlag)
@@ -98,7 +105,7 @@ void ConfigTask(void)
 static int Right_cr1;
 static int Left_cr2;
 void WalkTask(void)
-{
+{   void Anglepid();
     void go(float);
 	CPU_INT08U os_err;
 	os_err = os_err;
@@ -109,30 +116,62 @@ void WalkTask(void)
 	while (1)
 	{		
 		OSSemPend(PeriodSem,  0, &os_err);
+		
 		x=(int)xya.x;
 		y=(int)xya.y;
 		angle=(int)xya.angle;
-		USART_OUT(UART4,(uint8_t*)"x=%d,y=%d,angle=%d\r\n",x,y,angle);
-		go(0.377);		
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",x,y);
+//		setangle=0;
+//		Anglepid();
+//		Right_cr1=2048-Aout;		
+//	    Left_cr2=-2048-Aout;
+//		VelCrl(CAN2,1,Right_cr1);
+//		VelCrl(CAN2,2,Left_cr2);
+		
+		go(0.754);
+//		Right_cr1=4096;		
+//	    Left_cr2=-4096;
+//		VelCrl(CAN2,1,Right_cr1);
+//		VelCrl(CAN2,2,Left_cr2);
+		
 	}
 }
 void turn(float);	
 void go(float v)
-{   
-    
+{ 
+	Kp=200;
+    void Anglepid();
 	float V=v*1000;
+	if(n==0)
+	{   
+     	setangle=0;
+	}
+	else if(n==1)
+	{
+		setangle=-90;
+	}
+	else if(n==2)
+	{	if(xya.angle>=0)	
+		setangle=180;
+		else if(xya.angle<=0)
+		setangle=-180;
+	}
+	else if(n==3)
+	{
+		setangle=90;
+    }
 	
-
-	if(fabs(xya.x-set_x)<1000&&fabs(xya.y-set_y)<1000)
+	if(fabs(xya.x-set_x)<1750&&fabs(xya.y-set_y)<1750)
 	{	
-		Right_cr1=4096*V/377;		
-	    Left_cr2=-Right_cr1;
+		Anglepid();
+		Right_cr1=4096*V/377-Aout;		
+	    Left_cr2=-4096*V/377-Aout;
 		VelCrl(CAN2,1,Right_cr1);
 		VelCrl(CAN2,2,Left_cr2);
 		
 		
 	}
-	else if(fabs(xya.x-set_x)>=1000||fabs(xya.y-set_y)>=1000)
+	else if(fabs(xya.x-set_x)>=1750||fabs(xya.y-set_y)>=1750)
 	{   
 		
 		turn(v);
@@ -141,39 +180,66 @@ void go(float v)
 }
 void turn(float v)
 { 
+    void Anglepid();
 	float V=v*1000;
 	
 	if(n==0)
-        set_angle=0;
+	{   set_angle=0;
+     	setangle=-90;
+	}
 	else if(n==1)
+	{
 		set_angle=-90;
+		setangle=-180;
+	}
 	else if(n==2)
+	{
 		set_angle=180;
+		setangle=90;
+	}
 	else if(n==3)
 	{
 		n=-1;
 		set_angle=90;
+		setangle=0;
     }
 	while(1)
 	{
      if(fabs(xya.angle-set_angle)<90)		
-	 {   
+	 { 
+		 Kp=100;
 		 int x;
 	     int y;
 	     int angle;
 		 int Set_angle;
-		 Right_cr1=V/217*434*4096/377;
-	     Left_cr2=0;
+		 
+		 if(set_angle==180)
+		 {
+			 if(xya.angle<0)
+			 
+				 xya.angle+=360;
+				 
+		 }	
+			 
+				 
+		
+		 Anglepid();
+		 Right_cr1=1024-Aout;
+	     Left_cr2=1024-Aout;
 		 VelCrl(CAN2,1,Right_cr1);
 		 VelCrl(CAN2,2,Left_cr2);
 		 x=(int)xya.x;
 		 y=(int)xya.y;
 		 angle=(int)xya.angle;
 		 Set_angle=(int)set_angle;
-		USART_OUT(UART4,(uint8_t*)"x=%d,y=%d,angle=%d,set_angle=%d\r\n",x,y,angle,set_angle);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",x,y);
 		 
 	 }else if(fabs(xya.angle-set_angle)>=90) 
-	 {   n++;
+	 { 
+		 VelCrl(CAN2,1,0);
+		 VelCrl(CAN2,2,0);
+		 delay_ms(20);
+		 n++;
 		 set_x=xya.x;
 		 set_y=xya.y;
 		 break;
@@ -183,18 +249,11 @@ void turn(float v)
 }
 	
 
-static float setangle;
-static float Kp;
-static float Kd;
-static float Aout=0;
-static float nowerror=0;
-static float lasterror=0;
-static float adderror=0;
+
 void Anglepid(void)
 {   
 	lasterror=nowerror;
 	nowerror=setangle-xya.angle;
 	adderror+=nowerror;
-	Aout+=Kp*nowerror;
-	Aout+=Kd*(nowerror-lasterror);	
+	Aout=Kp*nowerror;	
 }
