@@ -11,7 +11,14 @@
   ******************************************************************************
   */
 /* Includes -------------------------------------------------------------------------------------------*/
+float K1p=100;
 
+
+float K1i=0.002;
+float K1d=0.002;
+float K2p=50;
+float K2i=0.003;
+float K2d=0.002;
 #include "moveBase.h"
 #include "includes.h"
 #include <app_cfg.h>
@@ -27,6 +34,8 @@
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
   #define PAI 3.14 
+  #define duty_1 20
+  #define duty_2 1 
 /* Private typedef ------------------------------------------------------------------------------------*/
 /* Private define -------------------------------------------------------------------------------------*/
 /* Private macro --------------------------------------------------------------------------------------*/
@@ -44,6 +53,8 @@
   * @param  ElmoNum1:1号电机ID号，ElmoNum2：2号电机ID号
   * @retval None
   */
+
+	
 void  go_round(float V,float R,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx)
 {
 	float v1=0,v2=0;
@@ -84,52 +95,98 @@ void correct_direction()
 	
 }
 
+	float Ierr_1=0;
+    float pre_err_1=0;
+    float Derr_1=0;
+    float err_value_1;
+    float Uk_1=0;
+	int motor1_value_1=0;
+	int motor2_value_1=0;
+ 
+    float Ierr_2=0;
+    float pre_err_2=0;
+    float Derr_2=0;
+    float err_value_2;
+     float Uk_2=0;
+	int motor1_value_2=0;
+	int motor2_value_2=0;
 
-#define K1p  2//
-#define K1i  2//
-#define K1d  2//
+
+
 
 //指定角度转弯
-float turn(float setValue,float feedbackValue)
+void turn(float setValue,float feedbackValue)
 {
-	float Ierr=0;
-    float pre_err=0;
-    float Derr=0;
-    float err_value;
-    static int Uk;
-    float last_angle=0;
-	int motor1_value=0;
-	int motor2_value=0;
-	err_value=setValue-feedbackValue;
-	Ierr=err_value+Ierr;
-	Derr=err_value-pre_err;
-	Uk=err_value*K1p +Ierr*K1i+Derr*K1d ;//Uk是我要更改的角度
-	motor1_value=0;
-	motor2_value=(int)(-(Uk*WHEEL_TREAD/0.005)*4095/(PAI*0.001*WHEEL_DIAMETER)); 
-	VelCrl(CAN2, 01,motor1_value);
-	VelCrl(CAN2, 02,motor2_value);
-    pre_err=err_value;
+    
+	err_value_1=setValue-feedbackValue;
+	//处理突变
+	if(err_value_1>180)
+	err_value_1=err_value_1-360;
+	if(err_value_1<-180)
+	err_value_1=360+err_value_1;
+	
+	
+	Ierr_1=err_value_1+Ierr_1;
+	Derr_1=err_value_1-pre_err_1;
+	Uk_1=err_value_1*K1p;//Uk是我要更改的角度            P调节
+	
+//	惯性过冲限制
+	if(Uk_1>10000)
+	Uk_1=10000;
+	if(Uk_1<-10000)
+	Uk_1=-10000;
+	
+	
+//	if(Uk_1<-180)
+//	Uk_1=360+Uk_1;
+	
+	//Uk_1=-Uk_1;//一号车角度反向
+	
+	motor1_value_1=(int)Uk_1;
+	motor2_value_1=(int)Uk_1; 
+	VelCrl(CAN2, 01,motor1_value_1);
+	VelCrl(CAN2, 02,motor2_value_1);
+	//USART_OUT( UART4, (uint8_t*)"Amotor value: " );
+	//USART_OUT( UART4, (uint8_t*)"%d ",motor1_value_1 );
+	//USART_OUT( UART4, (uint8_t*)"%d ",motor2_value_1 );
+    pre_err_1=err_value_1;
 }
+
+
+
+
+
 //直行
-float straight(float setValue,float feedbackValue)
+void straight(float setValue,float feedbackValue)
 {
-	float Ierr=0;
-    float pre_err=0;
-    float Derr=0;
-    float err_value;
-    static int Uk;
-    float last_angle=0;
-	int motor1_value=0;
-	int motor2_value=0;
-    err_value=setValue-feedbackValue;
-	Ierr=err_value+Ierr;
-	Derr=err_value-pre_err;
-	pre_err=err_value;
-	Uk=err_value*K1p +Ierr*K1i+Derr*K1d ;//Uk是我要调整的前进的距离
-	motor1_value=(int)(Uk/0.005)*4095/(PAI*0.001*WHEEL_DIAMETER);
-	motor2_value=(int)(-(Uk/0.005)*4095/(PAI*0.001*WHEEL_DIAMETER));
-	VelCrl(CAN2, 01,motor1_value);
-	VelCrl(CAN2, 02,motor2_value);
+	extern int mission;
+	extern int car;
+    err_value_2=setValue-feedbackValue;
+
+	Ierr_2=err_value_2+Ierr_2;
+	Derr_2=err_value_2-pre_err_2;
+	pre_err_2=err_value_2;
+	Uk_2=err_value_2*K2p;//Uk是我要调整的前进的距离
+    if(Uk_2>=10000)
+		Uk_2=10000;
+	if(Uk_2<=-10000)
+		Uk_2=-10000;
+	if((mission==4||mission==7)&&car==4)
+	{
+		Uk_2=-Uk_2;
+	}
+		if((mission==1||mission==4)&&car==1)
+	{
+		Uk_2=-Uk_2;
+	}
+		motor1_value_2=(int)Uk_2;
+	    motor2_value_2=(int)-Uk_2;
+	
+	VelCrl(CAN2, 01,motor1_value_2);
+	VelCrl(CAN2, 02,motor2_value_2);
+  //  USART_OUT( UART4, (uint8_t*)"Vmotor value: " );
+  //	USART_OUT( UART4, (uint8_t*)"%d ",motor1_value_2 );
+//	USART_OUT( UART4, (uint8_t*)"%d ",motor2_value_2 );
 }
 
 

@@ -42,11 +42,7 @@
 //#define 
 
 //电机旋转一周的脉冲数
-<<<<<<< HEAD
-#define COUNTS_PER_ROUND (4096.0f)
-=======
-#define COUNTS_PER_ROUND (4096.f)
->>>>>>> NieWeijian
+
 //轮子直径（单位：mm）
 #define WHEEL_DIAMETER (120.0f)
 //调试小车车长（单位：mm）
@@ -57,11 +53,10 @@
 #define WHEEL_WIDTH (40.0f)
 //两个轮子中心距离（单位：mm）
 #define WHEEL_TREAD (434.0f)
-<<<<<<< HEAD
+
 
 #define Pi 3.1415926
-=======
->>>>>>> NieWeijian
+
 
 
 /**
