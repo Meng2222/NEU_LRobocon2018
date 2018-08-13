@@ -38,7 +38,6 @@
 #include "can.h"
 #include "gpio.h"
 #include "elmo.h"
-
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
@@ -299,6 +298,7 @@ void USART3_IRQHandler(void) //更新频率200Hz
 			break;
 
 		case 4:
+			#if CARNUM == 4
 			if (ch == 0x0d)
 			{
 				pposokflag = 1;
@@ -309,6 +309,18 @@ void USART3_IRQHandler(void) //更新频率200Hz
 				Pos.y = posture.ActVal[4];
 				posture.ActVal[5] = posture.ActVal[5];
 			}
+			#elif CARNUM == 1
+			if (ch == 0x0d)
+			{
+				pposokflag = 1;
+				Pos.angle = -posture.ActVal[0];
+				posture.ActVal[1] = posture.ActVal[1];
+				posture.ActVal[2] = posture.ActVal[2];
+				Pos.y = -posture.ActVal[3];
+				Pos.x = posture.ActVal[4];
+				posture.ActVal[5] = posture.ActVal[5];
+			}
+			#endif
 			count = 0;
 			break;
 		case 5:

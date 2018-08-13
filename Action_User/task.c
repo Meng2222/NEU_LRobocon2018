@@ -16,10 +16,10 @@
 						信号量定义
 ===============================================================
 */
-#define KP 20.0f
+#define KP 18.0f
 #define KI 0.0f
-#define KD 1.0f
-#define CARNUM  4 
+#define KD 1.2f
+
 extern char pposokflag;
 extern Pos_t Pos;
 float errorAngle = 0;
@@ -121,10 +121,10 @@ void WalkTask(void)
 		{
 			USART_OUT(UART4,(uint8_t*)"%d\t",(int)flag);
 			USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
-			USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",(int)phase1,(int)phase2);
+//			USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",(int)phase1,(int)phase2);
+			USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",(int)PosNow.x,(int)PosNow.y);
 			cnt = 0;
 		}
-#if CARNUM == 4
 		if(posFlag == 1)
 		{
 			PosNow.x = Pos.x;
@@ -173,8 +173,6 @@ void WalkTask(void)
 				break;	
 		
 		}
-		#elif CARNUM == 1
-		#endif
 	}
 }
 
