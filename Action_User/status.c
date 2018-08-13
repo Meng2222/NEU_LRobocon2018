@@ -97,21 +97,55 @@ float GetAngle(void)
 	return pos_t.angle;
 }
 
-float LastAngleErr=0;
+float LastAngleErr=0,i=0;
+int ChangeFlag=0;
+extern int T;
 float AnglePID(float Angle,float SetAngle)
 {
 	struct PID Ang;
-	Ang.p=10;
+	Ang.p=180;
 	Ang.i=0;
-	Ang.d=1;
-	float err=0,u=0,i=0;
-	err=SetAngle-Angle;
+	Ang.d=0;
+	float err=0,u=0,err1=0,err2=0;
+	err1=SetAngle-Angle;
+	if(err1>=0)
+		err2=err1-360;
+	else
+		err2=360+err1;
+	if(err1>180||err1<-180)
+	{
+		err=err2;
+	}
+	else
+	{
+		err=err1;
+	}
 	i+=err;
 	u=Ang.p*err+Ang.i*i+Ang.d*(err-LastAngleErr);
+	if(T%10==0)
+		USART_OUT(UART4, "err:%d	case:%d\r\n",(int)err,ChangeFlag);
 	LastAngleErr=err;
 	return u;
 }
+extern float setangle;
 
+int AngleChange(void)
+{
+	int flag=0;
+	flag=1;
+	if(pos_t.y>=2000&&ChangeFlag==0&&setangle==0)
+		ChangeFlag=1;
+	else if(pos_t.x<=-2000&&ChangeFlag==1&&setangle==90)
+		ChangeFlag=2;
+	else if(pos_t.y<=0&&ChangeFlag==2&&(setangle==180||setangle==-180))
+		ChangeFlag=3;
+	else if(pos_t.x>=0&&ChangeFlag==3&&setangle==-90)
+		ChangeFlag=0;
+	else
+		flag=0;
+	return flag;
+}
+	
 //以下车1专用
 int isOKFlag=0;
 int isSendOK(void)

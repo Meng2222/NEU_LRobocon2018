@@ -13,6 +13,7 @@ float GetXpos(void);
 float GetYpos(void);
 float GetAngle(void);
 float AnglePID(float Angle,float SetAngle);
+int AngleChange(void);
 
 struct PID
 {

@@ -95,14 +95,16 @@ void ConfigTask(void)
 //	SetSmoothFactor(CAN2,0x001,100);//设置驱动器平滑输出
 	MotorOn(CAN2,1);//电机初始化
 	MotorOn(CAN2,2);
-//	driveGyro();//车1
-	delay_s(10);//车4
-	OSTaskSuspend(OS_PRIO_SELF);
+	delay_s(2);
+	//driveGyro();//车1
+	delay_s(8);//车4
+	
+  OSTaskSuspend(OS_PRIO_SELF);
 	
 }
 extern struct position pos_t;
-int T=0;
 float setangle=0;
+int	T=0;
 void WalkTask(void)
 {
 	
@@ -115,12 +117,13 @@ void WalkTask(void)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
-		//straight(0.2);
-		if(T>=400)
+		T++;
+		//straight(0.1);
+		if(AngleChange())
 		{
 			T=0;
-			setangle+=0;
-			if(setangle>=180)
+			setangle+=90;
+			if(setangle>180)
 			{
 				setangle-=360;
 			}
@@ -131,7 +134,7 @@ void WalkTask(void)
 		VelCrl(CAN2,0x02,-exchange(0.5)+SpeedDiff);
 		if(T%10==0)
 		{
-			USART_OUT(UART4, "angle:%d set:%d	0x01:%d	0x02:%d\n",(int)(angle),(int)(setangle),(int)(exchange(0.5)-SpeedDiff),(int)(exchange(0.5)+SpeedDiff));
+			USART_OUT(UART4, "angle:%d  set:%d	x:%d	y:%d\r\n",(int)(angle),(int)(setangle),(int)(GetXpos()),(int)(GetYpos()));
 		}
 
 	}
