@@ -29,16 +29,6 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_it.h"
-#include "stm32f4xx.h"
-#include <ucos_ii.h>
-#include "app_cfg.h"
-#include <math.h>
-#include "usart.h"
-#include "timer.h"
-#include "can.h"
-#include "gpio.h"
-#include "elmo.h"
-#include "moveBase.h"
 
 
 extern OS_EVENT *MoveSem;

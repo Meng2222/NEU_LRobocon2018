@@ -12,11 +12,53 @@
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
 
+
 /*
 ===============================================================
 						信号量定义
 ===============================================================
 */
+extern float angle;
+extern float xpos;
+extern float ypos;
+
+#define ROBOT 4
+
+#if ROBOT == 1
+	float GetAngle(void)
+	{
+		return -angle;
+	}
+
+	float GetXpos(void)
+	{
+		return -ypos;
+	}
+
+	float GetYpos(void)
+	{
+		return -xpos;
+	}
+	
+#elif ROBOT == 4
+	float GetAngle(void)
+	{
+		return angle;
+	}
+
+	float GetXpos(void)
+	{
+		return xpos;
+	}
+
+	float GetYpos(void)
+	{
+		return ypos;
+	}
+#endif
+
+
+	
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *MoveSem;
 OS_EVENT *BluetoothSem;

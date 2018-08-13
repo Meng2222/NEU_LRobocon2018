@@ -29,6 +29,17 @@
 #ifndef __STM32F4xx_IT_H
 #define __STM32F4xx_IT_H
 
+#include "stm32f4xx.h"
+#include <ucos_ii.h>
+#include "app_cfg.h"
+#include <math.h>
+#include "usart.h"
+#include "timer.h"
+#include "can.h"
+#include "gpio.h"
+#include "elmo.h"
+#include "moveBase.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

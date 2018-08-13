@@ -33,9 +33,9 @@ uint8_t LocationFlag = 0;
 float   PID_SetAngle = 0;
 float Error = 0;
 float AngleControl = 0;
-static float angle = 0;
-static float xpos = 0;
-static float ypos = 0;
+float xpos = 0;
+float ypos = 0;
+extern float angle;
 
 void CircleAround(float radius, float speed) //(半径(mm)), 速度(mm/s))
 {
@@ -49,7 +49,7 @@ void CircleAround(float radius, float speed) //(半径(mm)), 速度(mm/s))
 
 void RectangleAround(float length, float width, float BasicSpeed) //(长(mm), 宽(mm), 速度(mm/s))
 {
-	if(GetXpos() <= 300 && GetYpos() <= width-100)
+	if(GetXpos() <= 400 && GetYpos() <= width-100)
 	{
 		LocationFlag = 1;
 	}
@@ -61,7 +61,7 @@ void RectangleAround(float length, float width, float BasicSpeed) //(长(mm), �
 	{
 		LocationFlag = 3;
 	}
-	if(GetXpos() > 300 && GetYpos() <100)
+	if(GetXpos() > 400 && GetYpos() <100)
 	{
 		LocationFlag = 4;
 	}
@@ -142,20 +142,6 @@ void SetYpos(float val)
 	ypos = val;
 }
 
-float GetAngle(void)
-{
-	return angle;
-}
-
-float GetXpos(void)
-{
-	return xpos;
-}
-
-float GetYpos(void)
-{
-	return ypos;
-}
 
 
 
