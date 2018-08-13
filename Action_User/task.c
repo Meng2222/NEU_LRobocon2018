@@ -26,7 +26,7 @@ static float set_x=0;
 static float set_y=0;
 static float set_angle=0;
 int iSOKFlag=0;
-static int car=1;
+static int car=4;
 static int n=0;
 static float setangle;
 static float Kp=300;
@@ -164,8 +164,8 @@ void go(float v)
 	if(fabs(xya.x-set_x)<1750&&fabs(xya.y-set_y)<1750)
 	{	
 		Anglepid();
-		Right_cr1=4096*V/377-Aout;		
-	    Left_cr2=-4096*V/377-Aout;
+		Right_cr1=4096*V/377+Aout;		
+	    Left_cr2=-4096*V/377+Aout;
 		VelCrl(CAN2,1,Right_cr1);
 		VelCrl(CAN2,2,Left_cr2);
 		
@@ -208,7 +208,7 @@ void turn(float v)
 		
 		 if(n==2)
 		 {
-			 if(xya.angle<0)
+			 if(xya.angle>0)
 			 {
 				 xya.angle-=360;
 				  h=1;
@@ -223,8 +223,8 @@ void turn(float v)
 		 int Set_angle;
 			
 		 Anglepid();
-		 Right_cr1=1024-Aout;
-	     Left_cr2=1024-Aout;
+		 Right_cr1=1024+Aout;
+	     Left_cr2=1024+Aout;
 		 VelCrl(CAN2,1,Right_cr1);
 		 VelCrl(CAN2,2,Left_cr2);
 		 x=(int)xya.x;
