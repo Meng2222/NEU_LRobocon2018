@@ -14,6 +14,7 @@
 
 #include "moveBase.h"
 #include "timer.h"
+#include "usart.h"
 /* Private typedef ------------------------------------------------------------------------------------*/
 /* Private define -------------------------------------------------------------------------------------*/
 /* Private macro --------------------------------------------------------------------------------------*/
@@ -28,7 +29,10 @@
   * @retval None
   */
 
-
+uint8_t LocationFlag = 0;
+float   PID_SetAngle = 0;
+float Error = 0;
+float AngleControl = 0;
 static float angle = 0;
 static float xpos = 0;
 static float ypos = 0;
@@ -43,63 +47,86 @@ void CircleAround(float radius, float speed) //(半径(mm)), 速度(mm/s))
 	VelCrl(CAN2, 2, (int)-PulseL);	//左轮(负为向前)
 }
 
-void RectangleAround(float length, float width, float speed) //(长(mm), 宽(mm), 速度(mm/s))
+void RectangleAround(float length, float width, float BasicSpeed) //(长(mm), 宽(mm), 速度(mm/s))
 {
-	GoStraight(speed);
-	if(GetXpos() >= -50 &&GetXpos() <= 50 && GetYpos() >= width-50 && GetYpos() < width+50)
+	if(GetXpos() <= 300 && GetYpos() <= width-100)
 	{
-		RevolveAngle(AnglePID(P,I,D,90,GetAngle()));  //自旋调整
-		if(GetAngle() >= 89 && GetAngle() <= 91)
+		LocationFlag = 1;
+	}
+	if(GetXpos() <= length-100 && GetYpos() > width-100)
+	{
+		LocationFlag = 2;
+	}
+	if(GetXpos() > length-100 && GetYpos() >= 100)
+	{
+		LocationFlag = 3;
+	}
+	if(GetXpos() > 300 && GetYpos() <100)
+	{
+		LocationFlag = 4;
+	}
+
+	if(LocationFlag == 1)
+	{
+		PID_SetAngle = 0;
+		Move(BasicSpeed - AnglePID(P,I,D,PID_SetAngle,GetAngle()), BasicSpeed + AnglePID(P,I,D,PID_SetAngle,GetAngle()));
+	}
+	if(LocationFlag == 2)
+	{
+		PID_SetAngle = -90;
+		Move(BasicSpeed - AnglePID(P,I,D,PID_SetAngle,GetAngle()), BasicSpeed + AnglePID(P,I,D,PID_SetAngle,GetAngle()));
+	}
+	if(LocationFlag == 3)
+	{
+		PID_SetAngle = -179;
+		Move(BasicSpeed - AnglePID(P,I,D,PID_SetAngle,GetAngle()), BasicSpeed + AnglePID(P,I,D,PID_SetAngle,GetAngle()));
+		if(GetAngle() >= -180 && GetAngle() <= 0)
 		{
-			GoStraight(speed);
+			PID_SetAngle = -179;
+			Move(BasicSpeed - AnglePID(P,I,D,PID_SetAngle,GetAngle()), BasicSpeed + AnglePID(P,I,D,PID_SetAngle,GetAngle()));
+		}	
+		if(GetAngle() >= 0 && GetAngle() <= 180)
+		{
+			PID_SetAngle = 179;
+			Move(BasicSpeed - AnglePID(P,I,D,PID_SetAngle,GetAngle()), BasicSpeed + AnglePID(P,I,D,PID_SetAngle,GetAngle()));
 		}
 	}
-	if(GetXpos() >= length-50 &&GetXpos() <= length+50 && GetYpos() >=  width-50 && GetYpos() < width+50)
+	if(LocationFlag == 4)
 	{
-		RevolveAngle(AnglePID(P,I,D,179,GetAngle()));  //自旋调整
-		if(GetAngle() >= 178 && GetAngle() <= 180)
-		{
-			GoStraight(speed);
-		}
+		PID_SetAngle = 90;
+		Move(BasicSpeed - AnglePID(P,I,D,PID_SetAngle,GetAngle()), BasicSpeed + AnglePID(P,I,D,PID_SetAngle,GetAngle()));
 	}
-	if(GetXpos() >= length-50 &&GetXpos() <= length+50 && GetYpos() >= -50 && GetYpos() < 50)
-	{
-		RevolveAngle(AnglePID(P,I,D,-90,GetAngle()));  //自旋调整
-		if(GetAngle() >= -91 && GetAngle() <= -89)
-		{
-			GoStraight(speed);
-		}
-	}
-}
 	
+}
 float AnglePID(float Kp, float Ki, float Kd, float AngleSet, float AngleActual)
 {
-	uint8_t Error = 0;
-	uint8_t AngleControl;
-	static uint8_t LastError =0;
-	static uint8_t IntegralError;
+	static float LastError =0;
+	static float IntegralError = 0;
 	Error = AngleSet - AngleActual;
+	if(Error <= -180)
+	{
+		Error += 360;
+	}
+	if(Error >= 180)
+	{
+		Error -= 360;
+	}
 	IntegralError += Error;
 	AngleControl = Kp*Error + Ki*IntegralError + Kd*(Error - LastError);
 	LastError = Error;
 	return AngleControl;
 }
 
-void RevolveAngle(float angle)
+void Move(float SpeedL, float  SpeedR)
 {
-	VelCrl(CAN2, 1, -284*(int)angle);	//右轮(正为向前)
-	VelCrl(CAN2, 2, -284*(int)angle);	//左轮(负为向前)
+	static int PulseR = 0;
+	static int PulseL = 0;
+	PulseR = (int)(SpeedR*COUNTS_PER_ROUND)/(3.14f*WHEEL_DIAMETER);
+	PulseL = (int)(SpeedL*COUNTS_PER_ROUND)/(3.14f*WHEEL_DIAMETER);
+	VelCrl(CAN2, 1, PulseR);	//右轮(正为向前)
+	VelCrl(CAN2, 2, -PulseL);	//左轮(负为向前)
 }
 
-void GoStraight(float speed)
-{
-	float PulseR = 0;
-	float PulseL = 0;
-	PulseR = (speed*COUNTS_PER_ROUND)/(3.14f*WHEEL_DIAMETER);
-	PulseL = (speed*COUNTS_PER_ROUND)/(3.14f*WHEEL_DIAMETER);
-	VelCrl(CAN2, 1, (int)PulseR);	//右轮(正为向前)
-	VelCrl(CAN2, 2, (int)-PulseL);	//左轮(负为向前)
-}
 void SetAngle(float val)
 {
 	angle = val;

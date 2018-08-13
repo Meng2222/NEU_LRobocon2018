@@ -18,11 +18,14 @@
 ===============================================================
 */
 OS_EXT INT8U OSCPUUsage;
-OS_EVENT *PeriodSem;
+OS_EVENT *MoveSem;
 OS_EVENT *BluetoothSem;
 
+extern float Error;
+extern float AngleControl;
+extern uint8_t LocationFlag;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
-static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
+static OS_STK MoveTaskStk[Move_TASK_STK_SIZE];
 static OS_STK BluetoothTaskStk[Bluetooth_TASK_STK_SIZE];
 
 void App_Task()
@@ -31,18 +34,17 @@ void App_Task()
 	os_err = os_err; /*防止警告...*/
 
 	/*创建信号量*/
-	PeriodSem = OSSemCreate(0);
+	MoveSem = OSSemCreate(0);
 	BluetoothSem = OSSemCreate(0);
 	/*创建任务*/
 	os_err = OSTaskCreate((void (*)(void *))ConfigTask, /*初始化任务*/
 						  (void *)0,
 						  (OS_STK *)&App_ConfigStk[Config_TASK_START_STK_SIZE - 1],
 						  (INT8U)Config_TASK_START_PRIO);
-
-	os_err = OSTaskCreate((void (*)(void *))WalkTask,
+	os_err = OSTaskCreate((void (*)(void *))MoveTask,
 						  (void *)0,
-						  (OS_STK *)&WalkTaskStk[Walk_TASK_STK_SIZE - 1],
-						  (INT8U)Walk_TASK_PRIO);
+						  (OS_STK *)&MoveTaskStk[Move_TASK_STK_SIZE - 1],
+						  (INT8U)Move_TASK_PRIO);
 	os_err = OSTaskCreate((void (*)(void *))BluetoothTask,
 						  (void *)0,
 						  (OS_STK *)&BluetoothTaskStk[Bluetooth_TASK_STK_SIZE - 1],
@@ -74,15 +76,17 @@ void ConfigTask(void)
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
-void WalkTask(void)
+void MoveTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-	OSSemSet(PeriodSem, 0, &os_err);
+	OSSemSet(MoveSem, 0, &os_err);
 	while (1)
 	{
-		OSSemPend(PeriodSem, 0, &os_err);
-		RectangleAround(1500, 1500, 250);
+		OSSemPend(MoveSem, 0, &os_err);
+		RectangleAround(1500, 1500, 650);
+		
+		
 	}
 }
 
@@ -94,8 +98,16 @@ void BluetoothTask(void)
 	while (1)
 	{
 		OSSemPend(BluetoothSem, 0, &os_err);
-		USART_OUT(UART4, (uint8_t*)"angle = %d",(int)GetAngle());
-		USART_OUT(UART4, (uint8_t*)" x = %d",(int)GetXpos());
-		USART_OUT(UART4, (uint8_t*)" y = %d \r\n",(int)GetYpos());
+		
+		USART_OUT(UART4, (uint8_t*)"  x = %d",(int)GetXpos());
+		USART_OUT(UART4, (uint8_t*)"  y = %d \r\n",(int)GetYpos());
+		/*
+		USART_OUT(UART4, (uint8_t*)"  angle = %d",(int)GetAngle());
+		USART_OUT(UART4, (uint8_t*)"  Error = %d ",(int)Error);
+		USART_OUT(UART4, (uint8_t*)"  AngleControl = %d ",(int)AngleControl);
+		USART_OUT(UART4, (uint8_t*)"  LocationFlag = %d \r\n",(int)LocationFlag);
+		*/
 	}
 }
+
+

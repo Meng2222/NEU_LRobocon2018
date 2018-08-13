@@ -41,7 +41,7 @@
 #include "moveBase.h"
 
 
-extern OS_EVENT *PeriodSem;
+extern OS_EVENT *MoveSem;
 extern OS_EVENT *BluetoothSem;
 float angle = 0;
 float posX = 0;
@@ -108,10 +108,10 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 void TIM2_IRQHandler(void)
 {
-#define PERIOD_COUNTER 10
-
+	#define MOVE_PERIOD 10
+	#define BLUETOOTH_PERIOD 100
 	//用来计数10次，产生10ms的定时器
-	static uint8_t periodCounter = PERIOD_COUNTER;
+	static uint8_t MovePeriod = 0;
 	static uint8_t BluetoothCounter = 0;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
@@ -121,16 +121,16 @@ void TIM2_IRQHandler(void)
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 
-		//10ms触发一次走行程序
-		periodCounter--;
-		if (periodCounter == 0)
+		//10ms触发一次直走程序
+		MovePeriod++;
+		if (MovePeriod == MOVE_PERIOD)
 		{
-			OSSemPost(PeriodSem);
-			periodCounter = PERIOD_COUNTER;
+			OSSemPost(MoveSem);
+			MovePeriod = 0;
 		}
-		//100ms通过蓝牙发送一次定位系统数据
+		//100ms触发一次蓝牙模块 发送角度及坐标等数据
 		BluetoothCounter++;
-		if(BluetoothCounter == 100)
+		if(BluetoothCounter == BLUETOOTH_PERIOD)
 		{
 			OSSemPost(BluetoothSem);
 			BluetoothCounter = 0;

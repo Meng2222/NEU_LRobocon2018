@@ -61,13 +61,13 @@
   * @}
   */
 #define P 25
-#define I 0.1f
-#define D 0
+#define I 0
+#define D 5
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 void CircleAround(float radius, float speed); //(半径(mm)), 速度(mm/s))
-void RectangleAround(float length, float width, float speed); //(长(mm), 宽(mm), 速度(mm/s))
+void RectangleAround(float length, float width, float BasicSpeed); //(长(mm), 宽(mm), 速度(mm/s))
 float AnglePID(float Kp, float Ki, float Kd, float AngleSet, float AngleActual);
 void SetAngle(float val);
 void SetXpos(float val);
@@ -75,8 +75,8 @@ void SetYpos(float val);
 float GetAngle(void);
 float GetXpos(void);
 float GetYpos(void);
-void RevolveAngle(float angle);
-void GoStraight(float speed);
+void Move(float SpeedL, float  SpeedR);
+
 
 
 

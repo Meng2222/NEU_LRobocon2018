@@ -38,7 +38,7 @@ extern  void  App_Task(void);
 
 static  void  App_TaskStart(void);
 static 	void  ConfigTask(void);
-static 	void  WalkTask(void);
+static 	void  MoveTask(void);
 static void BluetoothTask(void);
 
 /*
@@ -49,8 +49,8 @@ static void BluetoothTask(void);
 
 #define  APP_TASK_START_PRIO						10u
 #define  Config_TASK_START_PRIO						11u
-#define  Walk_TASK_PRIO								12u
-#define  Bluetooth_TASK_PRIO								13u
+#define  Move_TASK_PRIO								12u
+#define  Bluetooth_TASK_PRIO						13u
 
 
 
@@ -63,7 +63,7 @@ static void BluetoothTask(void);
 */
 #define  APP_TASK_START_STK_SIZE					256u
 #define  Config_TASK_START_STK_SIZE					256u
-#define  Walk_TASK_STK_SIZE							512u
+#define  Move_TASK_STK_SIZE							512u
 #define  Bluetooth_TASK_STK_SIZE					512u
 
 /*
