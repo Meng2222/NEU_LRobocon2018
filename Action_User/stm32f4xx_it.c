@@ -42,7 +42,9 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-
+uint8_t qwe[4]={0};
+uint32_t a;
+uint8_t b;
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -50,7 +52,8 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	
+	CAN_RxMsg(CAN1,&a,qwe,&b);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -63,6 +66,26 @@ void CAN1_RX0_IRQHandler(void)
 	CAN_ClearFlag(CAN1, CAN_FLAG_FOV1);
 	OSIntExit();
 }
+
+//uint8_t CAN_RxMsg(CAN_TypeDef* CANx,
+//				  uint32_t * StdId,
+//				  uint8_t * buf,
+//				  uint8_t * len)
+//{
+//	uint8_t i=0;
+//	CanRxMsg RxMessage;	
+//	
+//	if( CAN_MessagePending(CAN2,CAN_FIFO0)==0)	//??????
+//		return 0;		
+//	CAN_Receive(CAN2, CAN_FIFO0, &RxMessage);	//????
+//	if((*StdId) == RxMessage.StdId)
+//		{
+//			for(i=0;i<*len;i++)
+//				buf[i]=RxMessage.Data[i];  
+//			return 1;
+//		}	
+//}
+
 
 /**
   * @brief  CAN2 receive FIFO0 interrupt request handler
@@ -77,6 +100,8 @@ void CAN2_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
+	
+	CAN_RxMsg(CAN1,&a,qwe,&b);
 
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
@@ -220,26 +245,60 @@ void USART1_IRQHandler(void)
 	OSIntExit();
 }
 
-void USART2_IRQHandler(void)
-{
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
+//void USART4_IRQHandler(void)
+//{
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
 
-	if (USART_GetITStatus(USART2, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
-	}
-	OSIntExit();
+//	if (USART_GetITStatus(UART4, USART_IT_RXNE) == SET)
+//	{
+//		USART_ClearITPendingBit(USART4, USART_IT_RXNE);
+//	}
+//	OSIntExit();
+//}
+
+
+
+static float angle=0,posx=0,posy=0;
+void SetAngle(float val)
+{
+	angle=val;
+}
+void Setposx(float val)
+{
+	posx=val;
+}
+void Setposy(float val)
+{
+	posy=val;
 }
 
-void USART6_IRQHandler(void) //更新频率200Hz
+float Getposx(void)
+{
+	return posx;
+
+}
+float Getposy(void)
+{
+	return posy;
+
+}
+
+float GetAngle(void)
+{
+	return angle;
+
+}
+
+
+void USART3_IRQHandler(void) //更新频率200Hz
 {
 	static uint8_t ch;
 	static union {
-		uint8_t data[24];
-		float ActVal[6];
+	uint8_t data[24];
+	float ActVal[6];
 	} posture;
 	static uint8_t count = 0;
 	static uint8_t i = 0;
@@ -247,11 +306,17 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
-	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
+	
+	if (USART_GetITStatus(USART3, USART_IT_ORE_ER) == SET)
 	{
-		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
-		ch = USART_ReceiveData(USART6);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
+		USART_ReceiveData(USART3);
+	}
+	
+	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+	{
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		ch = USART_ReceiveData(USART3);
 		switch (count)
 		{
 		case 0:
@@ -294,13 +359,17 @@ void USART6_IRQHandler(void) //更新频率200Hz
 			if (ch == 0x0d)
 			{
 
-				posture.ActVal[0] = posture.ActVal[0];
+				angle= posture.ActVal[0];
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
-				posture.ActVal[3] = posture.ActVal[3];
-				posture.ActVal[4] = posture.ActVal[4];
-				posture.ActVal[5] = posture.ActVal[5];
+				posx = posture.ActVal[3];
+				posy= posture.ActVal[4];
+				posture.ActVal[5]= posture.ActVal[5];
+				Setposx(posx);
+				Setposy(posy);
+				SetAngle(angle);
 			}
+			
 			count = 0;
 			break;
 
@@ -311,32 +380,32 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	else
 	{
-		USART_ClearITPendingBit(USART6, USART_IT_PE);
-		USART_ClearITPendingBit(USART6, USART_IT_TXE);
-		USART_ClearITPendingBit(USART6, USART_IT_TC);
-		USART_ClearITPendingBit(USART6, USART_IT_ORE_RX);
-		USART_ClearITPendingBit(USART6, USART_IT_IDLE);
-		USART_ClearITPendingBit(USART6, USART_IT_LBD);
-		USART_ClearITPendingBit(USART6, USART_IT_CTS);
-		USART_ClearITPendingBit(USART6, USART_IT_ERR);
-		USART_ClearITPendingBit(USART6, USART_IT_ORE_ER);
-		USART_ClearITPendingBit(USART6, USART_IT_NE);
-		USART_ClearITPendingBit(USART6, USART_IT_FE);
-		USART_ReceiveData(USART6);
+		USART_ClearITPendingBit(USART3, USART_IT_PE);
+		USART_ClearITPendingBit(USART3, USART_IT_TXE);
+		USART_ClearITPendingBit(USART3, USART_IT_TC);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(USART3, USART_IT_IDLE);
+		USART_ClearITPendingBit(USART3, USART_IT_LBD);
+		USART_ClearITPendingBit(USART3, USART_IT_CTS);
+		USART_ClearITPendingBit(USART3, USART_IT_ERR);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(USART3, USART_IT_NE);
+		USART_ClearITPendingBit(USART3, USART_IT_FE);
+		USART_ReceiveData(USART3);
 	}
 	OSIntExit();
 }
 
-void USART3_IRQHandler(void)
+void USART6_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
 	}
 
 	OSIntExit();
