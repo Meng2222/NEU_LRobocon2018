@@ -123,7 +123,7 @@ float vel_PID(float setangle,int kp,int ki)
 	}
 	if(pid.err>180)
 	{
-		pid.err=360-pid.err;
+		pid.err=pid.err-360;
 	}
 	pid.d_err=pid.err-pid.last_err;
 	pid.err_integral+=pid.err;
@@ -133,6 +133,7 @@ float vel_PID(float setangle,int kp,int ki)
 	return pid.vel;
 }
 int x,y,agl,erro;
+		
 void WalkTask(void)
 { 
 	CPU_INT08U os_err;
@@ -146,39 +147,29 @@ void WalkTask(void)
 		y=(int)(posY);
 		agl=(int)(angle);
 		erro=(int)(pid.err);
-		USART_OUT(UART4,(uint8_t*)"x=%d,y=%d,agl=%d,err=%d\r\n",x,y,agl,erro);
-		if(x<2000&&x>-500)
+		USART_OUT(UART4,(uint8_t*)"x=%d  y=%d  agl=%d  err=%d\r\n",x,y,agl,erro);
+		if(x>-200&&x<200&&y>=0&&y<=1800)
 		{
-			if(y<500&&y>-500)
-			{
-		VelCrl(CAN2,1,(vel+vel_PID(0,100,0))*Pulse2mm );
-		VelCrl(CAN2,2,-vel*Pulse2mm); 
-			}
+			VelCrl(CAN2,1,(vel+vel_PID(0,90,0))*Pulse2mm );
+			VelCrl(CAN2,2,-vel*Pulse2mm ); 
 		}
-		if(x>=2000&&x<2500)
+		if(x>=-200&&x<=1800&&y>1800&&y<2200)
 		{
-			if(y<1500)
-			{
-				VelCrl(CAN2,1,(vel+vel_PID(90,100,0))*Pulse2mm );
+			VelCrl(CAN2,1,(vel+vel_PID(-90,90,0))*Pulse2mm );
+			VelCrl(CAN2,2,-vel*Pulse2mm ); 
+		}
+		if(x>1800&&x<2200&&y>200&&y<=2200)
+		{
+				VelCrl(CAN2,1,(vel+vel_PID(-180,90,0))*Pulse2mm );
 				VelCrl(CAN2,2,-vel*Pulse2mm ); 
-			}
-		}
-		if(x>500)
+		}	
+		if(x>=200&&x<2200&&y<200&&y>-200)
 		{
-			if(y>=1500)
-			{
-				VelCrl(CAN2,1,(vel+vel_PID(180,100,0))*Pulse2mm );
+				VelCrl(CAN2,1,(vel+vel_PID(90,90,0))*Pulse2mm );
 				VelCrl(CAN2,2,-vel*Pulse2mm ); 
-			}
-		}
-		if(x<500&&x>-500)
-		{
-			if(y>=500)
-			{
-				VelCrl(CAN2,1,(vel+vel_PID(-90,100,0))*Pulse2mm );
-				VelCrl(CAN2,2,-vel*Pulse2mm ); 
-			}
-		}
+		}		
+		erro=(int)(pid.err);
+		USART_OUT(UART4,(uint8_t*)"x=%d  y=%d  agl=%d  erro=%d\r\n",x,y,agl,erro);		
 	}
 }
 
