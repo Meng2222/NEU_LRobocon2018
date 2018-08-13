@@ -47,7 +47,25 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
+int exchange(float v);
+void SetAngle(float val);
+void SetXpos(float val);
+void SetYpos(float val);
+float GetXpos(void);
+float GetYpos(void);
+float GetAngle(void);
+float AnglePID(float Angle,float SetAngle);
+int AngleChange(void);
+struct PID
+{
+	float p;
+	float i;
+	float d;
+};
 
+int isSendOK(void);
+void SetOKFlagZero(void);
+void driveGyro(void);
 #ifdef __cplusplus
 }
 #endif
