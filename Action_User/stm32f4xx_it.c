@@ -86,7 +86,7 @@ void CAN2_RX0_IRQHandler(void)
 	CanRxMsg RxMessage;
 	for(int i=0;i<8;i++) RxMessage.Data[i]=0;
 	CAN_Receive(CAN2, CAN_FIFO0, &RxMessage);
-	CAN_Receive(CAN1, CAN_FIFO1, &RxMessage);
+	CAN_Receive(CAN2, CAN_FIFO1, &RxMessage);
 
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
