@@ -44,14 +44,15 @@
 /******************************************************************************/
 uint8_t Msg[8];
 uint8_t len=4;
+uint32_t i;
 void CAN1_RX0_IRQHandler(void)
 {
-	CAN_RxMsg(CAN2 , 0 , Msg , &len);
 	OS_CPU_SR cpu_sr;
 
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
+	CAN_RxMsg(CAN1 , &i , Msg , &len);
 
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
@@ -74,13 +75,14 @@ void CAN1_RX0_IRQHandler(void)
   */
 void CAN2_RX0_IRQHandler(void)
 {
-	CAN_RxMsg(CAN2 , 0 , Msg , &len);
 	OS_CPU_SR cpu_sr;
 
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	
+	CAN_RxMsg(CAN2 , &i , Msg , &len);
+	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -331,7 +333,7 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-float Ang;
+float Angl;
 float X;
 float Y;
 float avel;
@@ -342,7 +344,7 @@ void USART3_IRQHandler(void)//更新频率200Hz
 //	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 //	OSIntNesting++;
 //	OS_EXIT_CRITICAL();
-	
+//	
 	static uint8_t ch;
 	static union
 	{ 
@@ -366,7 +368,7 @@ void USART3_IRQHandler(void)//更新频率200Hz
 		{  
 			case 0:
 				if (ch == 0x0d)     count++;
-			    else if(ch=='O')    count=5;
+//			    else if(ch=='O')    count=5;
 				else     count = 0;    
 			    break; 
 			 
@@ -389,7 +391,7 @@ void USART3_IRQHandler(void)//更新频率200Hz
 			case 4:
 				if (ch == 0x0d)
 				{
-				 Ang=posture.ActVal[0] ;//角度
+				 Angl=posture.ActVal[0] ;//角度
 				 posture.ActVal[1] = posture.ActVal[1];
 				 posture.ActVal[2] = posture.ActVal[2];
 				 X = posture.ActVal[3];//x
@@ -401,11 +403,10 @@ void USART3_IRQHandler(void)//更新频率200Hz
 				}
 				count = 0;
 				break;
-			case 5:
-				count=0;
-			    if(ch=='K')
-					isOKFlag=1;
-				break;
+//			case 5:
+//				count=0;
+//			    if(ch=='K')isOKFlag=1;
+//				break;
 
 			default:
 				count = 0;
