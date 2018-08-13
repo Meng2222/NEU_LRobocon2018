@@ -12,7 +12,7 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 
-#define Veh 1      //车号选择 【1】 || 【4】
+//#define Veh 1      //车号选择 【1】 || 【4】
 
 extern int t;
 extern float X,Y,Angl;  //XY坐标（浮点） 校正角度（浮点）
@@ -153,9 +153,10 @@ void ConfigTask(void)        //初始化
 	
 	if(Veh==1)//////////////////////////////////////////////////////////////
 	{
-	driveGyro();////////////////////////////////////////////////////////////
+	driveGyro();
+	delay_s(10);
 	}///////////////////////////////////////////////////////////////////////
-	else
+	if(Veh==4)
 	{
 	delay_s(10);
 	delay_s(5);
@@ -190,21 +191,18 @@ int x,y,angl;      //XY坐标（整数） 校正角度（整数）
 int ex;
 void Teh_Choose(void)
 {
-x=(int)X;
-y=(int)Y;
-angl=(int)Angl;
 if(Veh==1)
 {
-ex=y;
-y=-x;
+ex=(int)Y;
+y=-(int)X;
 x=ex;
-angl=-angl;
+angl=-(int)Angl;
 }
 else if(Veh==4)
 {
-x=x;
-y=y;
-angl=angl;
+x=(int)X;
+y=(int)Y;
+angl=(int)Angl;
 }
 else if(j==1)
 {

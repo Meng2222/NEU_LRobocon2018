@@ -243,7 +243,8 @@ void USART2_IRQHandler(void)
 void USART6_IRQHandler(void) //更新频率200Hz
 {
 	static uint8_t ch;
-	static union {
+	static union 
+	{
 		uint8_t data[24];
 		float ActVal[6];
 	} posture;
@@ -362,55 +363,113 @@ void USART3_IRQHandler(void)//更新频率200Hz
 	
 	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);   
-		ch = USART_ReceiveData(USART3);   
-		switch (count)   
-		{  
-			case 0:
-				if (ch == 0x0d)     count++;
-//			    else if(ch=='O')    count=5;
-				else     count = 0;    
-			    break; 
-			 
-			case 1:
-				if (ch == 0x0a)    {     i = 0;     count++;    }
-				else     count = 0; 
-				break;
+		if(Veh==4)
+		{
+			USART_ClearITPendingBit(USART3, USART_IT_RXNE);   
+			ch = USART_ReceiveData(USART3);   
+			switch (count)   
+			{  
+				case 0:
+					
+					if (ch == 0x0d)     count++;
+	//			    else if(ch=='O')    count=5;
+					else     count = 0;    
+					break; 
+				 
+				case 1:
+					if (ch == 0x0a)    {     i = 0;     count++;    }
+					else     count = 0; 
+					break;
 
-			case 2:
-				posture.data[i] = ch;    
-			    i++;
-				if (i >= 24)    {     i = 0;     count++;    }
-				break;
+				case 2:
+					posture.data[i] = ch;    
+					i++;
+					if (i >= 24)    {     i = 0;     count++;    }
+					break;
 
-			case 3:
-				if (ch == 0x0a)     count++;
-				else     count = 0;
-				break;
+				case 3:
+					if (ch == 0x0a)     count++;
+					else     count = 0;
+					break;
 
-			case 4:
-				if (ch == 0x0d)
-				{
-				 Angl=posture.ActVal[0] ;//角度
-				 posture.ActVal[1] = posture.ActVal[1];
-				 posture.ActVal[2] = posture.ActVal[2];
-				 X = posture.ActVal[3];//x
-				 Y = posture.ActVal[4];//y
-				 avel=posture.ActVal[5]=posture.ActVal[5];
-//				 SetXpos(posX);
-//				 SetYpos(posY);
-//				 SetAngle(angle);
-				}
-				count = 0;
-				break;
-//			case 5:
-//				count=0;
-//			    if(ch=='K')isOKFlag=1;
-//				break;
+				case 4:
+					if (ch == 0x0d)
+					{
+					 Angl=posture.ActVal[0] ;//角度
+					 posture.ActVal[1] = posture.ActVal[1];
+					 posture.ActVal[2] = posture.ActVal[2];
+					 X = posture.ActVal[3];//x
+					 Y = posture.ActVal[4];//y
+					 avel=posture.ActVal[5]=posture.ActVal[5];
+	//				 SetXpos(posX);
+	//				 SetYpos(posY);
+	//				 SetAngle(angle);
+					}
+					count = 0;
+					break;
+	//			case 5:
+	//				count=0;
+	//			    if(ch=='K')isOKFlag=1;
+	//				break;
 
-			default:
-				count = 0;
-				break;
+				default:
+					count = 0;
+					break;
+			}
+		}
+		if (Veh==1)
+		{
+		    USART_ClearITPendingBit(USART3, USART_IT_RXNE);   
+			ch = USART_ReceiveData(USART3);   
+			switch (count)   
+			{  
+				case 0:
+					
+					if (ch == 0x0d)     count++;
+				    else if(ch=='O')    count=5;
+					else     count = 0;    
+					break; 
+				 
+				case 1:
+					if (ch == 0x0a)    {     i = 0;     count++;    }
+					else     count = 0; 
+					break;
+
+				case 2:
+					posture.data[i] = ch;    
+					i++;
+					if (i >= 24)    {     i = 0;     count++;    }
+					break;
+
+				case 3:
+					if (ch == 0x0a)     count++;
+					else     count = 0;
+					break;
+
+				case 4:
+					if (ch == 0x0d)
+					{
+					 Angl=posture.ActVal[0] ;//角度
+					 posture.ActVal[1] = posture.ActVal[1];
+					 posture.ActVal[2] = posture.ActVal[2];
+					 X = posture.ActVal[3];//x
+					 Y = posture.ActVal[4];//y
+					 avel=posture.ActVal[5]=posture.ActVal[5];
+//					 SetXpos(posX);
+//					 SetYpos(posY);
+//					 SetAngle(angle);
+					}
+					count = 0;
+					break;
+				    case 5:
+					count=0;
+				    if(ch=='K')isOKFlag=1;
+					break;
+
+				    default:
+					count = 0;
+					break;
+			}
 		}
 	}
 	else
