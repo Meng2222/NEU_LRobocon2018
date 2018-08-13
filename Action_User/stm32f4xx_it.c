@@ -47,7 +47,7 @@
 /*
 编写Set函数和Get函数
 */
-float angle=0,xpos=0,ypos=0;
+static float angle=0,xpos=0,ypos=0;
 static int isOKFlag=0;
 
 void SetAngle(float val)
@@ -99,13 +99,13 @@ void driveGyro(void)
 		USART_SendData(USART3,'T');
 		USART_SendData(USART3,'\r');
 		USART_SendData(USART3,'\n');
-		SetOKFlagZero();
 	}
+	SetOKFlagZero();
 }
 
 
 
-uint8_t disacard[]={0};
+uint8_t discard[10]={0};
 uint32_t a;
 uint8_t b;
 
@@ -117,7 +117,7 @@ void CAN1_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	
-	CAN_RxMsg(CAN1,&a,disacard,&b);								//这里需要写接收数据
+	CAN_RxMsg(CAN1,&a,discard,&b);								//这里需要写接收数据
 	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
@@ -146,7 +146,7 @@ void CAN2_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	
-	CAN_RxMsg(CAN2,&a,disacard,&b);	
+	CAN_RxMsg(CAN2,&a,discard,&b);	
 	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
