@@ -11,9 +11,9 @@
 #include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "math.h"
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi
-#define car 1
 
 /*
 一个脉冲是4096/(120*Pi)
@@ -95,14 +95,13 @@ void ConfigTask(void)
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
 	delay_s(2);
-	if(car==1)
-	{
+	//切换车的宏定义在elmo.h里
+  #if CAR_CONTRAL==1
 		driveGyro();
 		while(!posokflag);
-	}
-	
-	else if(car==4)
+	#elif CAR_CONTRAL==4
 		delay_s(10);
+	#endif
 	OSTaskSuspend(OS_PRIO_SELF);
 	
 	/**TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
@@ -117,65 +116,180 @@ void ConfigTask(void)
 	MotorOn(CAN2,1);							//电机使能（通电）
 	MotorOn(CAN2,2);**/
 }
+// 用position.XY？或者把2000往前提提,179与-179
 int vel1,vel2,turnflag=0;
 int X,Y,angle;
 int Out_Pulse;
-int flag1,flag2;
+int flag=0;
 extern struct Pos_t position;
+void Round(float speed,float R);
+void PID(int Agl_Flag);
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
-	void Round(float speed,float R);
-	void PID(float Agl);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
 		X=(int)(position.X);
 		Y=(int)(position.Y);
 		angle=(int)(position.angle);
-		USART_OUT(UART4,(uint8_t*)"X=%d  y=%d  angle=%d\r\n",X,Y,angle);
-		//Round(0.5,0.2);
-		if(X<0&&X>-1950&&flag1==0)
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",X,Y);
+		//Round(0.1,0.2);
+		 /**switch(flag)
 		{
-			PID(0);
-			flag1=1;
+			case 0:
+				PID(0);
+			  if(position.X<=-1950)
+				  flag=1;
+				break;
+			case 1:
+				PID(90);
+			  if(position.Y>=2000)
+					flag=2;
+				break;
+			case 2:
+				if(position.angle>0)
+				  PID(179);
+				else if(position.angle<0)
+					PID(-179);
+			  if(position.X>=0)
+					flag=3;
+				break;
+			case 3:
+				PID(-90);
+			  if(position.Y<=0)
+				  flag=0; 
+				break;
 		}
-		if(X<=-1950&&X>=-2050&&flag2==0)
-			PID(90);
-		if(Y>0&&Y<1950&&flag2==0)
+    VelCrl(CAN2,1,7000);
+		VelCrl(CAN2,2,-7000-Out_Pulse);**/
+		switch(flag)
 		{
-			PID(90);
-			flag2=1;
-		}	
-		if(Y>=1950&&Y<=2050&&flag1)
-			PID(180);
-		if(X<-50&&X>-2000&&flag1)
-		{
-			PID(180);
-		  flag1=0;
+			case 0:
+				PID(0);
+			  VelCrl(CAN2,1,7000);
+		    VelCrl(CAN2,2,-7000-Out_Pulse);
+				if(position.X<-1550)
+				  flag=1;
+	    	break;
+			case 1:
+				PID(1);
+			  VelCrl(CAN2,1,0);
+		    VelCrl(CAN2,2,-Out_Pulse);
+			  if(position.angle>89)
+					flag=2;
+				break;
+			case 2:
+				PID(1);
+			  VelCrl(CAN2,1,7000);
+		    VelCrl(CAN2,2,-7000-Out_Pulse);
+			  if(position.Y>1550)
+					flag=3;
+				break;
+			case 3:
+				PID(2);
+			  VelCrl(CAN2,1,0);
+		    VelCrl(CAN2,2,-Out_Pulse);
+			  if(position.angle>178)
+					flag=4;
+				break;
+			case 4:
+				PID(2);
+				VelCrl(CAN2,1,7000);
+		    VelCrl(CAN2,2,-7000-Out_Pulse);
+				if(position.X>-450)
+					flag=5;
+				break;
+			case 5:
+				PID(3);
+			  VelCrl(CAN2,1,0);
+		    VelCrl(CAN2,2,-Out_Pulse);
+			  if(position.angle>-90.5&&position.angle<-89.5)
+				  flag=6; 
+				break;
+			case 6:
+				PID(3);
+			  VelCrl(CAN2,1,7000);
+		    VelCrl(CAN2,2,-7000-Out_Pulse);
+			  if(position.Y<450)
+				  flag=7; 
+				break;
+			case 7:
+				PID(0);
+			  VelCrl(CAN2,1,0);
+		    VelCrl(CAN2,2,-Out_Pulse);
+			  if(position.angle>-1)
+				  flag=0; 
+				break;
 		}
-		if(X>=-50&&X<=50&&flag2)
-			PID(-90);
-		if(Y>50&&Y<2000&&flag2)
-		{
-			PID(-90);
-			flag2=0;
-		}
-		if(Y<=50&&Y>=-50&&flag1)
-			PID(0);
-		VelCrl(CAN2,1,4096+Out_Pulse);
-		VelCrl(CAN2,2,-4096);
+		   
+				
+      /**switch(flag)
+			{
+				case 0:
+					PID(0);
+				  if(Y>2000)
+					  flag=1;
+				  break; 
+				case 1:
+					PID(-90);
+				  if(X>2000)
+					  flag=2;
+					break;
+				case 2:
+		      if(position.angle>0)
+					  PID(-179);
+		      else if(position.angle<0)
+		        PID(179);
+				  if(Y<0)
+						flag=3;
+					break;
+				case 4:
+					PID(90);
+				  if(X<0)
+						flag=0;
+					break;	
+			}**/
 		
+		/**VelCrl(CAN2,1,4096+Out_Pulse);
+		VelCrl(CAN2,2,-4096);**/
 	}
 }
-void PID(float Agl)
+void PID(int Agl_Flag)
 {
-	float err,Last_err,Sum_err;
-	err=Agl-position.angle;
+	float err,Err1,Err2,Last_err,Sum_err;
+	switch(Agl_Flag)
+	{
+		case 0:
+			err=0-position.angle;
+		  break;
+		case 1:
+			Err1=90-position.angle;
+		  Err2=-270-position.angle;
+		  if(fabs(Err1)<fabs(Err2))
+			  err=Err1;
+		  else err=Err2;
+			break;
+		case 2:
+			Err1=180-position.angle;
+		  Err2=-180-position.angle;
+		  if(fabs(Err1)<fabs(Err2))
+			  err=Err1;
+		  else err=Err2;
+			break;
+		case 3:
+			Err1=-90-position.angle;
+		  Err2=270-position.angle;
+		  if(fabs(Err1)<fabs(Err2))
+			  err=Err1;
+		  else err=Err2;
+			break;
+	}
 	Sum_err=Sum_err+err;
-	Out_Pulse=(int)(10*err+10*Sum_err+10*(err-Last_err));
+	Out_Pulse=(int)(500*err);
+		//+5*Sum_err+5*(err-Last_err));
 	Last_err=err;
 }
 void Round(float speed,float R)

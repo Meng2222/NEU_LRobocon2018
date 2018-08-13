@@ -1,5 +1,6 @@
 #include  <includes.h>
 #include <app_cfg.h>
+#include "math.h"
 
 static  OS_STK  App_TaskStartStk[APP_TASK_START_STK_SIZE];
 
