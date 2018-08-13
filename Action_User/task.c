@@ -182,7 +182,7 @@ void turn(float v)
 { 
     void Anglepid();
 	float V=v*1000;
-	
+	int h=0;
 	if(n==0)
 	{   set_angle=0;
      	setangle=-90;
@@ -205,24 +205,23 @@ void turn(float v)
     }
 	while(1)
 	{
-     if(fabs(xya.angle-set_angle)<90)		
+		
+		 if(n==2)
+		 {
+			 if(xya.angle<0)
+			 {
+				 xya.angle+=360;
+				  h=1;
+			 }else h=0;
+		 }
+     if(fabs(xya.angle-set_angle)<90||h)		
 	 { 
 		 Kp=100;
 		 int x;
 	     int y;
 	     int angle;
 		 int Set_angle;
-		 
-		 if(set_angle==180)
-		 {
-			 if(xya.angle<0)
-			 
-				 xya.angle+=360;
-				 
-		 }	
-			 
-				 
-		
+			
 		 Anglepid();
 		 Right_cr1=1024-Aout;
 	     Left_cr2=1024-Aout;
@@ -232,7 +231,8 @@ void turn(float v)
 		 y=(int)xya.y;
 		 angle=(int)xya.angle;
 		 Set_angle=(int)set_angle;
-		USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",x,y);
+		 USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",x,y);
+		 h=0;
 		 
 	 }else if(fabs(xya.angle-set_angle)>=90) 
 	 { 
