@@ -148,7 +148,7 @@ void go(float v)
 	}
 	else if(n==1)
 	{
-		setangle=-90;
+		setangle=90;
 	}
 	else if(n==2)
 	{	if(xya.angle>=0)	
@@ -158,7 +158,7 @@ void go(float v)
 	}
 	else if(n==3)
 	{
-		setangle=90;
+		setangle=-90;
     }
 	
 	if(fabs(xya.x-set_x)<1750&&fabs(xya.y-set_y)<1750)
@@ -185,22 +185,22 @@ void turn(float v)
 	int h=0;
 	if(n==0)
 	{   set_angle=0;
-     	setangle=-90;
+     	setangle=90;
 	}
 	else if(n==1)
 	{
-		set_angle=-90;
-		setangle=-180;
+		set_angle=90;
+		setangle=180;
 	}
 	else if(n==2)
 	{
-		set_angle=180;
-		setangle=90;
+		set_angle=-180;
+		setangle=-90;
 	}
 	else if(n==3)
 	{
 		n=-1;
-		set_angle=90;
+		set_angle=-90;
 		setangle=0;
     }
 	while(1)
@@ -210,7 +210,7 @@ void turn(float v)
 		 {
 			 if(xya.angle<0)
 			 {
-				 xya.angle+=360;
+				 xya.angle-=360;
 				  h=1;
 			 }else h=0;
 		 }
