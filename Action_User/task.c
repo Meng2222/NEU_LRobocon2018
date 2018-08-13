@@ -18,24 +18,22 @@
 #define ROBOT_WIDTH (490.0f)       //调试小车车宽(mm)
 #define WHEEL_WIDTH (40.0f)        //轮子宽度(mm)
 #define WHEEL_TREAD (434.0f)       //两个轮子的中心距离(mm)
-#define PI (3.14)
 #define CIRCLE_LENGTH (PI*WHEEL_DIAMETER) //车轮转一圈走的距离
-
-#define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
-
+#define Pulse2mm (COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi))
 /*
 一个脉冲是4096/(120*Pi)
 定义输入速度mm/s和半径mm
 */
-float ratio1,ratio2;
-void vel_radious(float vel,float radious)
-{
-	ratio1=(radious+WHEEL_TREAD/2)/radious;
-	ratio2=(radious-WHEEL_TREAD/2)/radious;
-	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
-	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
-}
+//float ratio1,ratio2;
+//void vel_radious(float vel,float radious)
+//{
+//	ratio1=(radious+WHEEL_TREAD/2)/radious;
+//	ratio2=(radious-WHEEL_TREAD/2)/radious;
+//	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
+//	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
+//}
 
+		
 
 /*
 ===============================================================
@@ -60,12 +58,13 @@ void App_Task()
 	os_err = OSTaskCreate((void (*)(void *))ConfigTask, /*初始化任务*/
 						  (void *)0,
 						  (OS_STK *)&App_ConfigStk[Config_TASK_START_STK_SIZE - 1],
-						  2);
+						  (INT8U)Config_TASK_START_PRIO);
 
 	os_err = OSTaskCreate((void (*)(void *))WalkTask,
 						  (void *)0,
 						  (OS_STK *)&WalkTaskStk[Walk_TASK_STK_SIZE - 1],
-						  3);
+						  (INT8U)Walk_TASK_PRIO);
+
 }
 
 /*
@@ -78,79 +77,108 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-<<<<<<< HEAD
-	TIM_Init(TIM2, 1000-1, 83, 0, 2);
 	USART3_Init(115200);
 	UART4_Init(921600);  
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	ElmoInit(CAN2);
-	VelLoopCfg(CAN2,1,1000,0);
-	VelLoopCfg(CAN2,2,1000,0);
-	MotorOn(CAN2,1);
-	MotorOn(CAN2,2);
-=======
-	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
+	TIM_Init(TIM2,1000-1,84-1,0,0);	//产生10ms中断，抢占优先级为1，响应优先级为3
 
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	
 	VelLoopCfg(CAN2,1, 5000, 5000);				//驱动器速度环初始化
 	VelLoopCfg(CAN2,2, 5000, 5000);
-	
 	ElmoInit(CAN2);								//驱动器初始化
 	MotorOn(CAN2,1);							//电机使能（通电）
 	MotorOn(CAN2,2);
-	
->>>>>>> master
-	
+	delay_ms(12000);
 	OSTaskSuspend(OS_PRIO_SELF);
-	
 }
-void walk_direct(float v) //左轮速度,单位m/s
+//void walk_direct(float vel) //左轮速度,单位mm/s
+//{
+//	VelCrl(CAN2,1,vel*Pulse2mm); //设置右轮速度
+//	VelCrl(CAN2,2,-vel*Pulse2mm); //设置左轮速度
+//}
+extern float posX,posY,angle;
+typedef struct{
+	float setangle;
+	float actualangle;
+	float err;
+	float last_err;
+	float d_err;
+	float kp,ki,kd;
+	float err_integral;
+	float vel;
+}PID;
+PID pid;
+float vel_PID(float setangle,int kp,int ki)
 {
-	float vel=0,temp_vel=0.;
-	temp_vel=COUNT_PER_ROUND*v/CIRCLE_LENGTH;
-	vel=1000*temp_vel;
-	VelCrl(CAN2,1,vel); //设置右轮速度
-	VelCrl(CAN2,2,-vel); //设置左轮速度
+	pid.kp=kp;
+	pid.ki=ki;
+	pid.setangle=setangle;
+	pid.actualangle=angle;
+	pid.err=pid.setangle-pid.actualangle;
+	if(pid.err<-180)
+	{
+		pid.err+=360;
+	}
+	if(pid.err>180)
+	{
+		pid.err=360-pid.err;
+	}
+	pid.d_err=pid.err-pid.last_err;
+	pid.err_integral+=pid.err;
+	pid.vel=pid.kp*pid.err+pid.ki*pid.err_integral+pid.kd*pid.d_err;
+	pid.last_err=pid.err;
+	pid.actualangle=pid.vel;
+	return pid.vel;
 }
-
-float value(float r)//求取两个轮子的速度比值
-{
-	float value=0,r1=0,r2=0;
-	r1=r+(WHEEL_TREAD/2);
-	r2=r-(WHEEL_TREAD/2);
-	value=r1/r2;
-	return value;
-}
-void turn(float r,float L_w)//转弯的弯道的半径，左轮的角速度
-{
-	float L_vel=0,R_vel=0;
-	L_vel=-L_w*WHEEL_TREAD*COUNT_PER_ROUND/CIRCLE_LENGTH/2;
-	R_vel=L_vel*value(0);
-	VelCrl(CAN2,1,R_vel);
-	VelCrl(CAN2,2,-L_vel);
-}
+int x,y,agl,erro;
 void WalkTask(void)
-{
-	int time=0,stage=0;
+{ 
 	CPU_INT08U os_err;
 	os_err = os_err;
-	OSSemSet(PeriodSem, 0, &os_err);
+	OSSemSet(PeriodSem,0, &os_err);
+	float vel=500.0;
 	while (1)
 	{
-<<<<<<< HEAD
-		OSSemPend(PeriodSem,0,&os_err);
-			turn(0,PI/2); break;
-			walk_direct(0.5);
-		if(time>2000)
-			time=0;
-=======
-
-		OSSemPend(PeriodSem, 0, &os_err);
-		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
->>>>>>> master
+		OSSemPend(PeriodSem, 0,&os_err);
+		x=(int)(posX);
+		y=(int)(posY);
+		agl=(int)(angle);
+		erro=(int)(pid.err);
+		USART_OUT(UART4,(uint8_t*)"x=%d,y=%d,agl=%d,err=%d\r\n",x,y,agl,erro);
+		if(x<2000&&x>-500)
+		{
+			if(y<500&&y>-500)
+			{
+		VelCrl(CAN2,1,(vel+vel_PID(0,100,0))*Pulse2mm );
+		VelCrl(CAN2,2,-vel*Pulse2mm); 
+			}
+		}
+		if(x>=2000&&x<2500)
+		{
+			if(y<1500)
+			{
+				VelCrl(CAN2,1,(vel+vel_PID(90,100,0))*Pulse2mm );
+				VelCrl(CAN2,2,-vel*Pulse2mm ); 
+			}
+		}
+		if(x>500)
+		{
+			if(y>=1500)
+			{
+				VelCrl(CAN2,1,(vel+vel_PID(180,100,0))*Pulse2mm );
+				VelCrl(CAN2,2,-vel*Pulse2mm ); 
+			}
+		}
+		if(x<500&&x>-500)
+		{
+			if(y>=500)
+			{
+				VelCrl(CAN2,1,(vel+vel_PID(-90,100,0))*Pulse2mm );
+				VelCrl(CAN2,2,-vel*Pulse2mm ); 
+			}
+		}
 	}
 }
 

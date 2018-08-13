@@ -51,11 +51,7 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	uint8_t *len;
-	if(CAN_MessagePending(CAN2,CAN_FIFO0) != 0)
-	{	
-		CAN_RxMsg(CAN1,0,CAN1Buffer,len);
-	}
+	CAN_RxMsg(CAN1,0,CAN1Buffer,8);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -83,11 +79,7 @@ void CAN2_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	uint8_t *len;
-	if(CAN_MessagePending(CAN2,CAN_FIFO0) != 0)
-	{	
-		CAN_RxMsg(CAN2,0,CAN2Buffer,len);
-	}
+	CAN_RxMsg(CAN2,0,CAN2Buffer,8);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -244,39 +236,14 @@ void USART2_IRQHandler(void)
 	OSIntExit();
 }
 
-
-typedef struct{
-	float x;
-	float y;
-	float angle;
-}Pos_t;
-static float angle=0,xpos=0,ypos=0;
-void SetAngle(float val)
-{
-	angle=val;
-}
-void SetXpos(float val)
-{
-	xpos=val;
-}
-void SetYpos(float val)
-{
-	ypos=val;
-}
-float GetXpos(void)
-{
-	return xpos;
-}
-float GetYpos(void)
-{
-	return ypos;
-}
-//定位系统串口接收中断8
-void USART3_IRQHandler(void) //更新频率200Hz
+//定位系统串口接收中断8 
+int isOKFlag;
+float posX,posY,angle;
+void USART3_IRQHandler(void) //更新频率 200Hz
 {
 	static uint8_t ch;
-	
-	static union {
+	static union
+	{
 		uint8_t data[24];
 		float ActVal[6];
 	} posture;
@@ -287,78 +254,74 @@ void USART3_IRQHandler(void) //更新频率200Hz
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
 	{
-		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
 		USART_ReceiveData(USART3);
 	}
-	if (USART_GetITStatus(USART1, USART_IT_RXNE) == SET)
+	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
-		ch=USART_ReceiveData(USART3);
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		ch = USART_ReceiveData(USART3);
 		switch (count)
 		{
-		case 0:
-			if (ch == 0x0d)
+			case 0:
+				if (ch == 0x0d)
 				count++;
-			else
+				else if(ch=='O')
+				count=5;
+				else
 				count = 0;
-			break;
-
-		case 1:
-			if (ch == 0x0a)
-			{
-				i = 0;
-				count++;
-			}
-			else if (ch == 0x0d)
-				;
-			else
+				break;
+			case 1:
+				if (ch == 0x0a)
+				{
+					i = 0;
+					count++;
+				}
+				else
+					count = 0;
+				break;
+			case 2:
+				posture.data[i] = ch;
+				i++;
+				if (i >= 24)
+				{
+					i = 0;
+					count++;
+				}
+				break;
+			case 3:
+				if (ch == 0x0a)
+					count++;
+				else
+					count = 0;
+				break;
+			case 4:
+				if (ch == 0x0d)
+				{
+					angle =posture.ActVal[0] ;//角度
+					posture.ActVal[1] = posture.ActVal[1];
+					posture.ActVal[2] = posture.ActVal[2];
+					posX = posture.ActVal[3];//x
+					posY = posture.ActVal[4];//y
+					posture.ActVal[5] = posture.ActVal[5];
+				}
 				count = 0;
-			break;
-
-		case 2:
-			posture.data[i] = ch;
-			i++;
-			if (i >= 24)
-			{
-				i = 0;
-				count++;
-			}
-			break;
-
-		case 3:
-			if (ch == 0x0a)
-				count++;
-			else
+				break;
+			case 5:
 				count = 0;
-			break;
-
-		case 4:
-			if (ch == 0x0d)
-			{
-
-				angle = posture.ActVal[0];
-				posture.ActVal[1] = posture.ActVal[1];
-				posture.ActVal[2] = posture.ActVal[2];
-				posX = posture.ActVal[3];
-				posY= posture.ActVal[4];
-				avel=posture.ActVal[5] = posture.ActVal[5];
-				SetXpos(posX);
-				SetYpos(posY);
-				SetAngle(angle);
-			}
-			count = 0;
-			break;
-
-		default:
-			count = 0;
-			break;
+				if(ch=='K')
+					isOKFlag=1;
+				break;
+			default:
+				count = 0;
+				break;
 		}
 	}
 	else
 	{
-		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
 		USART_ReceiveData(USART3);
 	}
 	OSIntExit();
