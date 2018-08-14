@@ -341,10 +341,12 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-Pos_t pos;
+Pos_t posTmp;
+//定位系统串口接受中断函数，更新频率200Hz
+#if CarNum == CarOne
 extern int isOKFlag;
 extern uint8_t opsFlag;
-//四号车定位系统串口接受中断函数，更新频率200Hz
+#endif
 void USART3_IRQHandler(void) 
 {
 	static uint8_t ch;
@@ -374,8 +376,10 @@ void USART3_IRQHandler(void)
 		case 0:
 			if(ch == 0x0d)
 				count++;
+			#if CarNum == CarOne
 			else if(ch == 'O')
                 count = 5;
+			#endif
 			else
 				count = 0;
 			break;
@@ -414,21 +418,25 @@ void USART3_IRQHandler(void)
 		case 4:
 			if(ch == 0x0d)
 			{
+				#if CarNum == CarOne
 				opsFlag = 1;
-				pos.angle = posture.ActVal[0];
+				#endif
+				posTmp.angle = posture.ActVal[0];
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
-				pos.x=posture.ActVal[3];
-	            pos.y=posture.ActVal[4];
+				posTmp.x=posture.ActVal[3];
+	            posTmp.y=posture.ActVal[4];
 				posture.ActVal[5] = posture.ActVal[5];	
 			}
 			count = 0;
 			break;
+		#if CarNum == CarOne
 		case 5:
             count = 0;
  		    if(ch == 'K')
 				isOKFlag = 1;
             break;
+		#endif
 
 		default:
 			count = 0;
@@ -442,6 +450,7 @@ void USART3_IRQHandler(void)
 	}
 	OSIntExit();	
 }
+
 
 void UART5_IRQHandler(void)
 {

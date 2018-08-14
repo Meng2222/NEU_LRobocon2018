@@ -13,10 +13,14 @@
 #include "moveBase.h"
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
 #define BaseVelocity (0.5 * One_Meter_Per_Second) //基础速度               0.5m/s
-#define CarOne 1                                  //一号车编号             1
-#define CarFour 4                                 //四号车编号             4
 #define Side_Length (2000)                        //方形边长               2m
-#define Angle_Error_Range (3)                     //角度误差范围           3 
+#define Angle_Error_Range (3)                     //角度误差范围           3°
+
+#define PID_Angle_Kp (0.02)                         //角度PID参数Kp          0.02
+#define PID_Angle_Ki (0)                            //角度PID参数Ki          0
+#define PID_Angle_Kd (0.001)                        //角度PID参数Kd          0.01
+
+	
 /*
 ===============================================================
 						信号量定义
@@ -25,7 +29,8 @@
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
 
-extern Pos_t pos;
+Pos_t pos;
+extern Pos_t posTmp;
 
 //目标坐标信息结构体，x为横坐标，y为纵坐标，angle为与0°的相对角度
 typedef struct{ 
@@ -37,8 +42,8 @@ Target tar;
 
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
-static int CarNum = CarOne;
 
+#if CarNum == CarOne
 int isOKFlag = 0;    //定位系统初始化完毕标志位
 uint8_t opsFlag = 0; //收到定位系统数据标志位
 
@@ -63,6 +68,7 @@ void driveGyro(void)
 	}
 	SetOKFlagZero();
 }
+#endif
 
 /**
 * @brief  PID控制参数数据结构体
@@ -76,7 +82,6 @@ typedef struct{
     float Kp;            //比例系数
     float Ki;            //积分系数
     float Kd;            //微分系数
-    
     
     float error;         //当前偏差
     float error_1;       //前一步的偏差
@@ -97,10 +102,10 @@ PID_Value PID_Angle;
 */
 float PID_operation(PID_Value *p)
 {
-	p->Kp = 0.02;
-	p->Ki = 0;
-	p->Kd = 0.001;
-	
+	//此处的PID参数设置应放在PID控制器函数外
+	p->Kp = PID_Angle_Kp;
+	p->Ki = PID_Angle_Ki;
+	p->Kd = PID_Angle_Kd;
 	
 	p->error = p->setValue - p->feedbackValue;
 	p->error_sum = p->error_sum + p->error;
@@ -198,18 +203,16 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2, 2, 2333333, 2333333);
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
-	//一号车定位系统初始化
-	if(CarNum == CarOne)
-	{
+	
+	//定位系统初始化延时
+    #if CarNum == CarOne        
 		delay_s(2);
 		driveGyro();
 		while(!opsFlag);
-	}
-	//四号车定位系统初始化
-	if(CarNum == CarFour)
-	{
+
+    #elif CarNum == CarFour
 		delay_s(10);
-	}
+    #endif
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
@@ -229,6 +232,19 @@ void WalkTask(void)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
 		
+		
+		//将一号车的坐标系转化为四号车的标准坐标系
+		#if CarNum == CarOne
+		    pos.x = posTmp.y;
+		    pos.y = posTmp.x * -1;
+		    pos.angle = posTmp.angle * -1;
+		#elif CarNum == CarFour
+		    pos.x = posTmp.x;
+		    pos.y = posTmp.y;
+		    pos.angle = posTmp.angle;
+        #endif
+		
+		
 		//以50 * 10ms为间隔发送数据
 		cntSendTime++;
 		cntSendTime = cntSendTime % 50;
@@ -237,44 +253,46 @@ void WalkTask(void)
             USART_OUT(UART4, (uint8_t*)"x=%d,y=%d,ang=%d,tx=%d,ty=%d,ta=%d,cT=%d,tF=%d\r\n", (int)pos.x, (int)pos.y, (int)pos.angle,(int)tar.x, (int)tar.y, (int)tar.angle, (int)cntTurn, (int)turnFlag);
 		}
 		
+		
         //到达目标地点后，turnFlag = 1开始转弯
 		if(cntTurn == 0)
 		{
-            if(tar.x > pos.x){turnFlag = 1;}
+            if(tar.y < pos.y){turnFlag = 1;}
 		}
 		if(cntTurn == 1)
 		{	
-			if(tar.y > pos.y){turnFlag = 1;}
+			if(tar.x > pos.x){turnFlag = 1;}
 		}
 		if(cntTurn == 2)
 		{	
-			if(tar.x < pos.x){turnFlag = 1;}
+			if(tar.y > pos.y){turnFlag = 1;}
 		}
 		if(cntTurn == 3)
 		{
-			if(tar.y < pos.y){turnFlag = 1;}
+			if(tar.x < pos.x){turnFlag = 1;}
 		}
+
 		
 		//设置转弯目标角度
 		if(turnFlag == 1)
-		{
-			
+		{	
 			switch (cntTurn)
 		    {
 		    case 0:
-			    tar.angle = -90;
+			    tar.angle = 90;
 			    break;
 		    case 1:
-			    tar.angle = -180;			    
+			    tar.angle = 180;			    
 			    break;
 		    case 2:
-			    tar.angle = 90;			
+			    tar.angle = -90;			
 			    break;
 		    case 3:
 			    tar.angle = 0;					
 			    break;
 		    }
 		}
+		
 		
 		//转弯时速度值完全由PID输出，直线行驶时加上基础速度
 		if(turnFlag == 1)
@@ -285,6 +303,7 @@ void WalkTask(void)
 		{
 			baseVelocity = BaseVelocity;
 		}
+		
 		
         //根据当前角度正负调整目标角度，使转弯圆弧始终为劣弧
 		if(tar.angle == 180 || tar.angle == -180)
@@ -301,15 +320,21 @@ void WalkTask(void)
 		
 	    
 		PID_Angle.setValue = tar.angle;
-        PID_Angle.feedbackValue = pos.angle;		
-		PID_Angle.error = PID_Angle.setValue - PID_Angle.feedbackValue;
-
-		adjustVelocity = PID_operation(&PID_Angle) * One_Meter_Per_Second;//逆时针旋转时，四号车adjustVelocity为负数
-		//adjustVelocity = constrain_float(adjustVelocity, PID_Angle.out_max, PID_Angle.out_min);
+        PID_Angle.feedbackValue = pos.angle;
+		adjustVelocity = PID_operation(&PID_Angle) * One_Meter_Per_Second;
+		//adjustVelocity = constrain_float(adjustVelocity, PID_Angle.out_max, PID_Angle.out_min);//PID控制量限幅
 		
-		VelCrl(CAN2, 1, (int)(baseVelocity - adjustVelocity));//右轮
-		VelCrl(CAN2, 2, (int)((baseVelocity + adjustVelocity) * -1));//左轮
+		
+		//根据当前角度是否大于180调整PID输出的控制量，使转弯圆弧始终为劣弧
+		if(fabs(PID_Angle.error) > 180)
+		{
+			adjustVelocity = adjustVelocity * -1;
+		}
 
+		VelCrl(CAN2, 1, (int)(baseVelocity + adjustVelocity));//右轮
+		VelCrl(CAN2, 2, (int)((baseVelocity - adjustVelocity) * -1));//左轮
+
+		
 		//角度误差在允许范围内时停止转弯turnFlag = 0，设置下一个目标的位置信息switchNextModeFlag = 1，转弯计数加1
 		if((fabs(tar.angle - pos.angle) < Angle_Error_Range) && (turnFlag == 1))
 		{
@@ -318,6 +343,8 @@ void WalkTask(void)
 			cntTurn++;
 		}
 		cntTurn = cntTurn % 4;
+		
+		
 		//设置下一个目标的位置信息
 		if(switchNextModeFlag == 1)
 		{
@@ -325,24 +352,24 @@ void WalkTask(void)
 			switch (cntTurn)
 		    {
 		    case 0:
-				tar.x = pos.x - Side_Length;
-			    tar.y = pos.y;
+				tar.x = pos.x;
+			    tar.y = pos.y + Side_Length;
 			    tar.angle = 0;
 			    break;
 		    case 1:
-				tar.x = pos.x;
-			    tar.y = pos.y - Side_Length;
-			    tar.angle = -90;			    
+				tar.x = pos.x - Side_Length;
+			    tar.y = pos.y;
+			    tar.angle = 90;			    
 			    break;
 		    case 2:
-				tar.x = pos.x + Side_Length;
-			    tar.y = pos.y;
-			    tar.angle = -180;			
+				tar.x = pos.x;
+			    tar.y = pos.y - Side_Length;
+			    tar.angle = 180;			
 			    break;
 		    case 3:
-				tar.x = pos.x;
-			    tar.y = pos.y + Side_Length;
-			    tar.angle = 90;					
+				tar.x = pos.x + Side_Length;
+			    tar.y = pos.y;
+			    tar.angle = -90;					
 			    break;
 		    }
 		}
