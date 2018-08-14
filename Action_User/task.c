@@ -104,7 +104,7 @@ void driveGyro(void)
 }
 
 float kp = 20;
-float ki = 0.0001;
+float ki = 0;
 float kd = 2;
 float lastAngle = 0;
 float velocity = 0;
@@ -168,6 +168,8 @@ void PID_Angle(u8 status,float Angle_Set,float Angle,int v)
 	}
 	if(lastStatus == manual && status == Auto) Init_PID(Angle);
 	
+	if(Angle_Set>180) Angle_Set = Angle_Set - 360;
+	if(Angle_Set<-180) Angle_Set = Angle_Set + 360;
 	if(Angle_Set>=0)
 	{
 		if(Angle>=Angle_Set-180) Angle = Angle-Angle_Set;
@@ -214,6 +216,96 @@ void PID_Coordinate(float x0,float y0,int v)
 	if(posture.ActVal[3]<x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(-90+((atan((y0-posture.ActVal[4])/(x0-posture.ActVal[3])))*(180/3.141592))),posture.ActVal[0],v);
 	if((x0-50)<posture.ActVal[3] && posture.ActVal[3]<(x0+50) && (y0-50)<posture.ActVal[4] && posture.ActVal[4]<(y0+50)) coordinateCnt++;
 }
+
+void PID_Line(float x1,float y1,float x2,float y2,int v)
+{
+	float Line_A = y1-y2;
+	float Line_B = x2-x1;
+	float Line_C = x1*y2-x2*y1;
+	float error = (Line_A*posture.ActVal[3]+Line_B*posture.ActVal[4]+Line_C)/sqrt(Line_A*Line_A+Line_B*Line_B);
+	if(x1>x2 && y1>=y2) PID_Angle(Auto,(90+((atan((y1-y2)/(x1-x2)))*(180/3.141592)))+error/20,posture.ActVal[0],v);
+	if(x1>x2 && y1<y2) PID_Angle(Auto,(90-((atan((y2-y1)/(x1-x2)))*(180/3.141592)))+error/20,posture.ActVal[0],v);
+	if(x1<x2 && y1>=y2) PID_Angle(Auto,(-90-((atan((y1-y2)/(x2-x1)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
+	if(x1<x2 && y1<y2) PID_Angle(Auto,(-90+((atan((y2-y1)/(x2-x1)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
+	if(x1==x2 && y2>=y1) PID_Angle(Auto,0+(posture.ActVal[3]-x1)/20,posture.ActVal[0],v);
+	if(x1==x2 && y2<y1) PID_Angle(Auto,180-(posture.ActVal[3]-x1)/20,posture.ActVal[0],v);
+}
+
+//void PID_Line(float x1,float y1,float x2,float y2,int v)
+//{
+//	float y = posture.ActVal[4];
+//	float x = posture.ActVal[3];
+//	static u8 delay_error = 0;
+//	static u8 delay_line = 0;
+//	static float k = 0;
+//	static float y3 = 0;
+//	static float x3 = 0;
+//	static float y4 = 0;
+//	static float error = 0;
+//	if(x1==x2)
+//	{
+//		error = sqrt((x-x1)*(x-x1));
+//		if(error < 100) 
+//		{
+//			delay_error = 0;
+//			delay_line++;
+//			if(delay_line>0)
+//			{
+//				PID_Coordinate(x2,y2,v);
+//				delay_line = 100;
+//			}
+//		}
+//		else
+//		{
+//			delay_line = 0;
+////			if(delay_error == 0)
+////			{
+//				y4 = y;
+////			}
+//			delay_error++;
+//			if(delay_error>49)
+//			{
+//				if((x-x1)>200 || (x-x1)<-200) PID_Coordinate(x2,y4,v);
+//				else PID_Coordinate(x2,y4,200);
+//				delay_error = 150;
+//			}
+//			else PID_Coordinate(x2,y2,v);			
+//		}
+//	}
+//	else
+//	{
+//		k = (y2-y1)/(x2-x1);
+//		y3 = k*(x-x1+k*(y-y1))/((k*k+1)+k*k)+y1;
+//		x3 = (k*k*x1+x+k*y-k*y1)/((k*k+1)+k*k);
+//		error = sqrt((x-x3)*(x-x3)+(y-y3)*(y-y3));
+//		if(error<100)
+//		{
+//			delay_error = 0;
+//			delay_line++;
+//			if(delay_line>0)
+//			{
+//				PID_Coordinate(x2,y2,v);
+//				delay_line = 100;
+//			}
+//		}
+//		else
+//		{
+//			delay_line = 0;
+////			if(delay_error == 0)
+////			{				
+//				
+////			}
+//			delay_error++;
+//			if(delay_error>49)
+//			{
+//				if(error<200) PID_Coordinate(x3,y3,200);
+//				else PID_Coordinate(x3,y3,v);
+//				delay_error = 150;
+//			}
+//			else PID_Coordinate(x2,y2,v);
+//		}
+//	}
+//}
 
 /*
 ===============================================================
@@ -297,8 +389,8 @@ void WalkTask(void)
 
 		cnt++;
 		if(cnt>799) cnt = 0;
-		
-//pid坐标
+//		
+////pid坐标
 
 //		switch (coordinateCnt)
 //		{
@@ -361,17 +453,19 @@ void WalkTask(void)
 //				break;
 //		}
 //		if(coordinateCnt == 4) coordinateCnt=0;
-		
-		time = cnt/10;
+
+		PID_Line(-600,0,-600,-7000,1000);
+//		PID_Coordinate(2000,3000,500);
+		time = cnt/1;
 		if(lasttime != time)
 		{
-			USART_OUT(UART4,(uint8_t*)"angle = %d  ", (int)posture.ActVal[0]);
-			USART_OUT(UART4,(uint8_t*)"x = %d  ", (int)posture.ActVal[3]);
-			USART_OUT(UART4,(uint8_t*)"y = %d  ", (int)posture.ActVal[4]);
-			USART_OUT(UART4,(uint8_t*)"v = %d  ", (int)velocity);
+//			USART_OUT(UART4,(uint8_t*)"angle = %d  ", (int)posture.ActVal[0]);
+//			USART_OUT(UART4,(uint8_t*)"x = %d  ", (int)posture.ActVal[3]);
+//			USART_OUT(UART4,(uint8_t*)"y = %d  ", (int)posture.ActVal[4]);
+//			USART_OUT(UART4,(uint8_t*)"v = %d  ", (int)velocity);
 										         
-//			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[3]);
-//			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[4]);
+			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[3]);
+			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[4]);
 			
 			USART_SendData(UART4,'\r');
 			USART_SendData(UART4,'\n');
