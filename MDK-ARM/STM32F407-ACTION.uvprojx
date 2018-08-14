@@ -380,6 +380,11 @@
           <GroupName>User</GroupName>
           <Files>
             <File>
+              <FileName>gpio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\gpio.c</FilePath>
+            </File>
+            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Action_User\main.c</FilePath>
@@ -400,11 +405,6 @@
               <FilePath>..\Action_User\timer.c</FilePath>
             </File>
             <File>
-              <FileName>gpio.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Action_User\gpio.c</FilePath>
-            </File>
-            <File>
               <FileName>usart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Action_User\usart.c</FilePath>
@@ -423,6 +423,11 @@
               <FileName>moveBase.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Action_User\moveBase.c</FilePath>
+            </File>
+            <File>
+              <FileName>PID.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\PID.c</FilePath>
             </File>
           </Files>
         </Group>
