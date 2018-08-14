@@ -140,6 +140,7 @@ void WalkTask(void)
 	os_err = os_err;
 	OSSemSet(PeriodSem,0, &os_err);
 	float vel=500.0;
+	float dv;
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0,&os_err);
@@ -147,29 +148,33 @@ void WalkTask(void)
 		y=(int)(posY);
 		agl=(int)(angle);
 		erro=(int)(pid.err);
-		USART_OUT(UART4,(uint8_t*)"x=%d  y=%d  agl=%d  err=%d\r\n",x,y,agl,erro);
-		if(x>-200&&x<200&&y>=0&&y<=1800)
+		USART_OUT(UART4,(uint8_t*)"%d %d %d \r\n",x,y,agl,erro);
+		if(x<400&&y<=1600)
 		{
-			VelCrl(CAN2,1,(vel+vel_PID(0,90,0))*Pulse2mm );
+			dv=vel_PID(0,50,0);
+			VelCrl(CAN2,1,( vel+dv)*Pulse2mm );
 			VelCrl(CAN2,2,-vel*Pulse2mm ); 
 		}
-		if(x>=-200&&x<=1800&&y>1800&&y<2200)
+		if(x<=1600&&y>1600)
 		{
-			VelCrl(CAN2,1,(vel+vel_PID(-90,90,0))*Pulse2mm );
+			dv=vel_PID(-90,50,0);
+			VelCrl(CAN2,1,(vel+dv)*Pulse2mm );
 			VelCrl(CAN2,2,-vel*Pulse2mm ); 
 		}
-		if(x>1800&&x<2200&&y>200&&y<=2200)
+		if(x>1600&&y>400)
 		{
-				VelCrl(CAN2,1,(vel+vel_PID(-180,90,0))*Pulse2mm );
-				VelCrl(CAN2,2,-vel*Pulse2mm ); 
+			dv=vel_PID(-180,50,0);
+			VelCrl(CAN2,1,(vel+dv)*Pulse2mm );
+			VelCrl(CAN2,2,-vel*Pulse2mm ); 
 		}	
-		if(x>=200&&x<2200&&y<200&&y>-200)
+		if(x>=400&&y<400)
 		{
-				VelCrl(CAN2,1,(vel+vel_PID(90,90,0))*Pulse2mm );
-				VelCrl(CAN2,2,-vel*Pulse2mm ); 
+			dv=vel_PID(90,50,0);
+			VelCrl(CAN2,1,(vel+dv)*Pulse2mm );
+			VelCrl(CAN2,2,-vel*Pulse2mm ); 
 		}		
 		erro=(int)(pid.err);
-		USART_OUT(UART4,(uint8_t*)"x=%d  y=%d  agl=%d  erro=%d\r\n",x,y,agl,erro);		
+		USART_OUT(UART4,(uint8_t*)"x=%d y=%d\r\n",x,y,agl,erro);		
 	}
 }
 
