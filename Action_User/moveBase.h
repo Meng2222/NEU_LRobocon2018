@@ -22,6 +22,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stdint.h"
 #include "elmo.h"
+#include "environmental.h"
 
 
 /* Exported types ------------------------------------------------------------*/
@@ -85,6 +86,12 @@ void MakeCircle(float speed, float radius, direction drt);
 *  ElmoNum 为所选轮子编号
 */
 void WheelSpeed(float speed, uint8_t ElmoNum);
+
+/**TurnAround 让车原地旋转
+*  addedspeed 为轮子差速速度(单位mm/s);
+*  speed 为小车直行速度(单位mm/s)
+*/
+void TurnAround(float addedSpeed, float speed);
 
 
 #endif /* ___H */

@@ -3,25 +3,23 @@
 
 #include "stdint.h"
 
-static int32_t UOut = 0;
-static int32_t err = 0;
-static int32_t iSum = 0;
-static int32_t lasterr = 0;
-static int32_t dDiff = 0;
-static int32_t varGetted = 0;
+static float UOut = 0;
+static float err = 0;
+static float iSum = 0;
+static float lasterr = 0;
+static float dDiff = 0;
 
 typedef struct
 {
-    int32_t KP;
-    int32_t KI;
-    int32_t KD;
-    int32_t ExOut;
-    int32_t (*GetVar)(void);
-    void (*Ctrl)(int32_t);
+    float KP;
+    float KI;
+    float KD;
+    float ExOut;
+    float (*GetVar)(void);
+    void (*Ctrl)(float);
 }PIDCtrlStructure;
 
 void PIDCtrl(PIDCtrlStructure *);
 void PIDCtrlInit(void);
-int32_t ExRep(int32_t ExAngle, int32_t GetA);
 
 #endif

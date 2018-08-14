@@ -8,12 +8,18 @@
  
 void PIDCtrl(PIDCtrlStructure * PIDStructure)
 {
-    varGetted = (*PIDStructure).GetVar();
+    err = (*PIDStructure).ExOut - (*PIDStructure).GetVar();
     /****************************************************
     这是为了修复小车螺旋升天而加入的代码
     ****************************************************/
-    (*PIDStructure).ExOut = ExRep((*PIDStructure).ExOut, varGetted);
-    err = (*PIDStructure).ExOut - varGetted;
+    if(err > 180)
+    {
+        err -= 360;
+    }
+    else if(err < -180)
+    {
+        err += 360;
+    }
     iSum += err;
     dDiff = err - lasterr;
     lasterr = err;
@@ -30,24 +36,4 @@ void PIDCtrlInit(void)
     iSum = 0;
     lasterr = 0;
     dDiff = 0;
-}
-
-/****************************************************
-这是为了修复小车螺旋升天而加入的代码
-****************************************************/
-
-int32_t ExRep(int32_t ExAngle, int32_t GetA)
-{
-    if(ExAngle != 180 && ExAngle != -180)
-    {
-        return ExAngle;
-    }
-    else if(GetA > 0)
-    {
-        return 180;
-    }
-    else
-    {
-        return -180;
-    }
 }

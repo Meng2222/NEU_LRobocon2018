@@ -34,11 +34,16 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-
+#include "environmental.h"
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
+
+#ifdef CAR1
+static _Bool isOKFlag = 0;
+#endif
+
 
 void NMI_Handler(void);
 void HardFault_Handler(void);

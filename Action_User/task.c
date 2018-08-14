@@ -12,8 +12,7 @@
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
 #include "PID.H"
-
-#define CAR4
+#include "environmental.h"
 
 
 /*
@@ -32,7 +31,9 @@ typedef struct
 }Pos;
 
 Pos Pos_t;
-Pos ExPos_t;
+Pos lastpos;
+PIDCtrlStructure PidA;
+_Bool directionFlag = 0;
 
 void App_Task()
 {
@@ -41,7 +42,6 @@ void App_Task()
 
 	/*创建信号量*/
 	PeriodSem = OSSemCreate(0);
-
 	/*创建任务*/
 	os_err = OSTaskCreate((void (*)(void *))ConfigTask, /*初始化任务*/
 						  (void *)0,
@@ -73,7 +73,7 @@ void ConfigTask(void)
     USART3_Init(115200);
     UART4_Init(921600);
 #ifdef CAR1
-    while(GetOkFlag())
+    while(!GetOkFlag())
     {
         delay_ms(5);
         USART_OUT(USART3, (uint8_t *)"AT\r\n");
@@ -85,35 +85,23 @@ void ConfigTask(void)
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
-int32_t GetX(void)
+float GetX(void)
 {
     return (int32_t)Pos_t.posX;
 }
 
-int32_t GetY(void)
+float GetY(void)
 {
     return (int32_t)Pos_t.posY;
 }
-int32_t GetA(void)
+float GetA(void)
 {
     return (int32_t)Pos_t.angle;
 }
 
-void circle(int32_t Num)
+void CtrlTool(float Uout)
 {
-    USART_OUT(UART4, (uint8_t *)"%d\n", Num);
-    if(Num != 0)
-    {
-        Num /= 2000;
-        if(Num > 0)
-        {
-            MakeCircle(Num, 500 , LEFT);
-        }
-        else
-        {
-            MakeCircle(-1 * Num, -500, RIGHT);
-        }
-    }
+    TurnAround(Uout, 500);
 }
 
 //void straight(int32_t Num)
@@ -121,64 +109,51 @@ void circle(int32_t Num)
 //    GoStraight((float)Num);
 //}
 
+void ExSet(void)
+{
+        if(PidA.ExOut >= 180)
+        {
+            PidA.ExOut -= 360;
+        }
+        PidA.ExOut += 90;
+        lastpos.posX = GetX();
+        lastpos.posY = GetY();
+        PIDCtrlInit();
+        directionFlag = !directionFlag;
+}
+
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-    uint16_t counter = 0;
     MotorOn(CAN2, 1);
     MotorOn(CAN2, 2);
 	OSSemSet(PeriodSem, 0, &os_err);
-//    PIDCtrlStructure PidX;
-//    PIDCtrlStructure PidY;
-    PIDCtrlStructure PidA;
-    ExPos_t.angle = 0;
-//    ExPos_t.posX = 0;
-//    ExPos_t.posY = 2000;
-//    PidX.KP = 100;
-//    PidX.KI = 1;
-//    PidX.KD = 10000;
-//    PidX.GetVar = GetX;
-//    PidX.ExOut = ExPos_t.posX;
-//    PidX.Ctrl = circle;
-//    PidY.KP = 100;
-//    PidY.KI = 1;
-//    PidY.KD = 10000;
-//    PidY.GetVar = GetY;
-//    PidY.ExOut = ExPos_t.posY;
-//    PidY.Ctrl = straight;
-    PidA.KP = 100;
-    PidA.KI = 20;
-    PidA.KD = 200;
+    PidA.KP = 20;
+    PidA.KI = 0.01;
+    PidA.KD = 20;
     PidA.GetVar = GetA;
-    PidA.ExOut = ExPos_t.angle;
-    PidA.Ctrl = circle;
+    PidA.ExOut = 0;
+    PidA.Ctrl = CtrlTool;
+    lastpos.posX = 0;
+    lastpos.posY = 0;
+    lastpos.angle = 0;
     PIDCtrlInit();
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-        counter++;
-        if(counter >= 400)
+        if(__fabs(GetX() - lastpos.posX) >= 2000 && directionFlag)
         {
-            USART_OUT(UART4, (uint8_t *)"%d    ", GetX());
-            USART_OUT(UART4, (uint8_t *)"%d    ", GetY());
-            USART_OUT(UART4, (uint8_t *)"%d    \n", GetA());
-            if(ExPos_t.angle <= -180)
-            {
-                ExPos_t.angle = 180;
-            }
-            ExPos_t.angle -= 90;
-            PidA.ExOut = ExPos_t.angle;
-            PIDCtrlInit();
-            counter = 0;
+            ExSet();
         }
-        if(ExPos_t.angle - GetA() == 0)
+        if(__fabs(GetY() - lastpos.posY) >= 2000 && !directionFlag)
         {
-            //GoStraight(500);
+            ExSet();
         }
-        else
-        {
-            PIDCtrl(&PidA);
-        }
+        PIDCtrl(&PidA);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Pos_t.posX);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Pos_t.posY);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Pos_t.angle);
+        USART_OUT(UART4, (uint8_t *)"%d   \n", (int32_t) PidA.ExOut);
 	}
 }

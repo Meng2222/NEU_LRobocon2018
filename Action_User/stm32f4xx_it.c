@@ -334,12 +334,8 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-_Bool isOKFlag = 0;
-
-
 void USART3_IRQHandler(void)
 {
-    extern _Bool isOKFlag;
     extern struct
     {
         float posX;
@@ -369,10 +365,12 @@ void USART3_IRQHandler(void)
             {
                 count++;
             }
+#ifdef CAR1
             else if(ch=='O')
             {
                 count=5;
             }
+#endif
             else
             {
                 count = 0;
@@ -425,8 +423,10 @@ void USART3_IRQHandler(void)
         break;
         case 5:
             count = 0;
+#ifdef CAR1
             if(ch=='K')
                 isOKFlag=1;
+#endif
             break;
         default:
             count = 0;
@@ -452,6 +452,7 @@ void USART3_IRQHandler(void)
 	OSIntExit();
 }
 
+#ifdef CAR1
 _Bool GetOkFlag(void)
 {
     if(isOKFlag)
@@ -461,6 +462,7 @@ _Bool GetOkFlag(void)
     }
     return 0;
 }
+#endif
 
 void UART5_IRQHandler(void)
 {

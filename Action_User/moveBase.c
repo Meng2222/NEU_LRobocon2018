@@ -61,4 +61,15 @@ void WheelSpeed(float speed, uint8_t ElmoNum)
     VelCrl(CAN2, ElmoNum, frequency);
 }
 
+void TurnAround(float addedSpeed, float speed)
+{
+#ifdef CAR1
+    WheelSpeed(speed - addedSpeed, 1);
+    WheelSpeed(speed + addedSpeed, 2);
+#endif
+#ifdef CAR4
+    WheelSpeed(speed + addedSpeed, 1);
+    WheelSpeed(speed - addedSpeed, 2);
+#endif
+}
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
