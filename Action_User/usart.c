@@ -27,8 +27,28 @@ int fputc(int ch, FILE *f)
 	return ch;
 }
 
-
-void USART3_Init(uint32_t BaudRate)
+int isOKFlag=0;
+int IsSendOK(void)
+{
+	return isOKFlag;
+}
+void SetOKFlagZero(void)
+{
+	isOKFlag=0;
+}
+void driveGyro(void)
+{
+	while(!IsSendOK())
+	{
+		delay_ms(5);
+		USART_SendData(USART3,'A');
+		USART_SendData(USART3,'T');
+		USART_SendData(USART3,'\r');
+		USART_SendData(USART3,'\n');
+	}
+	SetOKFlagZero();
+}
+	void USART3_Init(uint32_t BaudRate)
 {
 
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -121,7 +141,7 @@ void USART6_Init(uint32_t BaudRate)
 
 void UART4_Init(uint32_t BaudRate)
 {
-    GPIO_InitTypeDef 	GPIO_InitStructure;
+  GPIO_InitTypeDef 	GPIO_InitStructure;
 	USART_InitTypeDef   USART_InitStructure;
 	NVIC_InitTypeDef 	NVIC_InitStructure;
 	
