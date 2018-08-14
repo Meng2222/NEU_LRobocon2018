@@ -21,7 +21,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 
-
+#include "elmo.h"
 
 /* Exported types ------------------------------------------------------------*/
 
@@ -53,6 +53,7 @@
 #define WHEEL_WIDTH (46.0f)
 //两个轮子中心距离（单位：mm）
 #define WHEEL_TREAD (355.4f)
+#define PI (3.14f)
 
 
 /**
@@ -63,8 +64,8 @@
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
-
-
+void WheelSpeed(float speed,int Num);
+void Round(float speed,float radius);
 
 
 #endif /* ___H */

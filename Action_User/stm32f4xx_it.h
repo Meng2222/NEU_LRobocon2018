@@ -47,7 +47,10 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
-
+float GETXpos(void);
+float GETYpos(void);
+float GETangle(void);
+	void driveGyro(void);
 #ifdef __cplusplus
 }
 #endif

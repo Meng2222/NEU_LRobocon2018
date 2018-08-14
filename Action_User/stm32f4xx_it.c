@@ -242,8 +242,9 @@ void USART2_IRQHandler(void)
 	}
 	OSIntExit();
 }
-
-void USART6_IRQHandler(void) //更新频率200Hz
+static float angle=0,xpos=0,ypos=0;
+static int isOKFlag=0;
+void USART3_IRQHandler(void) //更新频率200Hz
 {
 	static uint8_t ch;
 	static union {
@@ -257,15 +258,17 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 
-	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
+	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
-		ch = USART_ReceiveData(USART6);
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		ch = USART_ReceiveData(USART3);
 		switch (count)
 		{
 		case 0:
 			if (ch == 0x0d)
 				count++;
+			else if(ch=='O')
+				count = 5;
 			else
 				count = 0;
 			break;
@@ -276,8 +279,6 @@ void USART6_IRQHandler(void) //更新频率200Hz
 				i = 0;
 				count++;
 			}
-			else if (ch == 0x0d)
-				;
 			else
 				count = 0;
 			break;
@@ -302,17 +303,22 @@ void USART6_IRQHandler(void) //更新频率200Hz
 		case 4:
 			if (ch == 0x0d)
 			{
-
-				posture.ActVal[0] = posture.ActVal[0];
+                //角度
+				angle = posture.ActVal[0];
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
-				posture.ActVal[3] = posture.ActVal[3];
-				posture.ActVal[4] = posture.ActVal[4];
+				xpos = posture.ActVal[3];
+				ypos = posture.ActVal[4];
 				posture.ActVal[5] = posture.ActVal[5];
 			}
 			count = 0;
 			break;
-
+        case 5:
+			count=0;
+			if(ch=='K')
+				isOKFlag=1;
+			break;
+		
 		default:
 			count = 0;
 			break;
@@ -320,32 +326,64 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	else
 	{
-		USART_ClearITPendingBit(USART6, USART_IT_PE);
-		USART_ClearITPendingBit(USART6, USART_IT_TXE);
-		USART_ClearITPendingBit(USART6, USART_IT_TC);
-		USART_ClearITPendingBit(USART6, USART_IT_ORE_RX);
-		USART_ClearITPendingBit(USART6, USART_IT_IDLE);
-		USART_ClearITPendingBit(USART6, USART_IT_LBD);
-		USART_ClearITPendingBit(USART6, USART_IT_CTS);
-		USART_ClearITPendingBit(USART6, USART_IT_ERR);
-		USART_ClearITPendingBit(USART6, USART_IT_ORE_ER);
-		USART_ClearITPendingBit(USART6, USART_IT_NE);
-		USART_ClearITPendingBit(USART6, USART_IT_FE);
-		USART_ReceiveData(USART6);
+		USART_ClearITPendingBit(USART3, USART_IT_PE);
+		USART_ClearITPendingBit(USART3, USART_IT_TXE);
+		USART_ClearITPendingBit(USART3, USART_IT_TC);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(USART3, USART_IT_IDLE);
+		USART_ClearITPendingBit(USART3, USART_IT_LBD);
+		USART_ClearITPendingBit(USART3, USART_IT_CTS);
+		USART_ClearITPendingBit(USART3, USART_IT_ERR);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(USART3, USART_IT_NE);
+		USART_ClearITPendingBit(USART3, USART_IT_FE);
+		USART_ReceiveData(USART3);
 	}
 	OSIntExit();
 }
-
-void USART3_IRQHandler(void)
+	int IsSendOK(void)
+	{
+		
+		return isOKFlag;
+	}
+	void SetOKFlagZero(void)
+	{
+		isOKFlag=0;
+	}
+//	void driveGyro(void)
+//	{ 
+//		while(!IsSendOK())
+//		{
+//			delay_ms(5);
+//			USART_SendData(USART3,'A');
+//			USART_SendData(USART3,'T');
+//			USART_SendData(USART3,'\r');
+//			USART_SendData(USART3,'\n');
+//		}
+//		SetOKFlagZero();
+//	}
+float GETXpos(void)
+{
+	return xpos;
+}
+float GETYpos(void)
+{
+	return ypos;
+}
+float GETangle(void)
+{
+	return angle;
+}
+void USART6_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
 	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
 	}
 
 	OSIntExit();

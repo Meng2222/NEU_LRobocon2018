@@ -13,7 +13,24 @@
 /* Includes -------------------------------------------------------------------------------------------*/
 
   #include "moveBase.h"
-
+void Round(float speed,float radius)
+{
+	WheelSpeed(((speed/radius)*(radius-(WHEEL_TREAD/2))),1);
+	WheelSpeed(((speed/radius)*(radius-(WHEEL_TREAD/2))),2);
+}
+void WheelSpeed(float speed,int Num)
+{
+	int frequency=0;
+	if(Num==1)
+	{
+		frequency=(int)((COUNTS_PER_ROUND*speed)/(PI*WHEEL_DIAMETER));
+	}
+	else if(Num==2)
+	{
+		frequency=(int)(-1*(COUNTS_PER_ROUND*speed)/(PI*WHEEL_DIAMETER));
+	}
+	VelCrl(CAN2,Num,frequency);
+}	
 /* Private typedef ------------------------------------------------------------------------------------*/
 /* Private define -------------------------------------------------------------------------------------*/
 /* Private macro --------------------------------------------------------------------------------------*/

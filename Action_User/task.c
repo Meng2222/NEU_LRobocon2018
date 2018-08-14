@@ -10,7 +10,9 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
-
+#include "PID.h"
+ #include "moveBase.h"
+ #include "timer.h"
 /*
 ===============================================================
 						信号量定义
@@ -52,7 +54,7 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	TIM_Init(TIM2,9999,839,0x01,0x03); 
+	TIM_Init(TIM2,999,83,0x01,0x03); 
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	ElmoInit(CAN2);
@@ -60,30 +62,41 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2,2,4096,4096);
 	MotorOn(CAN2,1);//右
 	MotorOn(CAN2,2);
+	USART3_Init(115200);
+	UART4_Init(921600);
+	//driveGyro();
+	delay_s(12);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float leftSpeed;
-float rightSpeed;
-float R=1.0;
-int speed=1;
-int left;
-int right;
+
 void WalkTask(void)
 {
-
+    int setAngel=-180;
+	int speed=100;
+	int cnt;
+	int setAngle=0;
 	CPU_INT08U os_err;
 	os_err = os_err;
-	leftSpeed=(R+0.217)/R*speed*10865;
-	rightSpeed=(R-0.217)/R*speed*10865;
-	left=(int)leftSpeed;
-	right=(int)rightSpeed;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		VelCrl(CAN2,1,right);
-		VelCrl(CAN2,2,-left);
-	}
+	        cnt++;
+			if (cnt>=200)
+			{
+		     setAngle+=90;
+				if(setAngle>180)
+				{
+					setAngle-=360;
+				}
+				cnt=0;
+	        }
+            USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)GETangle());
+			USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)GETXpos());
+			USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)GETYpos());
+			WheelSpeed(speed+PID(setAngle,GETangle()),1);
+			WheelSpeed(speed-PID(setAngle,GETangle()),2);
+    }	
+}	
 
-	
-}
+		
