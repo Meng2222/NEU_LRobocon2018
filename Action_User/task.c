@@ -18,7 +18,6 @@
 #define ROBOT_WIDTH (490.0f)       //调试小车车宽(mm)
 #define WHEEL_WIDTH (40.0f)        //轮子宽度(mm)
 #define WHEEL_TREAD (434.0f)       //两个轮子的中心距离(mm)
-#define CIRCLE_LENGTH (PI*WHEEL_DIAMETER) //车轮转一圈走的距离
 #define Pulse2mm (COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi))
 /*
 一个脉冲是4096/(120*Pi)
@@ -148,33 +147,31 @@ void WalkTask(void)
 		y=(int)(posY);
 		agl=(int)(angle);
 		erro=(int)(pid.err);
-		USART_OUT(UART4,(uint8_t*)"%d %d %d \r\n",x,y,agl,erro);
-		if(x<400&&y<=1600)
+		USART_OUT(UART4,(uint8_t*)"%d %d\r\n",x,y);
+		if(x<150&&y<=1850)
 		{
-			dv=vel_PID(0,50,0);
+			dv=vel_PID(0,47,0);
 			VelCrl(CAN2,1,( vel+dv)*Pulse2mm );
 			VelCrl(CAN2,2,-vel*Pulse2mm ); 
 		}
-		if(x<=1600&&y>1600)
+		if(x<=1850&&y>1850)
 		{
-			dv=vel_PID(-90,50,0);
+			dv=vel_PID(-90,47,0);
 			VelCrl(CAN2,1,(vel+dv)*Pulse2mm );
 			VelCrl(CAN2,2,-vel*Pulse2mm ); 
 		}
-		if(x>1600&&y>400)
+		if(x>1850&&y>150)
 		{
-			dv=vel_PID(-180,50,0);
+			dv=vel_PID(-180,47,0);
 			VelCrl(CAN2,1,(vel+dv)*Pulse2mm );
 			VelCrl(CAN2,2,-vel*Pulse2mm ); 
 		}	
-		if(x>=400&&y<400)
+		if(x>=150&&y<150)
 		{
-			dv=vel_PID(90,50,0);
+			dv=vel_PID(90,47,0);
 			VelCrl(CAN2,1,(vel+dv)*Pulse2mm );
 			VelCrl(CAN2,2,-vel*Pulse2mm ); 
-		}		
-		erro=(int)(pid.err);
-		USART_OUT(UART4,(uint8_t*)"x=%d y=%d\r\n",x,y,agl,erro);		
+		}			
 	}
 }
 
