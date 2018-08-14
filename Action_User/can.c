@@ -392,7 +392,7 @@ void CAN_Config(CAN_TypeDef *CANx,
 	/* Enable FIFO 0 message pending Interrupt */
 
 	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x00;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x03;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x02;
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 	NVIC_Init(&NVIC_InitStructure);
 	CAN_ITConfig(CANx, CAN_IT_FMP0, ENABLE);

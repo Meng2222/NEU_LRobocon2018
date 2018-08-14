@@ -11,6 +11,25 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
+#define Kp 250
+#define Ki 0
+#define Kd 0
+float u,setAng;
+int count;
+extern char isOKFlag;
+extern char pposokflag;
+void driveGyro(void)
+{
+	while(!isOKFlag)
+	{
+		delay_ms(5);
+		USART_SendData(USART3,'A');
+		USART_SendData(USART3,'T');
+		USART_SendData(USART3,'\r');
+		USART_SendData(USART3,'\n');
+	}
+	isOKFlag = 0;
+}
 /*
 ===============================================================
 						信号量定义
@@ -60,47 +79,46 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+	
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	
 	TIM_Init(TIM2,999,83,0,0);
-	TIM_Delayms(TIM3,10000);
+	
 	USART3_Init(115200);   //定位器串口
 	UART4_Init(921600);    //蓝牙串口
-    Motor_Init();
+    
+	Motor_Init();
+	delay_s(2);
+	#if CARNUM == 1
+	driveGyro();
+	while(!pposokflag);
+	#elif CARNUM == 4
+	delay_s(10);
+	#endif
+	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-int Uk(float error,float Kp,float Ki,float Kd)
+int Uk(float err)
 {
-	static  float err[50];
-	static int i=0;
-	float u,sum;
-	int sumCount;
-	err[i]=error;
-	for(sumCount=0;sumCount<=i;sumCount++)
-	     sum=sum+err[sumCount];
-	u=Kp*err[i]+Ki*sum+Kd*(err[i]-err[i-1]);
-      i++;
-     return u;
+	static float lastErr = 0;
+	static float sumErr = 0;
+	sumErr += err;
+	u= Kp * err + Ki * sumErr +Kd *(err - lastErr);
+	lastErr = err;
 }
 void WalkStright(float mult)//直线走
 {
-	float speed,errorAng,u;
-	errorAng=GetAngle();
-	u=Uk(errorAng,5,0,0);
-	speed=4096.f*mult/(WHEEL_DIAMETER*PI);
-	VelCrl(CAN2,1,u+speed);
-	VelCrl(CAN2,2,-speed);
+	float errAng;
+	errAng=GetAngle()-setAng;
+	if(errAng>180)
+		errAng=errAng-360;
+	if(errAng<-180)
+		errAng=errAng+360;
+	Uk(errAng);
+	VelCrl(CAN2,1,4096.f*mult);
+	VelCrl(CAN2,2,-u-4096.f*mult);
 }
-void WalkAround(float mult,float radius)
-{
-	float speed1,speed2,buff1,buff2;
-	buff1=(radius+WHEEL_TREAD/2)*mult/radius;
-	buff2=(radius-WHEEL_TREAD/2)*mult/radius;
-	speed1=COUNTS_PER_ROUND*buff1/(WHEEL_DIAMETER*PI);
-	speed2=COUNTS_PER_ROUND*buff2/(WHEEL_DIAMETER*PI);
-	VelCrl(CAN2,1,speed1);
-	VelCrl(CAN2,2,-speed2);
-}	
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
@@ -109,9 +127,35 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		USART_OUT(UART4,(uint8_t*)"angle=%d",(int)GetAngle());
-		USART_OUT(UART4,(uint8_t*)"x=%d",(int)GetXpos());
-		USART_OUT(UART4,(uint8_t*)"y=%d\r\n",(int)GetYpos());
-        WalkStright(0);
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle());
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
+		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)GetYpos());
+		switch(count)
+		{
+		 case 0:
+		     setAng=0;
+		    WalkStright(1);
+		 if(GetYpos()>1750)
+			 count=1;
+		 break;
+		 case 1:
+		     setAng=-90;
+		    WalkStright(1);
+		 if(GetXpos()>1750)
+			 count=2;
+		 break;
+		 case 2:
+		     setAng=-180;
+		    WalkStright(1);
+		 if(GetYpos()<250)
+			 count=3;
+		 break;
+		 case 3:
+		     setAng=90;
+		    WalkStright(1);
+		 if(GetXpos()<250)
+			 count=0;
+		 break;
+	   }	
 	}
 }
