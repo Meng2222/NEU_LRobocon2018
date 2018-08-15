@@ -10,27 +10,23 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
- #include "moveBase.h"
+#include "moveBase.h"
+#include "pid.h"
 /*
 ===============================================================
 						信号量定义
 ===============================================================
 */
-#define KP 18.0f
-#define KI 0.0f
-#define KD 1.2f
 
+extern char updownFlag;
 extern char pposokflag;
 extern Pos_t Pos;
-float errorAngle = 0;
-float phase1 = 0,phase2 = 0,Uout = 0;
-char flag = 0;
+extern float errorAngle,errorDis;//等于位置环输出角度-实际角度，位置偏差
+extern float phase1,phase2,uOutAngle,uOutDis;//角度PID输出，位置PID输出
+extern float Uout;//PID计算的输出值
+extern char flag;
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
-void WalkLine(float speed);
-void WalkLine2PID(float vel,float setAngle);
-void WalkRound(float vel,float radius,char side);
-float PID_Compentate(float err);
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 extern char isOKFlag;
@@ -70,11 +66,16 @@ void App_Task()
    初始化任务
    ===============================================================
    */
-typedef struct {
-	float x;
-	float y;
-}PosNow_t;//定义转换位置时存当时位置
-PosNow_t PosNow;
+PId_t Angle_PId = {
+	.Kp = 9,
+	.Ki = 0,
+	.Kd = 1.0
+};
+PId_t Dis_PId = {
+	.Kp = 0.3*400/(SPEED),
+	.Ki = 0,
+	.Kd = 0
+};//PosNow_t PosNow;
 char posFlag = 0;//需要存位置标志
 void ConfigTask(void)
 {
@@ -95,6 +96,7 @@ void ConfigTask(void)
 	delay_s(2);
 	#if CARNUM == 1
 	driveGyro();
+	delay_s(5);
 	while(!pposokflag);
 	#elif CARNUM == 4
 	delay_s(10);
@@ -108,136 +110,25 @@ void WalkTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	int cnt = 0;
-	PosNow_t PosNow = {
-		.x = 0,
-		.y = 0
-	};
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
 		cnt++;
-		if(cnt>=10)
+		if(cnt>=15)
 		{
-			USART_OUT(UART4,(uint8_t*)"%d\t",(int)flag);
-			USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
-//			USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",(int)phase1,(int)phase2);
-			USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",(int)PosNow.x,(int)PosNow.y);
+			//USART_OUT(UART4,(uint8_t*)"%d\t",(int)updownFlag);//标志
+			//USART_OUT(UART4,(uint8_t*)"%d\t",(int)Pos.x);//标志
+			//USART_OUT(UART4,(uint8_t*)"%d\t",(int)errorDis);//距离差
+			//USART_OUT(UART4,(uint8_t*)"%d\t",(int)setAngle);//距离差
+			//USART_OUT(UART4,(uint8_t*)"%d\t",(int)uOutAngle);//脉冲
+			//USART_OUT(UART4,(uint8_t*)"%d\t%d\t",(int)uOutDis,(int)errorAngle);//设定角度，实际角度，偏差
+			USART_OUT(UART4,(uint8_t*)"%d\t%d\t",(int)phase1,(int)phase2);
+			USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t\r\n",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
+//			USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",(int)PosNow.x,(int)PosNow.y);
 			cnt = 0;
 		}
-		if(posFlag == 1)
-		{
-			PosNow.x = Pos.x;
-			PosNow.y = Pos.y;
-			posFlag = 0;
-		}
-		switch(flag)
-		{
-			case 0:
-			{
-				WalkLine2PID(400,0);
-				if(Pos.y >= PosNow.y + 1340)
-				{
-					flag = 1;
-					posFlag = 1;
-				}
-			}break;
-			case 1:
-			{
-				WalkLine2PID(400,-90);
-				if(Pos.x >= PosNow.x + 1340)
-				{
-					flag = 2;
-					posFlag = 1;
-				}
-			}break;
-			case 2:
-			{
-				WalkLine2PID(400,-180);
-				if(Pos.y <= PosNow.y - 1340)
-				{
-					flag = 3;
-					posFlag = 1;
-				}
-			}break;
-			case 3:
-			{
-				WalkLine2PID(400,90);
-				if(Pos.x <= PosNow.x - 1340)
-				{
-					flag = 0;
-					posFlag = 1;
-				}
-			}break;
-			default: 
-				break;	
-		
-		}
+		KownedLinePID(1,1,500,2);
 	}
 }
 
-/**
-* @brief  直线函数
-* @param  vel: 速度，单位：mm每秒，范围：最小速度限制到最大速度限制
-*/
-void WalkLine(float vel)
-{
-	float phase = 0;
-	phase = 4096.f * vel / (WHEEL_DIAMETER * PI);
-	VelCrl(CAN2,1,phase);
-	VelCrl(CAN2,2,-phase);
-}
-
-/**
-* @brief  直线函数用PID调节
-* @param  vel: 速度，单位：mm每秒，范围：最小速度限制到最大速度限制
-*/
-void WalkLine2PID(float vel,float setAngle)
-{
-	errorAngle = setAngle - Pos.angle;
-	if(errorAngle > 180.0f)
-		errorAngle = errorAngle - 360.0f;
-	else if(errorAngle < -180.0f)
-		errorAngle = 360.0f + errorAngle;		
-	Uout = PID_Compentate(errorAngle);
-	phase1 = 4096.f * (vel + Uout)/ (WHEEL_DIAMETER * PI);
-	phase2 = 4096.f * (vel - Uout)/ (WHEEL_DIAMETER * PI);
-	VelCrl(CAN2,1,phase1);
-	VelCrl(CAN2,2,-phase2);
-}
-/**
-* @brief  圆形函数
-* @param  vel: 速度，单位：mm每秒，范围：最小速度限制到最大速度限制
-* @param  radius: 半径，单位：mm，范围：最小限制到最大限制
-* @param  side: 半径，1圆心在右，0 圆心正左
-*/
-void WalkRound(float vel,float radius,char side)
-{
-	float phase1 = 0,phase2 = 0;
-	float v1 = 0,v2 = 0;
-	v1 = (radius - WHEEL_TREAD / 2) / radius * vel;
-	v2 = (radius + WHEEL_TREAD / 2) / radius * vel;
-	phase1 = 4096.f *v1 / (WHEEL_DIAMETER * PI);
-	phase2 = 4096.f *v2 / (WHEEL_DIAMETER * PI);
-	if(side == 1)
-	{
-		VelCrl(CAN2,1,phase1);
-		VelCrl(CAN2,2,-phase2);
-	}
-	else if(side == 0)
-	{
-		VelCrl(CAN2,1,phase2);
-		VelCrl(CAN2,2,-phase1);
-	}
-}
-
-float PID_Compentate(float err)
-{
-	float Uout = 0;
-	static float lastErr = 0;
-	static float sumErr = 0;
-	sumErr += err;
-	Uout = KP * err + KI * sumErr +KD *(err - lastErr);
-	lastErr = err;
-	return Uout;
-}
