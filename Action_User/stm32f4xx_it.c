@@ -338,6 +338,7 @@ float Angl;
 float X;
 float Y;
 float avel;
+int asd=1;
 extern int isOKFlag;
 void USART3_IRQHandler(void)//更新频率200Hz
 {
@@ -432,6 +433,7 @@ void USART3_IRQHandler(void)//更新频率200Hz
 				 
 				case 1:
 					if (ch == 0x0a)    {     i = 0;     count++;    }
+					else if(ch==0x0d){}
 					else     count = 0; 
 					break;
 
@@ -455,18 +457,19 @@ void USART3_IRQHandler(void)//更新频率200Hz
 					 X = posture.ActVal[3];//x
 					 Y = posture.ActVal[4];//y
 					 avel=posture.ActVal[5]=posture.ActVal[5];
+					 asd=0;////////////////////////////////////////////////////////////////
 //					 SetXpos(posX);
 //					 SetYpos(posY);
 //					 SetAngle(angle);
 					}
 					count = 0;
 					break;
-				    case 5:
+		       case 5:
 					count=0;
 				    if(ch=='K')isOKFlag=1;
 					break;
 
-				    default:
+		      default:
 					count = 0;
 					break;
 			}
@@ -477,7 +480,7 @@ void USART3_IRQHandler(void)//更新频率200Hz
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
 		USART_ReceiveData(USART3);
 	}
-//	OSIntExit();
+	OSIntExit();
 }
 
 void UART5_IRQHandler(void)

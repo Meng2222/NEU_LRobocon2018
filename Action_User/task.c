@@ -71,7 +71,7 @@ SetOKFlagZero();
 //	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
 //}
 
-
+extern int asd;
 /*
 ===============================================================
 						信号量定义
@@ -153,8 +153,9 @@ void ConfigTask(void)        //初始化
 	
 	if(Veh==1)//////////////////////////////////////////////////////////////
 	{
+	delay_s(2);
 	driveGyro();
-	delay_s(10);
+	while(asd);
 	}///////////////////////////////////////////////////////////////////////
 	if(Veh==4)
 	{
@@ -169,17 +170,25 @@ void ConfigTask(void)        //初始化
 /*====================================================================================
                                   参数选择
 ======================================================================================*/
-#define v 0.5      //车身速度 
-#define r 2        //半径 || 边长
+#define v 1        //车身速度 
+#define r 0        //半径 || 边长
                    //Mode1：车身旋转半径（填入0则直行）（r>0逆时针运动；r<0顺时针运动）
                    //Mode2：正方形边长（r=0为直行）
 #define direction 0//方向（0为前进，1为后退————Mode1适用
-#define Mode 2     //模式选择：
+#define Mode 3     //模式选择：
 				   //0调试状态（目前设置为静止）
 				   //1直行（r=0）||圆周运动 前进/后退; 
                    //2直行（r=0）||多边形运动（此时r为多边形边长）（带自动校正）
-#define angle 90   //Mode1：（无实际意义）
-                   //Mode2：多边形邻边角度
+                   //直线闭环
+#define angle -45   //Mode1：（无实际意义）
+                   //Mode2：直线角度（自动校正）
+                   //Mode3：直线闭环角度选择
+#define y_l  1000  //Mode3:直线交y轴距离
+#define x_l  0     //Mode3:直线平行y轴时与x轴交点
+
+#define pi 3.14
+#define p_a 1000   //趋近距离（mm）
+#define w_veh 150
 int v1,v2;         //两轮速度（2左 || 1右）
 
 int x,y,angl;      //XY坐标（整数） 校正角度（整数）
@@ -212,7 +221,7 @@ j=0;t=0;
 }
 
 /*====================================================================================
-                                角度锁定（方案）
+                                角度闭环（方案）
 ======================================================================================*/
 //#define para 1/180
 
@@ -371,14 +380,20 @@ void Angle_Lock3(int ang)//锁定角度方案3
 
 int ANG;
 void Angle_Lock4(int ang)//锁定角度方案4
-{ANG=angl-ang;
+{
+if(ang<-180){ang=360+ang;}
+if(ang>180){ang=ang-360;}
+ANG=angl-ang;
 if(ANG>180){ANG=ANG-360;}
 if(ANG<-180){ANG=ANG+360;}
-if(ANG==0){Move(v1,-v1);}
-if(ANG>0){Move(v1,-v1-600*ANG);}
-if(ANG<0){Move(v1-600*(ANG),-v1);}
+if(ANG>0){Move(v1-w_veh*ANG,-v1-w_veh*ANG);}
+if(ANG<0){Move(v1-w_veh*ANG,-v1-w_veh*ANG);}
 }
 
+
+/*====================================================================================
+                                多边形运动（方案）————凉凉
+======================================================================================*/
 int t1=0;
 void Move_Mode2 (int d1,int a1)//多边形——————【失败】
 {
@@ -395,18 +410,96 @@ void Move_Mode2 (int d1,int a1)//多边形——————【失败】
 
 
 
+int x1=0,y1=0;
+int mo=1;
+/*====================================================================================
+                                直线闭环（方案）
+======================================================================================*/
+
+float k;
+float d;
+//void Line_Lock1(int ang)//直线闭环方案1
+//{
+//ANG=angl-ang;
+//if(ANG>180){ANG=ANG-360;}
+//if(ANG<-180){ANG=ANG+360;}
+////{Move(v1-300*ANG,-v1-300*ANG);}
+
+//	if(ang== 90){{Move(v1-Pa*ANG+Pl*y,-v1-Pa*ANG+Pl*y);}}
+//	if(ang==-90){{Move(v1-300*ANG-Pl*y,-v1-300*ANG-Pl*y);}}
+//	if(ang!=90&&ang!=-90)
+//	{
+//		k=tan (ang*pi/180);
+//		b=y-k*x;
+//		d=b/(1+k*k);
+//		if(ang<=0){Move(v1-Pa*ANG-Pl*d,-v1-Pa*ANG-Pl*d);}
+//		if(ang>0){Move(v1-Pa*ANG+Pl*d,-v1-Pa*ANG+Pl*d);}
+//	}
+//}
 
 
+void Line_Lock2(int ang_l, float y_b, float x_b)
+{
+if(ang_l==0)
+{
+	if(x>(p_a+x_b)){Angle_Lock4(90);}
+	if(x<(-p_a+x_b)){Angle_Lock4(-90);}
+	if(x<=(p_a+x_b)&&x>=(-p_a+x_b)){Angle_Lock4(90*(x-x_b)/p_a);}
+}
+if(ang_l==180||ang_l==-180)
+{
+    if(x>(p_a+x_b)){Angle_Lock4(-90);}
+	if(x<(-p_a+x_b)){Angle_Lock4(90);}
+	if(x<=(p_a+x_b)&&x>=(-p_a+x_b)){Angle_Lock4(180-(90*(x-x_b))/p_a);}
+}
+if(ang_l!=0&&ang_l!=180&&ang_l!=-180)
+{
+	if(ang_l== 90)
+    {
+		if(y>(p_a+y_b)){Angle_Lock4(ang_l+90);}
+		if(y<(-p_a+y_b)){Angle_Lock4(ang_l-90);}
+		if(y<=(p_a+y_b)&&y>=(-p_a+y_b)){Angle_Lock4(ang_l+(90*(y-y_b))/p_a);}
+	}
+	if(ang_l==-90)
+    {
+		if(y>(p_a+y_b)){Angle_Lock4(ang_l-90);}
+		if(y<(-p_a+y_b)){Angle_Lock4(ang_l+90);}
+		if(y<=(p_a+y_b)&&y>=(-p_a+y_b)){Angle_Lock4(ang_l-(90*(y-y_b))/p_a);}
+	}
+	if(ang_l!=90&&ang_l!=-90)
+	{
+		if(ang_l>-90&&ang_l<90)
+		{k=tan(pi*(ang_l+90)/180);}
+		if(ang_l>90){k=tan(pi*(ang_l-90)/180);}
+		if(ang_l<-90){k=tan(pi*(ang_l+270)/180);}
+		d=(y-k*x-y_b)/(sqrt(1+k*k));
+		if(ang_l>0)
+		{
+			if(d>p_a){Angle_Lock4(ang_l+90);}
+			if(d<-p_a){Angle_Lock4(ang_l-90);}
+			if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l+90*d/p_a);}
+		}
+		if(ang_l<0)
+		{
+			if(d>p_a){Angle_Lock4(ang_l-90);}
+			if(d<-p_a){Angle_Lock4(ang_l+90);}
+			if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l-90*d/p_a);}
+		}
+	}
+}
+}
+
+void Line_Lock3(int ang_ll,float kb)
+{
 
 
+}
 
 
-
+int flo;
 /*====================================================================================
                                     程序 mode1 2 3
 ======================================================================================*/
-int x1=0,y1=0;
-int mo=1;
 
 void WalkTask(void)
 {
@@ -498,22 +591,22 @@ void WalkTask(void)
 //				Angle_Lock3(90);
 //				}
 				{//【方案5】（尝试）————可行---【最终方案】
-				Angle_Lock4(179);
+				Angle_Lock4(angle);
 				}
 			}
 			if(r!=0)//正方形//4车
 			{
-				if(y<=(y1+1000*r)&&mo==1){Angle_Lock4(0);}
-				if(y>(y1+1000*r)&&mo==1){x1=x;y1=y;Angle_Lock4(-90);mo=2;}
+				if(y<=(y1+750*r)&&mo==1){Angle_Lock4(0);}
+				if(y>(y1+750*r)&&mo==1){x1=x;y1=y;Angle_Lock4(-90);mo=2;}
 				
-				if(x<=(x1+1000*r)&&mo==2){Angle_Lock4(-90);}
-				if(x>(x1+1000*r)&&mo==2){x1=x;y1=y;Angle_Lock4(179);mo=3;}
+				if(x<=(x1+750*r)&&mo==2){Angle_Lock4(-90);}
+				if(x>(x1+750*r)&&mo==2){x1=x;y1=y;Angle_Lock4(179);mo=3;}
 				
-				if(y>(y1-1000*r)&&mo==3){Angle_Lock4(179);}
-				if(y<=(y1-1000*r)&&mo==3){x1=x;y1=y;Angle_Lock4(90);mo=4;}
+				if(y>(y1-750*r)&&mo==3){Angle_Lock4(179);}
+				if(y<=(y1-750*r)&&mo==3){x1=x;y1=y;Angle_Lock4(90);mo=4;}
 				
-				if(x>(x1-1000*r)&&mo==4){Angle_Lock4(90);}
-				if(x<(x1-1000*r)&&mo==4){x1=x;y1=y;Angle_Lock4(0);mo=1;}
+				if(x>(x1-750*r)&&mo==4){Angle_Lock4(90);}
+				if(x<(x1-750*r)&&mo==4){x1=x;y1=y;Angle_Lock4(0);mo=1;}
 			}
 //			使用PID控制！！！
 //			时钟方案【不可行】
@@ -523,17 +616,28 @@ void WalkTask(void)
 //			{Move(v1,v1);}
 //			if(t>(1000*r/v+3.8*angle/v))                 //t归0
 //			{t=0;}
-			while(j)
-			{
-			USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d\r\n","M","o","d","e",2);//mode2
-			t=0;
-			j=0;
-			}
+			//while(j)
+			//{
+			//USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d\r\n","M","o","d","e",2);//mode2
+			//t=0;
+			//j=0;
+			//}
 			
 		}
-		if(Mode==3)//蛇皮走位
+		if(Mode==3)//蛇皮走位（直线闭环）
 		{
-		
+		v1=(int)10865*v;
+		Line_Lock2(angle,y_l,x_l);
+		while(j)
+		{
+		flo=(int)(90*d/p_a);
+		USART_OUT(UART4,(uint8_t*)"%d  ",flo);
+		flo=(int)d;
+		USART_OUT(UART4,(uint8_t*)"%d  ",flo);	
+		flo=(int)k;
+		USART_OUT(UART4,(uint8_t*)"%d  ",flo);		
+		t=0;j=0;
+		}
 		}
 		OSSemPend(PeriodSem, 0, &os_err);
 //		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
