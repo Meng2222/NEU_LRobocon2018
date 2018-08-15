@@ -26,7 +26,6 @@ static float set_x=0;
 static float set_y=0;
 static float set_angle=0;
 int iSOKFlag=0;
-int car=1;
 static int n=0;
 static int up_down;
 static float setangle=0;
@@ -91,15 +90,15 @@ void ConfigTask(void)
 	MotorOn(CAN2,2);
 	delay_s(2);
 	
-	if(car==1)
-	{	
+	#if car==1
+		
      driveGyro();
      USART_OUT(UART4,(uint8_t*)"OKOPSOPS");
 	 while(!opsFlag);
-	}else if (car==4)
-     {delay_s(10);	
+	#elif car == 4
+     delay_s(10);	
 	  delay_s(5);
-	 }
+	 #endif
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
@@ -136,15 +135,15 @@ void go(float v)
 	 
 	 int right;
 	 int left;
-	 Light(1,1,-1000,1);
+	 Light(1,0,2000,-1);
 	 Right_cr1=4096*V/377+Aout+Dout;		
 	 Left_cr2=-4096*V/377+Aout+Dout;
 	 VelCrl(CAN2,1,Right_cr1);
 	 VelCrl(CAN2,2,Left_cr2);
 	 right=Right_cr1;
 	 left=Left_cr2;	
-	 USART_OUT(UART4,(uint8_t*)"Right=%d\t\r\n",right);
-	 USART_OUT(UART4,(uint8_t*)"Left=%d\t\r\n",left);
+	// USART_OUT(UART4,(uint8_t*)"Right=%d\t\r\n",right);
+	// USART_OUT(UART4,(uint8_t*)"Left=%d\t\r\n",left);
 }
 
 void pid_angle(float angle,int s)
@@ -175,9 +174,9 @@ void pid_angle(float angle,int s)
 	Aout=100*nowerror_angle;	
 	int n=Aout;
 	set=angle;
-	USART_OUT(UART4,(uint8_t*)"s=%d\t\r\n",s);
-	USART_OUT(UART4,(uint8_t*)"Aout=%d\t\r\n",n);
-	USART_OUT(UART4,(uint8_t*)"set_angle=%d\t\r\n",set);
+//	USART_OUT(UART4,(uint8_t*)"s=%d\t\r\n",s);
+//	USART_OUT(UART4,(uint8_t*)"Aout=%d\t\r\n",n);
+//	USART_OUT(UART4,(uint8_t*)"set_angle=%d\t\r\n",set);
 }
 void pid_xy(float D,float setangle,int f)
 {
@@ -199,8 +198,8 @@ void pid_xy(float D,float setangle,int f)
 	
 	Dout=6*nowerror_d;	
 	int n=Dout;
-	USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
-	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
+//	USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
+//	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
 }
 
 
@@ -269,15 +268,15 @@ void Light(float a,float b,float c,int n)
     di=d;	
 	
 	
-	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",di);
-	USART_OUT(UART4,(uint8_t*)"l=%d\t\r\n",l);
+//	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",di);
+//	USART_OUT(UART4,(uint8_t*)"l=%d\t\r\n",l);
 	if(light>0)
 	 up_down=1;
 	else if (light<0)
 	 up_down=-1;
 	else if (light==0)
 	 up_down=0;
-	
+
 	pid_xy(d,set_angle,f);
 	pid_angle(set_angle,s);
 	t=0;

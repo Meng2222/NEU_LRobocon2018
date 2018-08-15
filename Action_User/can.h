@@ -1,5 +1,5 @@
 #include "stm32f4xx_can.h"
-
+#define car 1
 #define CAN_ENABLE 1
 #define INVALID_CANSEND_MAILBOX 10
 #define CAN_SEND_OK 1

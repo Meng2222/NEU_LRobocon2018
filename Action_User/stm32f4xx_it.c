@@ -233,7 +233,6 @@ void USART2_IRQHandler(void)
 	}
 	OSIntExit();
 }
-extern int car;
 extern pos_t xya;
 extern int iSOKFlag;
 uint8_t opsFlag = 0;
@@ -304,15 +303,15 @@ void USART3_IRQHandler(void) //更新频率200Hz
 			if (ch == 0x0d)
 			{
 				opsFlag = 1;
-				if(car==4)
-				{
+				#if car == 4
+				
 					xya.angle = posture.ActVal[0]+90;
 				 
-			    }else if (car==1)
-				{
+			    #elif car==1
+				
 					xya.angle = -posture.ActVal[0]+180;
 				 
-				}
+				 #endif
 				if(xya.angle>180)
 				   xya.angle-=360;
 				posture.ActVal[1] = posture.ActVal[1];
