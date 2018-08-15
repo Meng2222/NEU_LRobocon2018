@@ -30,7 +30,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_it.h"
 
-
+extern int OKFlag;
 extern OS_EVENT *MoveSem;
 extern OS_EVENT *BluetoothSem;
 float angle = 0;
@@ -356,6 +356,8 @@ void USART3_IRQHandler(void)
 			case 0:
 				if (ch == 0x0d)
 				count++;
+				else if(ch=='O')
+				count=5;
 				else
 				count = 0;
 			break;
@@ -400,6 +402,11 @@ void USART3_IRQHandler(void)
 			break;
 			default:
 				count = 0;
+			break;
+			case 5:
+			count = 0;
+			if(ch=='K')
+			OKFlag=1;
 			break;
 		}
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);

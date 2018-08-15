@@ -453,3 +453,27 @@ char *itoa(int value, char *string, int radix)
 
 } 
  
+//1车启动定位系统
+int OKFlag = 0;	
+int SendOK(void)
+{
+	return OKFlag;
+}
+
+void SetOKFlagZero(void)
+{
+	OKFlag = 0;
+}
+
+void DriveGyro(void)
+{
+	while(!SendOK())
+	{
+		delay_ms(5);
+		USART_SendData(USART3, 'A');
+		USART_SendData(USART3, 'T');
+		USART_SendData(USART3, '\r');
+		USART_SendData(USART3, '\n');
+	}
+	SetOKFlagZero();
+}

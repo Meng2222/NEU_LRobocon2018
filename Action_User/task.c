@@ -32,7 +32,7 @@ extern float ypos;
 
 	float GetXpos(void)
 	{
-		return -ypos;
+		return ypos;
 	}
 
 	float GetYpos(void)
@@ -63,12 +63,14 @@ OS_EXT INT8U OSCPUUsage;
 OS_EVENT *MoveSem;
 OS_EVENT *BluetoothSem;
 
-extern float Error;
-extern float AngleControl;
-extern uint8_t LocationFlag;
-static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
-static OS_STK MoveTaskStk[Move_TASK_STK_SIZE];
-static OS_STK BluetoothTaskStk[Bluetooth_TASK_STK_SIZE];
+extern double 		SlopeSetLine ;
+extern float		AngleError;
+extern float		AngleControl;
+extern float 		LocationControl;
+extern uint8_t		LocationFlag;
+static OS_STK		App_ConfigStk[Config_TASK_START_STK_SIZE];
+static OS_STK		MoveTaskStk[Move_TASK_STK_SIZE];
+static OS_STK		BluetoothTaskStk[Bluetooth_TASK_STK_SIZE];
 
 void App_Task()
 {
@@ -114,7 +116,9 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2, 2, 8000, 8000);
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
-	delay_ms(10000);	//延时10s 用于启动定位系统
+	delay_ms(2000);
+	//DriveGyro();
+	delay_ms(12000);	//延时13s 用于启动定位系统
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
@@ -126,9 +130,7 @@ void MoveTask(void)
 	while (1)
 	{
 		OSSemPend(MoveSem, 0, &os_err);
-		RectangleAround(1500, 1500, 650);
-		
-		
+		LockLineMove(1, 1000, 400, 1);	//(设定直线斜率, 设定直线截距, 基础速度, 方向(1为沿X轴正向, 0为负向))
 	}
 }
 
@@ -141,13 +143,16 @@ void BluetoothTask(void)
 	{
 		OSSemPend(BluetoothSem, 0, &os_err);
 		
-		USART_OUT(UART4, (uint8_t*)"  x = %d",(int)GetXpos());
-		USART_OUT(UART4, (uint8_t*)"  y = %d \r\n",(int)GetYpos());
+		USART_OUT(UART4, (uint8_t*)"  x = %d  ",(int)GetXpos());
+		USART_OUT(UART4, (uint8_t*)"  y = %d  ",(int)GetYpos());
+		USART_OUT(UART4, (uint8_t*)"  angle = %d  ",(int)GetAngle());
+		USART_OUT(UART4, (uint8_t*)"  LocationControl = %d  ",(int)LocationControl);
+		USART_OUT(UART4, (uint8_t*)"  AngleControl = %d \r\n",(int)AngleControl);
+		
 		/*
-		USART_OUT(UART4, (uint8_t*)"  angle = %d",(int)GetAngle());
-		USART_OUT(UART4, (uint8_t*)"  Error = %d ",(int)Error);
-		USART_OUT(UART4, (uint8_t*)"  AngleControl = %d ",(int)AngleControl);
-		USART_OUT(UART4, (uint8_t*)"  LocationFlag = %d \r\n",(int)LocationFlag);
+		
+		USART_OUT(UART4, (uint8_t*)"  AngleError = %d ",(int)AngleError);
+		USART_OUT(UART4, (uint8_t*)" SlopeSetLine = %d ",(int)SlopeSetLine );
 		*/
 	}
 }
