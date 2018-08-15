@@ -22,7 +22,11 @@
 
 #ifndef  __APP_CFG_H__
 #define  __APP_CFG_H__
-#include  <os_cpu.h>
+#include <os_cpu.h>
+#include <stdint.h>
+
+
+#define CAR 1
 /*
 *********************************************************************************************************
 *                                       MODULE ENABLE / DISABLE

@@ -7,7 +7,8 @@
 #define OFF 0
 
 
-float Pid(float valueSet,float valueNow);
+float AnglePid(float valueSet,float valueNow);
+float DisplacementPid(float valueSet,float valueNow);
 uint8_t PidSwitch(uint8_t sw);
 void PidPara(float fKp,float fKi,float fKd);
 

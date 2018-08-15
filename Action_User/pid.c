@@ -7,7 +7,7 @@ static float ki;
 static float kd;
 
 
-float Pid(float valueSet,float valueNow)
+float AnglePid(float valueSet,float valueNow)
 {
 	
 	float err=0;
@@ -37,6 +37,27 @@ float Pid(float valueSet,float valueNow)
 	return valueOut;
 }
 
+float DisplacementPid(float valueSet,float valueNow)
+{
+	
+	float err=0;
+	float valueOut=0;
+	static float errLast=0;
+	static float iTerm=0;
+
+	err=valueSet-valueNow;
+	iTerm+=(ki*err);
+
+	if(iTerm > outMax) iTerm=outMax;
+	if(iTerm < outMin) iTerm=outMin;
+	
+	valueOut=(kp*err)+iTerm+(kd*(err-errLast));
+	
+	if(valueOut > outMax) valueOut=outMax;
+	if(valueOut < outMin) valueOut=outMin;
+	errLast=err;
+	return valueOut;
+}
 
 uint8_t PidSwitch(uint8_t sw)
 {

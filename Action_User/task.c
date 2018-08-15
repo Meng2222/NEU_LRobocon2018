@@ -13,8 +13,8 @@
 #include "stm32f4xx_usart.h"
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*PI)
+extern uint8_t sendFlag;
 
-#define CAR 4
 /*
 一个脉冲是4096/(120*Pi)
 定义输入速度mm/s和半径mm
@@ -28,6 +28,15 @@ void vel_radious(float vel,float radious)
 	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
 }
 
+extern struct usartValue_{
+	uint32_t cnt;//用于检测是否数据丢失
+	float xValue;//串口输出x坐标
+	float yValue;//串口输出y坐标
+	float angleValue;//串口输出角度值
+	float pidValueOut;//PID输出
+	float d;
+	float turnAngleValue;//
+}usartValue;
 
 /*
 ===============================================================
@@ -84,27 +93,25 @@ void WalkTask(void)
 
 	CPU_INT08U os_err;
 	os_err = os_err;
-	float pos_Angle;
-	float pos_X;
-	float pos_Y;
-	int32_t cnt=0;
 
-	PidPara(15,0,2.0);
+	PidPara(25,0,3);
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
 
-		pos_Angle=GetAngle();
-		pos_X=GetPosX();
-		pos_Y=GetPosY();
-		Square();
-		USART_OUT(UART4, "%d\t", (int)pos_X);
-		USART_OUT(UART4, "%d\r\n", (int)pos_Y);
+		straightLine(1,0,500,1);
+		usartValue.cnt++;
 		
-		
-		
+//		USART_OUT(UART4, "turnAngle %d\t", (int)usartValue.turnAngleValue);
+//		USART_OUT(UART4, "cnt %d\t", (int)usartValue.cnt);
+//		USART_OUT(UART4, "PIDOUT %d\t", (int)usartValue.pidValueOut);
+//		USART_OUT(UART4, "d %d\t", (int)usartValue.d);
+//		USART_OUT(UART4, "angle %d\t", (int)usartValue.angleValue);
+		USART_OUT(UART4, " %d\t", (int)usartValue.xValue);
+		USART_OUT(UART4, " %d\r\n", (int)usartValue.yValue);
+	
 	}
 }
 
@@ -122,9 +129,13 @@ void Init(void)
 	VelLoopCfg(CAN2, 0x02, 2000, 2000);
 	MotorOn(CAN2, 0x01);
 	MotorOn(CAN2, 0x02);
+	#if CAR==4
 	delay_ms(3000);
 	delay_ms(10000);
-//	CarOne();
+	#elif CAR==1
+	delay_ms(3000);
+	CarOne();
+	#endif
 
 
 	
@@ -144,6 +155,6 @@ void CarOne(void)
 		USART_SendData(USART3,'\n');
 	}
 	isOKFlag=0;
-	
-
+	while(!sendFlag);
+	sendFlag=0;
 }

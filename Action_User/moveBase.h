@@ -42,7 +42,7 @@
   * @{
   */
 
-#define PI (3.1415926)
+#define PI (3.141593)
 #define TURN_RIGHT 0
 #define TURN_LEFT  1
 
@@ -75,7 +75,7 @@ void Round(float rightSpeed,float radius);
 void Turn(float angle);
 void BTP(float angle);
 void Square(void);
-
+void straightLine(float A1,float B1,float C1,uint8_t dir);
 #endif /* ___H */
 
 

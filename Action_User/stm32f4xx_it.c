@@ -38,6 +38,7 @@
 #include "can.h"
 #include "gpio.h"
 #include "elmo.h"
+#include "app_cfg.h"
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
@@ -73,17 +74,13 @@ void CAN1_RX0_IRQHandler(void)
 void CAN2_RX0_IRQHandler(void)
 {
 	uint8_t CAN2Buffer[4];
-	CanRxMsg RxMessage;
-	uint8_t* len;
 	uint8_t length=4;
-	len=&length;
 	OS_CPU_SR cpu_sr;
 
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	CAN_RxMsg(CAN2,0,CAN2Buffer,len
-	);
+	CAN_RxMsg(CAN2,0,CAN2Buffer,&length);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -339,6 +336,8 @@ static float angle=0,posX=0,posY=0;
 
 extern uint8_t isOKFlag;
 
+uint8_t sendFlag=0;
+
 void USART3_IRQHandler(void) //更新频率 200Hz 
 { 
 	 static uint8_t ch; 
@@ -406,13 +405,24 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 			 case 4: 
 				 if (ch == 0x0d) 
 				 { 
-					 isOKFlag=1;
+					 
+					 #if CAR==4
 					 angle =posture.ActVal[0] ;//角度 
 					 posture.ActVal[1] = posture.ActVal[1]; 
 					 posture.ActVal[2] = posture.ActVal[2]; 
 					 posX = posture.ActVal[3];//x 
 					 posY = posture.ActVal[4];//y 
 					 posture.ActVal[5] = posture.ActVal[5]; 
+					 
+					 #elif CAR==1 
+					 sendFlag=1;
+					 angle =-posture.ActVal[0] ;//角度 
+					 posture.ActVal[1] = posture.ActVal[1]; 
+					 posture.ActVal[2] = posture.ActVal[2]; 
+					 posY = -posture.ActVal[3];//x 
+					 posX = posture.ActVal[4];//y 
+					 posture.ActVal[5] = posture.ActVal[5]; 
+					 #endif
 				 } 
 				 count = 0; 
 				 break; 

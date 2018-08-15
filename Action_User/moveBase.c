@@ -13,7 +13,7 @@
 /* Includes -------------------------------------------------------------------------------------------*/
 
 #include "moveBase.h"
-
+#include <math.h>
 #include "elmo.h"
 
 /* Private typedef ------------------------------------------------------------------------------------*/
@@ -23,8 +23,20 @@
 /* Private function prototypes ------------------------------------------------------------------------*/
 /* Private functions ----------------------------------------------------------------------------------*/
 
+/*****************定义的一些全局变量用于串口返回值****************************/
+
+struct usartValue_{
+	uint32_t cnt;//用于检测是否数据丢失
+	float xValue;//串口输出x坐标
+	float yValue;//串口输出y坐标
+	float angleValue;//串口输出角度值
+	float pidValueOut;//PID输出
+	float d;//距离
+	float turnAngleValue;//
+}usartValue;
+
 /**
-  * @brief  走直线
+  * @brief  开环走直线
   * @note	
   * @param  speed：给定速度
   * @retval None
@@ -39,7 +51,7 @@ void Straight(float speed)
 }
 
 /**
-  * @brief  转圈
+  * @brief  开环转圈
   * @note	
 * @param  rightSpeed：给定右轮速度,正数为逆时针转,为外侧速度；负数顺时针转，为内侧速度
   * @param  radius：给定半径
@@ -85,26 +97,17 @@ void Round(float rightSpeed,float radius)
 void Turn(float angle)
 {
 	int32_t pulseNum=0;
-	int32_t bPulseNum=(700*4095)/(PI*WHEEL_DIAMETER);
+	int32_t bPulseNum=(1000*4095)/(PI*WHEEL_DIAMETER);
 	float getAngle=0;
 	float speed=0;
 	getAngle=GetAngle();
-	speed=Pid(angle,getAngle);	
+	
+	speed=AnglePid(angle,getAngle);	
+	usartValue.pidValueOut=speed;
 	
 	pulseNum=(speed*4095)/(PI*WHEEL_DIAMETER);
 	VelCrl(CAN2, 0x01,bPulseNum+pulseNum);
 	VelCrl(CAN2, 0x02,pulseNum-bPulseNum);
-//	if(err > 0.0)
-//	{
-//		VelCrl(CAN2, 0x01,pulseNum);
-//		VelCrl(CAN2, 0x02,0);
-//	}
-//	else
-//	{
-//		VelCrl(CAN2, 0x01,0);
-//		VelCrl(CAN2, 0x02,pulseNum);
-//	}
-
 
 }	
  
@@ -124,7 +127,9 @@ void BTP(float angle)
 	float speed=0;
 	getAngle=GetAngle();
 	
-	speed=Pid(angle,getAngle);
+	speed=AnglePid(angle,getAngle);
+	usartValue.pidValueOut=speed;
+	
 	pulseNum=(speed*4095)/(PI*WHEEL_DIAMETER);
 	
 	VelCrl(CAN2, 0x01,bPulseNum+pulseNum);
@@ -143,10 +148,17 @@ void Square(void)
 {
 	float x;
 	float y;
+	float angle;
 	
 	static uint8_t flg=0;
+	
 	x=GetPosX();
 	y=GetPosY();
+	angle=GetAngle();
+	
+	usartValue.xValue=x;
+	usartValue.yValue=y;
+	usartValue.angleValue=angle;
 	
 	if(flg == 0)
 	{
@@ -191,6 +203,112 @@ void Square(void)
 		{
 			Turn(90.0);
 		}
+	}
+	
+}
+
+/**
+  * @brief  沿直线走，能回到直线
+  * @note	
+  * @param  x0:给定点x坐标
+  * @param  y0:给定点y坐标
+  * @param  setAngle:直线向量角度
+  * @retval None
+  */
+
+void straightLine(float A,float B,float C,uint8_t dir)
+{
+	float setAngle=0;
+	static uint8_t flg=0;
+	float getAngle=GetAngle();
+	float getX=GetPosX();
+	float getY=GetPosY();
+	float distance=((A*getX)+(B*getY)+C)/sqrt(A*A+B*B);
+	float angleAdd=distance*0.09;
+	if(angleAdd > 90)
+	{
+		angleAdd=90;
+	}
+	else if(angleAdd < -90)
+	{
+		angleAdd=-90;
+	}
+	
+	
+	if((B > -0.05) && (B < 0.05))
+	{
+		if(!dir)
+		{
+			setAngle=0;
+		}
+		else
+		{
+				if((A>0) && (C>0))
+				{
+					setAngle=-180;
+				}
+				else if((A>0) && (C<0))
+				{
+					setAngle=-180;
+				}
+				else if((A<0) && (C>0))
+				{
+					setAngle=180;
+				}
+				else if((A<0) && (C<0))
+				{
+					setAngle=+180;
+				}
+		}
+	}
+	else
+	{
+		if(!dir)
+		{
+			setAngle=(atan(-A/B)*180/PI)-90;
+		}
+		else
+		{
+			setAngle=(atan(-A/B)*180/PI)+90;
+		}
+	}
+
+	
+	
+	usartValue.d=distance;
+	usartValue.xValue=getX;
+	usartValue.yValue=getY;
+	usartValue.angleValue=getAngle;
+	if(distance > 10)
+	{
+		if(setAngle <= 0)
+		{
+			Turn(setAngle-angleAdd);
+			usartValue.turnAngleValue=setAngle-angleAdd;
+		}
+		else
+		{
+			Turn(setAngle+angleAdd);
+			usartValue.turnAngleValue=setAngle+angleAdd;			
+		}
+	}
+	else if(distance < -10)
+	{
+		if(setAngle >= 0)
+		{
+			Turn(setAngle+angleAdd);
+			usartValue.turnAngleValue=setAngle+angleAdd;
+		}
+		else
+		{
+			Turn(setAngle-angleAdd);
+			usartValue.turnAngleValue=setAngle-angleAdd;			
+		}
+	}
+	else
+	{
+		Turn(setAngle);
+		usartValue.turnAngleValue=setAngle;
 	}
 	
 }
