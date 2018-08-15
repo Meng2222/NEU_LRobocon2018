@@ -336,12 +336,7 @@ void USART6_IRQHandler(void) //更新频率200Hz
 
 void USART3_IRQHandler(void)
 {
-    extern struct
-    {
-        float posX;
-        float posY;
-        float angle;
-    }Pos_t;
+    extern Pos Pos_t;
 	static uint8_t ch;
 	static union 
     {

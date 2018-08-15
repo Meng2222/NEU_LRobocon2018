@@ -13,6 +13,7 @@
 #include "moveBase.h"
 #include "PID.H"
 #include "environmental.h"
+#include "Pos.h"
 
 
 /*
@@ -23,18 +24,18 @@
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
 
-typedef struct
-{
-    float posX;
-    float posY;
-    float angle;
-}Pos;
-
-Pos Pos_t;
-Pos lastpos;
 PIDCtrlStructure PidA;
-_Bool directionFlag = 0;
+PIDCtrlStructure PidB;
 
+point nowPoint;
+
+line Target =
+{
+    .a = 1,
+    .b = 1,
+    .c = -1000,
+};
+    
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -79,47 +80,14 @@ void ConfigTask(void)
         USART_OUT(USART3, (uint8_t *)"AT\r\n");
     };
 #endif
-#ifdef CAR4
     delay_s(10);
-#endif
+    delay_s(5);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
-float GetX(void)
+float GetDistance(void)
 {
-    return (int32_t)Pos_t.posX;
-}
-
-float GetY(void)
-{
-    return (int32_t)Pos_t.posY;
-}
-float GetA(void)
-{
-    return (int32_t)Pos_t.angle;
-}
-
-void CtrlTool(float Uout)
-{
-    TurnAround(Uout, 500);
-}
-
-//void straight(int32_t Num)
-//{
-//    GoStraight((float)Num);
-//}
-
-void ExSet(void)
-{
-        if(PidA.ExOut >= 180)
-        {
-            PidA.ExOut -= 360;
-        }
-        PidA.ExOut += 90;
-        lastpos.posX = GetX();
-        lastpos.posY = GetY();
-        PIDCtrlInit();
-        directionFlag = !directionFlag;
+    return Point2Line(&Target);
 }
 
 void WalkTask(void)
@@ -129,31 +97,71 @@ void WalkTask(void)
     MotorOn(CAN2, 1);
     MotorOn(CAN2, 2);
 	OSSemSet(PeriodSem, 0, &os_err);
-    PidA.KP = 20;
-    PidA.KI = 0.01;
-    PidA.KD = 20;
+    PidA.KP = 5;
+    PidA.KI = 0.025;
+    PidA.KD = 5;
     PidA.GetVar = GetA;
-    PidA.ExOut = 0;
-    PidA.Ctrl = CtrlTool;
-    lastpos.posX = 0;
-    lastpos.posY = 0;
-    lastpos.angle = 0;
-    PIDCtrlInit();
+    PidA.ExOut = LineDir(&Target, forward);
+    PidB.KP = 1;
+    PidB.KI = 0.0005;
+    PidB.KD = 10;
+    PidB.GetVar = GetDistance;
+    PidB.ExOut = 0;
+    PIDCtrlInit1();
+    PIDCtrlInit2();
+    float uout1 = 0, uout2 = 0; 
+    float k1 = 0, k2 = 0; 
+    reldir reldirNow2Line;
+    USART_OUT(UART4, (uint8_t *)"u1   u2   x   y   a   \r\n");
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-        if(__fabs(GetX() - lastpos.posX) >= 2000 && directionFlag)
+        GetNowPoint(&nowPoint);
+        uout1 = PIDCtrl1(&PidA);
+        uout2 = PIDCtrl2(&PidB);
+        reldirNow2Line = RelDir2Line(&Target, forward);
+        if(reldirNow2Line == right)
         {
-            ExSet();
+            k1 = 0.7;
+            k2 = 1.3;
         }
-        if(__fabs(GetY() - lastpos.posY) >= 2000 && !directionFlag)
+        else if(reldirNow2Line == left)
         {
-            ExSet();
+            k1 = 1.3;
+            k2 = 0.7;
         }
-        PIDCtrl(&PidA);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Pos_t.posX);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Pos_t.posY);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Pos_t.angle);
-        USART_OUT(UART4, (uint8_t *)"%d   \n", (int32_t) PidA.ExOut);
+        else
+        {
+            k1 = 0;
+            k2 = 0;
+            if((int32_t)GetA() == (int32_t)PidA.ExOut)
+            {
+                PIDCtrlInit1();
+            }
+        }
+//        if(__fabs(500 + k1 * uout2 + uout1) > 1000 || __fabs(500 + k1 * uout2 - uout1) > 1000)
+//        {
+//            uout1 = 0;
+//            uout2 = 0;
+//            PIDCtrlInit1();
+//            PIDCtrlInit2();
+//            while(1)
+//            {
+//                WheelSpeed(0, 1);//right
+//                WheelSpeed(0, 2);//left
+//                USART_OUT(UART4, (uint8_t *)"overspeed!   \r\n");
+//            }
+//        }
+        WheelSpeed(500 + k1 * uout2 + uout1, 1);//right
+//        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) 500 + k1 * uout2 + uout1);
+        WheelSpeed(500 + k2 * uout2 - uout1, 2);//left
+//        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) 500 + k2 * uout2 - uout1);
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) k1);
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) k2);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) uout1);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) uout2);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.x);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.y);
+        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) GetA());
 	}
 }

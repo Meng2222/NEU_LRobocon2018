@@ -23,6 +23,7 @@
 #include "stdint.h"
 #include "elmo.h"
 #include "environmental.h"
+#include "usart.h"
 
 
 /* Exported types ------------------------------------------------------------*/
@@ -58,7 +59,7 @@
 //圆周率
 #define PI (3.14f)
 //定义转弯方向
-typedef enum {LEFT, RIGHT} direction;
+typedef enum {RIGHT,LEFT}direction;
 
 /**
   * @}
@@ -87,11 +88,6 @@ void MakeCircle(float speed, float radius, direction drt);
 */
 void WheelSpeed(float speed, uint8_t ElmoNum);
 
-/**TurnAround 让车原地旋转
-*  addedspeed 为轮子差速速度(单位mm/s);
-*  speed 为小车直行速度(单位mm/s)
-*/
-void TurnAround(float addedSpeed, float speed);
 
 
 #endif /* ___H */

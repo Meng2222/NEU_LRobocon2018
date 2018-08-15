@@ -50,26 +50,15 @@ void MakeCircle(float speed, float radius, direction drt)
 void WheelSpeed(float speed, uint8_t ElmoNum)
 {
     int32_t frequency = 0;
+    frequency = (int32_t)((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER));
     if(ElmoNum == 1)
     {
-        frequency = (int32_t)((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER));
+        VelCrl(CAN2, ElmoNum, frequency);
     }
     else if(ElmoNum == 2)
     {
-        frequency = (int32_t)(-1 * ((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER)));
+        VelCrl(CAN2, ElmoNum, -1 * frequency);
     }
-    VelCrl(CAN2, ElmoNum, frequency);
 }
 
-void TurnAround(float addedSpeed, float speed)
-{
-#ifdef CAR1
-    WheelSpeed(speed - addedSpeed, 1);
-    WheelSpeed(speed + addedSpeed, 2);
-#endif
-#ifdef CAR4
-    WheelSpeed(speed + addedSpeed, 1);
-    WheelSpeed(speed - addedSpeed, 2);
-#endif
-}
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
