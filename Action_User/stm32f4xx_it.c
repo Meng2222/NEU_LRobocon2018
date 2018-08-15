@@ -98,7 +98,6 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
-
 void TIM2_IRQHandler(void)
 {
 #define PERIOD_COUNTER 10
@@ -113,15 +112,15 @@ void TIM2_IRQHandler(void)
 
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-
+		OSSemPost(PeriodSem);
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
 		{
-			OSSemPost(PeriodSem);
 			periodCounter = PERIOD_COUNTER;
 		}
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
+		
 	}
 	OSIntExit();
 }
@@ -236,7 +235,6 @@ void USART2_IRQHandler(void)
 	}
 	OSIntExit();
 }
-
 void USART6_IRQHandler(void) //更新频率200Hz
 {
 	static uint8_t ch;
@@ -296,7 +294,6 @@ void USART6_IRQHandler(void) //更新频率200Hz
 		case 4:
 			if (ch == 0x0d)
 			{
-
 				posture.ActVal[0] = posture.ActVal[0];
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];

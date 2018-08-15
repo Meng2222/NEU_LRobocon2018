@@ -1,6 +1,7 @@
 #ifndef __STATUS_H__
 #define __STATUS_H__
-
+#define Car 1
+#define pi 3.1415
 
 void straight(float v);
 void circular(float v,float r,char direction);
@@ -12,8 +13,10 @@ void SetYpos(float val);
 float GetXpos(void);
 float GetYpos(void);
 float GetAngle(void);
+//int AngleChange(void);
 float AnglePID(float Angle,float SetAngle);
-int AngleChange(void);
+float DirectionPID( float distance );
+void line( float a ,float b ,float c , char direction , float v );
 
 struct PID
 {

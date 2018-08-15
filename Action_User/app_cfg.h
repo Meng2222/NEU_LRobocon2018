@@ -47,9 +47,10 @@ static 	void  WalkTask(void);
 *********************************************************************************************************
 */
 
-#define  APP_TASK_START_PRIO						10u
-#define  Config_TASK_START_PRIO						11u
+#define  APP_TASK_START_PRIO					10u
+#define  Config_TASK_START_PRIO				11u
 #define  Walk_TASK_PRIO								12u
+
 
 
 
@@ -63,6 +64,8 @@ static 	void  WalkTask(void);
 #define  APP_TASK_START_STK_SIZE					256u
 #define  Config_TASK_START_STK_SIZE					256u
 #define  Walk_TASK_STK_SIZE							512u
+#define  Get_Ang_PID_Size_SIZE					256u
+#define  Get_Dir_PID_Size_SIZE					256u
 
 /*
 *********************************************************************************************************
