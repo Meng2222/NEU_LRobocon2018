@@ -66,6 +66,7 @@ struct PID
 int isSendOK(void);
 void SetOKFlagZero(void);
 void driveGyro(void);
+float xyPID(int a,int b,int c,int x,int y);
 #ifdef __cplusplus
 }
 #endif

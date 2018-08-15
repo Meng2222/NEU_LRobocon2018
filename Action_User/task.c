@@ -119,9 +119,9 @@ void ConfigTask(void)
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 extern struct position pos_t;
-float setangle=0;
-int T=0;
-float suduchange=0;
+//float setangle=0;
+//float suduchange=0;
+int SpeedDiff,readchange;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
@@ -131,27 +131,20 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		T++;
-		if(T>=101)
-		{
-			T=1;
-		}
-		if(AngleChange())
-		{
-			T=0;
-			setangle+=90;
-			if(setangle>180)
-			{
-				setangle-=360;
-			}
-		}
-		suduchange=AnglePID(GetAngle(),setangle);
-		VelCrl(CAN2,0x01,exchange(0.5)+suduchange);
-		VelCrl(CAN2,0x02,-exchange(0.5)+suduchange);
-		if(T%10==0)
-		{
-			USART_OUT(UART4, (uint8_t*)"%d %d\r\n",(int)((int)(GetXpos()),(int)(GetYpos())));
-		}
+//		if(AngleChange())
+//		{
+//			setangle+=90;
+//			if(setangle>180)
+//			{
+//				setangle-=360;
+//			}
+//		}
+//		suduchange=AnglePID(GetAngle(),setangle);
+		readchange=xyPID(1,0,0,GetXpos(),GetYpos());
+		SpeedDiff= AnglePID(GetAngle(),-readchange);
+		VelCrl(CAN2,0x01,exchange(0.5)+SpeedDiff);
+		VelCrl(CAN2,0x02,-exchange(0.5)+SpeedDiff);
+		USART_OUT(UART4, (uint8_t*)"%d %d\r\n",((int)(GetXpos()),(int)(GetYpos())));
          //////////串口回复位置角度//////////	
 
 
