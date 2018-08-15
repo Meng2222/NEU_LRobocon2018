@@ -10,12 +10,18 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+extern float angle;
+extern float x;
+extern float y;
 
 /*
 ===============================================================
 						信号量定义
 ===============================================================
 */
+#define Kp 10.0f
+#define Ki	1.0f
+#define Kd	1.0f
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
 
@@ -62,29 +68,66 @@ void ConfigTask(void)
 	
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	UART4_Init(921600);
+	USART3_Init(115200);
+	TIM_Init(TIM2,1000-1,84-1,0x00,0x01);
 	VelLoopCfg(CAN2,1,4000,0);
 	VelLoopCfg(CAN2,2,4000,0);
 	
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
 	ElmoInit(CAN2);
+//	IsSendOK();
 	
-	TIM_Init(TIM2,1000-1,84-1,0x00,0x01);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
+//unsigned long lasttime;
+//double input,output,setpoint;
+//double errsum,lasterr;
+//void comput()
+//{
+//double timeChange = (double)(now -
+//lasttime);
+// input =GetAngle();
 
+// double error=setpoint-input;
+// errsum += (error * timeChange);
+//double derr=(error-lasterr)/timeChange;
+//output=KP*error+KI*errsum+KD*derr;
+
+//}
+void  Walk_Straight(float speed1,float speed2)
+{
+	VelCrl(CAN2,1,speed1);
+	VelCrl(CAN2,2,-speed2);
+}
+float Angle_Pid(float err)
+{
+	static float Iterm=0;
+	float Dterm=0,errlast=0,Uk=0;
+	Iterm +=Ki*err;
+	Dterm=Kd*(err-errlast);
+	errlast=err;
+	Uk=Kp*err+Iterm+Dterm;
+	return Uk;
+}
+
+	
 void WalkTask(void)
 {
 	
 	CPU_INT08U os_err;
 	os_err = os_err;
-
+	delay_s(10);
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{	
+		
 		OSSemPend(PeriodSem, 0, &os_err);
-		VelCrl(CAN2,1,10870);
-		VelCrl(CAN2,2,-3625);
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle());
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
+		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)GetYpos());
+		Walk_Straight(3000-Angle_Pid(GetAngle()),3000+Angle_Pid(GetAngle()));
 		
 		
 	}

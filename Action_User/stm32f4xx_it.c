@@ -38,11 +38,18 @@
 #include "can.h"
 #include "gpio.h"
 #include "elmo.h"
+ 
+			
+			
+int isOKFlag=0;	
+			
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-
+uint32_t a;
+uint8_t bbuf[]={0};
+uint8_t b;
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -50,7 +57,7 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	CAN_RxMsg(CAN1,&a,bbuf,&b);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -70,6 +77,7 @@ void CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
+
 void CAN2_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -77,7 +85,7 @@ void CAN2_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	CAN_RxMsg(CAN2,&a,bbuf,&b);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -327,21 +335,141 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
+static float angle=0,xpos=0,ypos=0;
+void SetAngle(float val)
+{
+angle=val;
+}
+void SetXpos(float val)
+{
+xpos=val;
+}
+void SetYpos(float val)
+{
+ypos=val;
+
+}
+float GetXpos(void)
+{
+	return xpos;
+}
+float GetYpos(void)
+{
+	return ypos;
+}
+float GetAngle(void)
+{
+
+	return angle;
+}
 void USART3_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
+	
 
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-	{
+		static uint8_t ch;
+		static union 
+			{
+		uint8_t data[24];
+		float ActVal[6];
+		} posture;
+			
+		static uint8_t count = 0;
+		static uint8_t i = 0;
+//		if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
+//		{
+//		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
+//		USART_ReceiveData(USART3);
+//		}
+		if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+		{
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-	}
-
-	OSIntExit();
+		ch = USART_ReceiveData(USART3);
+		
+		switch (count)
+		{
+		case 0:
+		if (ch == 0x0d)
+		count++;
+//		else if(ch=='O')
+//		count=5;
+		else
+		count = 0;
+		break;
+		case 1:
+		if (ch == 0x0a)
+		{
+		i = 0;
+		count++;
+		}
+		else
+		count = 0;
+		break;
+		case 2:
+		posture.data[i] = ch;
+		i++;
+		if (i >= 24)
+		{
+		i = 0;
+		count++;
+		}
+		break;
+		case 3:
+		if (ch == 0x0a)
+		count++;
+		else
+		count = 0;
+		break;
+		case 4:
+		if (ch == 0x0d)
+		{
+		static float Angle;
+		static float Xpos;
+		static float Ypos;
+		Angle =posture.ActVal[0] ;// 角度
+		posture.ActVal[1] = posture.ActVal[1];
+		posture.ActVal[2] = posture.ActVal[2];
+		Xpos = posture.ActVal[3];//x
+		Ypos = posture.ActVal[4];//y
+		posture.ActVal[5] = posture.ActVal[5];
+		SetAngle(Angle);
+		SetYpos(Ypos);
+		SetXpos(Xpos);
+		}
+		count = 0;
+		break;
+//		case 5:
+//		count = 0;
+//		if(ch=='K')
+//		isOKFlag=1;
+//		break;
+		default:
+		count = 0;
+		break;
+		}
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		OSIntExit();
+		}
+		
+		
+		
+			
+		
+				
 }
 
+	
+		
+		
+		
+	
+			
+
+	
+	
 void UART5_IRQHandler(void)
 {
 

@@ -8,7 +8,7 @@
 #include "stdio.h"
 #include "stm32f4xx_usart.h"
 #include "timer.h"
-
+extern int isOKFlag;
 /**
   * @brief  Retargets the C library printf function to the USART.
   * @param  None
@@ -72,7 +72,26 @@ void USART3_Init(uint32_t BaudRate)
 	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;			//IRQ通道使能
 	NVIC_Init(&NVIC_InitStructure);	//根据指定的参数初始化VIC寄存器、
 }
-
+int IsSendOK(void)
+	{
+	return isOKFlag;
+	}
+	void SetOKFlagZero(void)
+	{
+	isOKFlag=0;
+	}
+	void driveGyro(void)
+	{
+		while(!IsSendOK())
+		{
+		delay_s(10);
+			USART_SendData(USART3,'A');
+			USART_SendData(USART3,'T');
+			USART_SendData(USART3,'\r');
+			USART_SendData(USART3,'\n');
+		}
+		SetOKFlagZero();
+	}
 void USART6_Init(uint32_t BaudRate)
 {
 
