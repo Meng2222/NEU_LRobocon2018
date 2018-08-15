@@ -10,30 +10,23 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
-extern float angle;
-extern float x;
-extern float y;
+#include "moveBase.h"
+extern char pposokflag;
 
 /*
 ===============================================================
 						信号量定义
 ===============================================================
 */
-#define Kp 10.0f
-#define Ki	1.0f
-#define Kd	1.0f
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
 
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
+//static OS_STK Walk_VirerStk[Walk_Virer_TASK_STK_SIZE];
+//static OS_STK Walk_CircleStk[Walk_Circle_TASK_STK_SIZE];
+//static OS_STK Walk_StraightStk[Walk_Straight_TASK_STK_SIZE];
 
-
-
-static void ConfigTask(void);
-static void  WalkTask(void);
-
-	
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -52,6 +45,18 @@ void App_Task()
 						  (void *)0,
 						  (OS_STK *)&WalkTaskStk[Walk_TASK_STK_SIZE - 1],
 						  (INT8U)Walk_TASK_PRIO);
+//	os_err = OSTaskCreate((void (*)(void *))Walk_Virer,
+//						  (void *)0,
+//						  (OS_STK *)&Walk_VirerStk[Walk_Virer_TASK_STK_SIZE - 1],
+//						  (INT8U)Walk_Virer_TASK_PRIO);
+//	os_err = OSTaskCreate((void (*)(void *))Walk_Circle,
+//						  (void *)0,
+//						  (OS_STK *)&Walk_CircleStk[Walk_Circle_TASK_STK_SIZE - 1],
+//						  (INT8U)Walk_Circle_TASK_PRIO);
+//	os_err = OSTaskCreate((void (*)(void *))Walk_Straight,
+//						  (void *)0,
+//						  (OS_STK *)&Walk_StraightStk[Walk_Straight_TASK_STK_SIZE - 1],
+//						  (INT8U)Walk_Straight_TASK_PRIO);
 }
 
 /*
@@ -61,40 +66,43 @@ void App_Task()
    */
 void ConfigTask(void)
 {
-	
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	UART4_Init(921600);
 	USART3_Init(115200);
-	TIM_Init(TIM2,1000-1,84-1,0x00,0x01);
-	VelLoopCfg(CAN2,1,4000,0);
-	VelLoopCfg(CAN2,2,4000,0);
-	
+	UART4_Init(921600);
+	TIM_Init(TIM2,999,83,1,0);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	ElmoInit(CAN2);
+	VelLoopCfg(CAN2,1,0,0);
+	VelLoopCfg(CAN2,2,0,0);
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
-	ElmoInit(CAN2);
-//	IsSendOK();
+	//driveGyro();
+//	#if CARNUM == 1
+//	driveGyro();
+//	while(!pposokflag);
+//	#elif CARNUM == 4
+	delay_s(10);
+//	#endif
+	
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-//unsigned long lasttime;
-//double input,output,setpoint;
-//double errsum,lasterr;
-//void comput()
+
+//void  Walk_Virer(int radius,int multiple)
 //{
-//double timeChange = (double)(now -
-//lasttime);
-// input =GetAngle();
-
-// double error=setpoint-input;
-// errsum += (error * timeChange);
-//double derr=(error-lasterr)/timeChange;
-//output=KP*error+KI*errsum+KD*derr;
-
+//	float speed1,speed2;
+//	speed1=(radius+WHEEL_TREAD/2)*multiple;
+//	speed2=(radius-WHEEL_TREAD/2)*multiple;
+////	VelCrl(CAN2,1,speed1);
+////	VelCrl(CAN2,2,-speed2);
+//}
+//void  Walk_Circle(int speed1,int speed2)
+//{
+//	VelCrl(CAN2,1,speed1);
+//	VelCrl(CAN2,2,speed2);
 //}
 void  Walk_Straight(float speed1,float speed2)
 {
@@ -104,31 +112,71 @@ void  Walk_Straight(float speed1,float speed2)
 float Angle_Pid(float err)
 {
 	static float Iterm=0;
-	float Dterm=0,errlast=0,Uk=0;
+	float Dterm=0,lasterr=0,Uk=0;
 	Iterm +=Ki*err;
-	Dterm=Kd*(err-errlast);
-	errlast=err;
+	Dterm=Kd*(err-lasterr);
+	lasterr=err;
 	Uk=Kp*err+Iterm+Dterm;
 	return Uk;
 }
 
-	
 void WalkTask(void)
 {
-	
+	 static int cnt=0;
 	CPU_INT08U os_err;
 	os_err = os_err;
-	delay_s(10);
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{	
 		
 		OSSemPend(PeriodSem, 0, &os_err);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle());
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
-		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)GetYpos());
-		Walk_Straight(3000-Angle_Pid(GetAngle()),3000+Angle_Pid(GetAngle()));
 		
+		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
+		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetXpos());
+		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetYpos());
+		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)Angle_Pid(GetAngle()));
+//		Walk_Straight(3000-Angle_Pid(GetAngle()),3000+Angle_Pid(GetAngle()));
+		switch(cnt)
+		{
+			case 0:
+				Walk_Straight(6000-Angle_Pid(GetAngle()),6000+Angle_Pid(GetAngle()));
+				if(GetYpos()>=2000)
+					cnt++;
+				
+			break;
+			case 1:
+				Walk_Straight(6000+(Angle_Pid(-90-GetAngle())),6000-Angle_Pid((-90-GetAngle())));
+				if(GetXpos()>=2000)
+					cnt++;
+			break;
+			case 2:
+				if(GetAngle()>=0)
+				{
+					Walk_Straight(6000+(Angle_Pid(180-GetAngle())),6000-Angle_Pid((180-GetAngle())));
+					if(GetYpos()<=0)
+						cnt++;
+				}
+				if(GetAngle()<0)
+				{
+				Walk_Straight(6000+(Angle_Pid(-180-GetAngle())),6000-Angle_Pid((-180-GetAngle())));
+					if(GetYpos()<=0)
+					cnt++;
+				}
+						
+			break;
+			case 3:
+				if(GetAngle()>=0)
+				{
+					Walk_Straight(3000+(Angle_Pid(90-GetAngle())),3000-Angle_Pid(90-GetAngle()));
+				}
+				if(GetAngle()<=0)
+				{
+					Walk_Straight(3000+(Angle_Pid(-270-GetAngle())),3000-Angle_Pid(-270-GetAngle()));
+				}
+				if(GetXpos()<=0)
+					cnt=0;
+				break;
+		}				
 		
-	}
+}
 }
