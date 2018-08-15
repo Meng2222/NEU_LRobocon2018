@@ -28,7 +28,7 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __STM32F4xx_IT_H
 #define __STM32F4xx_IT_H
-#define Veh 4     //车号选择 【1】 || 【4】/////////////////////////////
+#define Veh 1     //车号选择 【1】 || 【4】/////////////////////////////
 #ifdef __cplusplus
 extern "C" {
 #endif

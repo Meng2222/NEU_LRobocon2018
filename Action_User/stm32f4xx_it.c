@@ -336,7 +336,7 @@ void USART6_IRQHandler(void) //更新频率200Hz
 
 float Angl;
 float X;
-float Y;
+float Y;                   
 float avel;
 int asd=1;
 extern int isOKFlag;
