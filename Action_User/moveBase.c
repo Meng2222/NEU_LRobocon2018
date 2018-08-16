@@ -33,6 +33,7 @@ struct usartValue_{
 	float pidValueOut;//PID输出
 	float d;//距离
 	float turnAngleValue;//
+	uint8_t flagValue;
 }usartValue;
 
 /**
@@ -209,22 +210,22 @@ void Square(void)
 
 /**
   * @brief  沿直线走，能回到直线
-  * @note	
-  * @param  x0:给定点x坐标
-  * @param  y0:给定点y坐标
-  * @param  setAngle:直线向量角度
+  * @note	给定直线以Ax+By+C=0形式
+  * @param  A：
+  * @param  B:
+  * @param  C:
+  * @param  dir:dir为0，向右；dir为1，向左
   * @retval None
   */
 
 void straightLine(float A,float B,float C,uint8_t dir)
 {
 	float setAngle=0;
-	static uint8_t flg=0;
 	float getAngle=GetAngle();
 	float getX=GetPosX();
 	float getY=GetPosY();
 	float distance=((A*getX)+(B*getY)+C)/sqrt(A*A+B*B);
-	float angleAdd=distance*0.09;
+	float angleAdd=distance*0.1;
 	if(angleAdd > 90)
 	{
 		angleAdd=90;
@@ -235,7 +236,7 @@ void straightLine(float A,float B,float C,uint8_t dir)
 	}
 	
 	
-	if((B > -0.05) && (B < 0.05))
+	if((B > -0.005) && (B < 0.005))
 	{
 		if(!dir)
 		{
@@ -243,21 +244,13 @@ void straightLine(float A,float B,float C,uint8_t dir)
 		}
 		else
 		{
-				if((A>0) && (C>0))
+				if(A>0)
 				{
 					setAngle=-180;
 				}
-				else if((A>0) && (C<0))
-				{
-					setAngle=-180;
-				}
-				else if((A<0) && (C>0))
+				else
 				{
 					setAngle=180;
-				}
-				else if((A<0) && (C<0))
-				{
-					setAngle=+180;
 				}
 		}
 	}
@@ -281,7 +274,7 @@ void straightLine(float A,float B,float C,uint8_t dir)
 	usartValue.angleValue=getAngle;
 	if(distance > 10)
 	{
-		if(setAngle <= 0)
+		if(setAngle < 0)
 		{
 			Turn(setAngle-angleAdd);
 			usartValue.turnAngleValue=setAngle-angleAdd;
@@ -313,4 +306,136 @@ void straightLine(float A,float B,float C,uint8_t dir)
 	
 }
 
+/**
+  * @brief  走方形，面积渐渐减小，偏离轨道后能回去
+  * @note	
+  * @param 
+  * @retval None
+  */
+
+void ShrinkSquare(void)
+{
+	float sAngle=GetAngle();
+	float sX=GetPosX();
+	float sY=GetPosY();
+	static uint8_t flag=0;
+	usartValue.flagValue=flag;
+	switch(flag)
+	{
+		case 0:
+			if(sY < 2500)
+				straightLine(1,0,0,0);
+			else
+				flag++;
+				break;
+		case 1:
+			if(sX < 2500)
+				straightLine(0,1,-3000,0);
+			else
+				flag++;
+				break;
+		case 2:
+			if(sY > 1000)
+				straightLine(1,0,-3000,1);
+			else
+				flag++;
+				break;
+		case 3:
+			if(sX > 1000)
+				straightLine(0,1,-500,1);
+			else
+				flag++;
+				break;
+		case 4:
+			if(sY < 2000)
+				straightLine(1,0,-500,0);
+			else
+				flag++;
+				break;
+		case 5:
+			if(sX < 2000)
+				straightLine(0,1,-2500,0);
+			else
+				flag++;
+				break;
+		case 6:
+			if(sY > 1500)
+				straightLine(1,0,-2500,1);
+			else
+				flag++;
+				break;
+		case 7:
+			if(sX > 1500)
+				straightLine(0,1,-1000,1);
+			else
+				flag++;
+				break;
+		case 8:
+			if(sY < 1500)
+				straightLine(1,0,-1000,0);
+			else
+				flag++;
+				break;
+		case 9:
+			if(sX < 1500)
+				straightLine(0,1,-2000,0);
+			else
+				flag++;
+				break;
+		case 10:
+			if(sY > 1000)
+				straightLine(1,0,-2000,1);
+			else
+				flag=0;
+				break;	
+		default: break;
+			
+	}
+
+}
+
+/**
+  * @brief  直线闭环方形 2000*2000
+  * @note	
+  * @param 
+  * @retval None
+  */
+
+void SquareTwo(void)
+{
+	static uint8_t flagOne=0;
+	float sTAngle=GetAngle();
+	float sTX=GetPosX();
+	float sTY=GetPosY();
+	usartValue.flagValue=flagOne;
+	switch(flagOne)
+	{
+		case 0:
+			if(sTY < 1300)
+				straightLine(1,0,0,0);
+			else
+				flagOne++;
+			break;
+		case 1:
+			if(sTX < 1350)
+				straightLine(0,1,-2000,0);
+			else
+				flagOne++;
+			break;
+		case 2:
+			if(sTY > 650)
+				straightLine(1,0,-2000,1);
+			else
+				flagOne++;
+			break;
+		case 3:
+			if(sTX > 650)
+				straightLine(0,1,0,1);
+			else
+				flagOne=0;
+			break;
+		default: flagOne=0;break;
+	}
+
+}
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/

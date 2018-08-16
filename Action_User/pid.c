@@ -2,10 +2,18 @@
 
 static float outMax=800;
 static float outMin=-800;
-static float kp;
-static float ki;
-static float kd;
+static struct PIDPara_{
+	float aKp;
+	float aKi;
+	float aKd;
+	float dKp;
+	float dKi;
+	float dKd;
+	float sKp;
+	float sKi;
+	float sKd;
 
+}pid_Para;
 
 float AnglePid(float valueSet,float valueNow)
 {
@@ -24,12 +32,12 @@ float AnglePid(float valueSet,float valueNow)
 	{
 		err=360+err;
 	}
-	iTerm+=(ki*err);
+	iTerm+=(pid_Para.aKi*err);
 
 	if(iTerm > outMax) iTerm=outMax;
 	if(iTerm < outMin) iTerm=outMin;
 	
-	valueOut=(kp*err)+iTerm+(kd*(err-errLast));
+	valueOut=(pid_Para.aKp*err)+iTerm+(pid_Para.aKd*(err-errLast));
 	
 	if(valueOut > outMax) valueOut=outMax;
 	if(valueOut < outMin) valueOut=outMin;
@@ -37,7 +45,7 @@ float AnglePid(float valueSet,float valueNow)
 	return valueOut;
 }
 
-float DisplacementPid(float valueSet,float valueNow)
+float DistancePid(float valueSet,float valueNow)
 {
 	
 	float err=0;
@@ -46,12 +54,12 @@ float DisplacementPid(float valueSet,float valueNow)
 	static float iTerm=0;
 
 	err=valueSet-valueNow;
-	iTerm+=(ki*err);
+	iTerm+=(pid_Para.dKi*err);
 
 	if(iTerm > outMax) iTerm=outMax;
 	if(iTerm < outMin) iTerm=outMin;
 	
-	valueOut=(kp*err)+iTerm+(kd*(err-errLast));
+	valueOut=(pid_Para.dKp*err)+iTerm+(pid_Para.dKd*(err-errLast));
 	
 	if(valueOut > outMax) valueOut=outMax;
 	if(valueOut < outMin) valueOut=outMin;
@@ -80,9 +88,16 @@ uint8_t PidSwitch(uint8_t sw)
 	
 }
 
-void PidPara(float fKp,float fKi,float fKd)
+void Angle_PidPara(float fKp,float fKi,float fKd)
 {
-	kp=fKp;
-	ki=fKi;
-	kd=fKd;
+	pid_Para.aKp=fKp;
+	pid_Para.aKi=fKi;
+	pid_Para.aKd=fKd;
+}
+
+void Distance_PidPara(float fKp,float fKi,float fKd)
+{
+	pid_Para.dKp=fKp;
+	pid_Para.dKi=fKi;
+	pid_Para.dKd=fKd;
 }

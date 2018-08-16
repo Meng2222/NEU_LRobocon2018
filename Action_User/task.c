@@ -36,6 +36,7 @@ extern struct usartValue_{
 	float pidValueOut;//PID输出
 	float d;
 	float turnAngleValue;//
+	uint8_t flagValue;
 }usartValue;
 
 /*
@@ -94,21 +95,22 @@ void WalkTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 
-	PidPara(25,0,3);
+	Angle_PidPara(30,0,600);
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
 
-		straightLine(1,0,500,1);
+		SquareTwo();
 		usartValue.cnt++;
 		
-//		USART_OUT(UART4, "turnAngle %d\t", (int)usartValue.turnAngleValue);
+		USART_OUT(UART4, " %d\t", (int)usartValue.turnAngleValue);
 //		USART_OUT(UART4, "cnt %d\t", (int)usartValue.cnt);
 //		USART_OUT(UART4, "PIDOUT %d\t", (int)usartValue.pidValueOut);
 //		USART_OUT(UART4, "d %d\t", (int)usartValue.d);
 //		USART_OUT(UART4, "angle %d\t", (int)usartValue.angleValue);
+		USART_OUT(UART4, " %d\t", (int)usartValue.flagValue);
 		USART_OUT(UART4, " %d\t", (int)usartValue.xValue);
 		USART_OUT(UART4, " %d\r\n", (int)usartValue.yValue);
 	

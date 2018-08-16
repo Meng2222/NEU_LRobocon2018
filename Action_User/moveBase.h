@@ -76,6 +76,8 @@ void Turn(float angle);
 void BTP(float angle);
 void Square(void);
 void straightLine(float A1,float B1,float C1,uint8_t dir);
+void ShrinkSquare(void);
+void SquareTwo(void);
 #endif /* ___H */
 
 
