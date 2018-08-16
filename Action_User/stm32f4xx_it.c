@@ -38,19 +38,49 @@
 #include "can.h"
 #include "gpio.h"
 #include "elmo.h"
-
+float angle=0,xpos=0,ypos=0;
+void SetAngle(float val)
+{
+	angle=val;
+}	
+void SetXpos(float val)
+{
+	xpos=val;
+}	
+void SetYpos(float val)
+{
+	ypos=val;
+}	
+float GetAngle(void)
+{
+	return angle;
+}	
+float GetXpos(void)
+{
+	return xpos;
+}	
+float GetYpos(void)
+{
+	return ypos;
+}	
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
 
+uint8_t i=0;	
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
-
+	uint8_t buffer1[8];
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	CanRxMsg RxMessage;
+	CAN_Receive(CAN1, CAN_FIFO0, &RxMessage); //reveive data
+	for (i=0;i<8; i++)
+	{
+		buffer1[i] = RxMessage.Data[i];
+	}
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -70,14 +100,20 @@ void CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
+	
 void CAN2_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
-
+	uint8_t buffer2[8];
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	CanRxMsg RxMessage;
+	CAN_Receive(CAN2, CAN_FIFO0, &RxMessage); //reveive data
+	for (i=0;i<8; i++)
+	{
+		buffer2[i] = RxMessage.Data[i];
+	}
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -95,14 +131,12 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
-
 void TIM2_IRQHandler(void)
 {
 #define PERIOD_COUNTER 10
 
 	//用来计数10次，产生10ms的定时器
 	static uint8_t periodCounter = PERIOD_COUNTER;
-
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
@@ -110,7 +144,6 @@ void TIM2_IRQHandler(void)
 
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
@@ -198,7 +231,7 @@ void UART4_IRQHandler(void)
 
 	if (USART_GetITStatus(UART4, USART_IT_RXNE) == SET)
 	{
-
+		
 		USART_ClearITPendingBit(UART4, USART_IT_RXNE);
 	}
 	OSIntExit();
@@ -326,20 +359,92 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	OSIntExit();
 }
-
-void USART3_IRQHandler(void)
+int isOKFlag,beginFlag=0;
+void USART3_IRQHandler(void) //更新频率 200Hz
 {
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
-
+	static uint8_t ch;
+	static union {
+		uint8_t data[24];
+		float ActVal[6];
+	} posture;
+	static uint8_t count = 0;
+	static uint8_t i = 0;
+	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
+	{
+		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
+		USART_ReceiveData(USART3);
+	}
 	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		ch = USART_ReceiveData(USART3);
+		switch (count)
+		{
+			case 0:
+				if (ch == 0x0d)
+					count++;
+				else if(ch=='O')
+					count=5;
+				else
+					count = 0;
+				break;
+			case 1:
+				if (ch == 0x0a)
+				{
+					i = 0;
+					count++;
+				}
+				else
+					count = 0;
+				break;
+			case 2:
+				posture.data[i] = ch;
+				i++;
+				if (i >= 24)
+				{
+					i = 0;
+					count++;
+				}
+				break;
+			case 3:
+				if (ch == 0x0a)
+					count++;
+				else
+					count = 0;
+				break;
+			case 4:
+				if (ch == 0x0d)
+				{
+					#if CAR_NUM==1
+					beginFlag=1;
+					#endif
+					angle =posture.ActVal[0] ;//角度
+					posture.ActVal[1] = posture.ActVal[1];
+					posture.ActVal[2] = posture.ActVal[2];
+					xpos = posture.ActVal[3];//x
+					ypos = posture.ActVal[4];//y
+					posture.ActVal[5] = posture.ActVal[5];
+					SetXpos(xpos);
+					SetYpos(ypos);
+					SetAngle(angle);
+				}
+				count = 0;
+				break;
+			case 5:
+				count = 0;
+				if(ch=='K')
+					isOKFlag=1;
+				break;
+			default:
+				count = 0;
+			break;
+		}
 	}
-
-	OSIntExit();
+	else
+	{
+		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		USART_ReceiveData(USART3);
+	}
 }
 
 void UART5_IRQHandler(void)
