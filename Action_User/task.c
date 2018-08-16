@@ -15,11 +15,12 @@
 #define Kp1 120
 #define Ki1 0
 #define Kd1 0 
-#define Kp2 10
+#define Kp2 15
 #define Ki2 0
 #define Kd2 0
-#define State1 1
-#define State2 0
+#define State1 1 //直线不同方向标志位
+#define State2 0 //正负斜率标志位
+#define State3 0 //Y轴特殊情况标志位
 float u1,u2;
 int count;
 extern char isOKFlag;
@@ -104,11 +105,20 @@ void ConfigTask(void)
 	#endif
 	OSTaskSuspend(OS_PRIO_SELF);
 }
+/*
+   ===============================================================
+   PID控制
+   ===============================================================
+   */
 void uAng(float u2,float pointAng)//角度闭环
 {
 	static float lastErr = 0;
 	static float sumErr = 0;
 	float err,nowAngle;
+	if(u2>90)
+		u2=90;
+	if(u2<-90)
+		u2=-90;
 	if(State1==0)
 	{
 	  nowAngle=GetAngle()+90;
@@ -131,26 +141,23 @@ void uAng(float u2,float pointAng)//角度闭环
 	u1= Kp1 * err + Ki1 * sumErr +Kd1 *(err - lastErr);
 	lastErr = err;
 }
-//void uPlace(float k,float x1,float y1)//位置闭环
-//{
-//	static float lastErr = 0;
-//	static float sumErr = 0;
-//	float err;
-//	err=fabs(k*GetXpos()-GetYpos()+y1-k*x1)/sqrt(k*k+1);
-//	if(k*GetXpos()-k*x1+y1<GetYpos()&&State2==0)
-//	err=-err;
-//    if(k*GetXpos()-k*x1+y1>GetYpos()&&State2==1)
-//	err=-err;	
-//	sumErr += err;
-//	u2= Kp2*0.01*err + Ki2 * sumErr +Kd2 *(err - lastErr);
-//	lastErr = err;
-//}
-void uPlace()  //沿y轴特殊情况
+void uPlace(float k,float x1,float y1)//位置闭环
 {
 	static float lastErr = 0;
 	static float sumErr = 0;
 	float err;
-	err=GetXpos();
+	if(State3==0)
+	{
+	err=fabs(k*GetXpos()-GetYpos()+y1-k*x1)/sqrt(k*k+1);
+	if(k*GetXpos()-k*x1+y1<GetYpos()&&State2==0)
+	err=-err;
+    if(k*GetXpos()-k*x1+y1>GetYpos()&&State2==1)
+	err=-err;
+    }	
+	if(State3==1)
+	{
+		err=GetXpos();
+	}
 	sumErr += err;
 	u2= Kp2*0.01*err + Ki2 * sumErr +Kd2 *(err - lastErr);
 	lastErr = err;
@@ -197,11 +204,17 @@ void WalkTask(void)
 //		 if(GetXpos()<250)
 //			 count=0;
 //		 break;
-//		uPlace(1,0,100);
-		uPlace();
-//		uAng(u2,atan(1)*180/PI+State2*180);
-		uAng(u2,90);
-	    WalkStright(310);
+       if(State3==1)
+       {
+		 uPlace(1,0,100);
+	     uAng(u2,90);
+	   }
+	   if(State3==0)
+       {
+		 uPlace(1,0,100);
+		 uAng(u2,atan(1)*180/PI+State2*180);
+	   }
+	    WalkStright(400);
 	}		
 }
 
