@@ -63,6 +63,10 @@ float Angle_Pid(float err)
 {
 	static float Iterm=0;
 	float Dterm=0,errlast=0,Uk=0;
+	if(err>=180)
+		err-=360;
+	else if(err<=-180)
+		err+=360;
 	Iterm +=Ki*err;
 	Dterm=Kd*(err-errlast);
 	errlast=err;
@@ -79,9 +83,10 @@ float Distance_Pid(float err)
 	Uk=Distance_Kp*err+Iterm+Dterm;
 	return Uk;
 }
+
 float PID_OUT(float x,float y,float a,float b,float c,int quadrant)
 {
-	static float d=0,output=0,ang,err;
+	static float d=0,output=0,ang=0,err=0;
 	d=fabs(a*GetXpos()+b*GetYpos()+c)/sqrtf(a*a+b*b);
 	err=-Distance_Pid(0-d);
 	if(err>=90)
@@ -134,51 +139,45 @@ float PID_OUT(float x,float y,float a,float b,float c,int quadrant)
 			break;
 		case 5:
 			ang=-90;
-			if(GetYpos()<0)
+			if(GetYpos()<-c)
 			{
-				output=Angle_Pid(-err-(ang-GetAngle()));
+					output=Angle_Pid(-err-(ang-GetAngle()));
 			}
-			else if(GetYpos()>0)
+			else if(GetYpos()>-c)
 			{
-				output=Angle_Pid(err-(ang-GetAngle()));
+					output=Angle_Pid(err-(ang-GetAngle()));	
 			}
 			break;
 			case 6:
 			ang=90;
-			if(GetYpos()>0)
+			if(GetYpos()>-c)
 			{
 				output=Angle_Pid(-err-(ang-GetAngle()));
 			}
-			else if(GetYpos()<0)
+			else if(GetYpos()<-c)
 			{
 				output=Angle_Pid(err-(ang-GetAngle()));
 			}
 			break;
 		case 7:
 			ang=0;
-			if(GetXpos()>0)
+			if(GetXpos()>-c)
 			{
 				output=Angle_Pid(-err-(ang-GetAngle()));
 			}
-			else if(GetXpos()<0)
+			else if(GetXpos()<-c)
 			{
 				output=Angle_Pid(err-(ang-GetAngle()));
 			}
 			break;
 		case 8:
 			ang=180;
-			if(GetXpos()<0)
+			if(GetXpos()<-c)
 			{
-				if((ang-GetAngle())>=180)
-					output=Angle_Pid(-err-((ang-GetAngle())-360));
-				else
 					output=Angle_Pid(-err-(ang-GetAngle()));
 			}
-			else if(GetXpos()>0)
+			else if(GetXpos()>-c)
 			{
-				if((ang-GetAngle())>=180)
-					output=Angle_Pid(err-((ang-GetAngle())-360));
-				else
 					output=Angle_Pid(err-(ang-GetAngle()));
 			}
 			break;
@@ -210,16 +209,6 @@ void ConfigTask(void)
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
-//void  Walk_Virer(int radius,int multiple)
-//{
-//	float speed1,speed2;
-//	speed1=(radius+WHEEL_TREAD/2)*multiple;
-//	speed2=(radius-WHEEL_TREAD/2)*multiple;
-//	VelCrl(CAN2,1,speed1);
-//	VelCrl(CAN2,2,-speed2);
-//}
-
-
 void WalkTask(void)
 {
 	int cnt=0,i=0;
@@ -241,79 +230,53 @@ void WalkTask(void)
 		  USART_OUT(UART4,(uint8_t*) "%d\t",(int)Angle_Pid(GetAngle()));
 			USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)Distance_Pid(GetXpos()));
 		}
-			pid_out=PID_OUT(GetXpos(),GetYpos(),1,-1,1000,1);
-			Walk_Straight(v-pid_out,v+pid_out);
-		
-		
-//		switch(cnt)
-//		{
-//			case 0:
-//				if(GetYpos()<1750)
-//				{
-//					Walk_Straight(500+Angle_Pid(0-GetAngle()),500-Angle_Pid(0-GetAngle()));
-//				}
-//				else
-//				{
-//					cnt++;
-//				}
-//			break;
-//			case 1:
-//				if(GetXpos()>-1750)
-//				{
-//					Walk_Straight(500+Angle_Pid(90-GetAngle()),500-Angle_Pid(90-GetAngle()));
-//				}
-//				else
-//				{
-//					cnt++;
-//				}
-//			break;
-//			case 2:
-//				if(GetAngle()>0&&GetAngle()<=180)
-//				{
-//					if(GetYpos()>250)
-//					{
-//						Walk_Straight(500+Angle_Pid(180-GetAngle()),500-Angle_Pid(180- GetAngle()));
-//					}
-//					else
-//					{
-//						cnt++;
-//					}
-//					break;
-//				}
-//				else if(GetAngle()>=-180&&GetAngle()<0)
-//				{
-//					if(GetYpos()>250)
-//					{
-//						Walk_Straight(500+Angle_Pid(-180-GetAngle()),500-Angle_Pid(-180-GetAngle()));
-//					}
-//					else
-//					{
-//						cnt++;
-//					}
-//					break;
-//				}
-//			case 3:
-//				if(GetAngle()>0&&GetAngle()<=180)
-//				{
-//					if(GetXpos()<-250)
-//					{
-//						Walk_Straight(500-Angle_Pid(-90-GetAngle()),500+Angle_Pid(-90-GetAngle()));
-//					}
-//					
-//					break;
-//				}
-//				else if(GetAngle()>=-180&&GetAngle()<0)
-//				{
-//					if(GetXpos()<-250)
-//					{
-//						Walk_Straight(500+Angle_Pid(-90-GetAngle()),500-Angle_Pid(-90-GetAngle()));
-//					}
-//					else
-//					{
-//						cnt=0;
-//					}
-//					break;
-//				}
-//		}
+			
+		switch(cnt)
+		{
+			case 0:
+				if(GetYpos()<1750)
+				{
+					pid_out=PID_OUT(GetXpos(),GetYpos(),1,0,0,7);
+					Walk_Straight(v-pid_out,v+pid_out);
+				}
+				else
+				{
+					cnt++;
+				}
+				break;
+			case 1:
+				if(GetXpos()>-1750)
+				{
+					pid_out=PID_OUT(GetXpos(),GetYpos(),0,1,-2000,6);
+					Walk_Straight(v-pid_out,v+pid_out);
+				}
+				else
+				{
+					cnt++;
+				}
+				break;
+			case 2:
+				if(GetYpos()>250)
+				{
+					pid_out=PID_OUT(GetXpos(),GetYpos(),1,0,2000,8);
+					Walk_Straight(v-pid_out,v+pid_out);
+				}
+				else
+				{
+					cnt++;
+				}
+				break;	
+			case 3:
+				if(GetXpos()<-250)
+				{
+					pid_out=PID_OUT(GetXpos(),GetYpos(),0,1,0,5);
+					Walk_Straight(v-pid_out,v+pid_out);
+				}
+				else
+				{
+					cnt=0;
+				}
+				break;	
+		}
 	}
 }

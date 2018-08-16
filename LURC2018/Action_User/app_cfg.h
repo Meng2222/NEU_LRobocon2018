@@ -81,8 +81,8 @@ static 	void  WalkTask(void);
 *                                                  LIB
 *********************************************************************************************************
 */
-#define   v     300
-#define   Kp    8
+#define   v     500
+#define   Kp    15
 #define   Ki    0
 #define   Kd    0
 #define   Distance_Kp    300*0.2/v
