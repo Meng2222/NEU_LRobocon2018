@@ -43,7 +43,7 @@ void MakeCircle(float speed, float radius, direction drt)
     else
     {
         WheelSpeed(-1 * ((speed / radius) * (radius - (WHEEL_TREAD / 2))), 1);
-        WheelSpeed(-1 * ((speed / radius) * (radius + (WHEEL_TREAD / 2))), 2);   
+        WheelSpeed(-1 * ((speed / radius) * (radius + (WHEEL_TREAD / 2))), 2);
     }
 }
 
