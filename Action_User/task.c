@@ -14,7 +14,11 @@
 #include "math.h"
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi
-
+#define pai 3.14
+#define aa 1
+#define bb 0
+#define cc 0
+#define FB 2
 /*
 一个脉冲是4096/(120*Pi)
 定义输入速度mm/s和半径mm
@@ -103,7 +107,6 @@ void ConfigTask(void)
 		delay_s(10);
 	#endif
 	OSTaskSuspend(OS_PRIO_SELF);
-	
 	/**TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
 
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
@@ -117,13 +120,18 @@ void ConfigTask(void)
 	MotorOn(CAN2,2);**/
 }
 // 用position.XY？或者把2000往前提提,179与-179
+float Out_Agl=0;
 int vel1,vel2,turnflag=0;
 int X,Y,angle;
 int Out_Pulse;
 int flag=0;
 extern struct Pos_t position;
+float Dis;
 void Round(float speed,float R);
 void PID(int Agl_Flag);
+void PID_Agl(float Set_Angle);
+void PID_Awy(void);
+void Strght_Walk (float a,float b,float c,int F_B);
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
@@ -135,9 +143,11 @@ void WalkTask(void)
 		X=(int)(position.X);
 		Y=(int)(position.Y);
 		angle=(int)(position.angle);
-		USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",X,Y);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",X,Y,Out_Pulse);
+		Strght_Walk (aa,bb,cc,FB);
 		//Round(0.1,0.2);
-		 /**switch(flag)
+		//未更改版本
+		/**switch(flag)
 		{
 			case 0:
 				PID(0);
@@ -165,7 +175,8 @@ void WalkTask(void)
 		}
     VelCrl(CAN2,1,7000);
 		VelCrl(CAN2,2,-7000-Out_Pulse);**/
-		switch(flag)
+		//我的1号车走正方形
+		/**switch(flag)
 		{
 			case 0:
 				PID(0);
@@ -223,10 +234,11 @@ void WalkTask(void)
 			  if(position.angle>-1)
 				  flag=0; 
 				break;
-		}
+		}**/
 		   
 				
-      /**switch(flag)
+    //4号车我写的有问题
+		/**switch(flag)
 			{
 				case 0:
 					PID(0);
@@ -251,13 +263,195 @@ void WalkTask(void)
 				  if(X<0)
 						flag=0;
 					break;	
-			}**/
+			}
 		
-		/**VelCrl(CAN2,1,4096+Out_Pulse);
+		VelCrl(CAN2,1,4096+Out_Pulse);
 		VelCrl(CAN2,2,-4096);**/
 	}
 }
-void PID(int Agl_Flag)
+//通过距离PID的输出值输入到角度PID，让距离越来越近的同时角度越来越接近设定角度值
+void Strght_Walk (float a,float b,float c,int F_B)
+{
+	float k,Agl;
+	Dis=fabs(a*position.X+b*position.Y+c)/sqrt(pow(a,2)+pow(b,2));
+	if(b==0)
+  {
+	  if(position.X>-c/a) 
+		{
+			if(F_B==1)
+			{
+				PID_Awy();
+				PID_Agl(90-Out_Agl);
+			}
+			else if(F_B==2)
+			{
+				PID_Awy();
+				PID_Agl(-90+Out_Agl);
+			}
+		}
+		else if(position.X<-c/a)
+		{
+			if(F_B==1)
+			{
+				PID_Awy();
+				PID_Agl(90+Out_Agl);
+			}
+			else if(F_B==2)
+			{
+				PID_Awy();
+				PID_Agl(-90-Out_Agl);
+			}
+		}
+		else
+		{
+			if(F_B==1)
+				PID_Agl(90);
+			else if(F_B==2)
+				PID_Agl(-90);
+		}
+  }
+	else if(a==0)
+	{
+	  if(position.Y>-c/b) 
+		{
+			if(F_B==1)
+			{
+				PID_Awy();
+				PID_Agl(180+Out_Agl);
+			}
+			else if(F_B==2)
+			{
+				PID_Awy();
+				PID_Agl(0-Out_Agl);
+			}
+		}
+		else if(position.Y<-c/b)
+		{
+			if(F_B==1)
+			{
+				PID_Awy();
+				PID_Agl(180-Out_Agl);
+			}
+			else if(F_B==2)
+			{
+				PID_Awy();
+				PID_Agl(0+Out_Agl);
+			}
+		}
+		else
+		{
+			if(F_B==1)
+				PID_Agl(180);
+			else if(F_B==2)
+				PID_Agl(0);
+		}
+	}
+  else
+  {
+		k=-a/b;
+		Agl=(atan(-a/b))*180/pai;
+	  if(k>0)
+	  {
+	    if(position.Y<k*X-c/b)
+			{
+				if(F_B==1)
+				{
+					PID_Awy();
+					PID_Agl(180-Agl-Out_Agl);
+				}
+				else if(F_B==2)
+				{
+					PID_Awy();
+				  PID_Agl(-Agl+Out_Agl);
+				}
+			}
+		  else if(position.Y>k*X-c/b)
+			{
+				if(F_B==1)
+				{
+					PID_Awy();
+			    PID_Agl(180-Agl+Out_Agl);
+				}
+				else if(F_B==2)
+				{
+					PID_Awy();
+				  PID_Agl(-Agl-Out_Agl);
+				}
+			}
+		  else 
+			{
+				if(F_B==1)
+			    PID_Agl(180-Agl);
+				else if(F_B==2)
+				  PID_Agl(-Agl);
+			}
+	  }
+	  else if(k<0)
+	  {
+		  if(position.Y>k*X-c/b)
+			{
+			  if(F_B==1)
+				{
+					PID_Awy();
+			    PID_Agl(-Agl-Out_Agl);
+				}
+				else if(F_B==2)
+				{
+					PID_Awy();
+				  PID_Agl(-Agl-180+Out_Agl);
+				}
+			}
+		  else if(position.Y<k*X-c/b)
+			{
+			  if(F_B==1)
+				{
+					PID_Awy();
+			    PID_Agl(-Agl+Out_Agl);
+				}
+				else if(F_B==2)
+				{
+					PID_Awy();
+				  PID_Agl(-Agl-180-Out_Agl);
+				}
+			}
+		  else 
+			{
+			  if(F_B==1)
+			    PID_Agl(-Agl);
+				else if(F_B==2)
+				  PID_Agl(-Agl-180);
+			}
+	  }
+  }
+	VelCrl(CAN2,1,10865);
+  VelCrl(CAN2,2,-10865-Out_Pulse);
+}
+
+void PID_Agl(float Set_Angle)
+{
+	static float A_err,Last_Aerr,Sum_Aerr;
+	A_err=Set_Angle-position.angle;
+	if(A_err>180)
+		A_err=A_err-360;
+	if(A_err<-180)
+		A_err=A_err+360;
+	Sum_Aerr=Sum_Aerr+A_err;
+	Out_Pulse=(int)(400*A_err);
+		//+5*Sum_Aerr+5*(A_err-Last_Aerr));
+	Last_Aerr=A_err;
+}
+void PID_Awy(void)
+{
+	static float D_err,Last_Derr,Sum_Derr;
+	D_err=Dis;
+	Sum_Derr=Sum_Derr+D_err;
+	Out_Agl=D_err/10;
+	if(Out_Agl>=90)
+    Out_Agl=90;
+	//+5*Sum_Derr+5*(D_err-Last_Derr)); 
+  Last_Derr=D_err;
+}	
+/**void PID(int Agl_Flag)
 {
 	float err,Err1,Err2,Last_err,Sum_err;
 	switch(Agl_Flag)
@@ -291,9 +485,10 @@ void PID(int Agl_Flag)
 	Out_Pulse=(int)(500*err);
 		//+5*Sum_err+5*(err-Last_err));
 	Last_err=err;
-}
-void Round(float speed,float R)
+}**/
+/**void Round(float speed,float R)
 {
 	vel1=(int)(10865*speed*(R-0.217)/R);
   vel2=-(int)(10865*speed*(R+0.217)/R);
 }
+**/
