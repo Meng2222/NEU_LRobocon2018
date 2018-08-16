@@ -42,7 +42,7 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-uint8_t can_buf[]={0};
+uint8_t can_buf[10]={0};
 uint32_t can_a;
 uint8_t can_b;
 void CAN1_RX0_IRQHandler(void)
@@ -368,6 +368,7 @@ float GetYpos(void)
 {
 	return ypos;
 }
+char pposokflag = 0;
 extern  int isOKFlag;
 void USART3_IRQHandler(void) //更新频率 200Hz
 {
@@ -419,8 +420,10 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 					count = 0;
 				break;
 			case 4:
+				#if CARNUM == 4
 				if (ch == 0x0d)
 				{
+//					pposokflag = 1;
 					Angle =posture.ActVal[0] ;//角度
 					posture.ActVal[1] = posture.ActVal[1];
 					posture.ActVal[2] = posture.ActVal[2];
@@ -431,6 +434,21 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 					SetYpos(posY);
 					SetAngle(Angle);
 				}
+				#elif CARNUM == 1
+				if (ch == 0x0d)
+				{
+					pposokflag = 1;
+					Angle =-posture.ActVal[0] ;//角度
+					posture.ActVal[1] = posture.ActVal[1];
+					posture.ActVal[2] = posture.ActVal[2];
+					posY = -posture.ActVal[3];//x
+					posX = posture.ActVal[4];//y
+					avel=posture.ActVal[5] = posture.ActVal[5];
+					SetXpos(posX);
+					SetYpos(posY);
+					SetAngle(Angle);
+				}
+				#endif
 				count = 0;
 				break;
 			case 5:

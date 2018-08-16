@@ -39,9 +39,7 @@ extern  void  App_Task(void);
 static  void  App_TaskStart(void);
 static 	void  ConfigTask(void);
 static 	void  WalkTask(void);
-//static 	void  Walk_Virer(int radius,int multiple);
-//static 	void  Walk_Circle(int speed1,int speed2);
-//static 	void  Walk_Straight(int speed);
+
 
 
 /*
@@ -53,9 +51,7 @@ static 	void  WalkTask(void);
 #define  APP_TASK_START_PRIO						10u
 #define  Config_TASK_START_PRIO						11u
 #define  Walk_TASK_PRIO								12u
-//#define  Walk_Virer_TASK_PRIO							13u
-//#define  Walk_Circle_TASK_PRIO							13u
-//#define  Walk_Straight_TASK_PRIO							13u
+
 
 
 
@@ -69,9 +65,6 @@ static 	void  WalkTask(void);
 #define  APP_TASK_START_STK_SIZE					256u
 #define  Config_TASK_START_STK_SIZE					256u
 #define  Walk_TASK_STK_SIZE							512u
-//#define  Walk_Virer_TASK_STK_SIZE							512u
-//#define  Walk_Circle_TASK_STK_SIZE							512u
-//#define  Walk_Straight_TASK_STK_SIZE							512u
 
 
 /*
@@ -88,10 +81,13 @@ static 	void  WalkTask(void);
 *                                                  LIB
 *********************************************************************************************************
 */
-
-#define   Kp    180
+#define   v     300
+#define   Kp    8
 #define   Ki    0
-#define   Kd    12
+#define   Kd    0
+#define   Distance_Kp    300*0.2/v
+#define   Distance_Ki    0
+#define   Distance_Kd    0
 
 
 #endif
