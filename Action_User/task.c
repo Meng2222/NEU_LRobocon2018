@@ -15,6 +15,8 @@
 #include "environmental.h"
 #include "Pos.h"
 
+#define DIRFORLINE forward
+
 
 /*
 ===============================================================
@@ -97,14 +99,14 @@ void WalkTask(void)
     MotorOn(CAN2, 1);
     MotorOn(CAN2, 2);
 	OSSemSet(PeriodSem, 0, &os_err);
-    PidA.KP = 5;
-    PidA.KI = 0.025;
-    PidA.KD = 5;
+    PidA.KP = 2;
+    PidA.KI = 0.005;
+    PidA.KD = 10;
     PidA.GetVar = GetA;
-    PidA.ExOut = LineDir(&Target, forward);
-    PidB.KP = 1;
+    PidA.ExOut = LineDir(&Target, DIRFORLINE);
+    PidB.KP = 2;
     PidB.KI = 0.0005;
-    PidB.KD = 10;
+    PidB.KD = 2;
     PidB.GetVar = GetDistance;
     PidB.ExOut = 0;
     PIDCtrlInit1();
@@ -118,28 +120,29 @@ void WalkTask(void)
 		OSSemPend(PeriodSem, 0, &os_err);
         GetNowPoint(&nowPoint);
         uout1 = PIDCtrl1(&PidA);
-        uout2 = PIDCtrl2(&PidB);
-        reldirNow2Line = RelDir2Line(&Target, forward);
+        uout2 = __fabs(PIDCtrl2(&PidB));
+        reldirNow2Line = RelDir2Line(&Target, DIRFORLINE);
         if(reldirNow2Line == right)
         {
-            k1 = 0.7;
-            k2 = 1.3;
+            k1 = 0.13 * 5;
+            k2 = 0.07 * 5;
         }
         else if(reldirNow2Line == left)
         {
-            k1 = 1.3;
-            k2 = 0.7;
+            k1 = 0.07 * 5;
+            k2 = 0.13 * 5;
         }
-        else
+        if((int32_t) GetDistance() == 0)
         {
             k1 = 0;
             k2 = 0;
+            PIDCtrlInit2();
             if((int32_t)GetA() == (int32_t)PidA.ExOut)
             {
                 PIDCtrlInit1();
             }
         }
-//        if(__fabs(500 + k1 * uout2 + uout1) > 1000 || __fabs(500 + k1 * uout2 - uout1) > 1000)
+//        if(__fabs(500 + k1 * uout2 + uout1) > 1500 || __fabs(500 + k1 * uout2 - uout1) > 1500)
 //        {
 //            uout1 = 0;
 //            uout2 = 0;

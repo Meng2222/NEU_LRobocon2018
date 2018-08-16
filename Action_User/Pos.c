@@ -14,14 +14,15 @@ float GetY(void)
 }
 float GetA(void)
 {
-    if(Pos_t.angle >= -90)
-    {
-        return Pos_t.angle - 90;
-    }
-    else
-    {
-        return Pos_t.angle + 270;
-    }
+    return -1 * Pos_t.angle;
+//    if(Pos_t.angle >= -90)
+//    {
+//        return Pos_t.angle - 90;
+//    }
+//    else
+//    {
+//        return Pos_t.angle + 270;
+//    }
 }
 #endif
 #ifdef CAR4
