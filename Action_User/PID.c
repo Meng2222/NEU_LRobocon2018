@@ -51,12 +51,12 @@ extern u8 isOKFlag;
 extern u8 issendOK;
 float kp = 20;
 float ki = 0;
-float kd = 2;
+float kd = 40;
 float lastAngle = 0;
 float velocity = 0;
 float ITerm = 0;
-float velocityMax1 = 1800;
-float velocityMax2 = -1800;
+float velocityMax1 = 3600;
+float velocityMax2 = -3600;
 float velocityMin1 = 100;
 float velocityMin2 = -100;
 extern float angle;
@@ -154,26 +154,60 @@ void PID_Line(float x1,float y1,float x2,float y2,int v)             //PID直线，
 	float Line_B = x2-x1;
 	float Line_C = x1*y2-x2*y1;
 	float error = (Line_A*posture.ActVal[3]+Line_B*posture.ActVal[4]+Line_C)/sqrt(Line_A*Line_A+Line_B*Line_B);
-	if(error>1800) error = 1800;
-	if(x1>x2 && y1>=y2) PID_Angle(Auto,(90+((atan((y1-y2)/(x1-x2)))*(180/3.141592)))+error/20,posture.ActVal[0],v);
-	if(x1>x2 && y1<y2) PID_Angle(Auto,(90-((atan((y2-y1)/(x1-x2)))*(180/3.141592)))+error/20,posture.ActVal[0],v);
+	if(error>900) error = 900;
+	if(error<-900) error = -900;
+	if(error>-100 && error<100) SetTunings(20,0,20);
+	else SetTunings(30,0,40);
+	if(x1>x2 && y1>=y2) PID_Angle(Auto,(90+((atan((y1-y2)/(x1-x2)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
+	if(x1>x2 && y1<y2) PID_Angle(Auto,(90-((atan((y2-y1)/(x1-x2)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
 	if(x1<x2 && y1>=y2) PID_Angle(Auto,(-90-((atan((y1-y2)/(x2-x1)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
 	if(x1<x2 && y1<y2) PID_Angle(Auto,(-90+((atan((y2-y1)/(x2-x1)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
 	if(x1==x2 && y2>=y1) 
 	{
-		if((posture.ActVal[3]-x1)<1800 && (posture.ActVal[3]-x1)>-1800) error = posture.ActVal[3]-x1;
-		else error = 1800;
+		if((posture.ActVal[3]-x1)<=450 && (posture.ActVal[3]-x1)>=-450) error = posture.ActVal[3]-x1;
+		else if(error>900) error = 900;
+		else if(error<-900) error = -900;
+		if(error>-100 && error<100) SetTunings(20,0,20);
+		else SetTunings(30,0,40);
 		PID_Angle(Auto,0+error/20,posture.ActVal[0],v);
 	}
 	if(x1==x2 && y2<y1) 
 	{
-		if((posture.ActVal[3]-x1)<1800 && (posture.ActVal[3]-x1)>-1800) error = posture.ActVal[3]-x1;
-		else error = 1800;
+		if((posture.ActVal[3]-x1)<=450 && (posture.ActVal[3]-x1)>=-450) error = posture.ActVal[3]-x1;
+		else if(error>900) error = 900;
+		else if(error<-900) error = -900;
+		if(error>-100 && error<100) SetTunings(20,0,20);
+		else SetTunings(30,0,40);
 		PID_Angle(Auto,180-(posture.ActVal[3]-x1)/20,posture.ActVal[0],v);
 	}
 }
 
-
+void PID_Sauare(float v)                                             //PID正方形，两米见方，速度1m的参数
+{
+	static u8 lineCnt = 0;
+	switch(lineCnt)
+	{
+		case 0:
+			PID_Line(0,0,0,2000,v);
+			if(posture.ActVal[4]>1340) lineCnt++;
+			break;
+		case 1:
+			PID_Line(0,2000,-2000,2000,v);
+			if(posture.ActVal[3]<-1430) lineCnt++;
+			break;
+		case 2:
+			PID_Line(-2000,2000,-2000,0,v);
+			if(posture.ActVal[4]<650) lineCnt++;
+			break;
+		case 3:
+			PID_Line(-2000,0,0,0,v);
+			if(posture.ActVal[3]>-650) lineCnt++;
+			break;
+		default:
+			lineCnt = 0;
+			break;
+	}	
+}
 /*
 //	int x_last = 0;
 //	int y_last = 0;

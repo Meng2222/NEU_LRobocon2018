@@ -55,8 +55,8 @@ void ConfigTask(void)
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);                //can2初始化
 	
 	ElmoInit(CAN2);                                                  //驱动器初始化
-	VelLoopCfg(CAN2,2,60000000,60000000);                            //左电机速度环初始化
-	VelLoopCfg(CAN2,1,60000000,60000000);                            //右电机速度环初始化
+	VelLoopCfg(CAN2,2,80000000,80000000);                            //左电机速度环初始化
+	VelLoopCfg(CAN2,1,80000000,80000000);                            //右电机速度环初始化
 	MotorOn(CAN2,1);                                                 //右电机使能
 	MotorOn(CAN2,2);                                                 //左电机使能
 	USART3_Init(115200);
@@ -89,10 +89,11 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
-		PID_Line(-600,0,-600,-7000,1000);                            //走线函数
+//		PID_Line(-500,0,-500,-4000,1000);                         //走线函数
+		PID_Sauare(1000);
 		cnt++;
 		if(cnt>799) cnt = 0;
-		time = cnt/10;                                               //100ms周期发状态，只有x，y坐标
+		time = cnt/2;                                               //100ms周期发状态，只有x，y坐标
 		if(lasttime != time)
 		{
 			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[3]);

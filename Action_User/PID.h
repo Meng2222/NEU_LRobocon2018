@@ -25,5 +25,6 @@ void Init_PID(float angle);
 void PID_Angle(u8 status,float Angle_Set,float Angle,int v);
 void PID_Coordinate(float x0,float y0,int v);
 void PID_Line(float x1,float y1,float x2,float y2,int v);
+void PID_Sauare(float v);
 
 #endif
