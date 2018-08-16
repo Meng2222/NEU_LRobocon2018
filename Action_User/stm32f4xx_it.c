@@ -427,7 +427,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
 				posY =-posture.ActVal[3];//x
-				posX= -posture.ActVal[4];//y
+				posX= posture.ActVal[4];//y
 				SetXpos(posX);
 				SetYpos(posY);
 				SetAngle(Angle);

@@ -11,10 +11,16 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
-#define Kp 250
-#define Ki 0
-#define Kd 0
-float u,setAng;
+#include <math.h>
+#define Kp1 120
+#define Ki1 0
+#define Kd1 0 
+#define Kp2 10
+#define Ki2 0
+#define Kd2 0
+#define State1 1
+#define State2 0
+float u1,u2;
 int count;
 extern char isOKFlag;
 extern char pposokflag;
@@ -96,28 +102,65 @@ void ConfigTask(void)
 	#elif CARNUM == 4
 	delay_s(10);
 	#endif
-	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-int Uk(float err)
+void uAng(float u2,float pointAng)//角度闭环
 {
 	static float lastErr = 0;
 	static float sumErr = 0;
+	float err,nowAngle;
+	if(State1==0)
+	{
+	  nowAngle=GetAngle()+90;
+	  if(nowAngle>180)
+	  nowAngle=nowAngle-360;
+	  err=u2+pointAng-nowAngle;
+	}
+	else
+	{
+		nowAngle=GetAngle()-90;
+		if(nowAngle<-180)
+		nowAngle=nowAngle+360;
+	  err=-u2+pointAng-nowAngle; 
+	}
+	if(err>180)
+		err=err-360;
+	if(err<-180)
+		err=err+360;
 	sumErr += err;
-	u= Kp * err + Ki * sumErr +Kd *(err - lastErr);
+	u1= Kp1 * err + Ki1 * sumErr +Kd1 *(err - lastErr);
 	lastErr = err;
 }
-void WalkStright(float mult)//直线走
+//void uPlace(float k,float x1,float y1)//位置闭环
+//{
+//	static float lastErr = 0;
+//	static float sumErr = 0;
+//	float err;
+//	err=fabs(k*GetXpos()-GetYpos()+y1-k*x1)/sqrt(k*k+1);
+//	if(k*GetXpos()-k*x1+y1<GetYpos()&&State2==0)
+//	err=-err;
+//    if(k*GetXpos()-k*x1+y1>GetYpos()&&State2==1)
+//	err=-err;	
+//	sumErr += err;
+//	u2= Kp2*0.01*err + Ki2 * sumErr +Kd2 *(err - lastErr);
+//	lastErr = err;
+//}
+void uPlace()  //沿y轴特殊情况
 {
-	float errAng;
-	errAng=GetAngle()-setAng;
-	if(errAng>180)
-		errAng=errAng-360;
-	if(errAng<-180)
-		errAng=errAng+360;
-	Uk(errAng);
-	VelCrl(CAN2,1,4096.f*mult);
-	VelCrl(CAN2,2,-u-4096.f*mult);
+	static float lastErr = 0;
+	static float sumErr = 0;
+	float err;
+	err=GetXpos();
+	sumErr += err;
+	u2= Kp2*0.01*err + Ki2 * sumErr +Kd2 *(err - lastErr);
+	lastErr = err;
+}	
+void WalkStright(float speed)//直线走
+{
+	float pulse;
+	pulse=4096*speed/(WHEEL_DIAMETER*PI);
+	VelCrl(CAN2,1,pulse+u1);
+	VelCrl(CAN2,2,-pulse);//左偏，u1+，右偏，u1-
 }
 void WalkTask(void)
 {
@@ -127,35 +170,38 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle());
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle()+90);
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
-		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)GetYpos());
-		switch(count)
-		{
-		 case 0:
-		     setAng=0;
-		    WalkStright(1);
-		 if(GetYpos()>1750)
-			 count=1;
-		 break;
-		 case 1:
-		     setAng=-90;
-		    WalkStright(1);
-		 if(GetXpos()>1750)
-			 count=2;
-		 break;
-		 case 2:
-		     setAng=-180;
-		    WalkStright(1);
-		 if(GetYpos()<250)
-			 count=3;
-		 break;
-		 case 3:
-		     setAng=90;
-		    WalkStright(1);
-		 if(GetXpos()<250)
-			 count=0;
-		 break;
-	   }	
-	}
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetYpos());
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)u2);
+		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)u1);
+//		switch(count)
+//		{
+//		 case 0:
+//		    WalkStright(1,0);
+//		 if(GetYpos()>1750)
+//			 count=1;
+//		 break;
+//		 case 1:
+//		    WalkStright(1,90);
+//		 if(GetXpos()>1750)
+//			 count=2;
+//		 break;
+//		 case 2:
+//		    WalkStright(1,180);
+//		 if(GetYpos()<250)
+//			 count=3;
+//		 break;
+//		 case 3:
+//		    WalkStright(1,-90);
+//		 if(GetXpos()<250)
+//			 count=0;
+//		 break;
+//		uPlace(1,0,100);
+		uPlace();
+//		uAng(u2,atan(1)*180/PI+State2*180);
+		uAng(u2,90);
+	    WalkStright(310);
+	}		
 }
+
