@@ -59,11 +59,11 @@
 /**
   * @}
   */
-#define P_Angle 30
+#define P_Angle 60
 #define I_Angle 0
 #define D_Angle 0
 
-#define P_Location 1.5
+#define P_Location 1
 #define I_Location 0
 #define D_Location 0
 
@@ -71,7 +71,7 @@
 /* Exported functions --------------------------------------------------------*/
 void CircleAround(float radius, float speed); //(半径(mm)), 速度(mm/s))
 void RectangleAround(float length, float width, float BasicSpeed); //(长(mm), 宽(mm), 速度(mm/s))
-void LockLineMove(double k, float b, float BasicSpeed, uint8_t direction); //(设定直线斜率, 设定直线截距, 基础速度, 方向(1为沿X轴正向, 0为负向))
+void LockLineMove(uint8_t ExistSlope,double k, float b, float SetXpos, float BasicSpeed, uint8_t direction); //(是否存在斜率(1为存在 0为不存在), 设定直线斜率, 设定直线截距, 若不存在斜率则填写设定直线横坐标, 基础速度, 方向(1为沿X轴正向, 0为负向))
 float AnglePID(float Kp, float Ki, float Kd, float AngleSet, float AngleActual);
 float LocationPID(float Kp, float Ki, float Kd, float PointSet, float PointActual);
 void Move(float SpeedL, float  SpeedR);

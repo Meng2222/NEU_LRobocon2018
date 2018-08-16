@@ -24,7 +24,7 @@ extern float ypos;
 
 #define ROBOT 4
 
-#if ROBOT == 1
+	#if ROBOT == 1
 	float GetAngle(void)
 	{
 		return -angle;
@@ -40,7 +40,7 @@ extern float ypos;
 		return -xpos;
 	}
 	
-#elif ROBOT == 4
+	#elif ROBOT == 4
 	float GetAngle(void)
 	{
 		return angle;
@@ -55,8 +55,7 @@ extern float ypos;
 	{
 		return ypos;
 	}
-#endif
-
+	#endif
 
 	
 OS_EXT INT8U OSCPUUsage;
@@ -64,9 +63,11 @@ OS_EVENT *MoveSem;
 OS_EVENT *BluetoothSem;
 
 extern double 		SlopeSetLine ;
+extern float  		Distance;
 extern float		AngleError;
 extern float		AngleControl;
 extern float 		LocationControl;
+extern float		PID_SetAngle;
 extern uint8_t		LocationFlag;
 static OS_STK		App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK		MoveTaskStk[Move_TASK_STK_SIZE];
@@ -87,7 +88,7 @@ void App_Task()
 						  (INT8U)Config_TASK_START_PRIO);
 	os_err = OSTaskCreate((void (*)(void *))MoveTask,
 						  (void *)0,
-						  (OS_STK *)&MoveTaskStk[Move_TASK_STK_SIZE - 1],
+							(OS_STK *)&MoveTaskStk[Move_TASK_STK_SIZE - 1],
 						  (INT8U)Move_TASK_PRIO);
 	os_err = OSTaskCreate((void (*)(void *))BluetoothTask,
 						  (void *)0,
@@ -130,7 +131,7 @@ void MoveTask(void)
 	while (1)
 	{
 		OSSemPend(MoveSem, 0, &os_err);
-		LockLineMove(1, 1000, 400, 1);	//(设定直线斜率, 设定直线截距, 基础速度, 方向(1为沿X轴正向, 0为负向))
+		LockLineMove(0, 0, 0, 1000, 1000, 0);	//(是否存在斜率(1为存在 0为不存在), 设定直线斜率, 设定直线截距, 若不存在斜率则填写设定直线横坐标, 基础速度, 方向(1为沿X轴正向, 0为负向))
 	}
 }
 
@@ -146,11 +147,10 @@ void BluetoothTask(void)
 		USART_OUT(UART4, (uint8_t*)"  x = %d  ",(int)GetXpos());
 		USART_OUT(UART4, (uint8_t*)"  y = %d  ",(int)GetYpos());
 		USART_OUT(UART4, (uint8_t*)"  angle = %d  ",(int)GetAngle());
-		USART_OUT(UART4, (uint8_t*)"  LocationControl = %d  ",(int)LocationControl);
+		USART_OUT(UART4, (uint8_t*)"  PID_SetAngle = %d  ",(int)PID_SetAngle);
 		USART_OUT(UART4, (uint8_t*)"  AngleControl = %d \r\n",(int)AngleControl);
 		
 		/*
-		
 		USART_OUT(UART4, (uint8_t*)"  AngleError = %d ",(int)AngleError);
 		USART_OUT(UART4, (uint8_t*)" SlopeSetLine = %d ",(int)SlopeSetLine );
 		*/

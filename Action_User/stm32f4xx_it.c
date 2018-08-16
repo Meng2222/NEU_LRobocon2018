@@ -99,7 +99,7 @@ void CAN2_RX0_IRQHandler(void)
 void TIM2_IRQHandler(void)
 {
 	#define MOVE_PERIOD 10
-	#define BLUETOOTH_PERIOD 100
+	#define BLUETOOTH_PERIOD 10
 	//用来计数10次，产生10ms的定时器
 	static uint8_t MovePeriod = 0;
 	static uint8_t BluetoothCounter = 0;
@@ -110,7 +110,6 @@ void TIM2_IRQHandler(void)
 
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-
 		//10ms触发一次直走程序
 		MovePeriod++;
 		if (MovePeriod == MOVE_PERIOD)
@@ -118,7 +117,7 @@ void TIM2_IRQHandler(void)
 			OSSemPost(MoveSem);
 			MovePeriod = 0;
 		}
-		//100ms触发一次蓝牙模块 发送角度及坐标等数据
+		//50ms触发一次蓝牙模块 发送角度及坐标等数据
 		BluetoothCounter++;
 		if(BluetoothCounter == BLUETOOTH_PERIOD)
 		{
