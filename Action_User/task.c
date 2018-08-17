@@ -12,15 +12,16 @@
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
 #include <math.h>
-#define Kp1 120
-#define Ki1 0
-#define Kd1 0 
-#define Kp2 15
-#define Ki2 0
-#define Kd2 0
-#define State1 1 //直线不同方向标志位
-#define State2 0 //正负斜率标志位
-#define State3 0 //Y轴特殊情况标志位
+#define Kp1 (210)   //角度PID参数
+#define Ki1 (0)
+#define Kd1 (0) 
+#define Kp2 (800.0/speed)*8.5 //位置PID参数
+#define Ki2 (0)
+#define Kd2 (0)
+#define speed (1000)
+
+float State1=0,State2=0,State3=0;//state1 直线不同方向标志位;state2 正负斜率标志位;state3 Y轴特殊情况标志位
+float nowAngle;
 float u1,u2;
 int count;
 extern char isOKFlag;
@@ -76,8 +77,8 @@ void App_Task()
 void Motor_Init(void)
 {
 	ElmoInit(CAN2);
-	VelLoopCfg(CAN2,1,8000,8000);
-	VelLoopCfg(CAN2,2,8000,8000);
+	VelLoopCfg(CAN2,1,20000,20000);
+	VelLoopCfg(CAN2,2,20000,20000);
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
 }
@@ -105,16 +106,16 @@ void ConfigTask(void)
 	#endif
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-/*
-   ===============================================================
-   PID控制
-   ===============================================================
-   */
-void uAng(float u2,float pointAng)//角度闭环
+/**
+* @brief  角度闭环
+* @param  u2:位置闭环的输出
+* @param  pointAng:给定角
+*/
+void uAng(float u2,float pointAng)
 {
 	static float lastErr = 0;
 	static float sumErr = 0;
-	float err,nowAngle;
+	float err;
 	if(u2>90)
 		u2=90;
 	if(u2<-90)
@@ -141,7 +142,13 @@ void uAng(float u2,float pointAng)//角度闭环
 	u1= Kp1 * err + Ki1 * sumErr +Kd1 *(err - lastErr);
 	lastErr = err;
 }
-void uPlace(float k,float x1,float y1)//位置闭环
+/**
+* @brief  位置闭环
+* @param  k:给定直线斜率
+* @param  x1，y1：给定直线的一个点坐标
+* @param  a:直线x=a的特殊情况
+*/
+void uPlace(float k,float x1,float y1,float a)
 {
 	static float lastErr = 0;
 	static float sumErr = 0;
@@ -156,18 +163,22 @@ void uPlace(float k,float x1,float y1)//位置闭环
     }	
 	if(State3==1)
 	{
-		err=GetXpos();
+		err=GetXpos()-a;
 	}
 	sumErr += err;
 	u2= Kp2*0.01*err + Ki2 * sumErr +Kd2 *(err - lastErr);
 	lastErr = err;
-}	
-void WalkStright(float speed)//直线走
+}
+/**
+* @brief  给小车左右轮速度让小车直线走
+* @param  speed:给小车的行进速度，单位mm/s
+*/
+void WalkStright()
 {
 	float pulse;
 	pulse=4096*speed/(WHEEL_DIAMETER*PI);
 	VelCrl(CAN2,1,pulse+u1);
-	VelCrl(CAN2,2,-pulse);//左偏，u1+，右偏，u1-
+	VelCrl(CAN2,2,-pulse);
 }
 void WalkTask(void)
 {
@@ -177,44 +188,61 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle()+90);
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)nowAngle);
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetYpos());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)u2);
 		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)u1);
-//		switch(count)
-//		{
-//		 case 0:
-//		    WalkStright(1,0);
-//		 if(GetYpos()>1750)
-//			 count=1;
-//		 break;
-//		 case 1:
-//		    WalkStright(1,90);
-//		 if(GetXpos()>1750)
-//			 count=2;
-//		 break;
-//		 case 2:
-//		    WalkStright(1,180);
-//		 if(GetYpos()<250)
-//			 count=3;
-//		 break;
-//		 case 3:
-//		    WalkStright(1,-90);
-//		 if(GetXpos()<250)
-//			 count=0;
-//		 break;
-       if(State3==1)
-       {
-		 uPlace(1,0,100);
-	     uAng(u2,90);
-	   }
-	   if(State3==0)
-       {
-		 uPlace(1,0,100);
-		 uAng(u2,atan(1)*180/PI+State2*180);
-	   }
-	    WalkStright(400);
-	}		
+		switch(count)
+		{
+		 case 0:
+		    State1=0;
+		    State3=1;
+		    WalkStright();
+		    uPlace(1,0,1000,0);
+	        uAng(u2,90);
+		 if(GetYpos()>800.0/speed*1700)
+			 count=1;
+		 break;
+		 case 1:
+		    State1=0;
+		    State3=0;
+		    WalkStright();
+		    uPlace(0,1000,2000,0);
+	        uAng(u2,0);
+		 if(GetXpos()>800.0/speed*1700)
+			 count=2;
+		 break;
+		 case 2:
+            State1=1;
+		    State3=1;
+		    WalkStright();
+		    uPlace(0,2000,1000,2000);
+	        uAng(u2,90);
+		 if(GetYpos()<2000-800.0/speed*1700)
+			 count=3;
+		 break;
+		 case 3:
+            State1=1;
+		    State3=0;
+		    WalkStright();
+		    uPlace(0,1000,0,0);
+	        uAng(u2,0);
+		 if(GetXpos()<2000-800.0/speed*1700)
+			 count=0;
+		 break;
+//       if(State3==1)
+//       {
+//		 uPlace(1,0,100);
+//	     uAng(u2,90);
+//	   }
+//	   if(State3==0)
+//       {
+//		 uPlace(0,100,0);
+//		 uAng(u2,atan(0)*180/PI+State2*180);
+//	   }
+//	    WalkStright(500);
+	}
+  }		
 }
 
