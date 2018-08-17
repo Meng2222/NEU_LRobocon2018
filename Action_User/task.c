@@ -110,14 +110,14 @@ void WalkTask(void)
     MotorOn(CAN2, 1);
     MotorOn(CAN2, 2);
 	OSSemSet(PeriodSem, 0, &os_err);
-    PidA.KP = 10;
-    PidA.KI = 0.01;
-    PidA.KD = 10;
+    PidA.KP = 5;
+    PidA.KI = 0.005;
+    PidA.KD = 2.5;
     PidA.GetVar = GetA;
     PidA.ExOut = LineDir(&Target, DIRFORLINE);
     PidB.KP = 5;
     PidB.KI = 0;
-    PidB.KD = 5;
+    PidB.KD = 2.5;
     PidB.GetVar = GetDistance;
     PidB.ExOut = 0;
     PIDCtrlInit1();
@@ -143,26 +143,26 @@ void WalkTask(void)
         {
             if(anglediff <= 90)
             {
-                k1 = 0.13 * 5;
-                k2 = 0.07 * 5;
+                k1 = 0.14 * 3;
+                k2 = 0.06 * 3;
             }
             else
             {
-                k1 = 0.07 * 5;
-                k2 = 0.13 * 5;
+                k1 = 0.06 * 3;
+                k2 = 0.14 * 3;
             }
         }
         else if(reldirNow2Line == left)
         {
             if(anglediff <= 90)
             {
-                k1 = 0.07 * 5;
-                k2 = 0.13 * 5;
+                k1 = 0.06 * 3;
+                k2 = 0.14 * 3;
             }
             else
             {
-                k1 = 0.13 * 5;
-                k2 = 0.07 * 5;
+                k1 = 0.14 * 3;
+                k2 = 0.06 * 3;
             }
         }
         if((int32_t) GetDistance() == 0)
