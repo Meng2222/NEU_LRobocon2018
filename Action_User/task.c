@@ -150,43 +150,43 @@ void WalkTask(void)
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetYpos());
 		USART_OUT(UART4,(uint8_t*)"Input:%dOut:%d\tDis_Out:%d\r\n",(int)Input,(int)Output,(int)Dis_Output);
-		SetTuning(220,0,0);					//PID参数
-		Dis_Pidtuning(0.085,0,0);		
-		PID_Set(1.0f,0.0f,-1000.0f,-1);		//x=+1000,Y轴负方向，速度1m/s
-		walk_stragiht(1000);						
-//		switch(state)
-//		{
-//			case 1:
-//				PID_Set(1.0f,0.0f,0.0f,1);		//x=0,Y轴正方向，速度1m/s
-//				walk_stragiht(1000);
-//				if(GetXpos()>=1800&&GetXpos()<=2000)
-//				{
-//					state++;
-//				}	break;
-//			case 2:
-//				PID_Set(0.0f,1.0f,-2000.0f,1);		//y=+2000,X轴正方向，速度1m/s
-//				walk_stragiht(1000);
-//				if(GetYpos()>=1800&&GetYpos()<=2000)
-//				{
-//					state++;
-//				}	break;
-//			case 3:
-//				PID_Set(1.0f,0.0f,-2000.0f,-1);		//x=+2000,Y轴负方向，速度1m/s
-//				walk_stragiht(1000);
-//				if(GetXpos()>=0&&GetXpos()<=200)
-//				{
-//					state++;
-//				}	break;
-//			case 4:
-//				PID_Set(0.0f,1.0f,0.0f,-1);		//y=0,X轴负方向，速度1m/s
-//				walk_stragiht(1000);
-//				if(GetYpos()>=0&&GetYpos()<=200)
-//				{
-//					state=1;
-//				}	break;
-//			default:break;
+		SetTuning(280,0,0);					//PID参数
+		Dis_Pidtuning(0.065,0,0);		
+//		PID_Set(1.0f,0.0f,-1000.0f,-1);		//x=+1000,Y轴负方向，速度1m/s
+//		walk_stragiht(1000);						
+		switch(state)
+		{
+			case 1:
+				PID_Set(1.0f,0.0f,0.0f,1);		//x=0,Y轴正方向，速度1m/s
+				walk_stragiht(Whirl_Vel);
+				if(GetYpos()>=1500)
+				{
+					state++;
+				}	break;
+			case 2:
+				PID_Set(0.0f,1.0f,-2000.0f,1);		//y=+2000,X轴正方向，速度1m/s
+				walk_stragiht(Whirl_Vel);
+				if(GetXpos()>=1500)
+				{
+					state++;
+				}	break;
+			case 3:
+				PID_Set(1.0f,0.0f,-2000.0f,-1);		//x=+2000,Y轴负方向，速度1m/s
+				walk_stragiht(Whirl_Vel);
+				if(GetYpos()<=500)
+				{
+					state++;
+				}	break;
+			case 4:
+				PID_Set(0.0f,1.0f,0.0f,-1);		//y=0,X轴负方向，速度1m/s
+				walk_stragiht(Whirl_Vel);
+				if(GetXpos()<=500)
+				{
+					state=1;
+				}	break;
+			default:break;
 				
-//		}
+		}
 
 	}
 }

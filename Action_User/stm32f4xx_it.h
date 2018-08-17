@@ -41,7 +41,7 @@ extern "C" {
 /* Exported functions ------------------------------------------------------- */
 
 #define CARNUM 1
-#define Whirl_Vel 800.0f			//mm/s
+#define Whirl_Vel 1000			//mm/s
 	
 //#define LeftWhirlVel  	4096.0f //左轮速度
 //#define RightWhirlVel  	4096.0f //右轮速度
