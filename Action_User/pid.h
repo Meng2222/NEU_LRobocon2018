@@ -8,9 +8,11 @@
 typedef struct {
 	float Kp;
 	float Ki;
-	float Kd;		
+	float Kd;
+	float lastErr;
+	float sumErr;
 }PId_t;
-#define SPEED 600
+#define SPEED 1000
 void KownedLinePID(float a,float b,float c,char dir);
 void WalkLine(float vel);
 void WalkLine2PID(float vel,float setAngle);

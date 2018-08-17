@@ -68,11 +68,13 @@ void WalkRound(float vel,float radius,char side)
 float PID_Compentate(float err,PId_t* PId_tTYPE)
 {
 	
-	static float lastErr = 0;
-	static float sumErr = 0;
-	sumErr += err;
-	Uout = PId_tTYPE->Kp * err + PId_tTYPE->Ki * sumErr + PId_tTYPE->Kd *(err - lastErr);
-	lastErr = err;
+	PId_tTYPE->sumErr += err;
+	Uout = PId_tTYPE->Kp * err + PId_tTYPE->Ki * PId_tTYPE->sumErr + PId_tTYPE->Kd *(err - PId_tTYPE->lastErr);
+	PId_tTYPE->lastErr = err;
+//	if(Uout > 1100)
+//		Uout = 1100;
+//	else if(Uout < -1100)
+//		Uout = -1100;
 	return Uout;
 }
 /**
@@ -138,11 +140,12 @@ void KownedLinePID(float a,float b,float c,char Dir)
 	if(a == 0)
 	{
 		if(Pos.y > (-c)/b)
-			updownFlag = 1;
-		else
 			updownFlag = 2;
+		else
+			updownFlag = 1;
 	}
-	else
+	
+	else 
 		{
 			shouldX  = (- b * Pos.y - c)/a;
 			if(shouldX < Pos.x)
@@ -166,23 +169,26 @@ void KownedLinePID(float a,float b,float c,char Dir)
 	{
 		errorDis = -errorDis;
 	}
-	if(Dis_PID(errorDis)>90)
-		Angle_PID(SPEED,setAngle + 90);
-	else if(Dis_PID(errorDis)<-90)
-		Angle_PID(SPEED,setAngle - 90);
-	else
 		Angle_PID(SPEED,setAngle + Dis_PID(errorDis));
 			
 }
 //角度环PID
 void Angle_PID(float vel,float value)
 {		
+	if(value > 180.0f)
+		value = value -360.0f;
+	else if(value < -180.0f)
+		value = value + 360.0f;
 	errorAngle = value - Pos.angle;
 	if(errorAngle > 180.0f)
 		errorAngle = errorAngle - 360.0f;
 	else if(errorAngle < -180.0f)
 		errorAngle = 360.0f + errorAngle;
 	uOutAngle = PID_Compentate(errorAngle,&Angle_PId);
+	if(uOutAngle >= 800)
+		uOutAngle = 800;
+	else if(uOutAngle <= -800)
+		uOutAngle = -800;
 	phase1 = 4096.f * (vel + uOutAngle)/ (WHEEL_DIAMETER * PI);
 	phase2 = 4096.f * (vel - uOutAngle)/ (WHEEL_DIAMETER * PI);
 	VelCrl(CAN2,1,phase1);
@@ -192,5 +198,9 @@ void Angle_PID(float vel,float value)
 float Dis_PID(float error)
 {	
 	uOutDis = PID_Compentate(error,&Dis_PId);
+	if(uOutDis > 90)
+		uOutDis = 90;
+	else if(uOutDis < -90)
+		uOutDis = -90;
 	return uOutDis;
 }
