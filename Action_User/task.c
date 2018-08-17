@@ -21,14 +21,12 @@ float errSum=0,lasterror=0;
 double Output,Dis_Output;
 float Kp,Ki,Kd,Kp2,Ki2,Kd2;
 float ratio1,ratio2;
-float d;			//d表示点到直线距离
-int dir=-1;
 
 //float Pos_PID(float Pos_Kp,float Pos_Ki,float Pos_Kd,float Set_Pos,float Tar_Pos);
 
-void Distance_PID(void);
+void Distance_PID(float a,float b,float c,int dir);
 void driveGyro(void);
-void Angle_PID(void);
+void Angle_PID(float a,float b,float c,int dir);
 void SetTuning(float kp,float ki,float kd);		//设定PID值
 void Dis_Pidtuning(float Dis_kp,float Dis_ki,float Dis_kd);
 /*
@@ -60,7 +58,11 @@ void Bias(void)
 	{error+=360;}
 }
 
-
+void PID_Set(float a,float b,float c,int dir)
+{
+	Distance_PID(a,b,c,dir);
+	Angle_PID(a,b,c,dir);	
+}
 
 
 /*
@@ -139,7 +141,7 @@ void WalkTask(void)
 
 	CPU_INT08U os_err;
 	os_err = os_err;
-//	int state=1;
+	int state=1;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
@@ -148,20 +150,54 @@ void WalkTask(void)
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetYpos());
 		USART_OUT(UART4,(uint8_t*)"Input:%dOut:%d\tDis_Out:%d\r\n",(int)Input,(int)Output,(int)Dis_Output);
-		SetTuning(120,0,0);					//PID参数
-		Dis_Pidtuning(0.2,0,0);
-		Distance_PID();
-		Angle_PID();							//角度偏差
-		walk_stragiht(600);						//800mm/s
+		SetTuning(220,0,0);					//PID参数
+		Dis_Pidtuning(0.085,0,0);		
+		PID_Set(1.0f,0.0f,-1000.0f,-1);		//x=+1000,Y轴负方向，速度1m/s
+		walk_stragiht(1000);						
+//		switch(state)
+//		{
+//			case 1:
+//				PID_Set(1.0f,0.0f,0.0f,1);		//x=0,Y轴正方向，速度1m/s
+//				walk_stragiht(1000);
+//				if(GetXpos()>=1800&&GetXpos()<=2000)
+//				{
+//					state++;
+//				}	break;
+//			case 2:
+//				PID_Set(0.0f,1.0f,-2000.0f,1);		//y=+2000,X轴正方向，速度1m/s
+//				walk_stragiht(1000);
+//				if(GetYpos()>=1800&&GetYpos()<=2000)
+//				{
+//					state++;
+//				}	break;
+//			case 3:
+//				PID_Set(1.0f,0.0f,-2000.0f,-1);		//x=+2000,Y轴负方向，速度1m/s
+//				walk_stragiht(1000);
+//				if(GetXpos()>=0&&GetXpos()<=200)
+//				{
+//					state++;
+//				}	break;
+//			case 4:
+//				PID_Set(0.0f,1.0f,0.0f,-1);		//y=0,X轴负方向，速度1m/s
+//				walk_stragiht(1000);
+//				if(GetYpos()>=0&&GetYpos()<=200)
+//				{
+//					state=1;
+//				}	break;
+//			default:break;
+				
+//		}
 
 	}
 }
-void PID_err_Out(float a,float b,float c)
+
+
+void Angle_PID(float a,float b,float c,int dir)				//PID控制角度偏差
 {
 	if((dir == 1&& a*b<0)||(dir == -1&& a*b>0))
 	{ 
-		Input=GetAngle()+90;
-		if(Input>=180)
+		Input=GetAngle()+90.0f;
+		if(Input>=180.0f)
 		{
 			Input-=360.0f;
 		}
@@ -170,8 +206,8 @@ void PID_err_Out(float a,float b,float c)
 	}
 	else if((dir == 1&& a*b>0)||(dir == -1&& a*b<0))
 	{
-		Input=GetAngle()+90-360;
-		if(Input<=-180)
+		Input=GetAngle()+90.0f-360.0f;
+		if(Input<=-180.0f)
 		{
 			Input+=360.0f;
 		}
@@ -183,7 +219,7 @@ void PID_err_Out(float a,float b,float c)
 	{
 		if(b == 0&&a != 0)
 		{
-			Input=GetAngle()+90;
+			Input=GetAngle()+90.0f;
 			if(Input>180)
 			{
 				Input-=360.0f;
@@ -194,7 +230,7 @@ void PID_err_Out(float a,float b,float c)
 		else if(b != 0&& a == 0)
 		{
 			Input=GetAngle()+90.0f;
-			if(Input>=180.0f)
+			if(Input>=180)
 			{
 				Input-=360.0f;
 			}
@@ -225,12 +261,6 @@ void PID_err_Out(float a,float b,float c)
 			error = Setpoint - Input - Dis_Output;			
 		}
 	}
-	d=(a*GetXpos()+b*GetYpos()+c)/(sqrt(a*a+b*b));
-}
-
-void Angle_PID(void)				//PID控制角度偏差
-{
-	PID_err_Out(0.0f,1.0f,0.0f);
 	Bias();
 	errSum+=error;
 	float dErr=error-lasterror;
@@ -238,17 +268,17 @@ void Angle_PID(void)				//PID控制角度偏差
 	lasterror=error;
 }
 
-void Distance_PID(void)				//PID控制角度偏差
+void Distance_PID(float a,float b,float c,int dir)				//PID控制角度偏差
 {
 	static float Dis_lasterr,Dis_errSum=0,Dis_error=0;
 	float dDis_Err;
 	if(dir == 1)
 	{
-		Dis_error = d;
+		Dis_error = (a*GetXpos()+b*GetYpos()+c)/(sqrt(a*a+b*b));
 	}
 	else if(dir == -1)
 	{
-		Dis_error = -d;
+		Dis_error = -(a*GetXpos()+b*GetYpos()+c)/(sqrt(a*a+b*b));
 	}
 	Dis_errSum+=Dis_error;
 	dDis_Err=Dis_error-Dis_lasterr;
