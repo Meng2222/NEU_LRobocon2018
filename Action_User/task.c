@@ -89,7 +89,18 @@ void ConfigTask(void)
 
 float GetDistance(void)
 {
-    return Point2Line(&Target);
+    if(RelDir2Line(&Target, DIRFORLINE) == right)
+    {
+        return Point2Line(&Target);
+    }
+    else if(RelDir2Line(&Target, DIRFORLINE) == left)
+    {
+        return -1 * Point2Line(&Target);
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 void WalkTask(void)
@@ -105,7 +116,7 @@ void WalkTask(void)
     PidA.GetVar = GetA;
     PidA.ExOut = LineDir(&Target, DIRFORLINE);
     PidB.KP = 5;
-    PidB.KI = 0.00005;
+    PidB.KI = 0;
     PidB.KD = 5;
     PidB.GetVar = GetDistance;
     PidB.ExOut = 0;
@@ -113,6 +124,7 @@ void WalkTask(void)
     PIDCtrlInit2();
     float uout1 = 0, uout2 = 0; 
     float k1 = 0, k2 = 0; 
+    float anglediff = 0;
     reldir reldirNow2Line;
     USART_OUT(UART4, (uint8_t *)"u1   u2   x   y   a   \r\n");
 	while (1)
@@ -122,9 +134,14 @@ void WalkTask(void)
         uout1 = PIDCtrl1(&PidA);
         uout2 = __fabs(PIDCtrl2(&PidB));
         reldirNow2Line = RelDir2Line(&Target, DIRFORLINE);
+        anglediff = __fabs(GetA() - PidA.ExOut);
+        if(anglediff > 180)
+        {
+            anglediff = __fabs(anglediff - 360);
+        }
         if(reldirNow2Line == right)
         {
-            if(__fabs(GetA() - PidA.ExOut) <= 90)
+            if(anglediff <= 90)
             {
                 k1 = 0.13 * 5;
                 k2 = 0.07 * 5;
@@ -137,7 +154,7 @@ void WalkTask(void)
         }
         else if(reldirNow2Line == left)
         {
-            if(__fabs(GetA() - PidA.ExOut) <= 90)
+            if(anglediff <= 90)
             {
                 k1 = 0.07 * 5;
                 k2 = 0.13 * 5;
