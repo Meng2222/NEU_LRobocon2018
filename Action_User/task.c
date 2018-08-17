@@ -12,22 +12,16 @@
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
 #include "math.h"
-#define Pi 3.1415                                 //π值                    3.1415
+#define Pi 3.1416                                 //π值                    3.1416
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
 #define BaseVelocity (1.0)                        //基础速度               1.0m/s
+#define Side_Length (2000)                        //方形边长               2m
+#define Advance_Length (618.0)                    //切换直线提前量         618.0mm
+#define Distance_coefficient (0.8)                //距离敏感度             数值越大 靠近直线越快 转向直线方向越慢，数值越小 靠近直线越慢 转向直线方向越快
+#define PID_Line_Angle_Kp (0.025)                 //直线闭环PID Kp参数     0.025
+#define PID_Line_Angle_Ki (0.0)                   //直线闭环PID Ki参数     0.0
+#define PID_Line_Angle_Kd (0.001)                 //直线闭环PID Kd参数     0.001
 
-#define PID_Angle_Kp (0.015)                      //直线闭环PID Kp参数     0.015
-#define PID_Angle_Ki (0)                          //直线闭环PID Ki参数     0                   
-#define PID_Angle_Kd (0.002)                      //直线闭环PID Kd参数     0.002
-                                                  
-//直线格式  Ax + By + C = 0
-//          x + 0.5 = 0
-#define Line_A (1.0)                                              
-#define Line_B (0.0)                                                     
-#define Line_C (0.5)
-//直线方向  Line_Mode = 1时[-π/2, π/2]
-//          Line_Mode = 0时[π/2, 3π/2]
-int Line_Mode = 0;                                
 
 /*
 ===============================================================
@@ -70,6 +64,13 @@ void driveGyro(void)
 }
 #endif
 
+//目标坐标信息结构体，x为横坐标，y为纵坐标，angle为与0°的相对角度
+typedef struct{ 
+	float x;
+	float y;
+	float angle;
+}Target;
+Target tar;
 /**
 * @brief  PID控制参数数据结构体
 * @author 陈昕炜
@@ -92,7 +93,7 @@ typedef struct{
     float out_max;       //输出上限
     float out_min;       //输出下限
 }PID_Value;
-PID_Value PID_Angle;
+PID_Value PID_Line_Angle, PID_Turn_Angle;
 
 /**
 * @brief  PID控制器
@@ -122,6 +123,7 @@ float constrain_float(float amt, float high, float low)
 {
     return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
 }
+
 /**
 * @brief  转速差实现转弯函数
 * @param  speed：两车轮圆心连线中点的移动速度 单位米
@@ -154,6 +156,26 @@ void Go(float velocity, float radius, char mode)
 		VelCrl(CAN2, 2, (int)(velocity * One_Meter_Per_Second * -1));
 	}
 }
+
+/**
+* @brief  角度限幅函数
+* @param  angle：输入的角度值 单位°
+* @author 陈昕炜
+* @note   用于WalkTask中
+*/
+float Constrain_float_Angle(float angle)
+{
+	if(angle > 180)
+	{
+		angle = angle - 360;
+	}
+	if(angle < -180)
+	{
+		angle = angle + 360;
+	}
+	return angle;
+}
+
 
 void App_Task()
 {
@@ -194,8 +216,8 @@ void ConfigTask(void)
 	CAN_Config(CAN2, 500, GPIOB, GPIO_Pin_5, GPIO_Pin_6);
 	
 	ElmoInit(CAN2);
-	VelLoopCfg(CAN2, 1, 2333333, 2333333);
-	VelLoopCfg(CAN2, 2, 2333333, 2333333);
+	VelLoopCfg(CAN2, 1, 53333333, 53333333);
+	VelLoopCfg(CAN2, 2, 53333333, 53333333);
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
 	
@@ -211,14 +233,15 @@ void ConfigTask(void)
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
-int cntSendTime = 0;
+
 void WalkTask(void)
 {
-
 	CPU_INT08U os_err;
 	os_err = os_err;
-	int cntSendTime;
-	float adjustVelocityAngle, adjustVelocityLineValue;
+	int cntSendTime = 0, cntTurn = -1, switchNextModeFlag = 1, Line_Mode;
+	float adjustVelocityLineAngle;
+	float Line_A, Line_B, Line_C, x_meter, y_meter;
+	float Line_Angle, Line_Distance, Point_Location, Line_K, Line_b;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
@@ -235,16 +258,78 @@ void WalkTask(void)
 		    pos.angle = posTmp.angle;
         #endif
 		
+		
+		//设置下一条目标直线和下一个直线标志点的位置信息
+		if(switchNextModeFlag == 1)
+		{
+			switchNextModeFlag = 0;
+            cntTurn++;
+			cntTurn = cntTurn % 4;
+			switch (cntTurn)
+		    {
+		    case 0:
+                Line_A = 1.0;
+                Line_B = 0.0;
+                Line_C = 0.0;
+                Line_Mode = 1;
+			    tar.y = Side_Length - Advance_Length;
+			    break;
+		    case 1:
+                Line_A = 0.0;
+                Line_B = 1.0;
+                Line_C = -2.0;
+                Line_Mode = 0;				
+				tar.x = Advance_Length - Side_Length;
+			    break;
+		    case 2:
+                Line_A = 1.0;
+                Line_B = 0.0;
+                Line_C = 2.0;
+                Line_Mode = 0;	
+			    tar.y = Advance_Length;			
+			    break;
+		    case 3:
+                Line_A = 0.0;
+                Line_B = 1.0;
+                Line_C = 0.0;
+                Line_Mode = 1;				
+				tar.x = Advance_Length * -1;
+			    break;
+		    }
+		}
+		//到达切换直线标志点后，turnFlag = 1切换下一条直线和下一个直线标志点
+		if(cntTurn == 0)
+		{
+		    if(tar.y < pos.y){switchNextModeFlag = 1;}
+		}
+		if(cntTurn == 1)
+		{	
+			if(tar.x > pos.x){switchNextModeFlag = 1;}
+		}
+		if(cntTurn == 2)
+		{	
+			if(tar.y > pos.y){switchNextModeFlag = 1;}
+		}
+		if(cntTurn == 3)
+		{
+			if(tar.x < pos.x){switchNextModeFlag = 1;}
+		}
+		
+		
 		//直线相关参数计算
+		//直线公式               Line_A            Ax + By + C = 0
+		//                       Line_B
+		//                       Line_C
 		//直线斜率               Line_K            单位m
 		//直线截距               Line_b            单位m
 		//直线角度               Line_Angle        范围(-π/2, π/2)
 		//当前点到直线的距离     Line_Distance     单位m
-		//当前点相对直线的位置   Point_Location    
-        //使用x_meter, y_meter统一单位，以用于直线相关参数计算
-		float x_meter = pos.x / 1000;
-		float y_meter = pos.y / 1000;
-		float Line_Angle, Line_Distance, Point_Location, Line_K, Line_b;
+		//当前点相对直线的位置   Point_Location
+        //直线方向               Line_Mode = 1时   范围[-π/2, π/2]
+        //                       Line_Mode = 0时   范围[π/2, 3π/2]		
+        //使用x_meter, y_meter统一单位，以用于直线相关参数计算		
+		x_meter = pos.x / 1000;
+		y_meter = pos.y / 1000;
 		//当直线斜率绝对值小于1时，使用y = kx + b的格式
 		if(fabs(Line_A) <= fabs(Line_B))
 		{
@@ -266,80 +351,64 @@ void WalkTask(void)
 			Line_Distance = ((Line_K * y_meter - x_meter + Line_b) / sqrt(Line_K * Line_K + 1));
 			//大于0时点在直线的右方，小于0时点在直线左方
 			Point_Location = (x_meter - Line_K * y_meter - Line_b);
-		}
-		
-		
-        //PID参数赋值
-		PID_Angle.Kp = PID_Angle_Kp;
-        PID_Angle.Ki = PID_Angle_Ki;
-        PID_Angle.Kd = PID_Angle_Kd;
-		//直线方向  Line_Mode = 1时[-π/2, π/2]
-        //          Line_Mode = 0时[π/2, 3π/2]
+		}               
+        //Line_Mode = 1时，直线方向范围[-π/2, π/2]                      
 		if(Line_Mode == 1)
 		{
 			//当点在直线右/下方时，离直线无限远时目标角度为直线方向 + 90°
 			if(Point_Location >= 0)
 			{
-				PID_Angle.setValue = Line_Angle + 90 * (1 - 1 /  (fabs(Line_Distance) + 1));
+				PID_Line_Angle.setValue = Line_Angle + 90 * (1 - 1 / (fabs(Line_Distance) * Distance_coefficient + 1));
 		    }
 			//当点在直线左/上方时，离直线无限远时目标角度为直线方向 - 90°
 		    if(Point_Location < 0)
 		    {
-			    PID_Angle.setValue = Line_Angle - 90 * (1 - 1 / (fabs(Line_Distance) + 1));
+			    PID_Line_Angle.setValue = Line_Angle - 90 * (1 - 1 / (fabs(Line_Distance) * Distance_coefficient + 1));
 		    }
 		}
+		// Line_Mode = 0时，直线方向范围[π/2, 3π/2]	
 		if(Line_Mode == 0)
 		{
 			//当点在直线右/下方时，离直线无限远时目标角度为直线方向的另一边(180°)再 - 90°
 			if(Point_Location >= 0)
 			{
-				PID_Angle.setValue = Line_Angle + 180 - 90 * (1 - 1 / (fabs(Line_Distance) + 1));
+				PID_Line_Angle.setValue = Line_Angle + 180 - 90 * (1 - 1 / (fabs(Line_Distance) * Distance_coefficient + 1));
 		    }
 			//当点在直线左/上方时，离直线无限远时目标角度为直线方向的另一边(180°)再 + 90°
 		    if(Point_Location < 0)
 		    {
-			    PID_Angle.setValue = Line_Angle + 180 + 90 * (1 - 1 / (fabs(Line_Distance) + 1));
+			    PID_Line_Angle.setValue = Line_Angle + 180 + 90 * (1 - 1 / (fabs(Line_Distance) * Distance_coefficient + 1));
 		    }
 		}
 		
+		
+		//PID参数赋值
+		PID_Line_Angle.Kp = PID_Line_Angle_Kp;
+        PID_Line_Angle.Ki = PID_Line_Angle_Ki;
+        PID_Line_Angle.Kd = PID_Line_Angle_Kd;
 		//目标角度限幅，转化为劣弧
-		if(PID_Angle.setValue > 180)
-		{
-			PID_Angle.setValue = PID_Angle.setValue - 360;
-		}
-		if(PID_Angle.setValue < -180)
-		{
-			PID_Angle.setValue = PID_Angle.setValue + 360;
-		}
-		
-		PID_Angle.feedbackValue = pos.angle;
+		PID_Line_Angle.setValue = Constrain_float_Angle(PID_Line_Angle.setValue);
+		PID_Line_Angle.feedbackValue = pos.angle;
 		//为实现角度差值限幅功能取消必须加入这行，而在PID函数中取消这行差值计算
-		PID_Angle.error = PID_Angle.setValue - PID_Angle.feedbackValue;
+		PID_Line_Angle.error = PID_Line_Angle.setValue - PID_Line_Angle.feedbackValue;
 		//根据当前角度是否大于180调整PID输出的控制量，使转弯圆弧始终为劣弧
-		if(PID_Angle.error > 180)
-		{
-			PID_Angle.error = PID_Angle.error - 360;
-		}
-		if(PID_Angle.error < -180)
-		{
-			PID_Angle.error = PID_Angle.error + 360;
-		}
-		//PID函数输出转速差量
-        adjustVelocityAngle = PID_operation(&PID_Angle);
-		
-		VelCrl(CAN2, 1, (int)((BaseVelocity + adjustVelocityAngle) * One_Meter_Per_Second));//右轮
-		VelCrl(CAN2, 2, (int)((BaseVelocity - adjustVelocityAngle) * One_Meter_Per_Second * -1));//左轮
+		PID_Line_Angle.error = Constrain_float_Angle(PID_Line_Angle.error);
+        //PID函数输出转速差量
+		adjustVelocityLineAngle = PID_operation(&PID_Line_Angle);
 		
 		
-		//以10 * 10ms为间隔发送数据
+		VelCrl(CAN2, 1, (int)((BaseVelocity + adjustVelocityLineAngle) * One_Meter_Per_Second));//右轮
+		VelCrl(CAN2, 2, (int)((BaseVelocity - adjustVelocityLineAngle) * One_Meter_Per_Second * -1));//左轮
+		
+		
+		//以5 * 10ms为间隔发送数据
 		cntSendTime++;
-		cntSendTime = cntSendTime % 10;
+		cntSendTime = cntSendTime % 5;
 		if(cntSendTime == 1)
 		{
-            USART_OUT(UART4, (uint8_t*)"x=%d,y=%d,ang=%d,LD=%d,ASet=%d,AErr=%d\r\n", (int)pos.x, (int)pos.y, (int)pos.angle, (int)Line_Distance*1000, (int)PID_Angle.setValue, (int)PID_Angle.error);
+            USART_OUT(UART4, (uint8_t*)"x=%d,y=%d,ang=%d,tx=%d,ty=%d,Aset=%d,Aerr=%d,aVLA=%d,cT=%d\r\n", \
+			         (int)pos.x, (int)pos.y, (int)pos.angle, (int)tar.x, (int)tar.y, (int)PID_Line_Angle.setValue, (int)PID_Line_Angle.error, (int)(adjustVelocityLineAngle * 1000), (int)cntTurn);
 		}
-		
-		//adjustVelocity = constrain_float(adjustVelocity, PID_Angle.out_max, PID_Angle.out_min); //限幅函数
 		OSSemSet(PeriodSem, 0, &os_err);
 	}
 }

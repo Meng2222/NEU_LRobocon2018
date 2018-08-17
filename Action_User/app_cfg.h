@@ -41,7 +41,7 @@ static 	void  ConfigTask(void);
 static 	void  WalkTask(void);
 
 
-#define CarNum CarOne                           //使用的车的编号
+#define CarNum CarOne                         //使用的车的编号
 #define CarOne 1                                  //一号车编号             1
 #define CarFour 4                                 //四号车编号             4
 
