@@ -374,6 +374,11 @@ float GetYpos(void)
 extern  int isOKFlag;
 void USART3_IRQHandler(void) //更新频率 200Hz
 {
+	
+	OS_CPU_SR cpu_sr;
+	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+	OSIntNesting++;
+	OS_EXIT_CRITICAL();
 	static float Xpos=0,Ypos=0,avel=0,Angle=0;
 	static uint8_t ch;
 	static union 
@@ -381,8 +386,10 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 		uint8_t data[24];
 		float ActVal[6];
 	} posture;
+	
 	static uint8_t count = 0;
 	static uint8_t i = 0;
+	
 	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 	{
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
@@ -422,10 +429,11 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 					count = 0;
 				break;
 			case 4:
-//				#if CARNUM == 4
+				#if CARNUM == 4
 				if (ch == 0x0d)
-				{
-//					pposokflag = 1;
+				{	
+					pposokflag = 1;
+
 					Angle =posture.ActVal[0] ;//角度
 					posture.ActVal[1] = posture.ActVal[1];
 					posture.ActVal[2] = posture.ActVal[2];
@@ -435,23 +443,25 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 					SetXpos(Xpos);
 					SetYpos(Ypos);
 					SetAngle(Angle);
+					
 				}
-//				#elif CARNUM == 1
-//				if (ch == 0x0d)
-//				{pposokflag = 1;
-//				Angle =-posture.ActVal[0] ;//角度
-//					posture.ActVal[1] = posture.ActVal[1];
-//					posture.ActVal[2] = posture.ActVal[2];
-//					Xpos = posture.ActVal[3];//x
-//					Ypos = -posture.ActVal[4];//y
-//					avel=posture.ActVal[5] = posture.ActVal[5];
-//					SetXpos(Xpos);
-//					SetYpos(Ypos);
-//					SetAngle(Angle);
-//				}
-//				#endif
-//				count = 0;
-//				break;
+			#elif CARNUM == 1
+				if (ch == 0x0d)
+					{
+					pposokflag = 1;
+					Angle =-posture.ActVal[0] ;//角度
+					posture.ActVal[1] = posture.ActVal[1];
+					posture.ActVal[2] = posture.ActVal[2];
+					Ypos = -posture.ActVal[3];//x
+					Xpos = posture.ActVal[4];//y
+					avel=posture.ActVal[5] = posture.ActVal[5];
+					SetXpos(Xpos);
+					SetYpos(Ypos);
+					SetAngle(Angle);
+				}
+				#endif
+				count = 0;
+				break;
 			case 5:
 				count = 0;
 				if(ch=='K')
@@ -463,6 +473,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 		}
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
 	}
+	OSIntExit();
 }
 void UART5_IRQHandler(void)
 {
