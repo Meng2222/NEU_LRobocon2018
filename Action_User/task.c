@@ -30,9 +30,12 @@ static int n=0;
 static int up_down;
 static float setangle=0;
 int t=0;
+int kpa=190;
+int kpd=8;
 static float d;
 static float Aout=0;
 static float Dout=0;
+int light_number=1;
 
 void driveGyro(void)
 {
@@ -84,8 +87,8 @@ void ConfigTask(void)
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	ElmoInit(CAN2);
-	VelLoopCfg(CAN2,1,10000,10000);
-	VelLoopCfg(CAN2,2,10000,10000);
+	VelLoopCfg(CAN2,1,50000,50000);
+	VelLoopCfg(CAN2,2,50000,50000);
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
 	delay_s(2);
@@ -93,7 +96,7 @@ void ConfigTask(void)
 	#if car==1
 		
      driveGyro();
-     USART_OUT(UART4,(uint8_t*)"OKOPSOPS");
+     //USART_OUT(UART4,(uint8_t*)"OKOPSOPS");
 	 while(!opsFlag);
 	#elif car == 4
      delay_s(10);	
@@ -131,19 +134,26 @@ void go(float v)
 	
      
 	 void Light(float,float,float,int);
-   	 float V=v*1000;
-	 
+   	 float V=v*1000;	 
 	 int right;
 	 int left;
-	 Light(1,0,2000,-1);
+	if(light_number==1)
+	{ Light(1,0,0,1);
+	}else if(light_number==2)
+	{ Light(0,1,-2000,1);
+	}else if(light_number==3)
+	{ Light(1,0,-2000,-1);
+	}else if(light_number==4)
+	{ Light(0,1,0,-1);
+	}
 	 Right_cr1=4096*V/377+Aout+Dout;		
 	 Left_cr2=-4096*V/377+Aout+Dout;
 	 VelCrl(CAN2,1,Right_cr1);
 	 VelCrl(CAN2,2,Left_cr2);
 	 right=Right_cr1;
 	 left=Left_cr2;	
-	// USART_OUT(UART4,(uint8_t*)"Right=%d\t\r\n",right);
-	// USART_OUT(UART4,(uint8_t*)"Left=%d\t\r\n",left);
+	 USART_OUT(UART4,(uint8_t*)"Right=%d\t",right);
+	 USART_OUT(UART4,(uint8_t*)"Left=%d\t",left);
 }
 
 void pid_angle(float angle,int s)
@@ -171,12 +181,12 @@ void pid_angle(float angle,int s)
 	}
 	
 		 
-	Aout=100*nowerror_angle;	
+	Aout=kpa*nowerror_angle;	
 	int n=Aout;
 	set=angle;
-//	USART_OUT(UART4,(uint8_t*)"s=%d\t\r\n",s);
-//	USART_OUT(UART4,(uint8_t*)"Aout=%d\t\r\n",n);
-//	USART_OUT(UART4,(uint8_t*)"set_angle=%d\t\r\n",set);
+	//USART_OUT(UART4,(uint8_t*)"s=%d\t",s);
+	//USART_OUT(UART4,(uint8_t*)"Aout=%d\t",n);
+	//USART_OUT(UART4,(uint8_t*)"set_angle=%d\t",set);
 }
 void pid_xy(float D,float setangle,int f)
 {
@@ -196,7 +206,7 @@ void pid_xy(float D,float setangle,int f)
 	}
 	
 	
-	Dout=6*nowerror_d;	
+	Dout=kpd*nowerror_d;	
 	int n=Dout;
 //	USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
 //	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
@@ -216,6 +226,32 @@ void Light(float a,float b,float c,int n)
 	int f;
 	l=light;	
     d=fabs(light)/sqrt((a*a)+(b*b));
+	
+	if(a==1)
+	{   if(c==0)
+		{if((xya.y)>1350)
+			light_number++;
+		}else if(c==-2000)
+		{ if((xya.y)<650)
+			light_number++;
+		}	
+		if(light_number>4)
+			light_number=1;
+	}
+	if(b==1)
+	{  
+		if(c==-2000)
+		{if((xya.x)>1350)
+			light_number++;
+		}else if(c==0)
+		{ if((xya.x)<700)
+			light_number++;
+		}
+		
+		if(light_number>4)
+			light_number=1;
+	}
+	
 	if(b)
 	{ if(n==1)
 		{ if(-a/b>0)
