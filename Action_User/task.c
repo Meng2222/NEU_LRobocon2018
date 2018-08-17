@@ -210,25 +210,25 @@ void WalkTask(void)
 	int angle_erro;
 	float vel=500.0;
 	float V1,V2;
-	int m=0,n=0,a1=0,a2=0,a3=0,v1=0,v2=0;
+	int m=0,n=0,a1=0,a2=0,a3=0,v1=0,v2=0;//这些变量名只是为了让串口发出数据，所以命名很随意
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0,&os_err);
 		X=(int)(posX);
 		Y=(int)(posY);
 		angle=(int)(Angle);
-//		angle_erro=(int)(agl.err);
-//		m=(int)(set_angle);
-//		n=(int)Get_dS();
-//		a1=(int)DV1;
-//		a2=(int)DV2;
-//		a3=(int)DV;
-//		v1=(int)V1;
-//		v2=(int)V2;
+		angle_erro=(int)(agl.err);
+		m=(int)(set_angle);
+		n=(int)Get_dS();
+		a1=(int)DV1;
+		a2=(int)DV2;
+		a3=(int)DV;
+		v1=(int)V1;
+		v2=(int)V2;
 		USART_OUT(UART4,(uint8_t*)"%d %d %d\r\n",X,Y,angle);
-//		USART_OUT(UART4,(uint8_t*)"Setangle=%d angle_erro=%d DV1=%d \r\n",m,angle_erro,a1);
-//		USART_OUT(UART4,(uint8_t*)"ds=%d DV2=%d\r\n",n,a2);
-//		USART_OUT(UART4,(uint8_t*)"DV=%d V1=%d V2=%d\r\n\r\n",a3,v1,v2);
+		USART_OUT(UART4,(uint8_t*)"Setangle=%d angle_erro=%d DV1=%d \r\n",m,angle_erro,a1);
+		USART_OUT(UART4,(uint8_t*)"ds=%d DV2=%d\r\n",n,a2);
+		USART_OUT(UART4,(uint8_t*)"DV=%d V1=%d V2=%d\r\n\r\n",a3,v1,v2);
 		DV1=angle_PID(set_angle);
 		DV2=ds_PID();
 		DV=DV1+DV2;
