@@ -48,7 +48,9 @@
 编写Set函数和Get函数
 */
 static float angle=0,xpos=0,ypos=0;
-static int isOKFlag=0;
+int isOKFlag=0;
+char pposokflag=0;
+
 
 void SetAngle(float val)
 {
@@ -80,34 +82,10 @@ float GetYpos(void)
 	return ypos;
 }
 
-int IsSendOK(void)
-{
-	return isOKFlag;
-}
-
-void SetOKFlagZero(void)
-{
-	isOKFlag=0;
-}
-
-void driveGyro(void)
-{
-	while(!IsSendOK())
-	{
-		delay_ms(5);
-		USART_SendData(USART3,'A');
-		USART_SendData(USART3,'T');
-		USART_SendData(USART3,'\r');
-		USART_SendData(USART3,'\n');
-	}
-	SetOKFlagZero();
-}
-
-
 
 uint8_t discard[10]={0};
-uint32_t a;
-uint8_t b;
+uint32_t last;
+uint8_t data;
 
 void CAN1_RX0_IRQHandler(void)
 {
@@ -117,7 +95,7 @@ void CAN1_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	
-	CAN_RxMsg(CAN1,&a,discard,&b);								//这里需要写接收数据
+	CAN_RxMsg(CAN1,&last,discard,&data);								//这里需要写接收数据
 	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
@@ -146,7 +124,7 @@ void CAN2_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	
-	CAN_RxMsg(CAN2,&a,discard,&b);	
+	CAN_RxMsg(CAN2,&last,discard,&data);	
 	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
@@ -255,6 +233,10 @@ void USART3_IRQHandler(void) // 更新频率 200Hz
 	} posture;
 	static uint8_t count = 0;
 	static uint8_t i = 0;
+	OS_CPU_SR cpu_sr;
+	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+	OSIntNesting++;
+	OS_EXIT_CRITICAL();
 	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
 	{
 		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
@@ -299,8 +281,10 @@ void USART3_IRQHandler(void) // 更新频率 200Hz
 			count = 0;
 			break;
 		case 4:
+			#if CARNUM== 4
 			if (ch == 0x0d)
 			{
+				pposokflag=1;
 				angle =posture.ActVal[0] ;// 角度
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
@@ -311,6 +295,21 @@ void USART3_IRQHandler(void) // 更新频率 200Hz
 				SetYpos(ypos);
 				SetAngle(angle);
 			}
+			#elif CARNUM == 1
+			if (ch == 0x0d)
+			{
+				pposokflag=1;
+				angle = -posture.ActVal[0] ;// 角度
+				posture.ActVal[1] = posture.ActVal[1];
+				posture.ActVal[2] = posture.ActVal[2];
+				xpos = 	posture.ActVal[4];//
+				ypos = -posture.ActVal[3];//
+				posture.ActVal[5] = posture.ActVal[5];
+				SetXpos(xpos);
+				SetYpos(ypos);
+				SetAngle(angle);
+			}
+			#endif
 			count = 0;
 		break;
 		case 5:
@@ -319,15 +318,26 @@ void USART3_IRQHandler(void) // 更新频率 200Hz
 			isOKFlag=1;
 		break;
 		default:
-			
+			count=0;
 		break;
 	}
 	}
 	else
 	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+		USART_ClearITPendingBit(USART3, USART_IT_PE);
+		USART_ClearITPendingBit(USART3, USART_IT_TXE);
+		USART_ClearITPendingBit(USART3, USART_IT_TC);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(USART3, USART_IT_IDLE);
+		USART_ClearITPendingBit(USART3, USART_IT_LBD);
+		USART_ClearITPendingBit(USART3, USART_IT_CTS);
+		USART_ClearITPendingBit(USART3, USART_IT_ERR);
+		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(USART3, USART_IT_NE);
+		USART_ClearITPendingBit(USART3, USART_IT_FE);
 		USART_ReceiveData(USART3);
 	}
+	OSIntExit();
 }
 
 void TIM4_IRQHandler(void)

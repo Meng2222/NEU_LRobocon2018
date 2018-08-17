@@ -10,6 +10,8 @@
 #define delay_ms(nms) delay_us((nms)*1000)
 #define delay_s(ns) delay_ms((ns)*1000)
 //精确延时函数调用wait
+
+
 void wait(uint32_t n);
 
 void TIM_Init(TIM_TypeDef *TIMx, uint16_t arr, uint16_t psr, uint16_t prepri, uint16_t subpri);
