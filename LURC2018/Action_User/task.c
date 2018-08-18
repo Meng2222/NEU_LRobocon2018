@@ -71,6 +71,10 @@ float Angle_Pid(float err)
 	Dterm=Kd*(err-errlast);
 	errlast=err;
 	Uk=Kp*err+Iterm+Dterm;
+	if(Uk>=400)
+		Uk=400;
+	else if(Uk<=-400)
+		Uk=-400;
 	return Uk;
 }
 float Distance_Pid(float err)
@@ -139,46 +143,46 @@ float PID_OUT(float x,float y,float a,float b,float c,int quadrant)
 			break;
 		case 5:
 			ang=-90;
-			if(GetYpos()<-c)
+			if(GetYpos()>=-c)
 			{
-					output=Angle_Pid(-err-(ang-GetAngle()));
+					output=Angle_Pid(err-(ang-GetAngle()));
 			}
-			else if(GetYpos()>-c)
+			else if(GetYpos()<-c)
 			{
-					output=Angle_Pid(err-(ang-GetAngle()));	
+					output=Angle_Pid(-err-(ang-GetAngle())); 	
 			}
 			break;
 			case 6:
 			ang=90;
-			if(GetYpos()>-c)
-			{
-				output=Angle_Pid(-err-(ang-GetAngle()));
-			}
-			else if(GetYpos()<-c)
+			if(GetYpos()<=-c)
 			{
 				output=Angle_Pid(err-(ang-GetAngle()));
+			}
+			else if(GetYpos()>-c)
+			{
+				output=Angle_Pid(-err-(ang-GetAngle()));
 			}
 			break;
 		case 7:
 			ang=0;
-			if(GetXpos()>-c)
-			{
-				output=Angle_Pid(-err-(ang-GetAngle()));
-			}
-			else if(GetXpos()<-c)
+			if(GetXpos()<=-c)
 			{
 				output=Angle_Pid(err-(ang-GetAngle()));
+			}
+			else if(GetXpos()>-c)
+			{
+				output=Angle_Pid(-err-(ang-GetAngle()));
 			}
 			break;
 		case 8:
 			ang=180;
-			if(GetXpos()<-c)
-			{
-					output=Angle_Pid(-err-(ang-GetAngle()));
-			}
-			else if(GetXpos()>-c)
+			if(GetXpos()>=-c)
 			{
 					output=Angle_Pid(err-(ang-GetAngle()));
+			}
+			else if(GetXpos()<-c)
+			{
+					output=Angle_Pid(-err-(ang-GetAngle()));
 			}
 			break;
 	}
@@ -224,17 +228,17 @@ void WalkTask(void)
 		if(i>=10)
 		{
 			i=0;
-			USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
+			//USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
 			USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetXpos());
-			USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetYpos());
-		  USART_OUT(UART4,(uint8_t*) "%d\t",(int)Angle_Pid(GetAngle()));
-			USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)Distance_Pid(GetXpos()));
+			USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetYpos());
+		  //USART_OUT(UART4,(uint8_t*) "%d\t",(int)Angle_Pid(GetAngle()));
+			//USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)Distance_Pid(GetXpos()));
 		}
 			
 		switch(cnt)
 		{
 			case 0:
-				if(GetYpos()<1750)
+				if(GetYpos()<(1750-LV*500))
 				{
 					pid_out=PID_OUT(GetXpos(),GetYpos(),1,0,0,7);
 					Walk_Straight(v-pid_out,v+pid_out);
@@ -245,7 +249,7 @@ void WalkTask(void)
 				}
 				break;
 			case 1:
-				if(GetXpos()>-1750)
+				if(GetXpos()>-(1750-LV*500))
 				{
 					pid_out=PID_OUT(GetXpos(),GetYpos(),0,1,-2000,6);
 					Walk_Straight(v-pid_out,v+pid_out);
@@ -256,7 +260,7 @@ void WalkTask(void)
 				}
 				break;
 			case 2:
-				if(GetYpos()>250)
+				if(GetYpos()>(250+LV*500))
 				{
 					pid_out=PID_OUT(GetXpos(),GetYpos(),1,0,2000,8);
 					Walk_Straight(v-pid_out,v+pid_out);
@@ -267,7 +271,7 @@ void WalkTask(void)
 				}
 				break;	
 			case 3:
-				if(GetXpos()<-250)
+				if(GetXpos()<-(250+LV*500))
 				{
 					pid_out=PID_OUT(GetXpos(),GetYpos(),0,1,0,5);
 					Walk_Straight(v-pid_out,v+pid_out);
