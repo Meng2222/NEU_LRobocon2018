@@ -238,7 +238,7 @@ void USART2_IRQHandler(void)
 
 //定位系统串口接收中断8 
 int isOKFlag;
-float posX,posY,angle;
+float posX,posY,Angle;
 void USART3_IRQHandler(void) //更新频率 200Hz
 {
 	static uint8_t ch;
@@ -300,7 +300,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 			case 4:
 				if (ch == 0x0d)
 				{
-					angle =posture.ActVal[0] ;//角度
+					Angle =posture.ActVal[0] ;//角度
 					posture.ActVal[1] = posture.ActVal[1];
 					posture.ActVal[2] = posture.ActVal[2];
 					posX = posture.ActVal[3];//x

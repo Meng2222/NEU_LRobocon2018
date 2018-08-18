@@ -19,6 +19,7 @@
 #define WHEEL_WIDTH (40.0f)        //轮子宽度(mm)
 #define WHEEL_TREAD (434.0f)       //两个轮子的中心距离(mm)
 #define Pulse2mm (COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi))
+
 /*
 一个脉冲是4096/(120*Pi)
 定义输入速度mm/s和半径mm
@@ -27,7 +28,7 @@
 //void vel_radious(float vel,float radious)
 //{
 //	ratio1=(radious+WHEEL_TREAD/2)/radious;
-//	ratio2=(radious-WHEEL_TREAD/2)/radious;
+//	ratio2=(radious/-WHEEL_TREAD/2)/radious;
 //	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
 //	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
 //}
@@ -65,12 +66,25 @@ void App_Task()
 						  (INT8U)Walk_TASK_PRIO);
 
 }
-
+//extern int isOKFlag;
+//void driveFyro(void)
+//{
+//	while(!isOKFlag){
+//		delay_ms(5);
+//		USART_SendData(USART3,'A');
+//		USART_SendData(USART3,'T');
+//		USART_SendData(USART3,'\r');
+//		USART_SendData(USART3,'\n');
+//	}
+//	isOKFlag=0;
+//}
+//		
 /*
    ===============================================================
    初始化任务
    ===============================================================
    */
+//int car=1;
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
@@ -89,7 +103,8 @@ void ConfigTask(void)
 	ElmoInit(CAN2);								//驱动器初始化
 	MotorOn(CAN2,1);							//电机使能（通电）
 	MotorOn(CAN2,2);
-	delay_ms(12000);
+	delay_ms(10000);
+	delay_ms(5000);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 //void walk_direct(float vel) //左轮速度,单位mm/s
@@ -97,81 +112,181 @@ void ConfigTask(void)
 //	VelCrl(CAN2,1,vel*Pulse2mm); //设置右轮速度
 //	VelCrl(CAN2,2,-vel*Pulse2mm); //设置左轮速度
 //}
-extern float posX,posY,angle;
-typedef struct{
-	float setangle;
-	float actualangle;
+extern float posX,posY,Angle;
+struct PID{
+	float set;
+	float actual;
 	float err;
 	float last_err;
-	float d_err;
 	float kp,ki,kd;
 	float err_integral;
-	float vel;
-}PID;
-PID pid;
-float vel_PID(float setangle,int kp,int ki)
+	float v;
+}agl,ds;
+float x1=0,y1=0,x2=0,y2=0;    //两点求一条直线
+float angle_PID(float setangle)
 {
-	pid.kp=kp;
-	pid.ki=ki;
-	pid.setangle=setangle;
-	pid.actualangle=angle;
-	pid.err=pid.setangle-pid.actualangle;
-	if(pid.err<-180)
+	agl.kp=12;
+	agl.ki=0;
+	agl.set=setangle;
+	agl.actual=Angle;
+	agl.err=agl.set-agl.actual;
+	if(agl.err<-180)
 	{
-		pid.err+=360;
+		agl.err+=360;
 	}
-	if(pid.err>180)
+	if(agl.err>180)
 	{
-		pid.err=pid.err-360;
+		agl.err=agl.err-360;
 	}
-	pid.d_err=pid.err-pid.last_err;
-	pid.err_integral+=pid.err;
-	pid.vel=pid.kp*pid.err+pid.ki*pid.err_integral+pid.kd*pid.d_err;
-	pid.last_err=pid.err;
-	pid.actualangle=pid.vel;
-	return pid.vel;
+	agl.err_integral+=agl.err;
+	agl.v=agl.kp*agl.err+agl.ki*agl.err_integral;
+	agl.last_err=agl.err;
+	return agl.v;
 }
-int x,y,agl,erro;
-		
+float k,b;
+float det_s;
+float temp_ds;
+float set_angle;
+float Get_dS(void)
+{
+	set_angle=(atan2(y2-y1,x2-x1)*180/Pi)-90;
+	if(x1==x2)
+	{
+		if(set_angle==0)
+		{
+			det_s=x1-posX;
+		}
+		else
+		{
+			det_s=posX-x1;
+		}
+	}
+	else if(y1==y2)
+	{ 
+		if(set_angle==-90)
+		{
+			det_s=posY-y1;
+		}
+		else
+		{
+			det_s=y1-posY;
+		}
+	}
+	else
+	{
+		k=(y2-y1)/(x2-x1);
+		b=y1-k*x1;
+		temp_ds=(k*posX+b-posY)/sqrt(1+k*k);//求点到直线的距离
+		if(set_angle<0)
+		{
+			det_s=-temp_ds;
+		}
+		if(set_angle>0)
+		{
+			det_s=temp_ds;
+		}	
+	}
+	return det_s;
+} 
+float ds_PID(void)
+{
+	ds.kp=0.9;
+	ds.ki=0;
+	ds.set=0;
+	ds.actual=Get_dS();
+	ds.err=ds.set-ds.actual;
+	ds.err_integral+=ds.err;
+	ds.v=ds.kp*ds.err+ds.ki*ds.err_integral;
+	ds.last_err=ds.err;
+	return ds.v;
+}
+uint8_t line;
+void Get_line(void)
+{
+	if(posX<400&&posY<=1600)
+	{
+		line=1;
+	}
+	if(posX<=1600&&posY>1600)
+	{
+		line=2;
+	}
+	if(posX>1600&&posY>400)
+	{
+		line=3;
+	}
+	if(posX>=400&&posY<400)
+	{
+		line=4;
+	}
+}
+float DeltV=0,DeltV1=0,DeltV2=0;
+float V1,V2;
+void walk_line(float vel)
+{
+	DeltV1=angle_PID(set_angle);
+	DeltV2=ds_PID();
+	DeltV=DeltV1+DeltV2;
+	V1=vel+DeltV;
+	V2=-vel+DeltV;
+	VelCrl(CAN2,1,V1*Pulse2mm );
+	VelCrl(CAN2,2,V2*Pulse2mm ); 
+}
 void WalkTask(void)
 { 
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem,0, &os_err);
-	float vel=500.0;
-	float dv;
+	int X,Y,angle,angle_erro;
+	int m=0,n=0,a1=0,a2=0,a3=0,v1=0,v2=0,l=0;
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0,&os_err);
-		x=(int)(posX);
-		y=(int)(posY);
-		agl=(int)(angle);
-		erro=(int)(pid.err);
-		USART_OUT(UART4,(uint8_t*)"%d %d\r\n",x,y);
-		if(x<150&&y<=1850)
+		X=(int)(posX);
+		Y=(int)(posY);
+		angle=(int)(Angle);
+		angle_erro=(int)(agl.err);
+		l=line;
+		m=(int)(set_angle);
+		n=(int)Get_dS();
+		a1=(int)DeltV1;
+		a2=(int)DeltV2;
+		a3=(int)DeltV;
+		v1=(int)V1;
+		v2=(int)V2;
+		USART_OUT(UART4,(uint8_t*)"%d %d %d %d %d\r\n",l,X,Y,angle,m);
+//		USART_OUT(UART4,(uint8_t*)"Setangle=%d angle_erro=%d DV1=%d \r\n",m,angle_erro,a1);
+//		USART_OUT(UART4,(uint8_t*)"ds=%d DV2=%d\r\n",n,a2);
+//		USART_OUT(UART4,(uint8_t*)"DV=%d V1=%d V2=%d\r\n\r\n",a3,v1,v2);
+		Get_line();
+		switch (line)
 		{
-			dv=vel_PID(0,47,0);
-			VelCrl(CAN2,1,( vel+dv)*Pulse2mm );
-			VelCrl(CAN2,2,-vel*Pulse2mm ); 
+			case 1:
+				x1=0;
+				y1=0;
+				x2=0;
+				y2=2000;
+				break;
+			case 2:
+				x1=0;
+				y1=2000;
+				x2=2000;
+				y2=2000;
+				break;
+			case 3:
+				x1=2000;
+				y1=2000;
+				x2=2000;
+				y2=0;
+				break;
+			case 4:
+				x1=2000;
+				y1=0;
+				x2=0;
+				y2=0;
+				break;
 		}
-		if(x<=1850&&y>1850)
-		{
-			dv=vel_PID(-90,47,0);
-			VelCrl(CAN2,1,(vel+dv)*Pulse2mm );
-			VelCrl(CAN2,2,-vel*Pulse2mm ); 
-		}
-		if(x>1850&&y>150)
-		{
-			dv=vel_PID(-180,47,0);
-			VelCrl(CAN2,1,(vel+dv)*Pulse2mm );
-			VelCrl(CAN2,2,-vel*Pulse2mm ); 
-		}	
-		if(x>=150&&y<150)
-		{
-			dv=vel_PID(90,47,0);
-			VelCrl(CAN2,1,(vel+dv)*Pulse2mm );
-			VelCrl(CAN2,2,-vel*Pulse2mm ); 
-		}			
+		walk_line(700.0);  //按照速度行驶
 	}
 }
 
