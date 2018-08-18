@@ -19,12 +19,12 @@ int Car=1;
 int Angle=0;     //蓝牙发数的整型转换
 int X=0;         //蓝牙发数的整型转换
 int Y=0;
-int max=15000;//最大偏差
+int max=5000;//最大偏差
 //调车参数///////////////
 float rate=0.008;//  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04
 float duty=800;   //提前量：duty=650(1m/s)，   1.5m/s duty为900，
-float KP=450; //Kp给300(1m/s)，，，kp给450（1.5m/s）
-float V0=1.5;//车的基础速度(m/s)
+float KP=150; //Kp给300(1m/s)，，，kp给450（1.5m/s）
+float V0=0.5;//车的基础速度(m/s)
 float buff=1000;//(最大偏离区域)
 //////////////////////////////////////////////////////
 
@@ -69,6 +69,7 @@ float err(float distance,float ANGLE);//距离转化角度函数
 float a_gen(float a,float b,int n);//角度生成函数（输入直线参数，给出角度）
 void run_to(float BETA);//跑向特定方向BETA
 int line(float aa, float bb, float cc, float nn);//车在干扰下跑向任意直线·，注：aa<0,当aa=0时，bb=0；nn=1控制向X轴上方走，n=-1向x轴下方，n=-2向x轴正向走，n=2向x轴负向走
+void loop(float corex,float corey,float Radium,float V_loop,int SN);//顺时针转
   	   typedef struct{
 	float x;
 	float y;
@@ -596,99 +597,21 @@ void WalkTask(void)
  
   
   if(car==44)
-   {
-//赋值	      
+  {
+	  
+	  loop(0,1000,1000,5430,1);//顺时针转为1
+	  X=(int)action.x;
+	  Y=(int)action.y;
+      Angle=(int)action.angle;	  
+	  USART_OUT( UART4, (uint8_t*)"%d ", X);
+	  USART_OUT( UART4, (uint8_t*)"%d ", Y);
+	  USART_OUT( UART4, (uint8_t*)"%d ", Angle);
+	  USART_OUT(UART4,(uint8_t*)"\r\n");
 
-//判断
-if((action.x<-(2000-duty))&&change==1)//到达转换该x=-2000的地方
-{//x=-1900
-	Aa=-1;
-	Bb=0;
-	Cc=-2000;
-	Nn=1;
-	change=2;
-	rate=0.0;
-	max=15000;
-
-}	
-if((action.x<-1800&&change==2))//冲过之后调大rate
-{
-	rate=0.09;
-	max=6000;
-	
-}
-	
-if((action.y>2000-duty)&&change==2)
-{//y=1900
-	Aa=0;
-	Bb=1;
-	Cc=-2000;
-	Nn=2;
-    change=3;
-	rate=0.0;
-	max=15000;
-
-}
-if(action.y>1800&&change==3)//冲过之后调大rate
-{
-	rate=0.09;
-	max=6000;
-}
-
-if((action.x>-duty)&&change==3)
-{//x=-100
-	Aa=-1;
-	Bb=0;
-	Cc=00;
-	Nn=-1;
-    change=4;
-	rate=0.0;
-	max=15000;
-
-}
-if(action.x>-200&&change==4)//冲过之后调大rate
-	{
-	rate=0.09;
-		max=6000;
-    }
-
-if((action.y<duty)&&change==4)
-{//y=100
-	Aa=0;
-	Bb=1;
-	Cc=00;
-	Nn=-2;
-    change=1;
-	rate=0.0;
-	max=15000;
-	
-}
-if(action.y<200&&change==1)//冲过之后调大rate
-	{
-	rate=0.09;
-		max=6000;
-    }
-	
-	
-if(change<last_change)//走完一圈的标志位
-	{
-
-		cycle_flag=1;//走完一圈标志位
-	}
-	last_change=change;	
-	
-//执行
-line(Aa, Bb, Cc, Nn);
-	
-	
-USART_OUT( UART4, (uint8_t*)"%d ", change);   
-	cycle_flag=0;//在最后把标志位清零
-   }   
 	
 	
 	
-	
-	
+  }	
 	
 	}
 }
@@ -936,14 +859,13 @@ void run_to(float BETA)//由当前角度转向BETA
 		B_err=B_err-360;
 	if(B_err<-180)
 		B_err=B_err+360;
-	
-	KP=auto_PID(KP);//自动调节调节Kp
 	B_Uk=B_err*KP;
 	
 	
 	if(B_Uk>max)
 		B_Uk=max;
 	if(B_Uk<-max)
+		
 		B_Uk=-max;
 	R=R-B_Uk;
 	L=-(L+B_Uk);
@@ -951,6 +873,7 @@ void run_to(float BETA)//由当前角度转向BETA
 	VelCrl(CAN2, 02,L);
 	RR=(int)R;
 	LL=(int)L;
+	 USART_OUT(UART4,(uint8_t*)"danger");
 	USART_OUT( UART4, (uint8_t*)"%d ", LL);
 	USART_OUT( UART4, (uint8_t*)"%d ", RR);
 }
@@ -990,6 +913,78 @@ int line(float aa, float bb, float cc, float nn)
 	   USART_OUT( UART4, (uint8_t*)"%d ", Target);
 	   USART_OUT( UART4, (uint8_t*)"%d ", ASetvalue);
 	   USART_OUT(UART4,(uint8_t*)"\r\n");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void loop(float corex,float corey,float Radium,float V_loop,int SN)//顺时针转S,
+{
+	float distance_err=0;//距离圆心的偏差
+	float DISTANCE=0;//距离圆心的距离
+	float V_err=0;
+	int RV=0;
+	int LV=0;
+	float KKP=5000;
+	float danger=4000;//超过圆的最大区域
+	float danger_angel=0;//超出最大区域后垂直往回走的角度
+	DISTANCE=sqrt((action.x-corex)*(action.x-corex)+(action.y-corey)*(action.y-corey));
+	distance_err=DISTANCE-Radium;
+	if(SN==1)
+	{
+//		if(fabs(distance_err)>danger)
+//	{
+//		//危险角度方向给定
+//		if(action.y>corey&&action.x!=corex)
+//		{
+//			danger_angel=a_gen(action.x-corex,action.y-corey,-1);
+//		}
+//		if(action.y>corey&&action.x==corex)
+//		{
+//			danger_angel=a_gen(action.x-corex,action.y-corey,-2);//往x轴负方向
+//		}
+//		if(action.y<corey&&action.x!=corex)
+//		{
+//			danger_angel=a_gen(action.x-corex,action.y-corey,1);
+//		}
+//		if(action.y<corey&&action.x==corex)
+//		{
+//			danger_angel=a_gen(action.x-corex,action.y-corey,2);//往x轴正向走
+//		}
+//		run_to(danger_angel);//往危险角度跑
+//		
+////	}
+//	   if(fabs(distance_err)<=danger)
+//	   {
+//		   
+		   V_err=pow((DISTANCE/Radium),2)*KKP;//如果距离大于半径，则偏差
+		   if(V_err>6000)
+			   V_err=6000;
+		   if(V_err<-6000)
+			   V_err=-6000;
+		   RV=(int)V_loop;
+	       LV=(int)-(V_loop+V_err);
+		   VelCrl(CAN2, 01,RV);
+	       VelCrl(CAN2, 02,LV);
+		    USART_OUT(UART4,(uint8_t*)"normal");
+        USART_OUT( UART4, (uint8_t*)"%d ", LV);
+	    USART_OUT( UART4, (uint8_t*)"%d ", RV);
+//	   }
+    }
+	
+    
 }
 
 
