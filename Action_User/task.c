@@ -51,9 +51,7 @@ void App_Task()
 						  (OS_STK *)&WalkTaskStk[Walk_TASK_STK_SIZE - 1],
 						  (INT8U)Walk_TASK_PRIO);
 
-//						  (void *)0,
-//						  (OS_STK *)&Walk_CircleStk[Walk_Circle_TASK_STK_SIZE - 1],
-//						  (INT8U)Walk_Circle_TASK_PRIO);
+
 //	os_err = OSTaskCreate((void (*)(void *))Walk_Straight,
 //						  (void *)0,
 //						  (OS_STK *)&Walk_StraightStk[Walk_Straight_TASK_STK_SIZE - 1],
@@ -112,6 +110,10 @@ float Angle_Pid(float err)
 	Dterm=Kd*(err-lasterr);
 	lasterr=err;
 	Uk=Kp*err+Iterm+Dterm;
+//	if(Uk>2200)
+//		Uk=2200;
+//	else if(Uk<-2200)
+//		Uk=-2200;
 	return Uk;
 }
 float Distance_PID(float err)
@@ -123,6 +125,28 @@ float Distance_PID(float err)
 	lasterr=err;
 	Uk=KP*err+Iterm+Dterm;
 	return Uk;
+}
+float PID_OUT2(float x,float y,float x0,float y0,float r,int dir)
+{
+	static float d1=0;
+	static float OUT=0;
+	d1=sqrtf((x-x0)*(x-x0)+(y-y0)*(y-y0));
+	if(dir==1)
+	{
+	OUT=Distance_PID(r-d1)+r+217;	
+	}
+	return OUT;
+}
+float PID_OUT3(float x,float y,float x0,float y0,float r,int dir)
+{
+	static float d1=0;
+	static float OUT=0;
+	d1=sqrtf((x-x0)*(x-x0)+(y-y0)*(y-y0));
+	if(dir==1)
+	{
+	OUT=Distance_PID(r-d1)+r-217;	
+	}
+	return OUT;
 }
 int PID_OUT1(int a,int b,int c,int dir,float x,float y)
 {	static float d=0;
@@ -183,35 +207,35 @@ else if(dir==4)
 }
 else if (dir==5)
 {
-	if(y>(-a*x-c)/b)
+	if(y>-c)
 	{
-	OUT=Angle_Pid(Distance_PID(0-GetYpos())+(-90-GetAngle()));
+	OUT=Angle_Pid(Distance_PID(0-d)+(-90-GetAngle()));
 	}
-	if(y<(-a*x-c)/b)
+	if(y<-c)
 	{
-	OUT=Angle_Pid(-Distance_PID(0-GetYpos())+(-90-GetAngle()));
+	OUT=Angle_Pid(-Distance_PID(0-d)+(-90-GetAngle()));
 	}
 }
 else if (dir==6)
 {
-	if(y>(-a*x-c)/b)
+	if(y<-c)
 	{
-	OUT=Angle_Pid(Distance_PID(0-GetYpos())+(90-GetAngle()));
+	OUT=Angle_Pid(Distance_PID(0-d)+(90-GetAngle()));
 	}
-	if(y<(-a*x-c)/b)
+	if(y>-c)
 	{
-	OUT=Angle_Pid(-Distance_PID(0-GetYpos())+(90-GetAngle()));
+	OUT=Angle_Pid(-Distance_PID(0-d)+(90-GetAngle()));
 	}
 }
 else if(dir==7)
 {
-	if(y>(-a*x-c)/b)
+	if(x<-c)
 	{
-	OUT=Angle_Pid(Distance_PID(0-GetXpos())+(0-GetAngle()));
+	OUT=Angle_Pid(Distance_PID(0-d)+(0-GetAngle()));
 	}
-	if(y<(-a*x-c)/b)
+	if(x>-c)
 	{
-	OUT=Angle_Pid(-Distance_PID(0-GetXpos())+(0-GetAngle()));
+	OUT=Angle_Pid(-Distance_PID(0-d)+(0-GetAngle()));
 	}
 }
 else if (dir==8)
@@ -225,14 +249,6 @@ else if (dir==8)
 	OUT=Angle_Pid(Distance_PID(0-d)+(180-GetAngle()));
 	}
 }
-
-//	if(GetAngle()>0)
-//	OUT=Angle_Pid(Distance_PID(-c-GetXpos())+(180-GetAngle()));
-//	if(GetAngle()<0)
-//	OUT=Angle_Pid(Distance_PID(-c-GetXpos())+(-180-GetAngle()));
-	
-		
-
 return OUT;
 }
 
@@ -240,7 +256,7 @@ return OUT;
 
 void WalkTask(void)
 {
-//	 static int cnt=0;
+  static int cnt=0;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
@@ -248,62 +264,46 @@ void WalkTask(void)
 	{	
 
 		OSSemPend(PeriodSem, 0, &os_err);
-//	static float PID_OUT=0;
-		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
+		//static float PID_OUT=0;
+		//USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
 		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetXpos());
-		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetYpos());
-		USART_OUT(UART4,(uint8_t*) "%d\t",(int)DDD);
-		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)DPID);
+		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetYpos());
+		//USART_OUT(UART4,(uint8_t*) "%d\t",(int)DDD);
+		//USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)DPID);
+
 		//USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)PID_OUT1(1,-1,0,1,GetXpos(),GetYpos()));
 		//PID_OUT=Angle_Pid(Distance_PID(0-Distance(GetXpos(),GetYpos(),1,-1,0))+((atan(1/1)*180/Pi-90)-GetAngle()));
 //		Walk_Straight(3000+PID_OUT,3000-PID_OUT);
-	Walk_Straight(8000+PID_OUT1(1,0,-1000,8,GetXpos(),GetYpos()),8000-PID_OUT1(1,0,-1000,8,GetXpos(),GetYpos()));
+//	Walk_Straight(8000+PID_OUT1(1,0,-1000,8,GetXpos(),GetYpos()),8000-PID_OUT1(1,0,-1000,8,GetXpos(),GetYpos()));
 		
-	//	Walk_Straight(3000+PID_OUT2(1,GetYpos()),3000-PID_OUT2(1,GetYpos()));
-	//	Walk_Straight(3000+PID_OUT3(2,GetXpos()),3000-PID_OUT3(2,GetXpos()));
+	
 		
-//		Walk_Straight(3000-Angle_Pid(GetAngle()),3000+Angle_Pid(GetAngle()));
-//		switch(cnt)
-//		{
-//			case 0:
-//				Walk_Straight(6000-Angle_Pid(GetAngle()),6000+Angle_Pid(GetAngle()));
-//				if(GetYpos()>=2000)
-//					cnt++;
-//				
-//			break;
-//			case 1:
-//				Walk_Straight(6000+(Angle_Pid(-90-GetAngle())),6000-Angle_Pid((-90-GetAngle())));
-//				if(GetXpos()>=2000)
-//					cnt++;
-//			break;
-//			case 2:
-//				if(GetAngle()>=0)
-//				{
-//					Walk_Straight(6000+(Angle_Pid(180-GetAngle())),6000-Angle_Pid((180-GetAngle())));
-//					if(GetYpos()<=0)
-//						cnt++;
-//				}
-//				if(GetAngle()<0)
-//				{
-//				Walk_Straight(6000+(Angle_Pid(-180-GetAngle())),6000-Angle_Pid((-180-GetAngle())));
-//					if(GetYpos()<=0)
-//					cnt++;
-//				}
-//						
-//			break;
-//			case 3:
-//				if(GetAngle()>=0)
-//				{
-//					Walk_Straight(3000+(Angle_Pid(90-GetAngle())),3000-Angle_Pid(90-GetAngle()));
-//				}
-//				if(GetAngle()<=0)
-//				{
-//					Walk_Straight(3000+(Angle_Pid(-270-GetAngle())),3000-Angle_Pid(-270-GetAngle()));
-//				}
-//				if(GetXpos()<=0)
-//					cnt=0;
-//				break;
-//		}				
+//Walk_Straight(PID_OUT2(GetXpos(),GetYpos(),20,20,1000,1),PID_OUT3(GetXpos(),GetYpos(),20,20,1000,1));
+		switch(cnt)
+		{
+			case 0:
+				Walk_Straight(8000+PID_OUT1(1,0,0,7,GetXpos(),GetYpos()),8000-PID_OUT1(1,0,0,7,GetXpos(),GetYpos()));
+				if(GetYpos()>=1500)
+					cnt++;
+				
+			break;
+			case 1:
+				Walk_Straight(8000+PID_OUT1(0,1,-2000,5,GetXpos(),GetYpos()),8000-PID_OUT1(0,1,-2000,5,GetXpos(),GetYpos()));
+				if(GetXpos()>=1500)
+					cnt++;
+			break;
+			case 2:
+				Walk_Straight(8000+PID_OUT1(1,0,-2000,8,GetXpos(),GetYpos()),8000-PID_OUT1(1,0,-2000,8,GetXpos(),GetYpos()));
+					if(GetYpos()<=500)
+					cnt++;
+				break;
+			case 3:
+				Walk_Straight(8000+PID_OUT1(0,1,0,6,GetXpos(),GetYpos()),8000-PID_OUT1(0,1,0,6,GetXpos(),GetYpos()));
+				if(GetXpos()<=500)
+					cnt=0;
+				break;
+		}				
 		
 }
 }
+
