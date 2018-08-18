@@ -122,6 +122,7 @@ struct PID{
 	float err_integral;
 	float v;
 }agl,ds;
+
 float x1=0,y1=0,x2=0,y2=0;    //两点求一条直线
 float angle_PID(float setangle)
 {
@@ -232,13 +233,15 @@ void walk_line(float vel)
 	VelCrl(CAN2,1,V1*Pulse2mm );
 	VelCrl(CAN2,2,V2*Pulse2mm ); 
 }
+
 void WalkTask(void)
 { 
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem,0, &os_err);
-	int X,Y,angle,angle_erro;
-	int m=0,n=0,a1=0,a2=0,a3=0,v1=0,v2=0,l=0;
+	int X,Y,angle;
+	int angle_erro;
+	int m=0,n=0,a1=0,a2=0,a3=0,v1=0,v2=0;//这些变量名只是为了让串口发出数据，所以命名很随意
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0,&os_err);
@@ -246,7 +249,6 @@ void WalkTask(void)
 		Y=(int)(posY);
 		angle=(int)(Angle);
 		angle_erro=(int)(agl.err);
-		l=line;
 		m=(int)(set_angle);
 		n=(int)Get_dS();
 		a1=(int)DeltV1;
@@ -254,10 +256,10 @@ void WalkTask(void)
 		a3=(int)DeltV;
 		v1=(int)V1;
 		v2=(int)V2;
-		USART_OUT(UART4,(uint8_t*)"%d %d %d %d %d\r\n",l,X,Y,angle,m);
-//		USART_OUT(UART4,(uint8_t*)"Setangle=%d angle_erro=%d DV1=%d \r\n",m,angle_erro,a1);
-//		USART_OUT(UART4,(uint8_t*)"ds=%d DV2=%d\r\n",n,a2);
-//		USART_OUT(UART4,(uint8_t*)"DV=%d V1=%d V2=%d\r\n\r\n",a3,v1,v2);
+		USART_OUT(UART4,(uint8_t*)"%d %d %d %d %d\r\n",line,X,Y,angle,m);
+		USART_OUT(UART4,(uint8_t*)"Setangle=%d angle_erro=%d DV1=%d \r\n",m,angle_erro,a1);
+		USART_OUT(UART4,(uint8_t*)"ds=%d DV2=%d\r\n",n,a2);
+		USART_OUT(UART4,(uint8_t*)"DV=%d V1=%d V2=%d\r\n\r\n",a3,v1,v2);
 		Get_line();
 		switch (line)
 		{
