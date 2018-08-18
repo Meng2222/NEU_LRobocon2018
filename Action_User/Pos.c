@@ -115,7 +115,7 @@ void GetNowPoint(point * nowpoint)
     setPointXY(nowpoint, GetX(), GetY());
 }
 
-float LineDir(line * thisline ,dir thisdir)
+float LineDir(const line * thisline ,dir thisdir)
 {
     float tempangle = 0;
     if((*thisline).a == 0)
@@ -151,7 +151,7 @@ float LineDir(line * thisline ,dir thisdir)
     }
 }
 
-reldir RelDir2Line(line * thisline, dir thisdir)
+reldir RelDir2Line(const line * thisline, dir thisdir)
 {
     float angleOfLine = 0;
     float ExY = 0;

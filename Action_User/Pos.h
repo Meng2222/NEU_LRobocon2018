@@ -56,7 +56,7 @@ float Point2Line(line * thisline);
 *  thisline 为要求的直线,Dir是前进方向取值可以为forWard和backward
 *  返回值为-180到180间的一个数,与小车定位器的返回值所取坐标系相同(y轴正向为0度)
 */
-float LineDir(line * thisline ,dir Dir);
+float LineDir(const line * thisline ,dir Dir);
 
 //设置一个点的位置,通过直角坐标或极坐标
 void setPointXY(point * thispoint ,float x, float y);
@@ -66,5 +66,5 @@ void setPointRA(point * thispoint ,float r, float a);
 void GetNowPoint(point * nowpoint);
 
 //返回当前车与目标直线的相对位置,返回左右
-reldir RelDir2Line(line * thisline, dir thisdir);
+reldir RelDir2Line(const line * thisline, dir thisdir);
 #endif

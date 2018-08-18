@@ -40,6 +40,17 @@ void PIDCtrlInit1(void)
 float PIDCtrl2(PIDCtrlStructure * PIDStructure)
 {
     err2 = (*PIDStructure).ExOut - (*PIDStructure).GetVar();
+    /****************************************************
+    这是为了修复小车螺旋升天而加入的代码
+    ****************************************************/
+    if(err2 > 180)
+    {
+        err2 -= 360;
+    }
+    else if(err2 < -180)
+    {
+        err2 += 360;
+    }
     iSum2 += err2;
     dDiff2 = err2 - lasterr2;
     lasterr2 = err2;
