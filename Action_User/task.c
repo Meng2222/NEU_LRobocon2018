@@ -18,7 +18,8 @@
 */
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
-
+float last_error;
+float new_error;
 pos_t xya;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
@@ -27,14 +28,15 @@ int iSOKFlag=0;
 static int n=0;
 static int up_down;
 int t=0;
-int kpa=190;
-int kpd=8;
+int kpa=50;
+int kpd=6;
+int kdd=2;
 int aord;
 static float d;
 static float Aout=0;
 static float Dout=0;
 int light_number=1;
-float car_v;
+float car_v=0.5;
 void driveGyro(void)
 {
 	while(!iSOKFlag)
@@ -146,7 +148,7 @@ void go(float v)
 //	{ Light(0,1,0,-1);
 //	}
 
-	 Round (-1,1,1,V,1);
+	 Round (0,1000,1000,V,-1);
 	if(!aord)
 	{
 	 VelCrl(CAN2,1,Right_cr1+Dout);
@@ -156,8 +158,8 @@ void go(float v)
 		 VelCrl(CAN2,1,V/377*4096+Aout);
 	     VelCrl(CAN2,2,-V/377*4096+Aout);
 	}
-	 right=Right_cr1;
-	 left=Left_cr2;	
+	 right=Right_cr1+Dout;
+	 left=Left_cr2+Dout;	
 	 Aout=0;
 	 Dout=0;
 	 USART_OUT(UART4,(uint8_t*)"Right=%d\t",right);
@@ -194,9 +196,9 @@ void pid_angle(float angle,int s)
 	set=angle;
 	//USART_OUT(UART4,(uint8_t*)"s=%d\t",s);
 	//USART_OUT(UART4,(uint8_t*)"Aout=%d\t",n);
-	//USART_OUT(UART4,(uint8_t*)"set_angle=%d\t",set);
+	USART_OUT(UART4,(uint8_t*)"set_angle=%d\t",set);
 }
-void pid_xy(float D,int n)
+void pid_xy(float D,int n,int r)
 {
   
 //	if(f==1)
@@ -211,12 +213,14 @@ void pid_xy(float D,int n)
 //		  nowerror_d=D;			  
 //	  }else nowerror_d=-D; 
 //	}
+	last_error=new_error;
+	new_error=D-r;
 	
 
 	
-	Dout=kpd*D*n;	
+	Dout=kpd*D*n+kdd*(new_error-last_error);	
 	
-//	USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
+ // USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
 //	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
 }
 
@@ -299,17 +303,20 @@ void Light(float a,float b,int n)
 void Round(float x,float y,float r,float v,float n)
 { 
 	int s;
+	int D;
 	d= sqrt(pow((xya.x-x),2)+pow((xya.y-y),2));
 	Right_cr1=(v/r*(r+n*217))/377*4096;
 	Left_cr2=-(v/r*(r-n*217))/377*4096;
-	if((d-r)>=500)
-	{ 
-	  Light(xya.x-x,xya.y-y,-y/fabs(y));
-      	aord=1;
-		
-	}else 	
-	 {   aord=0;
-		 pid_xy(r-d,n);
-	 }
+	D=d;
+	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",D);
+//	if((d-r)>=500)
+//	{ 
+//	  Light(xya.y-y,-xya.x+x,-(xya.y-y)/fabs((xya.y-y)));
+//      	aord=1;
+//		
+//	}else 	
+	     aord=0;
+		 pid_xy(d,n,r);
+	 
 }
 	
