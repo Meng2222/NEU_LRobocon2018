@@ -59,11 +59,11 @@
 /**
   * @}
   */
-#define P_Angle 60
+#define P_Angle 35
 #define I_Angle 0
 #define D_Angle 0
 
-#define P_Location 1
+#define P_Location 0.1f
 #define I_Location 0
 #define D_Location 0
 

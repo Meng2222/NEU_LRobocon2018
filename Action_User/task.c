@@ -21,8 +21,7 @@
 extern float angle;
 extern float xpos;
 extern float ypos;
-
-#define ROBOT 4
+#define ROBOT 1
 
 	#if ROBOT == 1
 	float GetAngle(void)
@@ -118,8 +117,9 @@ void ConfigTask(void)
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
 	delay_ms(2000);
-	//DriveGyro();
+	DriveGyro();
 	delay_ms(12000);	//延时13s 用于启动定位系统
+	delay_ms(3000);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
@@ -131,7 +131,7 @@ void MoveTask(void)
 	while (1)
 	{
 		OSSemPend(MoveSem, 0, &os_err);
-		LockLineMove(0, 0, 0, 1000, 1000, 0);	//(是否存在斜率(1为存在 0为不存在), 设定直线斜率, 设定直线截距, 若不存在斜率则填写设定直线横坐标, 基础速度, 方向(1为沿X轴正向, 0为负向))
+		RectangleAround(2000, 2000, 1000); //(长(mm), 宽(mm), 基础速度(mm/s))
 	}
 }
 
@@ -147,11 +147,11 @@ void BluetoothTask(void)
 		USART_OUT(UART4, (uint8_t*)"  x = %d  ",(int)GetXpos());
 		USART_OUT(UART4, (uint8_t*)"  y = %d  ",(int)GetYpos());
 		USART_OUT(UART4, (uint8_t*)"  angle = %d  ",(int)GetAngle());
+		USART_OUT(UART4, (uint8_t*)"  LocationFlag  = %d ",(int)LocationFlag );
 		USART_OUT(UART4, (uint8_t*)"  PID_SetAngle = %d  ",(int)PID_SetAngle);
 		USART_OUT(UART4, (uint8_t*)"  AngleControl = %d \r\n",(int)AngleControl);
-		
 		/*
-		USART_OUT(UART4, (uint8_t*)"  AngleError = %d ",(int)AngleError);
+		
 		USART_OUT(UART4, (uint8_t*)" SlopeSetLine = %d ",(int)SlopeSetLine );
 		*/
 	}

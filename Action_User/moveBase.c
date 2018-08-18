@@ -61,100 +61,111 @@ void CircleAround(float radius, float speed) //(半径(mm)), 速度(mm/s))
 
 void RectangleAround(float length, float width, float BasicSpeed) //(长(mm), 宽(mm), 基础速度(mm/s))
 {
-	if(GetXpos() <= 100 && GetYpos() <= width-100)
+	//位置判断程序
+	if(GetXpos() <= 450 && GetYpos() <= width-450)
 	{
-		LocationFlag = 1;
+		LocationFlag = 1;	//直线 x = 0
 	}
-	if(GetXpos() <= length-100 && GetYpos() > width-100)
+	else if(GetXpos() <= length-450 && GetYpos() > width-450)
 	{
-		LocationFlag = 2;
+		LocationFlag = 2;	//直线 y = width
 	}
-	if(GetXpos() > length-100 && GetYpos() >= 100)
+	else if(GetXpos() > length-450 && GetYpos() >= 450)
 	{
-		LocationFlag = 3;
+		LocationFlag = 3;	//直线 x= length
 	}
-	if(GetXpos() > 100 && GetYpos() <100)
+	else if(GetXpos() > 450 && GetYpos() <450)
 	{
-		LocationFlag = 4;
+		LocationFlag = 4;	//直线 y= 0
 	}
-
+	//执行程序
 	if(LocationFlag == 1)
 	{
-		PID_SetAngle = 0;
-		Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2) \
-		- (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2), \
-		BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2) \
-		+ (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2));	//向设定直线方向前进
+		LockLineMove(0, 0, 0, 0, BasicSpeed, 1);	//直线 x = 0
 	}
 	if(LocationFlag == 2)
 	{
-		PID_SetAngle = -90;
-		Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2) \
-		- (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2), \
-		BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2) \
-		+ (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2));	//向设定直线方向前进
+		LockLineMove(1, 0, width, 0, BasicSpeed, 1);	//直线 y = width
 	}
 	if(LocationFlag == 3)
 	{
-		PID_SetAngle = -179;
-		Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2) \
-		- (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2), \
-		BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2) \
-		+ (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2));	//向设定直线方向前进
+		LockLineMove(0, 0, 0, length, BasicSpeed, 0);	//直线 x= length
 	}
 	if(LocationFlag == 4)
 	{
-		PID_SetAngle = 90;
-		Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2) \
-		- (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2), \
-		BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2) \
-		+ (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2));	//向设定直线方向前进
+		LockLineMove(1, 0, 0, 0, BasicSpeed, 0);	//直线 y= 0
 	}
 }
 
-void LockLineMove(uint8_t ExistSlope, double k, float b, float SetXpos, float BasicSpeed, uint8_t direction)  //(是否存在斜率, 设定直线斜率, 设定直线截距, 若不存在斜率则填写设定直线横坐标, 基础速度, 方向(1为沿X轴正向, 0为负向))
+//(是否存在斜率(1为存在, 0为不存在), 设定直线斜率, 设定直线截距, 若不存在斜率则填写设定直线横坐标, 基础速度, 方向(1为正向, 0为负向))
+void LockLineMove(uint8_t ExistSlope, double k, float b, float SetXpos, float BasicSpeed, uint8_t direction) 
 {
 	if(ExistSlope)
 	{
 		SlopeSetLine = k; 	//设定直线斜率
 		InterceptSetLine = b;
-		InverseTangentSlopeSetLineVaule = atan(SlopeSetLine);	//反正切输出为弧度制
-		AngleSetLine = ((InverseTangentSlopeSetLineVaule*180)/3.141) - 90;	//转换为角度并旋转坐标系
-		InterceptActual = GetYpos() - SlopeSetLine*GetXpos();
-		Distance =  (InterceptSetLine - InterceptActual)/sqrt(SlopeSetLine*SlopeSetLine + 1);
+		InverseTangentSlopeSetLineVaule = atan(SlopeSetLine);	//反正切(弧度制)
+		AngleSetLine = ((InverseTangentSlopeSetLineVaule*180)/3.141) - 90;	//转换为角度制并进行坐标变换
+		Distance =  (SlopeSetLine*GetXpos() - GetYpos() + InterceptSetLine)/sqrt(SlopeSetLine*SlopeSetLine + 1);	//计算到目标直线距离
 		if(direction == 1)
 		{
-			Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, AngleSetLine, GetAngle())/2) \
-			+ (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2), \
-			BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, AngleSetLine, GetAngle())/2) \
-			- (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2));	//向设定直线方向前进
+			PID_SetAngle = LocationPID(P_Location, I_Location, D_Location, 0, -Distance) + AngleSetLine;
+			if(PID_SetAngle > 180)
+			{
+				PID_SetAngle -= 360;
+			}
+			if(PID_SetAngle < -180)
+			{
+				PID_SetAngle += 360;
+			}
+			Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2), \
+			BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2));		
 		}
 		if(direction == 0)
 		{
-			Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, AngleSetLine+180, GetAngle())/2) \
-			- (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2), \
-			BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, AngleSetLine+180, GetAngle())/2) \
-			+ (LocationPID(P_Location, I_Location, D_Location, 0, Distance)/2));	//
+			PID_SetAngle = LocationPID(P_Location, I_Location, D_Location, 0, Distance) + AngleSetLine + 180;
+			if(PID_SetAngle > 180)
+			{
+				PID_SetAngle -= 360;
+			}
+			if(PID_SetAngle < -180)
+			{
+				PID_SetAngle += 360;
+			}
+			Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2), \
+			BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2));		
 		}
 	}
 	if(!ExistSlope)
 	{
+		AngleSetLine = 0;
 		if(direction == 1)
 		{
-			AngleSetLine = (-90/SetXpos)*LocationPID(P_Location, I_Location, D_Location, SetXpos, GetXpos());
-			Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, AngleSetLine, GetAngle())/2), \
-			BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, AngleSetLine, GetAngle())/2));	//向设定直线方向前进
+			PID_SetAngle = -LocationPID(P_Location, I_Location, D_Location, SetXpos, GetXpos()) + AngleSetLine;
+			if(PID_SetAngle > 180)
+			{
+				PID_SetAngle -= 360;
+			}
+			if(PID_SetAngle < -180)
+			{
+				PID_SetAngle += 360;
+			}
+			Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2), \
+			BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2));	
 		}
 		if(direction == 0)
 		{
-			AngleSetLine = LocationPID(P_Location, I_Location, D_Location, SetXpos, GetXpos());
-			Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, AngleSetLine, GetAngle())/2), \
-			BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, AngleSetLine, GetAngle())/2));
-			/*
-			PID_SetAngle = (90/SetXpos)*LocationPID(P_Location, I_Location, D_Location, SetXpos, GetXpos())-180;
+			PID_SetAngle = LocationPID(P_Location, I_Location, D_Location, SetXpos, GetXpos()) + AngleSetLine + 180;
+			if(PID_SetAngle > 180)
+			{
+				PID_SetAngle -= 360;
+			}
+			if(PID_SetAngle < -180)
+			{
+				PID_SetAngle += 360;
+			}
 			Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2), \
 			BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2));
-			*/
 		}
 	}
 } 
@@ -164,11 +175,11 @@ float AnglePID(float Kp, float Ki, float Kd, float AngleSet, float AngleActual)
 	static float AngleLastError =0;
 	static float AngleIntegralError = 0;
 	AngleError = AngleSet - AngleActual;
-	if(AngleError <= -180)
+	if(AngleError < -180)
 	{
 		AngleError += 360;
 	}
-	if(AngleError >= 180)
+	if(AngleError > 180)
 	{
 		AngleError -= 360;
 	}
@@ -183,6 +194,14 @@ float LocationPID(float Kp, float Ki, float Kd, float LocationSet, float Locatio
 	static float LocationLastError =0;
 	static float LocationIntegralError = 0;
 	LocationError = LocationSet - LocationActual;
+	if(LocationError >= 90)
+	{
+		LocationError = 90;
+	}
+	if(LocationError <= -90)
+	{
+		LocationError = -90;
+	}
 	LocationIntegralError += LocationError;
 	LocationControl = Kp*LocationError + Ki*LocationIntegralError + Kd*(LocationError - LocationLastError);
 	LocationLastError = LocationError;

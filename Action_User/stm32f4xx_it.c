@@ -37,7 +37,6 @@ float angle = 0;
 float posX = 0;
 float posY = 0;
 float avel = 0;
-
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
@@ -257,6 +256,7 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
 	{
 		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
+		count++;
 		ch = USART_ReceiveData(USART6);
 		switch (count)
 		{
