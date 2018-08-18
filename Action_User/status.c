@@ -77,14 +77,13 @@ void circular(float v,float r,char direction)
 * @note
 */
 float LastAngleErr=0,AngI=0;
-int ChangeFlag=0;
 extern int T;
 float AnglePID(float Angle,float SetAngle)
 {
 	struct PID Ang;
-	Ang.p=320;
+	Ang.p=160;
 	Ang.i=0;
-	Ang.d=0;
+	Ang.d=10;
 	float err=0,u=0,err1=0,err2=0;
 	err1=SetAngle-Angle;
 	if(err1>=0)
@@ -104,29 +103,34 @@ float AnglePID(float Angle,float SetAngle)
 	LastAngleErr=err;
 	return u;
 }
-//extern float setangle;
 
-///**
-//* @brief  走方形状态切换
-//* @author ACTION
-//* @note
-//*/
-//int AngleChange(void)
-//{
-//	int flag=0;
-//	flag=1;
-//	if(pos_t.y>=2000&&ChangeFlag==0&&setangle==0)
-//		ChangeFlag=1;
-//	else if(pos_t.x<=-2000&&ChangeFlag==1&&setangle==90)
-//		ChangeFlag=2;
-//	else if(pos_t.y<=0&&ChangeFlag==2&&(setangle==180||setangle==-180))
-//		ChangeFlag=3;
-//	else if(pos_t.x>=0&&ChangeFlag==3&&setangle==-90)
-//		ChangeFlag=0;
-//	else
-//		flag=0;
-//	return flag;
-//}
+int ChangeFlag=0;
+/**
+* @brief  走方形状态切换
+* @author ACTION
+* @note
+*/
+int AngleChange(void)
+{
+	int x=0,y=0;
+	#if Car==4
+	x=GetXpos();
+	y=GetYpos();
+	#elif Car==1
+	y=-GetXpos();
+	x=GetYpos();
+	#endif
+	if(y>=1300&&ChangeFlag==0)
+		ChangeFlag=1;
+	else if(x>=1300&&ChangeFlag==1)
+		ChangeFlag=2;
+	else if(y<=700&&ChangeFlag==2)
+		ChangeFlag=3;
+	else if(x<=700&&ChangeFlag==3)
+		ChangeFlag=0;
+	USART_OUT(UART4, "%d	",ChangeFlag);
+	return ChangeFlag;
+}
 
 /**
 * @brief  位置环pid
@@ -137,18 +141,28 @@ float AnglePID(float Angle,float SetAngle)
 float LastDirErr=0,DirI=0;
 float DirectionPID( float distance )
 {
-	struct PID Dir;
-	if(distance<300&&distance>-300)
-		Dir.p=0.1;
-	else if(distance<500&&distance>-500)
-		Dir.p=0.06+12;
-	else
-		Dir.p=0.03+30;
-	Dir.i=0;
-	Dir.d=0;
 	float u=0;
 	DirI+=distance;
-	u=Dir.p*distance+Dir.i*DirI+Dir.d*(distance-LastDirErr);
+	if(DirI>10000)
+		DirI=10000;
+	struct PID Dir;
+	Dir.i=0;
+	Dir.d=0.001;
+	if(distance<100&&distance>-100)
+	{
+		Dir.p=0.12;
+		u=Dir.p*distance+Dir.i*DirI+Dir.d*(distance-LastDirErr);
+	}
+	else if(distance<400&&distance>-400)
+	{
+		Dir.p=0.06;
+		u=Dir.p*distance+Dir.i*DirI+Dir.d*(distance-LastDirErr)+6;
+	}
+	else
+	{
+		Dir.p=0.03;
+		u=Dir.p*distance+Dir.i*DirI+Dir.d*(distance-LastDirErr)+18;
+	}
 	LastDirErr=distance;
 	return u;
 }
@@ -167,7 +181,6 @@ void line( float a ,float b ,float c , char direction , float v )
 	char ca='0';
 	float SetAngle=0,distance=0,k=0,Ang=0,diff=0;
 	float x=0,y=0;
-
 	#if Car==4
 	Ang=GetAngle();
 	x=GetXpos();
@@ -201,8 +214,8 @@ void line( float a ,float b ,float c , char direction , float v )
 	}
 	else if(a==0)
 	{
-		distance=c/b-y;
-		SetAngle=90;
+		distance=-c/b-y;
+		SetAngle=-90;
 				if(direction==2)
 		{
 			distance=-distance;
@@ -211,7 +224,7 @@ void line( float a ,float b ,float c , char direction , float v )
 	}
 		else if(b==0)
 	{
-		distance=x-c/a;
+		distance=x+c/a;
 		SetAngle=0;
 				if(direction==2)
 		{
@@ -219,27 +232,77 @@ void line( float a ,float b ,float c , char direction , float v )
 			SetAngle=180;
 		}
 	}
-	DirPID=DirectionPID(distance);//测试
+	DirPID=DirectionPID(distance);
 	if(DirPID>70)
 		DirPID=70;
 	else if(DirPID<-70)
 		DirPID=-70;
+	USART_OUT(UART4, "%d	",(int)(SetAngle));
 	SetAngle+=DirPID;
-		AngPID=AnglePID(Ang,SetAngle);
-		diff=AngPID;
+	AngPID=AnglePID(Ang,SetAngle);
+	diff=AngPID;
 	v1=(int)(exchange(v)+diff);
 	v2=(int)(-exchange(v)+diff);
-		VelCrl(CAN2,0x01,v1);
-		VelCrl(CAN2,0x02,v2);
-		//USART_OUT(UART4, "SetAng:%d	Ang:%d	Dir:%d	",(int)(SetAngle),(int)(Ang),(int)(distance));
-		//USART_OUT(UART4, "AngPID:%d	DirPID:%d	",(int)(AngPID),(int)(DirPID));
+	VelCrl(CAN2,0x01,v1);
+	VelCrl(CAN2,0x02,v2);
+	USART_OUT(UART4, "x,y,SA,Aerr,Derr,Apid,Dpid:		");
+	USART_OUT(UART4, "%d	%d	",(int)(x),(int)(y));
+	USART_OUT(UART4, "%d	%d	%d	",(int)(SetAngle),(int)(SetAngle-Ang),(int)(distance));
+	USART_OUT(UART4, "%d	%d\r\n",(int)(AngPID),(int)(DirPID));
 	//	USART_OUT(UART4, "01:%d	02:%d	",v1,v2);
 }
 
+//void square(int SetX1,int SetY1,int SetX2,int SetY2,char direction,float v)
+//{
+//	struct vertex
+//	{
+//		int x;
+//		int y;
+//	}spot1,spot2,spot3,spot4;
+//	int x=0,y=0;
+//	int i=0,n=0;
+//	#if Car==4
+//	x=GetXpos();
+//	y=GetYpos();
+//	#elif Car==1
+//	y=-GetXpos();
+//	x=GetYpos();
+//	#endif
+//	float a[4]={0},m=0;
+//	a[0]=sqrt(pow((x-SetX1),2)+pow((y-SetY1),2));
+//	a[1]=sqrt(pow((x-SetX1),2)+pow((y-SetY2),2));
+//	a[2]=sqrt(pow((x-SetX2),2)+pow((y-SetY1),2));
+//	a[3]=sqrt(pow((x-SetX2),2)+pow((y-SetY2),2));
+//	m=a[0];
+//	for(i=1;i<4;i++)
+//	{
+//		if(a[i]<m)
+//		{
+//			n=i;
+//			m=a[i];
+//		}
+//	}
+//	if(direction==1)
+//	{
+//		
+//}
 
-
-
-
+void BubbleSort(float *a,int number)
+{
+	int i=0,j=0,t=0;
+	for(i=0;i<number-1;i++)
+	{
+		for(j=0;j<number-i-1;j++)
+    {
+      if(*(a+j+1)>*(a+j))
+      {
+        t=*(a+j+1);
+        *(a+j+1)=*(a+j);
+        *(a+j)=t;
+      }
+     }
+	}
+}
 //读取函数
 void SetAngle(float val)
 {

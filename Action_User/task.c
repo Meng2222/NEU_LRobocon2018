@@ -87,8 +87,8 @@ void ConfigTask(void)
 	UART4_Init(921600);
 	TIM_Init(TIM2,10*1000-1,83,0x01,0x03);
 	ElmoInit(CAN2);//驱动初始化
-	VelLoopCfg(CAN2,1,2000,2000);//速度环初始化
-	VelLoopCfg(CAN2,2,2000,2000);
+	VelLoopCfg(CAN2,1,20000,50000);//速度环初始化
+	VelLoopCfg(CAN2,2,20000,50000);
 //	SetVelLimit(CAN2,0x001,80000,-80000);//配置驱动速度限制
 //	SetVelLimit(CAN2,0x002,80000,-80000);
 //	PosLoopCfg(CAN2,0x001,2000,2000,40000);//位置环初始化
@@ -115,7 +115,7 @@ void ConfigTask(void)
 }
 
 
-
+#define V 1
 void WalkTask(void)
 {
 	float angle=0;
@@ -126,10 +126,17 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		line(1,0,-500,2,1);
+		switch(AngleChange())
+		{
+			case 0:	line(1,0,-30,1,V);break;
+			case 1:	line(0,1,-1970,1,V);break;
+			case 2:	line(1,0,-1970,2,V);break;
+			case 3:	line(0,1,-30,2,V);break;
+			
+		}
+//		line(0,1,-1800,1,V);
 		angle=GetAngle();
-
-			USART_OUT(UART4, "%d	%d\r\n",(int)(GetXpos()),(int)(GetYpos()));
 
 	}
 }
+
