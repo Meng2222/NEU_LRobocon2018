@@ -40,7 +40,7 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 
-#define CARNUM 1
+#define CARNUM 4
 #define Whirl_Vel 1000			//mm/s
 	
 //#define LeftWhirlVel  	4096.0f //×óÂÖËÙ¶È
