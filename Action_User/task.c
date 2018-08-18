@@ -19,10 +19,10 @@ int Car=1;
 int Angle=0;     //蓝牙发数的整型转换
 int X=0;         //蓝牙发数的整型转换
 int Y=0;
-
+int max=15000;//最大偏差
 //调车参数///////////////
-float rate=0.04;//  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04
-float duty=900;   //提前量：duty=650(1m/s)，   1.5m/s duty为900，
+float rate=0.008;//  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04
+float duty=800;   //提前量：duty=650(1m/s)，   1.5m/s duty为900，
 float KP=450; //Kp给300(1m/s)，，，kp给450（1.5m/s）
 float V0=1.5;//车的基础速度(m/s)
 float buff=1000;//(最大偏离区域)
@@ -84,7 +84,8 @@ pos_t action;
 	//float aa=0;     //（输入aa的值应该a<0）
     //float bb=0;        //(如果a=0，b应该也>0)
     //float cc=0;
-	
+	int cycle_flag=0;//cycle_flag为全局变量，两个函数都能改变
+	int change=1;//change为全局变量，两个函数都能改变
 //	#define nn 1//(方向指定，1为向X轴上方，-1为向x轴下方，当倾斜角=0（aa=0）时，-2为x轴负向，2为x轴正向,)
 /*
 ==================================================================================
@@ -166,9 +167,9 @@ void WalkTask(void)
       float Bb=0;
       float Cc=0;
       float Nn=0;
+    float last_change=0;//记录上次状态
+	
 	  
-	  
-	  int change=1;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
@@ -606,8 +607,17 @@ if((action.x<-(2000-duty))&&change==1)//到达转换该x=-2000的地方
 	Cc=-2000;
 	Nn=1;
 	change=2;
-}	
+	rate=0.0;
+	max=15000;
 
+}	
+if((action.x<-1800&&change==2))//冲过之后调大rate
+{
+	rate=0.09;
+	max=6000;
+	
+}
+	
 if((action.y>2000-duty)&&change==2)
 {//y=1900
 	Aa=0;
@@ -615,7 +625,16 @@ if((action.y>2000-duty)&&change==2)
 	Cc=-2000;
 	Nn=2;
     change=3;
+	rate=0.0;
+	max=15000;
+
 }
+if(action.y>1800&&change==3)//冲过之后调大rate
+{
+	rate=0.09;
+	max=6000;
+}
+
 if((action.x>-duty)&&change==3)
 {//x=-100
 	Aa=-1;
@@ -623,7 +642,16 @@ if((action.x>-duty)&&change==3)
 	Cc=00;
 	Nn=-1;
     change=4;
+	rate=0.0;
+	max=15000;
+
 }
+if(action.x>-200&&change==4)//冲过之后调大rate
+	{
+	rate=0.09;
+		max=6000;
+    }
+
 if((action.y<duty)&&change==4)
 {//y=100
 	Aa=0;
@@ -631,11 +659,30 @@ if((action.y<duty)&&change==4)
 	Cc=00;
 	Nn=-2;
     change=1;
+	rate=0.0;
+	max=15000;
+	
 }
+if(action.y<200&&change==1)//冲过之后调大rate
+	{
+	rate=0.09;
+		max=6000;
+    }
+	
+	
+if(change<last_change)//走完一圈的标志位
+	{
 
+		cycle_flag=1;//走完一圈标志位
+	}
+	last_change=change;	
+	
 //执行
 line(Aa, Bb, Cc, Nn);
+	
+	
 USART_OUT( UART4, (uint8_t*)"%d ", change);   
+	cycle_flag=0;//在最后把标志位清零
    }   
 	
 	
@@ -644,7 +691,80 @@ USART_OUT( UART4, (uint8_t*)"%d ", change);
 	
 	
 	}
-} 
+}
+
+int cnt_flag=0;
+float last_amount=0;
+float last_P0=0;
+float last_cycle_num=0;
+float auto_PID(float P0)//输入值是当前圈数和是否走完一圈标号
+{
+	float amount_x=0;
+	float amount_d=0;
+	float amount=0;
+	float round_s1=0;
+    float round_s2=0;
+	float round_R=0;
+	float round_core=0;
+	float per=0;//为了方便最好把这个放上边
+	if(change==2&&action.y>1000)
+		cnt_flag=1;
+	if(change==3&&action.x>-1000)
+		cnt_flag=0;//不在记录偏差的时候
+	if(cnt_flag==1)
+	{
+	if(action.y>round_s1&&action.x<round_s2)//y在圆弧的方形区域,记录偏差用弧形比较
+		amount_d=amount_d+fabs((action.x-round_s2)*(action.x-round_s2)+(action.y-round_s1)*(action.y-round_s1)-round_R);
+	if(action.y>1000&&action.x<round_s2&&action.y<round_s1)//y在1000到圆弧下边缘并且X在圆弧做边缘左边的区域，记录偏差用x=-2000比较
+		amount_x=amount_x+fabs(action.x-2000);
+    }
+	
+	if(cnt_flag==0&&change==1)//出了纪录偏差的范围，检查偏差值并给出KP
+	{
+		amount=amount_d+amount_x;
+		if(last_amount>amount)//如果本次偏差小于上次偏差，就把上次偏差(P0)覆盖，作为下一次的比较值，记录本次的KP作为比较值
+		{
+			last_amount=amount;
+			last_P0=P0;//     last_P0用串口显示出来
+		}
+		if(cycle_flag==1)//清除标志位，当车跑完一圈如果偏差值没有小于之前的的话那就试下一个P0
+			{
+				cycle_flag=0;
+				if(last_amount<=amount)
+				  P0=P0+per;	
+			}
+	}
+	return P0;
+}
+
+
+
+
+
+
+
+
+
+
+
+float round_gen(float vp,float BUff)//未完成
+{
+	float Round_core=0;
+	
+	
+	
+	
+	
+	
+	
+	return Round_core;
+}
+
+
+
+
+
+
 
 float a_gen(float a,float b,int n)//输出给定直线的方向角
 {
@@ -807,8 +927,8 @@ void run_to(float BETA)//由当前角度转向BETA
 {
 	float B_err=0;
 	float B_Uk=0;
-	float R= 15000;//记得封装成m/s
-	float L= 15000;
+	float R= meters(V0);//记得封装成m/s
+	float L= meters(V0);
 	int  RR=0;
 	int  LL=0;
 	B_err=BETA-action.angle;//当前角度与设定值的偏差
@@ -817,14 +937,14 @@ void run_to(float BETA)//由当前角度转向BETA
 	if(B_err<-180)
 		B_err=B_err+360;
 	
-	
+	KP=auto_PID(KP);//自动调节调节Kp
 	B_Uk=B_err*KP;
 	
 	
-	if(B_Uk>8000)
-		B_Uk=8000;
-	if(B_Uk<-8000)
-		B_Uk=-8000;
+	if(B_Uk>max)
+		B_Uk=max;
+	if(B_Uk<-max)
+		B_Uk=-max;
 	R=R-B_Uk;
 	L=-(L+B_Uk);
 	VelCrl(CAN2, 01,R);
@@ -851,7 +971,7 @@ int line(float aa, float bb, float cc, float nn)
 	   int D=0;         //蓝牙发数的整型转换
 	   
 	   d=(aa*action.x+bb*action.y+cc)/sqrt(aa*aa+bb*bb);//(d<0在直线下方,a为负)
-	   target=a_gen(aa,bb,nn);//直线设定角
+	   target=a_gen(aa,bb,nn);//得出直线设定角
 	   aSetvalue=err(d,target);//根据距离转化出的角度
 	   //转向这个角度
        run_to(aSetvalue);
