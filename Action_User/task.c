@@ -22,21 +22,19 @@ OS_EVENT *PeriodSem;
 pos_t xya;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
-static float set_x=0;
-static float set_y=0;
 static float set_angle=0;
 int iSOKFlag=0;
 static int n=0;
 static int up_down;
-static float setangle=0;
 int t=0;
 int kpa=190;
 int kpd=8;
+int aord;
 static float d;
 static float Aout=0;
 static float Dout=0;
 int light_number=1;
-
+float car_v;
 void driveGyro(void)
 {
 	while(!iSOKFlag)
@@ -125,7 +123,7 @@ void WalkTask(void)
 		angle=(int)xya.angle;
 		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",x,y,angle);		
 		
-		go(1);
+		go(car_v);
 		
 	}
 }
@@ -133,25 +131,35 @@ void go(float v)
 { 
 	
      
-	 void Light(float,float,float,int);
+	 //void Light(float,float,float,int);
+     void Round(float ,float ,float ,float ,float );
    	 float V=v*1000;	 
 	 int right;
 	 int left;
-	if(light_number==1)
-	{ Light(1,0,0,1);
-	}else if(light_number==2)
-	{ Light(0,1,-2000,1);
-	}else if(light_number==3)
-	{ Light(1,0,-2000,-1);
-	}else if(light_number==4)
-	{ Light(0,1,0,-1);
+//	if(light_number==1)
+//	{ Light(1,0,0,1);
+//	}else if(light_number==2)
+//	{ Light(0,1,-2000,1);
+//	}else if(light_number==3)
+//	{ Light(1,0,-2000,-1);
+//	}else if(light_number==4)
+//	{ Light(0,1,0,-1);
+//	}
+
+	 Round (-1,1,1,V,1);
+	if(!aord)
+	{
+	 VelCrl(CAN2,1,Right_cr1+Dout);
+	 VelCrl(CAN2,2,Left_cr2+Dout);
+	}else 
+	{
+		 VelCrl(CAN2,1,V/377*4096+Aout);
+	     VelCrl(CAN2,2,-V/377*4096+Aout);
 	}
-	 Right_cr1=4096*V/377+Aout+Dout;		
-	 Left_cr2=-4096*V/377+Aout+Dout;
-	 VelCrl(CAN2,1,Right_cr1);
-	 VelCrl(CAN2,2,Left_cr2);
 	 right=Right_cr1;
 	 left=Left_cr2;	
+	 Aout=0;
+	 Dout=0;
 	 USART_OUT(UART4,(uint8_t*)"Right=%d\t",right);
 	 USART_OUT(UART4,(uint8_t*)"Left=%d\t",left);
 }
@@ -188,69 +196,45 @@ void pid_angle(float angle,int s)
 	//USART_OUT(UART4,(uint8_t*)"Aout=%d\t",n);
 	//USART_OUT(UART4,(uint8_t*)"set_angle=%d\t",set);
 }
-void pid_xy(float D,float setangle,int f)
+void pid_xy(float D,int n)
 {
-    float nowerror_d;
-    
-	if(f==1)
-	{if(up_down==1)
-	  {
-		  nowerror_d=-D;			  
-	  }else nowerror_d=D;
-	}else if(f==-1)
-    {
-		if(up_down==1)
-	  {
-		  nowerror_d=D;			  
-	  }else nowerror_d=-D; 
-	}
+  
+//	if(f==1)
+//	{if(up_down==1)
+//	  {
+//		  nowerror_d=-D;			  
+//	  }else nowerror_d=D;
+//	}else if(f==-1)
+//    {
+//		if(up_down==1)
+//	  {
+//		  nowerror_d=D;			  
+//	  }else nowerror_d=-D; 
+//	}
 	
+
 	
-	Dout=kpd*nowerror_d;	
-	int n=Dout;
+	Dout=kpd*D*n;	
+	
 //	USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
 //	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
 }
 
 
-void Light(float a,float b,float c,int n)
+void Light(float a,float b,int n)
 {  
 	void pid_angle(float,int);
-	void pid_xy(float,float,int);
 	
-	float light=a*xya.x+xya.y*b+c;
+	
+	//float light=a*xya.x+xya.y*b+c;
 	
 	int di;
 	int l;
 	int s=n;
 	int f;
-	l=light;	
-    d=fabs(light)/sqrt((a*a)+(b*b));
-	
-	if(a==1)
-	{   if(c==0)
-		{if((xya.y)>1350)
-			light_number++;
-		}else if(c==-2000)
-		{ if((xya.y)<650)
-			light_number++;
-		}	
-		if(light_number>4)
-			light_number=1;
-	}
-	if(b==1)
-	{  
-		if(c==-2000)
-		{if((xya.x)>1350)
-			light_number++;
-		}else if(c==0)
-		{ if((xya.x)<700)
-			light_number++;
-		}
 		
-		if(light_number>4)
-			light_number=1;
-	}
+    //d=fabs(light)/sqrt((a*a)+(b*b));
+	
 	
 	if(b)
 	{ if(n==1)
@@ -306,16 +290,26 @@ void Light(float a,float b,float c,int n)
 	
 //	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",di);
 //	USART_OUT(UART4,(uint8_t*)"l=%d\t\r\n",l);
-	if(light>0)
-	 up_down=1;
-	else if (light<0)
-	 up_down=-1;
-	else if (light==0)
-	 up_down=0;
+	
 
-	pid_xy(d,set_angle,f);
+
 	pid_angle(set_angle,s);
 	t=0;
 }
-
+void Round(float x,float y,float r,float v,float n)
+{ 
+	int s;
+	d= sqrt(pow((xya.x-x),2)+pow((xya.y-y),2));
+	Right_cr1=(v/r*(r+n*217))/377*4096;
+	Left_cr2=-(v/r*(r-n*217))/377*4096;
+	if((d-r)>=500)
+	{ 
+	  Light(xya.x-x,xya.y-y,-y/fabs(y));
+      	aord=1;
+		
+	}else 	
+	 {   aord=0;
+		 pid_xy(r-d,n);
+	 }
+}
 	
