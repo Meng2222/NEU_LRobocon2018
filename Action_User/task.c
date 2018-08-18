@@ -25,7 +25,6 @@ static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 static float set_angle=0;
 int iSOKFlag=0;
-static int n=0;
 static int up_down;
 int t=0;
 int kpa=50;
@@ -37,6 +36,8 @@ static float Aout=0;
 static float Dout=0;
 int light_number=1;
 float car_v=0.5;
+float tangent_angle;
+int o;
 void driveGyro(void)
 {
 	while(!iSOKFlag)
@@ -149,15 +150,10 @@ void go(float v)
 //	}
 
 	 Round (0,1000,1000,V,-1);
-	if(!aord)
-	{
-	 VelCrl(CAN2,1,Right_cr1+Dout);
-	 VelCrl(CAN2,2,Left_cr2+Dout);
-	}else 
-	{
-		 VelCrl(CAN2,1,V/377*4096+Aout);
-	     VelCrl(CAN2,2,-V/377*4096+Aout);
-	}
+
+	 VelCrl(CAN2,1,Right_cr1+Dout+Aout);
+	 VelCrl(CAN2,2,Left_cr2+Dout+Aout);
+	
 	 right=Right_cr1+Dout;
 	 left=Left_cr2+Dout;	
 	 Aout=0;
@@ -166,16 +162,16 @@ void go(float v)
 	 USART_OUT(UART4,(uint8_t*)"Left=%d\t",left);
 }
 
-void pid_angle(float angle,int s)
+void pid_angle(float angle,int second_driection)
 {
     float nowerror_angle;
 	int set;
-	if(s==1)
+	if(second_driection==1)
 	{if(xya.angle>-180&&xya.angle<angle-180)		
 		nowerror_angle=angle-xya.angle-360;
 	  else nowerror_angle=angle-xya.angle;
 	}
-	else if(s==-1)
+	else if(second_driection==-1)
 	{if(xya.angle<180&&xya.angle>angle+180)		
 		nowerror_angle=angle-xya.angle+360;
 
@@ -216,16 +212,15 @@ void pid_xy(float D,int n,int r)
 	last_error=new_error;
 	new_error=D-r;
 	
-
 	
-	Dout=kpd*D*n+kdd*(new_error-last_error);	
+	Dout=kpd*new_error*n;//+kdd*(new_error-last_error);	
 	
  // USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
 //	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
 }
 
 
-void Light(float a,float b,int n)
+void Light(float a,float b,int n,int round)
 {  
 	void pid_angle(float,int);
 	
@@ -234,20 +229,21 @@ void Light(float a,float b,int n)
 	
 	int di;
 	int l;
-	int s=n;
+	int second_driection;
 	int f;
 		
     //d=fabs(light)/sqrt((a*a)+(b*b));
 	
 	
-	if(b)
+	
+	if(b!=0)
 	{ if(n==1)
 		{ if(-a/b>0)
-		  {   f=1;
+		  {   
 			  set_angle=atan2(-a/b,1)/3.14159*180;
 		  }
 		  else if(-a/b<0)
-		  {    f=-1;
+		  {    
 			  set_angle=atan2(a/b,-1)/3.14159*180;
 		  }
 		}else
@@ -255,39 +251,72 @@ void Light(float a,float b,int n)
 			if(-a/b>0)
 			{
 		     set_angle=atan2(a/b,-1)/3.14159*180;
-				f=-1;
+				
 			}
 		  else if(-a/b<0)
-		  {   f=1;
+		  {   
 			  set_angle=atan2(-a/b,1)/3.14159*180;
 		  }
 		}
 	}
 	else if(b==0)
 	{
-		if(n==1)
-		{   f=-1;
-		   	set_angle=90;
+		if(round==-1)
+		{   if(n==1)
+		   	{
+				second_driection=1;
+				set_angle=90;
+			}
+			else 
+			{
+				set_angle=-90;
+		        second_driection=-1;
+				t=1;
+			}
 		}
         else 
-		{   f=1;
-			set_angle=-90;          			
+		{   
+			if(n==1)
+		   {
+				second_driection=-1;
+				set_angle=90;
+			    t=1;
+			}
+			
+			else 
+			{
+				set_angle=-90;
+		        second_driection=1;
+			}       			
 		}
 	} 
      
 	if(a==0)
 	{
 		if(n==1)
-		{   f=1;
+		{  
 			set_angle=0;
 		
 		}
         else 
-		{   f=-1;
+		{   
 			set_angle=-180;
-            t=1;			
+            			
 		}
 		
+	}
+	
+	
+	if(round==-1)
+	{ 
+		tangent_angle=set_angle-90;
+		if(tangent_angle<-180)
+			tangent_angle+=360;
+	}else
+	{
+		tangent_angle=set_angle+90;
+		if(tangent_angle>180)
+			tangent_angle-=360;
 	}
     di=d;	
 	
@@ -295,28 +324,39 @@ void Light(float a,float b,int n)
 //	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",di);
 //	USART_OUT(UART4,(uint8_t*)"l=%d\t\r\n",l);
 	
+    if(round==-1)
+	{
+		if(b<0)
+			second_driection=-1;
+		else second_driection=1;
+	}else
+	{
+		if(b<0)
+			second_driection=1;
+		else second_driection=-1;
+		
+	}
 
-
-	pid_angle(set_angle,s);
+	pid_angle(tangent_angle,second_driection);
 	t=0;
 }
-void Round(float x,float y,float r,float v,float n)
+void Round(float x,float y,float r,float v,float round)
 { 
 	int s;
 	int D;
 	d= sqrt(pow((xya.x-x),2)+pow((xya.y-y),2));
-	Right_cr1=(v/r*(r+n*217))/377*4096;
-	Left_cr2=-(v/r*(r-n*217))/377*4096;
+	Right_cr1=(v/r*(r+round*217))/377*4096;
+	Left_cr2=-(v/r*(r-round*217))/377*4096;
 	D=d;
 	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",D);
-//	if((d-r)>=500)
-//	{ 
-//	  Light(xya.y-y,-xya.x+x,-(xya.y-y)/fabs((xya.y-y)));
-//      	aord=1;
-//		
-//	}else 	
-	     aord=0;
-		 pid_xy(d,n,r);
+	if(xya.y-y)
+	Light(xya.y-y,-xya.x+x,(xya.y-y)/fabs((xya.y-y)),round);
+	else
+	{	    if((xya.x-x)>0)
+			Light(xya.y-y,-xya.x+x,1,round);
+			else 	Light(xya.y-y,-xya.x+x,-1,round);		
+	}
+    pid_xy(d,round,r);
+	
 	 
 }
-	
