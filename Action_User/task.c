@@ -14,22 +14,17 @@
 
 //#define Veh 1         //车号选择 【1】 || 【4】
 extern int t;           //时间校正【1ms】   
-extern int t1;
+extern int t1;          //时间校正【1ms】
 extern float X,Y,Angl;  //【系统反馈数据】XY坐标（浮点） 校正角度（浮点）
 int j1=0;
 int j=0;
-//void delay10(void)
-//{
-//if(t<10000){i=1;}
-//if(t>=10000){i=0;}
-//}
 
 void delay1(void)       //计时函数【100ms】
 {if(t<100){j=0;}
 if(t>=100){j=1;}}
-void delay_D(void)       //计时函数【10ms】
-{if(t<10){j1=0;}
-if(t>=10){j1=1;}}
+void delay_D(void)      //计时函数【10ms】
+{if(t1<10){j1=0;}
+if(t1>=10){j1=1;}}
 
 void Move(int V1,int V2)//运动函数
 {
@@ -183,32 +178,35 @@ void ConfigTask(void)        //初始化
 //| |_| |_| |_| |_| |_| |_| |_| |_| |_【参数选择】_| |_| |_| |_| |_| |_| |_| |_| |_| |
 //
 //====================================================================================
-#define v          2       //【Mode1】【Mode2】【Mode3】车身速度（m/s）
-#define r          1000    //【Mode1】【Mode2】         半径 || 边长（m）
+#define v          1       //【Mode1】【Mode2】【Mode3】【Mode4】【Mode5】车身速度（m/s）
+#define r          1.f     //【Mode1】【Mode2】         【Mode4】【Mode5】        半径 || 边长（m）
                            //【Mode1】：车身旋转半径（填入0则直行）（r>0逆时针运动；r<0顺时针运动）
                            //【Mode2】：正方形边长（r=0为直行）
                            //【Mode4】：正方形半边长（标志位到4边长度）
+                           //【Mode5】：定圆半径
+#define x_C        1000.f  //【Mode5】：圆心坐标x
+#define y_C        2000.f  //【Mode5】：圆心坐标y
 #define d_M        1500    //【Mode4】：标志点（y轴位点）
 #define direction  0       //【Mode1】：方向（0为前进，1为后退）
-                           //【Mode4】：顺时针/逆时针正方形（0为逆时针，1为顺时针）
-#define Mode       4       //【模式选择】：
+                           //【Mode5】：顺时针/逆时针走圆（0为逆时针，1为顺时针）
+#define Mode       5       //【模式选择】：
 				           // 0调试状态（目前设置为静止）
 				           // 1直行（r=0）||圆周运动 前进/后退; 
                            // 2直行（r=0）||多边形运动（此时r为多边形边长）（带自动校正）
                            // 3直线闭环
                            // 4
 #define angle       0      //【Mode1】【Mode2】【Mode3】角度选择（度）
-                           // Mode1：（无实际意义）                    
-                           // Mode2：直线角度（自动校正）              
+                           //【Mode1】：（无实际意义）                    
+                           //【Mode2】：直线角度（自动校正）（车坐标）              
                            // Mode3：直线闭环角度选择                         >——————|                   |——> 直线角度（veh4坐标）
 #define y_l         1000   //                  【Mode3】直线交y轴截距         >——————————【直线方程】———————> y_b
-#define x_l         -1000  //                  【Mode3】直线平行y轴时与x轴交点>——————|                   |——> x_b
+#define x_l        -1000   //                  【Mode3】直线平行y轴时与x轴交点>——————|                   |——> x_b
 #define pi          3.14   // Π=3.14159265358979323846264338327950288
-#define p_a         500    //                  【Mode3】直线闭环校正开始距离（mm）————————————————————————————————|
+#define p_a         1000    //                  【Mode3】直线闭环校正开始距离（mm）————————————————————————————————|
                            //                                                                                     |
 //#define w_veh     300    // 角速度【删除】  150                                                                 |
                            //                                                                                     |
-#define Kp_A        200    //【P】角度闭环————|| 300的Kp_A可能导致角度积分错误                                    |————【相关】
+#define Kp_A        250    //【P】角度闭环————|| 300的Kp_A可能导致角度积分错误                                    |————【相关】
 #define Ki_A        0      //【I】角度闭环————||                                                                  |
 #define Kd_A        0      //【D】角度闭环————||                                                                  |
                            //                                                                                     |
@@ -216,7 +214,7 @@ void ConfigTask(void)        //初始化
 #define Ki_l        0      //【I】直线闭环————||
 #define Kd_l        0      //【D】直线闭环————||
 
-//正方形闭环中：200 500 0.03 （距离Kp过小导致机器人无法快速回到直线）
+//正方形闭环：1m/s: 200 500 0.03 （距离Kp过小导致机器人无法快速回到直线）
 int v1,v2;         //两轮速度（2左 || 1右）
 int x,y,angl;      //XY坐标（整数） 校正角度（整数）
 
@@ -462,7 +460,7 @@ void Angle_Lock3(int ang)//锁定角度方案3【成功】
 }
 
 int ANG;                 //角度差（测量值angl-预期量ang）
-void Angle_Lock4(int ang)//锁定角度方案4【成功】——————最终采纳方案3
+void Angle_Lock4(int ang)//锁定角度方案4【成功】——————最终采纳方案4
 {
 //作差
 if(ang<-180){ang=360+ang;}
@@ -518,7 +516,7 @@ void Move_Mode2 (int d1,int a1)//多边形——————【失败】
 */
 float k;
 float d;
-
+/*
 void Line_Lock2(int ang_l, float y_b, float x_b)
 {
 if(ang_l==0)
@@ -569,6 +567,7 @@ if(ang_l!=0&&ang_l!=180&&ang_l!=-180)
 	}
 }
 }
+*/
 /*
 void Line_Lock3(int ang_l, float y_b, float x_b)
 {
@@ -620,6 +619,35 @@ if(ang_l<0)
 	if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l-Kp_l*d);}
 }
 }
+
+/*
+float Kp_line;
+void Line_Lock5(int ang_l, float y_b, float x_b)
+{
+if(ang_l==0)                {d=x-x_b;}
+if(ang_l==180||ang_l==-180) {d=x_b-x;}
+if(ang_l!=0&&ang_l!=180&&ang_l!=-180)  
+{
+	if(ang_l>=-180&&ang_l<=0){k=tan(pi*(ang_l+90)/180);}
+	if(ang_l>0){k=tan(pi*(ang_l-90)/180);}
+//	if(ang_l<-90){k=tan(pi*(ang_l+270)/180);}
+	d=(y-k*x-y_b)/(sqrt(1+k*k));
+}
+Kp_line=((1/5000000)*d*d-(1/5000)*d+0.09);
+if(ang_l>=0)
+{
+	if(d>p_a){Angle_Lock4(ang_l+90);}
+	if(d<-p_a){Angle_Lock4(ang_l-90);}
+	if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l+Kp_line*d);}
+}
+if(ang_l<0)
+{
+	if(d>p_a){Angle_Lock4(ang_l-90);}
+	if(d<-p_a){Angle_Lock4(ang_l+90);}
+	if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l-Kp_line*d);}
+}
+}
+*/
 //====================================================================================
 //                                正方形闭环（方案）
 //====================================================================================
@@ -669,8 +697,133 @@ if(Cho==3&&y<=d_M_b-r_b+p_a){Cho=0;Line_Lock4(-90,d_M_b-r_b,0);}
 void Square_Lock3(int d_M_b , int r_b)//回到最优路线
 {}
 
+//====================================================================================
+//                                正圆闭环（方案）
+//====================================================================================
+float angle_C;   //机器人最终行进角度
+float angle_Cl;	 //机器人与圆心连线角度
+float dangle_C;  //机器人（切线）偏差角度
+float dangle_Cd; //机器人偏差距离校正
+float d_C;       //机器人到圆心距离
+//#define v          1       //【Mode5】车身速度（m/s）
+//#define r          1       //【Mode5】：定圆半径
+//#define x_C        1000    //【Mode5】：圆心坐标x
+//#define y_C        2000    //【Mode5】：圆心坐标y
+	
+	
+void Circle_Lock1(void)//【角度闭环】沿切线方向走(过点做切线)
+{
+d_C=sqrt((x_C-x)*(x_C-x)+(y_C-y)*(y_C-y));
+
+	if(x_C!=x)
+	{angle_Cl=180*(atan((y_C-Y)/(x_C-X)))/pi;}
+	if(x_C==x)
+	{
+	if(y_C>y){angle_Cl=90;}
+	if(y_C<y){angle_Cl=-90;}
+	}
+	if(y_C-y>0&&x_C-x<0){angle_Cl=angle_Cl+180;}
+	if(y_C-y<0&&x_C-x<0){angle_Cl=angle_Cl-180;}
+
+if(direction==0)//逆时针
+{
+	if(d_C>1000*r)
+	{
+		dangle_C=180*(asin(1000*r/d_C))/pi;
+		if(dangle_C<0){dangle_C=-dangle_C;}
+		
+		if(d_C-1000*r<=p_a){dangle_Cd=(d_C-1000*r)*dangle_C/p_a;}
+		if(d_C-1000*r>p_a){dangle_Cd=dangle_C;}
+		
+		angle_C=angle_Cl+dangle_Cd-dangle_C-90;
+		
+		Angle_Lock4(angle_C);
+	}
+	if(d_C==1000*r)
+	{Angle_Lock4(angle_Cl-180);}
+	if(d_C<1000*r)
+	{
+	dangle_Cd=90*(1000*r-d_C)/1000*r;	
+	angle_C=angle_Cl-dangle_Cd-180;
+	Angle_Lock4(angle_C);
+	}
+}
+if(direction==1)//顺时针
+{}
+}
 
 
+/*
+void Circle_Lock2(void)//【角度闭环】距离决定角偏差量（大于r为锐角、小于r为钝角）
+{}
+*/
+
+void Circle_Lock3(void)//【角度闭环】（过圆心交圆一点做切线）
+{
+d_C=sqrt((x_C-x)*(x_C-x)+(y_C-y)*(y_C-y));
+angle_Cl=180*(atan((y_C-Y)/(x_C-X)))/pi;
+if(direction==0)
+{
+	USART_OUT(UART4,(uint8_t*)"%d  ",(int)(X));
+
+	USART_OUT(UART4,(uint8_t*)"%d  ",(int)(y_C-Y));
+	USART_OUT(UART4,(uint8_t*)"%d  ",(int)(x_C-X));
+	USART_OUT(UART4,(uint8_t*)"%d  ",(int)(x_C-X));
+
+	USART_OUT(UART4,(uint8_t*)"%d  ",(int)angle_Cl);
+		
+	if(x_C-x<=0){angle_Cl=angle_Cl+90;}
+	if(x_C>x) {angle_Cl=angle_Cl-90;}
+
+	if(angle_Cl>180){angle_Cl-=360;}
+	if(angle_Cl<-180){angle_Cl+=360;}
+
+	d_C=d_C-r*1000;
+	if(d_C>0)
+	{angle_C=angle_Cl-90/(1+d_C/400);}
+	if(d_C<0)
+	{angle_C=angle_Cl-180+90/(1-d_C/400);}
+
+	if(angle_C>180){angle_C-=360;}
+	if(angle_C<-180){angle_C+=360;}
+	Angle_Lock4(angle_C);
+}
+if(direction==1)
+{
+	if(x_C-x<=0){angle_Cl=angle_Cl-90;}
+	if(x_C>x) {angle_Cl=angle_Cl+90;}
+
+	if(angle_Cl>180){angle_Cl-=360;}
+	if(angle_Cl<-180){angle_Cl+=360;}
+
+	d_C=d_C-r*1000;
+	if(d_C>0)
+	{angle_C=angle_Cl+90/(1+d_C/400)-180;}
+	if(d_C<0)
+	{angle_C=angle_Cl-90/(1-d_C/400);}
+		
+	if(angle_C>180){angle_C-=360;}
+	if(angle_C<-180){angle_C+=360;}
+	Angle_Lock4(angle_C);
+}
+}
+/*
+void Circle_Lock4(void)//【改变基础分频】基础圆++变轨角（距离决定）
+{
+d_C=sqrt((x_C-x)*(x_C-x)+(y_C-y)*(y_C-y));
+if(d_C>r+1000)
+{}
+if(d_C<=r+1000)
+{
+	if(d_C>=r&&d_C<r+1000)
+	{}
+	if(d_C<r)
+	{}
+}
+}
+void Circle_Lock5(void)//【圆闭环】
+{}
+*/
 //===================================================================================================================================================
 //===================================================================================================================================================
  
@@ -678,11 +831,18 @@ void Square_Lock3(int d_M_b , int r_b)//回到最优路线
 
 //===================================================================================================================================================
 //===================================================================================================================================================
-int x1=0,y1=0; //mode2正方形边初始坐标记录
-float Angle1=0;
-float d_Angle;
-int mo=1;      //mode2正方形边初始坐标记录
-int flo;       //输出检测
+int   x1=0,y1=0;    //mode2正方形边初始坐标记录
+int   mo=1;         //mode2正方形边初始坐标记录
+	
+float Angle_p10=0;  //10ms前角度值
+float Angle_p20=0;  //20ms前角度值
+float d_Angle;      //角度微分（10ms）
+
+float l_p10;
+float l_p20;
+float d_l;
+
+int   flo;          //【反馈】输出检测
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
@@ -692,33 +852,33 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		Teh_Choose();//坐标反转函数（一定要放在while开始，OSSemPend后一行）	
 		
 		delay_D();
-		while(j1)
+		while(j1)//记录10ms前、20ms前角度值
 		{
+		Angle_p20=Angle_p10;	
+		Angle_p10=Angl;
 		j1=0;t1=0;
-		d_Angle=Angl-Angle1;
-		Angle1=Angl;
 		}
 		
-		
-		Teh_Choose();
+
 /*		
 //		x=(int)X;
 //		y=(int)Y;
 //		angl=(int)Angl;
 */		
-		delay1();
-		if(j==1)
-		{
-			delay1();
+//		delay1();
+//		if(j==1)
+//		{
+//			delay1();
 			USART_OUT(UART4,(uint8_t*)"%s%s","X",":");
 			USART_OUT(UART4,(uint8_t*)"%d  ",x);
 			USART_OUT(UART4,(uint8_t*)"%s%s","Y",":");
 			USART_OUT(UART4,(uint8_t*)"%d  ",y);
 			USART_OUT(UART4,(uint8_t*)"%s%s","A",":");
-			USART_OUT(UART4,(uint8_t*)"%d\r\n",angl);
-		}
+			USART_OUT(UART4,(uint8_t*)"%d  ",angl);
+//		}
 		
 		if(Mode==0)//测试状态
 	    {
@@ -846,16 +1006,48 @@ void WalkTask(void)
 			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
 			flo=Kp_l*100;
 			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
-			flo=(int)(90*d/p_a);
+			flo=(int)(Kp_l*d);
 			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
 			flo=(int)d;
 			USART_OUT(UART4,(uint8_t*)"%d  ",flo);	
-			flo=(int)k;
-			USART_OUT(UART4,(uint8_t*)"%d  ",flo);		
 			t=0;j=0;
 			}
 		}
-		OSSemPend(PeriodSem, 0, &os_err);
+		
+	   
+
+
+
+
+
+		if(Mode==5)
+		{
+		float exf;
+		if(Veh==1)
+		{
+		exf=Y;
+		Y=-X;
+		X=exf;
+		}	
+		
+		v1=(int)10865*v;
+		Circle_Lock1();
+		
+//		while(j)//反馈数据
+//		{	
+        flo=(int)d_C;
+		USART_OUT(UART4,(uint8_t*)"%d  ",flo);
+		
+		flo=(int)angle_Cl;
+		USART_OUT(UART4,(uint8_t*)"%d  ",flo);			
+		flo=(int)angle_C;
+		USART_OUT(UART4,(uint8_t*)"%d\r\n",flo);	
+		
+//		j=0;t=0;
+//		}
+		}
+//		OSSemPend(PeriodSem, 0, &os_err);
 //		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
 	}
-}
+
+}	
