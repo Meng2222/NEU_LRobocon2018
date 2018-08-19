@@ -19,21 +19,19 @@ int Car=1;
 int Angle=0;     //蓝牙发数的整型转换
 int X=0;         //蓝牙发数的整型转换
 int Y=0;
-int max=5000;//最大偏差
+int max=8000;//最大偏差
 //调车参数///////////////
-float rate=0.008;//  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04
+float Ierr=0;
+float I_value=0;
+float KI=-0.12;
+float rate=0.09;//  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04,           0.15
 float duty=800;   //提前量：duty=650(1m/s)，   1.5m/s duty为900，
-float KP=150; //Kp给300(1m/s)，，，kp给450（1.5m/s）
+float KP=280; //Kp给300(1m/s)，，，kp给450（1.5m/s）
 float V0=0.5;//车的基础速度(m/s)
-float buff=1000;//(最大偏离区域)
+float buff=500;//(最大偏离区域)
 //////////////////////////////////////////////////////
 
-float meters(float V1)//
-{
-	float Va;
-	Va=4096*V1/(PAI*0.12);
-	return Va;
-}
+
 //蓝牙发数的整型转换
 static int isOKFlag=0;
 float out_angle=0;//距离环换算的角度
@@ -67,9 +65,16 @@ void  go_round(float V,float R,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx);
 void straight(float setValue,float feedbackValue);
 float err(float distance,float ANGLE);//距离转化角度函数
 float a_gen(float a,float b,int n);//角度生成函数（输入直线参数，给出角度）
-void run_to(float BETA);//跑向特定方向BETA
+void run_to(float BETA,float Vm);//跑向特定方向BETA
 int line(float aa, float bb, float cc, float nn);//车在干扰下跑向任意直线·，注：aa<0,当aa=0时，bb=0；nn=1控制向X轴上方走，n=-1向x轴下方，n=-2向x轴正向走，n=2向x轴负向走
 void loop(float corex,float corey,float Radium,float V_loop,int SN);//顺时针转
+float meters(float V1)//米每秒转化成脉冲每秒
+{
+	float Va;
+	Va=4096*V1/(PAI*0.12);
+	return Va;
+}
+
   	   typedef struct{
 	float x;
 	float y;
@@ -599,7 +604,7 @@ void WalkTask(void)
   if(car==44)
   {
 	  
-	  loop(0,1000,1000,5430,1);//顺时针转为1
+	  loop(500,500,1000,1.0,1);//逆时针转为1,顺时针为-1
 	  X=(int)action.x;
 	  Y=(int)action.y;
       Angle=(int)action.angle;	  
@@ -731,7 +736,7 @@ float a_gen(float a,float b,int n)//输出给定直线的方向角
 
 
 
-float err(float distance,float ANGLE)//距离转化角度函数
+float err(float distance,float ANGLE)//距离偏差转化辅助角度函数
 	{
 		float d_angle;//距离转化的角度
 		
@@ -740,7 +745,7 @@ float err(float distance,float ANGLE)//距离转化角度函数
 	
 			if(ANGLE<90&&ANGLE>=0)//在0~90度方向下方
 			{
-				if(distance>=-buff)
+				if(distance>=-buff)//buff为最大偏离区域，超过这个区域就垂直走回
 				d_angle=ANGLE+fabs(distance*rate);//
 				if(distance<-buff)
 				d_angle=ANGLE+90;
@@ -846,12 +851,12 @@ float err(float distance,float ANGLE)//距离转化角度函数
 		}	
 		
 
-void run_to(float BETA)//由当前角度转向BETA
+void run_to(float BETA,float Vm)//由当前角度转向BETA
 {
 	float B_err=0;
 	float B_Uk=0;
-	float R= meters(V0);//记得封装成m/s
-	float L= meters(V0);
+	float R= meters(Vm);//米每秒转化成脉冲每秒
+	float L= meters(Vm);
 	int  RR=0;
 	int  LL=0;
 	B_err=BETA-action.angle;//当前角度与设定值的偏差
@@ -859,13 +864,17 @@ void run_to(float BETA)//由当前角度转向BETA
 		B_err=B_err-360;
 	if(B_err<-180)
 		B_err=B_err+360;
-	B_Uk=B_err*KP;
+	//I设置限幅
+	if(I_value>2500)
+		I_value=2500;
+	if(I_value<-2500)
+		I_value=-2500;
+	B_Uk=B_err*KP+I_value;
 	
 	
-	if(B_Uk>max)
+	if(B_Uk>max)//限幅，不至于反转
 		B_Uk=max;
 	if(B_Uk<-max)
-		
 		B_Uk=-max;
 	R=R-B_Uk;
 	L=-(L+B_Uk);
@@ -873,9 +882,11 @@ void run_to(float BETA)//由当前角度转向BETA
 	VelCrl(CAN2, 02,L);
 	RR=(int)R;
 	LL=(int)L;
+	int i_value=(int)I_value;
 	 USART_OUT(UART4,(uint8_t*)"danger");
 	USART_OUT( UART4, (uint8_t*)"%d ", LL);
 	USART_OUT( UART4, (uint8_t*)"%d ", RR);
+	USART_OUT( UART4, (uint8_t*)"%d ", i_value);
 }
 	
 	
@@ -897,7 +908,7 @@ int line(float aa, float bb, float cc, float nn)
 	   target=a_gen(aa,bb,nn);//得出直线设定角
 	   aSetvalue=err(d,target);//根据距离转化出的角度
 	   //转向这个角度
-       run_to(aSetvalue);
+       run_to(aSetvalue,1);
 	
 	   X=(int)action.x;
 	   Y=(int)action.y;
@@ -930,59 +941,140 @@ int line(float aa, float bb, float cc, float nn)
 
 
 
-void loop(float corex,float corey,float Radium,float V_loop,int SN)//顺时针转S,
+void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转圆
 {
 	float distance_err=0;//距离圆心的偏差
 	float DISTANCE=0;//距离圆心的距离
-	float V_err=0;
-	int RV=0;
-	int LV=0;
-	float KKP=5000;
-	float danger=4000;//超过圆的最大区域
-	float danger_angel=0;//超出最大区域后垂直往回走的角度
+	float tangent=0;
+	float fake_tan=0; int Tangent=0;
+	int Fake_tan=0;
 	DISTANCE=sqrt((action.x-corex)*(action.x-corex)+(action.y-corey)*(action.y-corey));
-	distance_err=DISTANCE-Radium;
-	if(SN==1)
+	distance_err=DISTANCE-Radium;//偏离圆周的距离
+	Ierr=Ierr+distance_err;
+	I_value=Ierr*KI;
+	if(SN==1)//逆时针
 	{
-//		if(fabs(distance_err)>danger)
-//	{
-//		//危险角度方向给定
-//		if(action.y>corey&&action.x!=corex)
-//		{
-//			danger_angel=a_gen(action.x-corex,action.y-corey,-1);
-//		}
-//		if(action.y>corey&&action.x==corex)
-//		{
-//			danger_angel=a_gen(action.x-corex,action.y-corey,-2);//往x轴负方向
-//		}
-//		if(action.y<corey&&action.x!=corex)
-//		{
-//			danger_angel=a_gen(action.x-corex,action.y-corey,1);
-//		}
-//		if(action.y<corey&&action.x==corex)
-//		{
-//			danger_angel=a_gen(action.x-corex,action.y-corey,2);//往x轴正向走
-//		}
-//		run_to(danger_angel);//往危险角度跑
-//		
-////	}
-//	   if(fabs(distance_err)<=danger)
-//	   {
-//		   
-		   V_err=pow((DISTANCE/Radium),2)*KKP;//如果距离大于半径，则偏差
-		   if(V_err>6000)
-			   V_err=6000;
-		   if(V_err<-6000)
-			   V_err=-6000;
-		   RV=(int)V_loop;
-	       LV=(int)-(V_loop+V_err);
-		   VelCrl(CAN2, 01,RV);
-	       VelCrl(CAN2, 02,LV);
-		    USART_OUT(UART4,(uint8_t*)"normal");
-        USART_OUT( UART4, (uint8_t*)"%d ", LV);
-	    USART_OUT( UART4, (uint8_t*)"%d ", RV);
-//	   }
-    }
+		if(action.y>corey)
+		tangent=a_gen(corey-action.y,action.x-corex,1)-90;//输出给定圆的切线方向
+		if(action.y<corey)
+		{
+
+			tangent=a_gen(corey-action.y,action.x-corex,-1)-90;//输出给定直线的方向角
+		    if(tangent<-180)//超过-180之后
+			tangent=360+tangent;
+		}
+		if(action.y==corey&&action.x==(corex+Radium))
+			tangent=90;
+		if(action.y==corey&&action.x==(corex-Radium))
+			tangent=-90;
+		
+		if(action.y>corey)
+		fake_tan=err(distance_err,tangent);//距离转化角度函数
+		if(action.y<corey)
+		fake_tan=err(-distance_err,tangent);//距离转化角度函数
+		//特殊情况给出角度
+		if(action.y==corey&&action.x>corex)
+		{
+			if(distance_err>0)
+			{
+				if(distance_err<buff)//90度右边
+				fake_tan=90-fabs(distance_err*rate);
+				if(distance_err>buff)
+				fake_tan=0;	
+			}
+			if(distance_err<0)
+			{	if(fabs(distance_err)<buff)//90度左边
+				fake_tan=90+fabs(distance_err*rate);
+				if(fabs(distance_err)>buff)//90度左边
+				fake_tan=180;
+			}	
+		}
+		if(action.y==corey&&action.x<corex)
+		{
+			if(distance_err>0)
+			{
+				if(distance_err<buff)//-90度左边
+				fake_tan=-90-fabs(distance_err*rate);
+				if(distance_err>buff)
+				fake_tan=180;
+			}
+			if(distance_err<0)
+			{
+				if(fabs(distance_err)<buff)//90度左边
+				fake_tan=-90+fabs(distance_err*rate);
+				if(fabs(distance_err)>buff)
+				fake_tan=0;
+			}
+		}
+		run_to(fake_tan,V_loop);//由当前角度转向BETA
+		Tangent=(int)(tangent);
+		Fake_tan=(int)fake_tan;
+		 USART_OUT(UART4,(uint8_t*)"%d ",Tangent);
+		 USART_OUT(UART4,(uint8_t*)"%d ",Fake_tan);
+		
+	}
+	if(SN==-1)
+	{
+		if(action.y>corey)
+		{
+			tangent=a_gen(corey-action.y,action.x-corex,1)+90;//输出给定圆的切线方向
+			if(tangent>180)
+			tangent=tangent-360;
+		}
+		if(action.y<corex)
+		{
+			tangent=a_gen(corey-action.y,action.x-corex,-1)+90;//输出给定圆的切线方向
+		}
+		if(action.y==corey&&action.x==(corex+Radium))
+			tangent=-90;
+		if(action.y==corey&&action.x==(corex-Radium))
+			tangent=90;
+		if(action.y>corey)
+		fake_tan=err(distance_err,tangent);//距离转化角度函数
+		if(action.y<corey)
+		fake_tan=err(-distance_err,tangent);//距离转化角度函数
+		
+		if(action.y==corey&&action.x>corex)
+		{
+			if(distance_err>0)
+			{
+				if(distance_err<buff)//90度右边
+				fake_tan=-90+fabs(distance_err*rate);
+				if(distance_err>buff)
+				fake_tan=0;	
+			}
+			if(distance_err<0)
+			{	if(fabs(distance_err)<buff)//90度左边
+				fake_tan=-90-fabs(distance_err*rate);
+				if(fabs(distance_err)>buff)//90度左边
+				fake_tan=180;
+			}	
+		}
+		
+		
+		if(action.y==corey&&action.x<corex)
+		{
+			if(distance_err>0)
+			{
+				if(distance_err<buff)//-90度左边
+				fake_tan=90+fabs(distance_err*rate);
+				if(distance_err>buff)
+				fake_tan=180;
+			}
+			if(distance_err<0)
+			{
+				if(fabs(distance_err)<buff)//90度左边
+				fake_tan=90-fabs(distance_err*rate);
+				if(fabs(distance_err)>buff)
+				fake_tan=0;
+			}
+		}
+		run_to(fake_tan,V_loop);//由当前角度转向BETA
+		Tangent=(int)(tangent);
+		Fake_tan=(int)fake_tan;
+		USART_OUT(UART4,(uint8_t*)"%d ",Tangent);
+		USART_OUT(UART4,(uint8_t*)"%d ",Fake_tan);
+	}
 	
     
 }
