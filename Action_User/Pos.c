@@ -41,12 +41,12 @@ float GetA(void)
 }
 #endif
 
-float Point2Line(line * thisline)
+float Point2Line(linewithdir thisline, point thispoint)
 {
     float x = 0, y = 0;
-    x = GetX();
-    y = GetY();
-    return (__fabs((*thisline).a * x + (*thisline).b * y + (*thisline).c) / pow(((*thisline).a * (*thisline).a + (*thisline).b * (*thisline).b), 0.5));
+    x = thispoint.x;
+    y = thispoint.y;
+    return (__fabs(thisline.a * x + thisline.b * y + thisline.c) / pow((thisline.a * thisline.a + thisline.b * thisline.b), 0.5));
 }
 
 void xy2ra(point * thispoint)
@@ -96,31 +96,37 @@ void ra2xy(point * thispoint)
     (*thispoint).y = (*thispoint).r * cos((*thispoint).a);
 }
 
-void setPointXY(point * thispoint ,float x, float y)
+point setPointXY(float x, float y)
 {
-    (*thispoint).x = x;
-    (*thispoint).y = y;
-    xy2ra(thispoint);
+    point thispoint;
+    thispoint.x = x;
+    thispoint.y = y;
+    xy2ra(&thispoint);
+    return thispoint;
 }
 
-void setPointRA(point * thispoint ,float r, float a)
+point setPointRA(float r, float a)
 {
-    (*thispoint).r = r;
-    (*thispoint).a = a;
-    ra2xy(thispoint);
+    point thispoint;
+    thispoint.r = r;
+    thispoint.a = a;
+    ra2xy(&thispoint);
+    return thispoint;
 }
 
-void GetNowPoint(point * nowpoint)
+point GetNowPoint(void)
 {
-    setPointXY(nowpoint, GetX(), GetY());
+    point nowpoint;
+    nowpoint = setPointXY(GetX(), GetY());
+    return nowpoint;
 }
 
-float LineDir(const line * thisline ,dir thisdir)
+float LineDir(const linewithdir thisline)
 {
     float tempangle = 0;
-    if((*thisline).a == 0)
+    if(thisline.a == 0)
     {
-        if(thisdir == forward)
+        if(thisline.linedir == forward)
         {
             return 90;
         }
@@ -131,8 +137,8 @@ float LineDir(const line * thisline ,dir thisdir)
     }
     else
     {
-        tempangle = (atan((*thisline).b / (*thisline).a) * (180 / 3.14f));
-        if(thisdir == forward)
+        tempangle = (atan(thisline.b / thisline.a) * (180 / 3.14f));
+        if(thisline.linedir == forward)
         {
             return tempangle;
         }
@@ -151,70 +157,70 @@ float LineDir(const line * thisline ,dir thisdir)
     }
 }
 
-reldir RelDir2Line(const line * thisline, dir thisdir)
+reldir RelDir2Line(const linewithdir thisline, const point thispoint)
 {
     float angleOfLine = 0;
     float ExY = 0;
-    angleOfLine = LineDir(thisline, thisdir);
+    angleOfLine = LineDir(thisline);
     if(angleOfLine == 0)
     {
-        if(GetX() > -1 * ((*thisline).c / (*thisline).a))
+        if(thispoint.x > -1 * (thisline.c / thisline.a))
         {
             return right;
         }
-        if(GetX() < -1 * ((*thisline).c / (*thisline).a))
+        if(thispoint.x < -1 * (thisline.c / thisline.a))
         {
             return left;
         }
-        if(GetX() == -1 * ((*thisline).c / (*thisline).a))
+        if(thispoint.x == -1 * (thisline.c / thisline.a))
         {
             return ontheline;
         }
     }
     else if(angleOfLine == 180 || angleOfLine == -180)
     {
-        if(GetX() > -1 * ((*thisline).c / (*thisline).a))
+        if(thispoint.x > -1 * (thisline.c / thisline.a))
         {
             return left;
         }
-        if(GetX() < -1 * ((*thisline).c / (*thisline).a))
+        if(thispoint.x < -1 * (thisline.c / thisline.a))
         {
             return right;
         }
-        if(GetX() == -1 * ((*thisline).c / (*thisline).a))
+        if(thispoint.x == -1 * (thisline.c / thisline.a))
         {
             return ontheline;
         }
     }
     else
     {
-        ExY = (-1 * (((*thisline).a * GetX()) + (*thisline).c) / (*thisline).b);
+        ExY = (-1 * ((thisline.a * thispoint.x) + thisline.c) / thisline.b);
         if(angleOfLine > 0)
         {
-            if(GetY() > ExY)
+            if(thispoint.y > ExY)
             {
                 return right;
             }
-            if(GetY() < ExY)
+            if(thispoint.y < ExY)
             {
                 return left;
             }
-            if(GetY() == ExY)
+            if(thispoint.y == ExY)
             {
                 return ontheline;
             }
         }
         if(angleOfLine < 0)
         {
-            if(GetY() > ExY)
+            if(thispoint.y > ExY)
             {
                 return left;
             }
-            if(GetY() < ExY)
+            if(thispoint.y < ExY)
             {
                 return right;
             }
-            if(GetY() == ExY)
+            if(thispoint.y == ExY)
             {
                 return ontheline;
             }

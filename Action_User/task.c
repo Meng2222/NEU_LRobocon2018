@@ -15,8 +15,10 @@
 #include "environmental.h"
 #include "Pos.h"
 
-#define DT 20
-#define safe 3
+#define DT 500
+#define safe 1
+#define X1 100
+#define X2 200
 /*
 ===============================================================
 						信号量定义
@@ -30,20 +32,20 @@ PIDCtrlStructure PidB;
 
 point nowPoint;
 
-static const line line1 = {0, 1, 0};
-static const line line2 = {1, 0, 0};
-static const line line3 = {0, 1, -2000};
-static const line line4 = {1, 0, -2000};
-static dir linedir = forward;
+static const linewithdir line1 = {0, 1, 0, forward};
+static const linewithdir line2 = {1, 0, 0, forward};
+static const linewithdir line3 = {0, 1, -2000, backward};
+static const linewithdir line4 = {1, 0, -2000, backward};
 
-static const line corss1 = {1000-DT, 1000, (1000*(2000 - DT))};
-static const line corss2 = {1000, DT - 1000, DT * 1000};
+static const linewithdir corss1 = {1000-DT, 1000, -1 * (1000*(2000 - DT)), forward};
+static const linewithdir corss2 = {1000, DT - 1000, -1 * DT * 1000, forward};
 
-static line Target =
+static linewithdir Target =
 {
-    .a = 0,
-    .b = 1,
-    .c = -800,
+    .a = 1,
+    .b = 0,
+    .c = 0,
+    .linedir = forward,
 };
 
 //Target = {1, 0, 0};
@@ -97,15 +99,41 @@ void ConfigTask(void)
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
+float LengthProcessing(float x)
+{
+    if(x <= X1)
+    {
+        return 0;
+    }
+    else if(x >= X2)
+    {
+        return 1;
+    }
+    else
+    {
+        return (atan((x - X1) / (X2 - x)) / 1.57);
+    }
+}
+
+float LengthProcessing2(float x)
+{
+    return (x/X1)/((x/X1)+1);
+}
+
+float LengthProcessing3(float x)
+{
+    return (1 - pow(100, (-1 * x / X1)));
+}
+
 float GetP(void)
 {
-    if(RelDir2Line(&Target, linedir) == right)
+    if(RelDir2Line(Target, nowPoint) == right)
     {
-        return (1 - pow(10, (-1 * Point2Line(&Target) / 50)));
+        return LengthProcessing(Point2Line(Target, nowPoint));
     }
-    else if(RelDir2Line(&Target, linedir) == left)
+    else if(RelDir2Line(Target, nowPoint) == left)
     {
-        return -1 * (1 - pow(10, (-1 * Point2Line(&Target) / 50)));
+        return -1 * LengthProcessing(Point2Line(Target, nowPoint));
     }
     else
     {
@@ -116,19 +144,17 @@ float GetP(void)
 void ChangeRoad(void)
 {
     reldir dir2corss1,dir2corss2;
-    dir2corss1 = RelDir2Line(&corss1, forward);
-    dir2corss2 = RelDir2Line(&corss2, forward);
+    dir2corss1 = RelDir2Line(corss1, nowPoint);
+    dir2corss2 = RelDir2Line(corss2, nowPoint);
     if(dir2corss1 == left)
     {
         if(dir2corss2 == right)
         {
             Target = line1;
-            linedir = forward;
         }
         else if(dir2corss2 == left)
         {
             Target = line2;
-            linedir = forward;
         }
     }
     else if(dir2corss1 == right)
@@ -136,12 +162,10 @@ void ChangeRoad(void)
         if(dir2corss2 == left)
         {
             Target = line3;
-            linedir = backward;
         }
         else if(dir2corss2 == right)
         {
             Target = line4;
-            linedir = backward;
         }
     }
 }
@@ -153,14 +177,14 @@ void WalkTask(void)
     MotorOn(CAN2, 1);
     MotorOn(CAN2, 2);
 	OSSemSet(PeriodSem, 0, &os_err);
-    PidA.KP = 20;
-    PidA.KI = 0.0005;
-    PidA.KD = 15;
+    PidA.KP = 20; //20
+    PidA.KI = 0.01; //0.01
+    PidA.KD = 10; //20
     PidA.GetVar = GetA;
-    PidA.ExOut = LineDir(&Target, linedir);
-    PidB.KP = 20;
-    PidB.KI = 0.00005;
-    PidB.KD = 15;
+    PidA.ExOut = LineDir(Target);
+    PidB.KP = 10; //10
+    PidB.KI = 0.0001; //0.0001
+    PidB.KD = 10; //20
     PidB.GetVar = GetA;
     PidB.ExOut = 0;
     PIDCtrlInit1();
@@ -168,17 +192,15 @@ void WalkTask(void)
     float uout1 = 0, uout2 = 0; 
 //    float anglediff = 0;
 //    reldir reldirNow2Line;
-    USART_OUT(UART4, (uint8_t *)"u1   u2   x   y   a   ea2   ea   jl\r\n");
+    USART_OUT(UART4, (uint8_t *)"u1   u2   x   y   a   ea2   ea   jl   e1   e2\r\n");
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-        GetNowPoint(&nowPoint);
-        uout1 = PIDCtrl1(&PidA);
-        uout2 = PIDCtrl2(&PidB);
+        nowPoint = GetNowPoint();
 //        reldirNow2Line = RelDir2Line(&Target, linedir);
 //        anglediff = __fabs(GetA() - PidB.ExOut);
-        //ChangeRoad();
-        PidA.ExOut = LineDir(&Target, linedir);
+        ChangeRoad();
+        PidA.ExOut = LineDir(Target);
         PidB.ExOut = PidA.ExOut + 90 * GetP();
         if(PidB.ExOut >= 180)
         {
@@ -209,8 +231,10 @@ void WalkTask(void)
 //                USART_OUT(UART4, (uint8_t *)"overspeed!   \r\n");
 //            }
 //        }
-        WheelSpeed(500 + uout2 / safe + uout1 / safe, 1);//right
-        WheelSpeed(500 - uout2 / safe - uout1 / safe, 2);//left
+        uout1 = PIDCtrl1(PidA);
+        uout2 = PIDCtrl2(PidB);
+        WheelSpeed(1000 + uout2 / safe + uout1 / safe, 1);//right
+        WheelSpeed(1000 - uout2 / safe - uout1 / safe, 2);//left
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) uout1);
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) uout2);
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.x);
@@ -218,6 +242,8 @@ void WalkTask(void)
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) GetA());
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidB.ExOut);
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidA.ExOut);
-        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) Point2Line(&Target));
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Point2Line(Target, nowPoint));
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidA.ExOut - GetA());
+        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) PidB.ExOut - GetA());
 	}
 }

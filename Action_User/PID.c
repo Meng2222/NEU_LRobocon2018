@@ -6,65 +6,65 @@
  * @param PIDStructure [用来传入PID控制一些关键变量的结构体]
  */
  
-float PIDCtrl1(PIDCtrlStructure * PIDStructure)
+float PIDCtrl1(const PIDCtrlStructure PIDStructure)
 {
-    err1 = (*PIDStructure).ExOut - (*PIDStructure).GetVar();
+    float UOut = 0;
+    Temp1.err = PIDStructure.ExOut - PIDStructure.GetVar();
     /****************************************************
     这是为了修复小车螺旋升天而加入的代码
     ****************************************************/
-    if(err1 > 180)
+    if(Temp1.err > 180)
     {
-        err1 -= 360;
+        Temp1.err-= 360;
     }
-    else if(err1 < -180)
+    else if(Temp1.err < -180)
     {
-        err1 += 360;
+        Temp1.err += 360;
     }
-    iSum1 += err1;
-    dDiff1 = err1 - lasterr1;
-    lasterr1 = err1;
-    UOut1 = (*PIDStructure).KP * err1;
-    UOut1 += (*PIDStructure).KI * iSum1;
-    UOut1 += (*PIDStructure).KD * dDiff1;
-    return UOut1;
+    Temp1.iSum += Temp1.err;
+    Temp1.dDiff = Temp1.err - Temp1.lasterr;
+    Temp1.lasterr = Temp1.err;
+    UOut = PIDStructure.KP * Temp1.err;
+    UOut += PIDStructure.KI * Temp1.iSum;
+    UOut += PIDStructure.KD * Temp1.dDiff;
+    return UOut;
 }
 
 void PIDCtrlInit1(void)
 {
-    UOut1 = 0;
-    err1 = 0;
-    iSum1 = 0;
-    lasterr1 = 0;
-    dDiff1 = 0;
+    Temp1.err = 0;
+    Temp1.dDiff = 0;
+    Temp1.lasterr = 0;
+    Temp1.iSum = 0;
 }
-float PIDCtrl2(PIDCtrlStructure * PIDStructure)
+float PIDCtrl2(const PIDCtrlStructure PIDStructure)
 {
-    err2 = (*PIDStructure).ExOut - (*PIDStructure).GetVar();
+    float UOut = 0;
+    Temp2.err = PIDStructure.ExOut - PIDStructure.GetVar();
     /****************************************************
     这是为了修复小车螺旋升天而加入的代码
     ****************************************************/
-    if(err2 > 180)
+    if(Temp2.err > 180)
     {
-        err2 -= 360;
+        Temp2.err-= 360;
     }
-    else if(err2 < -180)
+    else if(Temp2.err < -180)
     {
-        err2 += 360;
+        Temp2.err += 360;
     }
-    iSum2 += err2;
-    dDiff2 = err2 - lasterr2;
-    lasterr2 = err2;
-    UOut2 = (*PIDStructure).KP * err2;
-    UOut2 += (*PIDStructure).KI * iSum2;
-    UOut2 += (*PIDStructure).KD * dDiff2;
-    return UOut2;
+    Temp2.iSum += Temp2.err;
+    Temp2.dDiff = Temp2.err - Temp2.lasterr;
+    Temp2.lasterr = Temp2.err;
+    UOut = PIDStructure.KP * Temp2.err;
+    UOut += PIDStructure.KI * Temp2.iSum;
+    UOut += PIDStructure.KD * Temp2.dDiff;
+    return UOut;
 }
 
 void PIDCtrlInit2(void)
 {
-    UOut2 = 0;
-    err2 = 0;
-    iSum2 = 0;
-    lasterr2 = 0;
-    dDiff2 = 0;
+    Temp2.err = 0;
+    Temp2.dDiff = 0;
+    Temp2.lasterr = 0;
+    Temp2.iSum = 0;
 }
