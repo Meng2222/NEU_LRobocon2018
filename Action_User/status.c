@@ -8,6 +8,7 @@
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_gpio.h"
 #include "math.h"
+#include "moveBase.h"
 
 struct position
 {
@@ -47,11 +48,11 @@ void straight(float v)
 * @brief  转圈
 * @param  v；设定速度
 * @param  r；设定半径
-* @param  direction：左右转向（Left左转，Right右转）
+* @param  direction：顺逆转向（Anti_clockwise逆,Clockwise顺）
 * @author ACTION
 * @note 单位 v:m/s，r：m 半径为车轴中心到圆心距离，r>=l/2,l=0.434m
 */
-void circular(float v,float r,char direction)
+void circular(float v,float r,int direction)
 {
 	float v_big=0,v_small=0,pulse_big=0,pulse_small=0;
 	v_big=v+0.434*v/(2*r);
@@ -60,10 +61,10 @@ void circular(float v,float r,char direction)
 	pulse_small=exchange(v_small);
 	switch(direction)
 	{
-		case Left:	VelCrl(CAN2,0x01,pulse_big);
+		case Anti_clockwise:	VelCrl(CAN2,0x01,pulse_big);
 								VelCrl(CAN2,0x02,-pulse_small);
 								break;
-		case Right: VelCrl(CAN2,0x02,pulse_big);
+		case Clockwise: VelCrl(CAN2,0x02,pulse_big);
 								VelCrl(CAN2,0x01,-pulse_small);
 								break;
 	}
@@ -113,13 +114,8 @@ int ChangeFlag=0;
 int AngleChange(void)
 {
 	int x=0,y=0;
-	#if Car==4
 	x=GetXpos();
 	y=GetYpos();
-	#elif Car==1
-	y=-GetXpos();
-	x=GetYpos();
-	#endif
 	if(y>=1300&&ChangeFlag==0)
 		ChangeFlag=1;
 	else if(x>=1300&&ChangeFlag==1)
@@ -128,7 +124,7 @@ int AngleChange(void)
 		ChangeFlag=3;
 	else if(x<=700&&ChangeFlag==3)
 		ChangeFlag=0;
-	USART_OUT(UART4, "%d	",ChangeFlag);
+//	USART_OUT(UART4, "%d	",ChangeFlag);
 	return ChangeFlag;
 }
 
@@ -172,24 +168,18 @@ float DirectionPID( float distance )
 * @param  direction:直线方向
 * @param  v:设定速度
 * @author ACTION
-* @note direction:1正方向,2负方向			v:单位m/s
+* @note direction:1正方向,-1负方向			v:单位m/s
 */
 	int v1=0,v2=0;
 float AngPID=0,DirPID=0;
-void line( float a ,float b ,float c , char direction , float v )
+void line( float a ,float b ,float c , int direction , float v )
 {
-	char ca='0';
 	float SetAngle=0,distance=0,k=0,Ang=0,diff=0;
 	float x=0,y=0;
-	#if Car==4
 	Ang=GetAngle();
 	x=GetXpos();
 	y=GetYpos();
-	#elif Car==1
-	Ang=-GetAngle();
-	y=-GetXpos();
-	x=GetYpos();
-	#endif
+
 	if(a!=0&&b!=0)
 	{
 		k=a/b;
@@ -206,7 +196,7 @@ void line( float a ,float b ,float c , char direction , float v )
 		{
 			distance=-distance;
 		}
-		if(direction==2)
+		if(direction==-1)
 		{
 			distance=-distance;
 			SetAngle=-SetAngle;
@@ -216,7 +206,7 @@ void line( float a ,float b ,float c , char direction , float v )
 	{
 		distance=-c/b-y;
 		SetAngle=-90;
-				if(direction==2)
+				if(direction==-1)
 		{
 			distance=-distance;
 			SetAngle=-SetAngle;
@@ -226,7 +216,7 @@ void line( float a ,float b ,float c , char direction , float v )
 	{
 		distance=x+c/a;
 		SetAngle=0;
-				if(direction==2)
+				if(direction==-1)
 		{
 			distance=-distance;
 			SetAngle=180;
@@ -237,7 +227,7 @@ void line( float a ,float b ,float c , char direction , float v )
 		DirPID=70;
 	else if(DirPID<-70)
 		DirPID=-70;
-	USART_OUT(UART4, "%d	",(int)(SetAngle));
+//	USART_OUT(UART4, "%d	",(int)(SetAngle));
 	SetAngle+=DirPID;
 	AngPID=AnglePID(Ang,SetAngle);
 	diff=AngPID;
@@ -245,48 +235,164 @@ void line( float a ,float b ,float c , char direction , float v )
 	v2=(int)(-exchange(v)+diff);
 	VelCrl(CAN2,0x01,v1);
 	VelCrl(CAN2,0x02,v2);
-	USART_OUT(UART4, "x,y,SA,Aerr,Derr,Apid,Dpid:		");
-	USART_OUT(UART4, "%d	%d	",(int)(x),(int)(y));
-	USART_OUT(UART4, "%d	%d	%d	",(int)(SetAngle),(int)(SetAngle-Ang),(int)(distance));
-	USART_OUT(UART4, "%d	%d\r\n",(int)(AngPID),(int)(DirPID));
+//	USART_OUT(UART4, "x,y,SA,Aerr,Derr,Apid,Dpid:		");
+//	USART_OUT(UART4, "%d	%d	",(int)(x),(int)(y));
+//	USART_OUT(UART4, "%d	%d	%d	",(int)(SetAngle),(int)(SetAngle-Ang),(int)(distance));
+//	USART_OUT(UART4, "%d	%d\r\n",(int)(AngPID),(int)(DirPID));
 	//	USART_OUT(UART4, "01:%d	02:%d	",v1,v2);
 }
 
-//void square(int SetX1,int SetY1,int SetX2,int SetY2,char direction,float v)
-//{
-//	struct vertex
-//	{
-//		int x;
-//		int y;
-//	}spot1,spot2,spot3,spot4;
-//	int x=0,y=0;
-//	int i=0,n=0;
-//	#if Car==4
-//	x=GetXpos();
-//	y=GetYpos();
-//	#elif Car==1
-//	y=-GetXpos();
-//	x=GetYpos();
-//	#endif
-//	float a[4]={0},m=0;
-//	a[0]=sqrt(pow((x-SetX1),2)+pow((y-SetY1),2));
-//	a[1]=sqrt(pow((x-SetX1),2)+pow((y-SetY2),2));
-//	a[2]=sqrt(pow((x-SetX2),2)+pow((y-SetY1),2));
-//	a[3]=sqrt(pow((x-SetX2),2)+pow((y-SetY2),2));
-//	m=a[0];
-//	for(i=1;i<4;i++)
-//	{
-//		if(a[i]<m)
-//		{
-//			n=i;
-//			m=a[i];
-//		}
-//	}
-//	if(direction==1)
-//	{
-//		
-//}
 
+/**
+* @brief  求画设定圆时当前坐标设定角
+* @param  x,y 设定圆的圆心
+* @param  DIRECTION: 顺逆时针
+* @author ACTION
+* @note direction:1顺,-1逆		
+*/
+float GetRoundSetAngle(float X,float Y,int DIRECTION)
+{
+	float x=0,y=0,SurroundSetAngle=0;
+	x=GetXpos();
+	y=GetYpos();
+		if(Y-y==0)
+	{
+		if(X>=x)
+		{
+			if(DIRECTION==1)
+				SurroundSetAngle=0;
+			else
+				SurroundSetAngle=180;
+		}
+		else
+		{
+			if(DIRECTION==-1)
+				SurroundSetAngle=0;
+			else
+				SurroundSetAngle=180;
+		}
+	}
+	else if(X-x==0)
+	{
+		if(Y>=y)
+			SurroundSetAngle=90*DIRECTION;
+		else
+			SurroundSetAngle=-90*DIRECTION;
+	}
+	else if(X>x&&Y>y)
+	{
+		if(DIRECTION==1)
+			SurroundSetAngle=atan((Y-y)/(X-x))*180/pi;
+		else
+			SurroundSetAngle=atan((Y-y)/(X-x))*180/pi-180;
+	}
+	else if(X<x&&Y>y)
+	{
+		if(DIRECTION==1)
+			SurroundSetAngle=90+atan((x-X)/(Y-y))*180/pi;
+		else
+			SurroundSetAngle=-90+atan((x-X)/(Y-y))*180/pi;
+	}
+	else if(X<x&&Y<y)
+	{
+		if(DIRECTION==1)
+			SurroundSetAngle=-90-atan((x-X)/(y-Y))*180/pi;
+		else
+			SurroundSetAngle=-90-atan((x-X)/(y-Y))*180/pi+180;
+	}
+	else if(X>x&&Y<y)
+	{
+		if(DIRECTION==1)
+			SurroundSetAngle=-atan((y-Y)/(X-x))*180/pi;
+		else
+			SurroundSetAngle=-atan((y-Y)/(X-x))*180/pi+180;
+	}
+	return SurroundSetAngle;
+}
+
+/**
+* @brief  画设定圆
+* @param  X,Y 设定圆坐标
+* @param  R: 设定半径
+* @param  V:设定速度
+* @param  DIRECTION :顺逆时针
+* @author ACTION
+* @note direction:1顺,-1逆			V:单位m/s
+*/
+#define InternalDeviation 0
+void surround(float X,float Y,float R,float V,int DIRECTION)
+{
+	float Ang=0,x=0,y=0,distance=0,SurroundAngle=0,SurroundK=0,d=0;
+	float Diff=0,SurroundSetAngle=0,DirPID=0;
+	Ang=GetAngle();
+	x=GetXpos();
+	y=GetYpos();
+	if(X-x<=0.01&X-x>=0)
+		x-=0.001;
+	if(X-x>=-0.01&X-x<=0)
+		x+=0.001;
+	d=sqrt(pow(X-x,2)+pow(Y-y,2));
+	distance=d-R;
+	if(distance<=200&&distance>=-200)
+	{
+		DirPID=DirectionPID(distance);
+		if(DirPID>70)
+			DirPID=70;
+		else if(DirPID<-70)
+			DirPID=-70;
+		if(DIRECTION==1)
+			SurroundSetAngle=GetRoundSetAngle(X,Y,DIRECTION)-DirPID;
+		else
+			SurroundSetAngle=GetRoundSetAngle(X,Y,DIRECTION)+DirPID;
+	
+		Diff=AnglePID(Ang,SurroundSetAngle);
+		if(DIRECTION==1)
+		{
+			VelCrl(CAN2,0x01,exchange(V)+Diff);
+			VelCrl(CAN2,0x02,-exchange(V)+Diff);
+		}
+		else
+		{
+			VelCrl(CAN2,0x01,exchange(V)-Diff);
+			VelCrl(CAN2,0x02,-exchange(V)-Diff);
+		}
+	}
+	else if(distance>200)
+	{
+			SurroundAngle=atan((Y-y)/(X-x))*180/pi+DIRECTION*(asin(R/d)*180/pi-InternalDeviation);
+			SurroundK=tan(SurroundAngle*pi/180);
+			if(X-x>=0)
+				line(-SurroundK,1,SurroundK*x-y,1,V);
+			else
+				line(-SurroundK,1,SurroundK*x-y,-1,V);
+//		else
+//		{
+//			SurroundAngle=atan((Y-y)/(X-x))*180/pi+DIRECTION*(asin(R/d)*180/pi-InternalDeviation);
+//			SurroundK=tan(SurroundAngle*pi/180);
+//			if(X-x>=0)
+//				line(-SurroundK,1,SurroundK*x-y,-1,V);
+//			else
+//				line(-SurroundK,1,SurroundK*x-y,1,V);
+//		}
+	}
+	else
+	{
+		if(y+MOVEBASE_LENGTH>=Y)
+			
+			line(1,0,-x,DIRECTION,V);
+		else if(x>=X)
+			line(0,1,-y-MOVEBASE_LENGTH,1,V);
+		else
+			line(0,1,-y-MOVEBASE_LENGTH,-1,V);
+	}
+	USART_OUT(UART4, "%d	%d	",(int)(x),(int)(y));
+	USART_OUT(UART4, "%d	%d	%d	%d\r\n",(int)(SurroundSetAngle),(int)(SurroundAngle),(int)(Ang),(int)(distance));
+}
+
+
+
+
+//冒泡排序
 void BubbleSort(float *a,int number)
 {
 	int i=0,j=0,t=0;
@@ -321,17 +427,31 @@ void SetYpos(float val)
 
 float GetXpos(void)
 {
+	#if Car==4
 	return pos_t.x;
+	#elif Car==1
+	return pos_t.y;
+	#endif
+	
 }
 
 float GetYpos(void)
 {
+	#if Car==4
 	return pos_t.y;
+	#elif Car==1
+	return -pos_t.x;
+	#endif
+	
 }
 
 float GetAngle(void)
 {
+	#if Car==4
 	return pos_t.angle;
+	#elif Car==1
+	return -pos_t.angle;
+	#endif
 }
 
 

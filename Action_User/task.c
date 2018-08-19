@@ -126,17 +126,17 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		switch(AngleChange())
-		{
-			case 0:	line(1,0,-30,1,V);break;
-			case 1:	line(0,1,-1970,1,V);break;
-			case 2:	line(1,0,-1970,2,V);break;
-			case 3:	line(0,1,-30,2,V);break;
-			
-		}
-//		line(0,1,-1800,1,V);
-		angle=GetAngle();
-
+//		switch(AngleChange())
+//		{
+//			case 0:	line(1,0,-30,1,V);break;
+//			case 1:	line(0,1,-1970,1,V);break;
+//			case 2:	line(1,0,-1970,2,V);break;
+//			case 3:	line(0,1,-30,2,V);break;
+//			
+//		}
+////		line(0,1,-1800,1,V);
+//		angle=GetAngle();
+		surround(2000,1000,500,0.5,1);
 	}
 }
 

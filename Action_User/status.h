@@ -4,12 +4,14 @@
 #define pi 3.1415
 
 void straight(float v);
-void circular(float v,float r,char direction);
+void circular(float v,float r,int direction);
 int exchange(float v);
 float AnglePID(float Angle,float SetAngle);
 int AngleChange(void);
 float DirectionPID( float distance );
-void line( float a ,float b ,float c , char direction , float v );
+void line( float a ,float b ,float c , int direction , float v );
+float GetRoundSetAngle(float X,float Y,int DIRECTION);
+void surround(float X,float Y,float R,float V,int DIRECTION);
 
 void BubbleSort(float *a,int number);
 void SetAngle(float val);
@@ -32,6 +34,6 @@ struct PID
 int isSendOK(void);
 void SetOKFlagZero(void);
 void driveGyro(void);
-#define Left '1'
-#define Right '2'
+#define Clockwise 1
+#define Anti_clockwise 2
 #endif
