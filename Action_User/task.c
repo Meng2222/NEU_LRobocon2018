@@ -28,7 +28,7 @@
 //void vel_radious(float vel,float radious)
 //{
 //	ratio1=(radious+WHEEL_TREAD/2)/radious;
-//	ratio2=(radious/-WHEEL_TREAD/2)/radious;
+//	ratio2=(radious-WHEEL_TREAD/2)/radious;
 //	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
 //	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
 //}
@@ -126,7 +126,7 @@ struct PID{
 float x1=0,y1=0,x2=0,y2=0;    //两点求一条直线
 float angle_PID(float setangle)
 {
-	agl.kp=12;
+	agl.kp=17;
 	agl.ki=0;
 	agl.set=setangle;
 	agl.actual=Angle;
@@ -191,7 +191,7 @@ float Get_dS(void)
 } 
 float ds_PID(void)
 {
-	ds.kp=0.9;
+	ds.kp=1.1;
 	ds.ki=0;
 	ds.set=0;
 	ds.actual=Get_dS();
@@ -204,19 +204,19 @@ float ds_PID(void)
 uint8_t line;
 void Get_line(void)
 {
-	if(posX<400&&posY<=1600)
+	if(posX<650&&posY<=1300)
 	{
 		line=1;
 	}
-	if(posX<=1600&&posY>1600)
+	if(posX<=1350&&posY>1300)
 	{
 		line=2;
 	}
-	if(posX>1600&&posY>400)
+	if(posX>1350&&posY>700)
 	{
 		line=3;
 	}
-	if(posX>=400&&posY<400)
+	if(posX>=650&&posY<700)
 	{
 		line=4;
 	}
@@ -228,6 +228,7 @@ void walk_line(float vel)
 	DeltV1=angle_PID(set_angle);
 	DeltV2=ds_PID();
 	DeltV=DeltV1+DeltV2;
+		
 	V1=vel+DeltV;
 	V2=-vel+DeltV;
 	VelCrl(CAN2,1,V1*Pulse2mm );
@@ -256,10 +257,10 @@ void WalkTask(void)
 		a3=(int)DeltV;
 		v1=(int)V1;
 		v2=(int)V2;
-		USART_OUT(UART4,(uint8_t*)"%d %d %d %d %d\r\n",line,X,Y,angle,m);
-		USART_OUT(UART4,(uint8_t*)"Setangle=%d angle_erro=%d DV1=%d \r\n",m,angle_erro,a1);
-		USART_OUT(UART4,(uint8_t*)"ds=%d DV2=%d\r\n",n,a2);
-		USART_OUT(UART4,(uint8_t*)"DV=%d V1=%d V2=%d\r\n\r\n",a3,v1,v2);
+		USART_OUT(UART4,(uint8_t*)"%d %d %d %d\r\n",line,X,Y,angle);
+//		USART_OUT(UART4,(uint8_t*)"Setangle=%d angle_erro=%d DV1=%d \r\n",m,angle_erro,a1);
+//		USART_OUT(UART4,(uint8_t*)"ds=%d DV2=%d\r\n",n,a2);
+//		USART_OUT(UART4,(uint8_t*)"DV=%d V1=%d V2=%d\r\n\r\n",a3,v1,v2);
 		Get_line();
 		switch (line)
 		{
@@ -288,7 +289,7 @@ void WalkTask(void)
 				y2=0;
 				break;
 		}
-		walk_line(700.0);  //按照速度行驶
+		walk_line(1000.0);  //按照速度行驶
 	}
 }
 
