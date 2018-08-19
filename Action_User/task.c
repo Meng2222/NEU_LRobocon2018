@@ -15,12 +15,16 @@
 #define Pi 3.1416                                 //π值                    3.1416
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
 #define BaseVelocity (1.0)                        //基础速度               1.0m/s
-#define Side_Length (2000)                        //方形边长               2m
-#define Advance_Length (618.0)                    //切换直线提前量         618.0mm
+
+#define Round_Center_x (-1.5)                     //圆心横轴坐标x
+#define Round_Center_y (1.5)                      //圆心纵轴坐标y
+#define Round_Radius (1.0)                        //圆半径
+#define Round_Compensation_Value 0.1              //圆半径补偿值 实际半径 = 圆半径 - 圆半径补偿值
+
 #define Distance_coefficient (0.8)                //距离敏感度             数值越大 靠近直线越快 转向直线方向越慢，数值越小 靠近直线越慢 转向直线方向越快
-#define PID_Line_Angle_Kp (0.025)                 //直线闭环PID Kp参数     0.025
-#define PID_Line_Angle_Ki (0.0)                   //直线闭环PID Ki参数     0.0
-#define PID_Line_Angle_Kd (0.001)                 //直线闭环PID Kd参数     0.001
+#define PID_Round_Angle_Kp (0.03)                 //画圆闭环PID Kp参数     0.03
+#define PID_Round_Angle_Ki (0.0)                  //画圆闭环PID Ki参数     0.0
+#define PID_Round_Angle_Kd (0.001)                //画圆闭环PID Kd参数     0.001
 
 
 /*
@@ -64,13 +68,7 @@ void driveGyro(void)
 }
 #endif
 
-//目标坐标信息结构体，x为横坐标，y为纵坐标，angle为与0°的相对角度
-typedef struct{ 
-	float x;
-	float y;
-	float angle;
-}Target;
-Target tar;
+
 /**
 * @brief  PID控制参数数据结构体
 * @author 陈昕炜
@@ -93,7 +91,7 @@ typedef struct{
     float out_max;       //输出上限
     float out_min;       //输出下限
 }PID_Value;
-PID_Value PID_Line_Angle, PID_Turn_Angle;
+PID_Value PID_Round_Angle;
 
 /**
 * @brief  PID控制器
@@ -103,7 +101,7 @@ PID_Value PID_Line_Angle, PID_Turn_Angle;
 */
 float PID_operation(PID_Value *p)
 {
-//	p->error = p->setValue - p->feedbackValue;
+//  p->error = p->setValue - p->feedbackValue;
 	p->error_sum = p->error_sum + p->error;
 	p->error_def = p->error - p->error_1;
 	p->error_1 = p->error;
@@ -238,10 +236,11 @@ void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-	int cntSendTime = 0, cntTurn = -1, switchNextModeFlag = 1, Line_Mode;
-	float adjustVelocityLineAngle;
+	int cntSendTime = 0, Round_Mode = 0;
+	float adjustVelocityRoundAngle;
 	float Line_A, Line_B, Line_C, x_meter, y_meter;
 	float Line_Angle, Line_Distance, Point_Location, Line_K, Line_b;
+
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
@@ -258,63 +257,9 @@ void WalkTask(void)
 		    pos.angle = posTmp.angle;
         #endif
 		
-		
-		//设置下一条目标直线和下一个直线标志点的位置信息
-		if(switchNextModeFlag == 1)
-		{
-			switchNextModeFlag = 0;
-            cntTurn++;
-			cntTurn = cntTurn % 4;
-			switch (cntTurn)
-		    {
-		    case 0:
-                Line_A = 1.0;
-                Line_B = 0.0;
-                Line_C = 0.0;
-                Line_Mode = 1;
-			    tar.y = Side_Length - Advance_Length;
-			    break;
-		    case 1:
-                Line_A = 0.0;
-                Line_B = 1.0;
-                Line_C = -2.0;
-                Line_Mode = 0;				
-				tar.x = Advance_Length - Side_Length;
-			    break;
-		    case 2:
-                Line_A = 1.0;
-                Line_B = 0.0;
-                Line_C = 2.0;
-                Line_Mode = 0;	
-			    tar.y = Advance_Length;			
-			    break;
-		    case 3:
-                Line_A = 0.0;
-                Line_B = 1.0;
-                Line_C = 0.0;
-                Line_Mode = 1;				
-				tar.x = Advance_Length * -1;
-			    break;
-		    }
-		}
-		//到达切换直线标志点后，turnFlag = 1切换下一条直线和下一个直线标志点
-		if(cntTurn == 0)
-		{
-		    if(tar.y < pos.y){switchNextModeFlag = 1;}
-		}
-		if(cntTurn == 1)
-		{	
-			if(tar.x > pos.x){switchNextModeFlag = 1;}
-		}
-		if(cntTurn == 2)
-		{	
-			if(tar.y > pos.y){switchNextModeFlag = 1;}
-		}
-		if(cntTurn == 3)
-		{
-			if(tar.x < pos.x){switchNextModeFlag = 1;}
-		}
-		
+		//使用x_meter, y_meter统一单位，以用于直线相关参数计算	
+		x_meter = pos.x / 1000.0;
+		y_meter = pos.y / 1000.0;	
 		
 		//直线相关参数计算
 		//直线公式               Line_A            Ax + By + C = 0
@@ -323,91 +268,99 @@ void WalkTask(void)
 		//直线斜率               Line_K            单位m
 		//直线截距               Line_b            单位m
 		//直线角度               Line_Angle        范围(-π/2, π/2)
-		//当前点到直线的距离     Line_Distance     单位m
-		//当前点相对直线的位置   Point_Location
+		//当前坐标到圆心的距离   Line_Distance     单位m
+		//当前坐标到圆弧的距离   Point_Location
         //直线方向               Line_Mode = 1时   范围[-π/2, π/2]
-        //                       Line_Mode = 0时   范围[π/2, 3π/2]		
-        //使用x_meter, y_meter统一单位，以用于直线相关参数计算		
-		x_meter = pos.x / 1000;
-		y_meter = pos.y / 1000;
+        //                       Line_Mode = 0时   范围[π/2, 3π/2]			
+
+        //求圆心到当前坐标的直线的A、B值
+		Line_A = y_meter - Round_Center_y;
+		Line_B = Round_Center_x - x_meter;
+		//角度换算
 		//当直线斜率绝对值小于1时，使用y = kx + b的格式
 		if(fabs(Line_A) <= fabs(Line_B))
 		{
-			Line_K = Line_A / Line_B * -1;
-			Line_b = Line_C / Line_B * -1;
-			//角度换算
+			Line_K = Line_A / Line_B * -1.0;
 			Line_Angle = ((atan(Line_K) * 180.0 / Pi) - 90.0);
-			Line_Distance = ((Line_K * x_meter - y_meter + Line_b) / sqrt(Line_K * Line_K + 1));
-			//大于0时点在直线的下方，小于0时点在直线上方
-			Point_Location = (Line_K * x_meter + Line_b - y_meter);
 		}
 		//当直线斜率绝对值大于1时，使用x = ky + b的格式
         if(fabs(Line_A) > fabs(Line_B))
 		{
-			Line_K = Line_B / Line_A * -1;
-			Line_b = Line_C / Line_A * -1;
-			//角度换算
-			Line_Angle = (atan(Line_K) * 180.0 / Pi * -1);
-			Line_Distance = ((Line_K * y_meter - x_meter + Line_b) / sqrt(Line_K * Line_K + 1));
-			//大于0时点在直线的右方，小于0时点在直线左方
-			Point_Location = (x_meter - Line_K * y_meter - Line_b);
-		}               
-        //Line_Mode = 1时，直线方向范围[-π/2, π/2]                      
-		if(Line_Mode == 1)
+			Line_K = Line_B / Line_A * -1.0;
+			//当直线斜率大于0时
+			if(atan(Line_K) * 180.0 / Pi >= 0)
+			{
+				Line_Angle = atan(Line_K) * 180.0 / Pi * -1.0;
+			}
+			//当直线斜率小于0时
+			if(atan(Line_K) * 180.0 / Pi < 0)
+			{
+				Line_Angle = atan(Line_K) * 180.0 / Pi * -1.0 - 180.0;
+			}			
+		}
+		//当圆心到当前坐标的直线方向为[π/2, 3π/2]时，直线角度 + 180°
+		if(x_meter < Round_Center_x)
 		{
-			//当点在直线右/下方时，离直线无限远时目标角度为直线方向 + 90°
+			Line_Angle = Line_Angle + 180;
+		}
+        		
+		//当前坐标到圆心的距离
+		Line_Distance = sqrt((x_meter - Round_Center_x) * (x_meter - Round_Center_x) + (y_meter - Round_Center_y) * (y_meter - Round_Center_y));
+		//当前坐标到圆弧的距离
+		Point_Location = Line_Distance - (Round_Radius - Round_Compensation_Value);		
+        
+		//顺时针                     
+		if(Round_Mode == 1)
+		{
+			//在圆外时
 			if(Point_Location >= 0)
 			{
-				PID_Line_Angle.setValue = Line_Angle + 90 * (1 - 1 / (fabs(Line_Distance) * Distance_coefficient + 1));
+				PID_Round_Angle.setValue = Line_Angle - 90.0 - 90.0 * (1.0 - 1.0 / (fabs(Point_Location) * Distance_coefficient + 1.0));
 		    }
-			//当点在直线左/上方时，离直线无限远时目标角度为直线方向 - 90°
+			//在圆内时
 		    if(Point_Location < 0)
 		    {
-			    PID_Line_Angle.setValue = Line_Angle - 90 * (1 - 1 / (fabs(Line_Distance) * Distance_coefficient + 1));
+			    PID_Round_Angle.setValue = Line_Angle - 90.0 + 90.0 * (1.0 - 1.0 / (fabs(Point_Location) * Distance_coefficient + 1.0));
 		    }
 		}
-		// Line_Mode = 0时，直线方向范围[π/2, 3π/2]	
-		if(Line_Mode == 0)
+		//逆时针	
+		if(Round_Mode == 0)
 		{
-			//当点在直线右/下方时，离直线无限远时目标角度为直线方向的另一边(180°)再 - 90°
+			//在圆外时
 			if(Point_Location >= 0)
 			{
-				PID_Line_Angle.setValue = Line_Angle + 180 - 90 * (1 - 1 / (fabs(Line_Distance) * Distance_coefficient + 1));
+				PID_Round_Angle.setValue = Line_Angle + 90.0 + 90.0 * (1.0 - 1.0 / (fabs(Point_Location) * Distance_coefficient + 1.0));
 		    }
-			//当点在直线左/上方时，离直线无限远时目标角度为直线方向的另一边(180°)再 + 90°
+			//在圆内时
 		    if(Point_Location < 0)
 		    {
-			    PID_Line_Angle.setValue = Line_Angle + 180 + 90 * (1 - 1 / (fabs(Line_Distance) * Distance_coefficient + 1));
+			    PID_Round_Angle.setValue = Line_Angle + 90.0 - 90.0 * (1.0 - 1.0 / (fabs(Point_Location) * Distance_coefficient + 1.0));
 		    }
 		}
 		
 		
 		//PID参数赋值
-		PID_Line_Angle.Kp = PID_Line_Angle_Kp;
-        PID_Line_Angle.Ki = PID_Line_Angle_Ki;
-        PID_Line_Angle.Kd = PID_Line_Angle_Kd;
-		//目标角度限幅，转化为劣弧
-		PID_Line_Angle.setValue = Constrain_float_Angle(PID_Line_Angle.setValue);
-		PID_Line_Angle.feedbackValue = pos.angle;
-		//为实现角度差值限幅功能取消必须加入这行，而在PID函数中取消这行差值计算
-		PID_Line_Angle.error = PID_Line_Angle.setValue - PID_Line_Angle.feedbackValue;
-		//根据当前角度是否大于180调整PID输出的控制量，使转弯圆弧始终为劣弧
-		PID_Line_Angle.error = Constrain_float_Angle(PID_Line_Angle.error);
-        //PID函数输出转速差量
-		adjustVelocityLineAngle = PID_operation(&PID_Line_Angle);
+		PID_Round_Angle.Kp = PID_Round_Angle_Kp;
+        PID_Round_Angle.Ki = PID_Round_Angle_Ki;
+        PID_Round_Angle.Kd = PID_Round_Angle_Kd;
+		PID_Round_Angle.setValue = Constrain_float_Angle(PID_Round_Angle.setValue);
+		PID_Round_Angle.feedbackValue = pos.angle;
+		PID_Round_Angle.error = PID_Round_Angle.setValue - PID_Round_Angle.feedbackValue;
+		PID_Round_Angle.error = Constrain_float_Angle(PID_Round_Angle.error);
+		adjustVelocityRoundAngle = PID_operation(&PID_Round_Angle);
 		
 		
-		VelCrl(CAN2, 1, (int)((BaseVelocity + adjustVelocityLineAngle) * One_Meter_Per_Second));//右轮
-		VelCrl(CAN2, 2, (int)((BaseVelocity - adjustVelocityLineAngle) * One_Meter_Per_Second * -1));//左轮
+		VelCrl(CAN2, 1, (int)((BaseVelocity + adjustVelocityRoundAngle) * One_Meter_Per_Second));//右轮
+		VelCrl(CAN2, 2, (int)((BaseVelocity - adjustVelocityRoundAngle) * One_Meter_Per_Second * -1.0));//左轮
 		
 		
-		//以5 * 10ms为间隔发送数据
+		//以20 * 10ms为间隔发送数据
 		cntSendTime++;
-		cntSendTime = cntSendTime % 5;
+		cntSendTime = cntSendTime % 20;
 		if(cntSendTime == 1)
 		{
-            USART_OUT(UART4, (uint8_t*)"x=%d,y=%d,ang=%d,tx=%d,ty=%d,Aset=%d,Aerr=%d,aVLA=%d,cT=%d\r\n", \
-			         (int)pos.x, (int)pos.y, (int)pos.angle, (int)tar.x, (int)tar.y, (int)PID_Line_Angle.setValue, (int)PID_Line_Angle.error, (int)(adjustVelocityLineAngle * 1000), (int)cntTurn);
+            USART_OUT(UART4, (uint8_t*)"x=%d,y=%d,ang=%d,LD=%d,PL=%d,LA=%d,Aset=%d,Aerr=%d,aVLRA=%d\r\n", \
+			         (int)pos.x, (int)pos.y, (int)pos.angle, (int)(Line_Distance * 1000), (int)((Point_Location +  Round_Compensation_Value)* 1000), (int)Line_Angle, (int)PID_Round_Angle.setValue, (int)PID_Round_Angle.error, (int)(adjustVelocityRoundAngle * 1000));
 		}
 		OSSemSet(PeriodSem, 0, &os_err);
 	}
