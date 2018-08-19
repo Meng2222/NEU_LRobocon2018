@@ -70,7 +70,7 @@ void xy2ra(point * thispoint)
     }
     else
     {
-        a = (atan((*thispoint).x / (*thispoint).y) * (180 / 3.14f));
+        a = -1 * (atan((*thispoint).x / (*thispoint).y) * (180 / 3.14f));
         if((*thispoint).y > 0)
         {
             (*thispoint).a = a;
@@ -227,4 +227,81 @@ reldir RelDir2Line(const linewithdir thisline, const point thispoint)
         }
     }
     return ontheline;
+}
+
+//返回点之间的距离
+float Point2Point(const point thispoint, const point thatpoint)
+{
+    float x = 0, y = 0;
+    x = thispoint.x - thatpoint.x;
+    y = thispoint.y - thatpoint.y;
+    return pow((x * x + y * y), 0.5);
+}
+
+//返回thispoint指向thatpoint的带方向的直线
+linewithdir DirlinePoint2Point(const point thispoint, const point thatpoint)
+{
+    linewithdir tempdirline;
+    tempdirline.a = (thispoint.y - thatpoint.y);
+    tempdirline.b = (thatpoint.x - thispoint.x);
+    tempdirline.c = (thispoint.x * thatpoint.y - thatpoint.x * thispoint.y);
+    if(thispoint.y == thatpoint.y)
+    {
+        if(thispoint.x > thatpoint.x)
+        {
+            tempdirline.linedir = forward;
+        }
+        else
+        {
+            tempdirline.linedir = backward;
+        }
+    }
+    else
+    {
+        if(thispoint.y < thatpoint.y)
+        {
+            tempdirline.linedir = forward;
+        }
+        else
+        {
+            tempdirline.linedir = backward;
+        }
+    }
+    return tempdirline;
+}
+
+//返回thatpoint相对于thispoint的相对位置
+point RelPos(const point thispoint, const point thatpoint)
+{
+    point temppoint;
+    temppoint = setPointXY(thatpoint.x - thispoint.x, thatpoint.y - thispoint.y);
+    return temppoint;
+}
+
+//返回有向直线thisline的thisdir侧的垂直于其的方向
+float VDirForLine(const linewithdir thisline, reldir thisdir)
+{
+    float tempangle = 0;
+    tempangle = LineDir(thisline);
+    if(thisdir == right)
+    {
+        tempangle -= 90;
+    }
+    else if (thisdir == left)
+    {
+        tempangle += 90;
+    }
+    else
+    {
+        return 0;
+    }
+    if(tempangle >= 180)
+    {
+        tempangle -= 360;
+    }
+    if(tempangle < -180)
+    {
+        tempangle += 360;
+    }
+    return tempangle;
 }
