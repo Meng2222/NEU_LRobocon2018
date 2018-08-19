@@ -11,6 +11,7 @@
 #include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "adc.h"
 
 //#define Veh 1         //车号选择 【1】 || 【4】
 extern int t;           //时间校正【1ms】   
@@ -157,6 +158,8 @@ void ConfigTask(void)        //初始化
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
 	
+	Adc_Init();
+	
 	if(Veh==1)//
 	{
 	delay_s(2);
@@ -168,10 +171,10 @@ void ConfigTask(void)        //初始化
 	delay_s(10);
 	delay_s(5);
 	}
+	
 //	delay_s(5);
 	
 	OSTaskSuspend(OS_PRIO_SELF);
-	
 }
 //====================================================================================   
 // _   _   _   _   _   _   _   _   _                _   _   _   _   _   _   _   _   _ 
@@ -189,7 +192,7 @@ void ConfigTask(void)        //初始化
 #define d_M        1500    //【Mode4】：标志点（y轴位点）
 #define direction  0       //【Mode1】：方向（0为前进，1为后退）
                            //【Mode5】：顺时针/逆时针走圆（0为逆时针，1为顺时针）
-#define Mode       5       //【模式选择】：
+#define Mode       6       //【模式选择】：
 				           // 0调试状态（目前设置为静止）
 				           // 1直行（r=0）||圆周运动 前进/后退; 
                            // 2直行（r=0）||多边形运动（此时r为多边形边长）（带自动校正）
@@ -202,11 +205,11 @@ void ConfigTask(void)        //初始化
 #define y_l         1000   //                  【Mode3】直线交y轴截距         >——————————【直线方程】———————> y_b
 #define x_l        -1000   //                  【Mode3】直线平行y轴时与x轴交点>——————|                   |——> x_b
 #define pi          3.14   // Π=3.14159265358979323846264338327950288
-#define p_a         1000    //                  【Mode3】直线闭环校正开始距离（mm）————————————————————————————————|
+#define p_a         500    //                  【Mode3】直线闭环校正开始距离（mm）————————————————————————————————|
                            //                                                                                     |
 //#define w_veh     300    // 角速度【删除】  150                                                                 |
                            //                                                                                     |
-#define Kp_A        250    //【P】角度闭环————|| 300的Kp_A可能导致角度积分错误                                    |————【相关】
+#define Kp_A        200    //【P】角度闭环————|| 300的Kp_A可能导致角度积分错误                                    |————【相关】
 #define Ki_A        0      //【I】角度闭环————||                                                                  |
 #define Kd_A        0      //【D】角度闭环————||                                                                  |
                            //                                                                                     |
@@ -788,7 +791,7 @@ if(direction==0)
 	if(angle_C<-180){angle_C+=360;}
 	Angle_Lock4(angle_C);
 }
-if(direction==1)
+if(direction==1)//（未尝试/理论可行）
 {
 	if(x_C-x<=0){angle_Cl=angle_Cl-90;}
 	if(x_C>x) {angle_Cl=angle_Cl+90;}
@@ -824,6 +827,70 @@ if(d_C<=r+1000)
 void Circle_Lock5(void)//【圆闭环】
 {}
 */
+
+//====================================================================================
+//                                正方形扫荡（方案）
+//====================================================================================
+
+int square_edg=2000;
+void Square_Sweep_Left1(int square_m , int square_e)//回到原定路线
+{
+if(Cho==0){Line_Lock4(-90,square_m-square_e,0);}
+if(Cho==0&&x>=square_e-p_a){Cho=1;Line_Lock4(0,0,square_e);}
+if(Cho==1){Line_Lock4(0,0,square_e);}
+if(Cho==1&&y>=(square_m +square_e-p_a)){Cho=2;Line_Lock4(90,square_m +square_e,0);}
+if(Cho==2){Line_Lock4(90,square_m +square_e,0);}
+if(Cho==2&&x<-square_e+p_a){Cho=3;Line_Lock4(180,0,-square_e);}
+if(Cho==3){Line_Lock4(180,0,-square_e);}
+if(Cho==3&&y<=square_m -square_e+p_a){Cho=0;Line_Lock4(-90,square_m -square_e,0);square_edg=square_edg-300;}
+}
+
+void Square_Sweep_Right1(int square_m , int square_e)
+{
+
+}
+//====================================================================================
+//                                 ADC激光
+//====================================================================================
+float G_Adc_A4;
+float G_Adc_A5;
+float V4;
+float V4_f;
+int V4_i;
+
+float V5;
+float V5_f;
+int V5_i;
+
+void Adc(void)
+{
+V4=G_Adc_A4*10/4096;
+V4_f=V4;
+while(V4_f-1>=0)
+{V4_f--;}
+V4_i=V4-V4_f;
+V4_f*=1000;
+
+V5=G_Adc_A5*10/4096;
+V5_f=V5;
+while(V5_f-1>=0)
+{V5_f--;}
+V5_i=V5-V5_f;
+V5_f*=1000;
+
+USART_OUT(UART4,(uint8_t*)"%d",V4_i);
+// 发字符
+USART_OUT(UART4,(uint8_t*)"%s",".");
+USART_OUT(UART4,(uint8_t*)"%d",(int) V4_f);
+USART_OUT(UART4,(uint8_t*)"%s  ","V");//输出V
+
+
+USART_OUT(UART4,(uint8_t*)"%d",V5_i);
+// 发字符
+USART_OUT(UART4,(uint8_t*)"%s",".");
+USART_OUT(UART4,(uint8_t*)"%d",(int) V5_f);
+USART_OUT(UART4,(uint8_t*)"%s  ","V");//输出V
+}
 //===================================================================================================================================================
 //===================================================================================================================================================
  
@@ -843,6 +910,7 @@ float l_p20;
 float d_l;
 
 int   flo;          //【反馈】输出检测
+int t_adc=0;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
@@ -851,6 +919,10 @@ void WalkTask(void)
 	OSSemPend(PeriodSem, 0, &os_err);
 	while (1)
 	{
+		G_Adc_A4=Get_Adc_Average(14,10);
+		G_Adc_A5=Get_Adc_Average(15,10);
+		
+		
 		OSSemPend(PeriodSem, 0, &os_err);
 		Teh_Choose();//坐标反转函数（一定要放在while开始，OSSemPend后一行）	
 		
@@ -996,6 +1068,7 @@ void WalkTask(void)
 		//【思路】在车正前方d处建立一个标志点，过标志点沿x、y轴正、负方向等距建立四条直线（正方形）（方便以后调参）正方形边长的一半为r
 		{
 		v1=(int)10865*v;
+		
 		Square_Lock1(d_M , r);
 			
 		    while(j)//【反馈数据】
@@ -1014,40 +1087,81 @@ void WalkTask(void)
 			}
 		}
 		
-	   
-
-
-
-
-
 		if(Mode==5)
 		{
-		float exf;
-		if(Veh==1)
-		{
-		exf=Y;
-		Y=-X;
-		X=exf;
-		}	
-		
-		v1=(int)10865*v;
-		Circle_Lock1();
-		
-//		while(j)//反馈数据
-//		{	
-        flo=(int)d_C;
-		USART_OUT(UART4,(uint8_t*)"%d  ",flo);
-		
-		flo=(int)angle_Cl;
-		USART_OUT(UART4,(uint8_t*)"%d  ",flo);			
-		flo=(int)angle_C;
-		USART_OUT(UART4,(uint8_t*)"%d\r\n",flo);	
-		
-//		j=0;t=0;
-//		}
+			float exf;
+			if(Veh==1)
+			{
+			exf=Y;
+			Y=-X;
+			X=exf;
+			}	
+			
+			v1=(int)10865*v;
+			Circle_Lock1();
+			
+//			while(j)//反馈数据
+//			{	
+			flo=(int)d_C;
+			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
+			
+			flo=(int)angle_Cl;
+			USART_OUT(UART4,(uint8_t*)"%d  ",flo);			
+			flo=(int)angle_C;
+			USART_OUT(UART4,(uint8_t*)"%d\r\n",flo);	
+			
+//			j=0;t=0;
+//			}
 		}
+		if(Mode==6)//正方形扫荡+ADC激光爆炸
+		//
+		{
+			Adc();                                 //adc收到数据处理、反馈
+
+			int left=0,right=0;
+			if(V5<1){t_adc--;}
+			if(V4<1){t_adc++;}
+			if(t_adc>=100){right=1;}
+			if(t_adc<=-100){left=1;}               //判断左、右
+			
+			flo=(int)V4;                           //反馈数据
+			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
+			flo=(int)V5;
+			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
+			flo=(int)left;
+			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
+			flo=(int)right;
+			USART_OUT(UART4,(uint8_t*)"%d  ",flo);		
+			flo=(int)t_adc;
+			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
+			
+			v1=(int)10865*v;                        //基础速度
+			
+			if(right==1)                            //右
+			{
+			if(square_edg>=500)
+			{Square_Sweep_Left1(2200 , square_edg);}
+			if(square_edg<1000)
+			{Square_Sweep_Left1(2200 , 500);}
+
+			flo=(int)square_edg;
+			USART_OUT(UART4,(uint8_t*)"%d\r\n",flo);	
+			}
+			else if(left==1)	                     //左
+			{
+			if(square_edg>=500)
+			{Square_Sweep_Right1(2200 , square_edg);}  //【Square_Sweep_Right1还没写】！！！！！
+			if(square_edg<1000)
+			{Square_Sweep_Right1(2200 , 500);}
+
+			flo=(int)square_edg;
+			USART_OUT(UART4,(uint8_t*)"%d\r\n",flo);	
+			}	
+       		
+//			USART_OUT(UART4,(uint8_t*)"\r\n");	//换行（独列）
+		}
+		
 //		OSSemPend(PeriodSem, 0, &os_err);
-//		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
 	}
 
 }	
