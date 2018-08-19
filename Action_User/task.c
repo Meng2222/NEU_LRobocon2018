@@ -25,6 +25,8 @@ char changeFlag = 0;
 extern char updownFlag;
 extern Pos_t Pos;
 extern float setAngle;
+extern float setAngle_R;
+extern float errorRadius;
 extern float errorAngle,errorDis;//等于位置环输出角度-实际角度，位置偏差
 extern float phase1,phase2,uOutAngle,uOutDis;//角度PID输出，位置PID输出
 extern float Uout;//PID计算的输出值
@@ -77,12 +79,20 @@ PId_t Angle_PId = {
 	.lastErr = 0	
 };
 PId_t Dis_PId = {
-	.Kp = 0.2*400/(SPEED),
-	.Ki = 0,
+	.Kp = 0.2 * 400 / SPEED,
+	.Ki = 0.28 * 0.01 * 800 / SPEED,
 	.Kd = 0,
 	.sumErr = 0,
 	.lastErr = 0
-};//PosNow_t PosNow;
+};
+//初始化圆形结构体
+Round_t Rnd_PID ={
+	.x = 0,
+	.y = 800,
+	.radius = 600,
+	.vel = SPEED,
+	.side = 1 //-1为顺,1为逆
+};
 char posFlag = 0;//需要存位置标志
 void ConfigTask(void)
 {
@@ -116,72 +126,16 @@ void WalkTask(void)
 	
 	CPU_INT08U os_err;
 	os_err = os_err;
-	int cnt = 0;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		cnt++;
-//		if(cnt>=1)
-//		{
-			USART_OUT(UART4,(uint8_t*)"%d\t",(int)changeFlag);//标志
-			USART_OUT(UART4,(uint8_t*)"%d\t",(int)dirFlag);//距离差
-			USART_OUT(UART4,(uint8_t*)"%d\t",(int)updownFlag);//标志
-			//USART_OUT(UART4,(uint8_t*)"%d\t",(int)errorDis);//距离差
-			USART_OUT(UART4,(uint8_t*)"%d\t",(int)setAngle);//距离差
-//			//USART_OUT(UART4,(uint8_t*)"%d\t",(int)uOutAngle);//脉冲
-			USART_OUT(UART4,(uint8_t*)"%d\t%d\t",(int)uOutDis,(int)errorAngle);//设定角度，实际角度，偏差
-//			USART_OUT(UART4,(uint8_t*)"%d\t",(int)uOutAngle);
-//			//USART_OUT(UART4,(uint8_t*)"%d\t",(int)errorDis);//距离差
-			USART_OUT(UART4,(uint8_t*)"%d\t%d\t",(int)phase1,(int)phase2);
-			USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t\r\n",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
-//			USART_OUT(UART4,(uint8_t*)"%d\t%d\r\n",(int)PosNow.x,(int)PosNow.y);
-//			cnt = 0;
-//		}
-		switch(changeFlag)
-		{
-			case 0:
-			{
-				KownedLinePID(1,0,0,dirFlag);
-				if(Pos.y >= 2000-30*SPEED/45)
-				{
-					changeFlag = 1;
-					dirFlag = 1;
-				}
-			}break;
-			
-			case 1:
-			{
-				KownedLinePID(0,-1,2000,dirFlag);
-				if(Pos.x >= 2000-30*SPEED/45)
-				{
-					changeFlag = 2;
-					dirFlag = 2;
-				}
-			}break;
-			
-			case 2:
-			{
-				KownedLinePID(-1,0,2000,dirFlag);
-				if(Pos.y <= 30*SPEED/45)
-				{
-					changeFlag = 3;
-					dirFlag = 2;
-				}
-			}break;
-			case 3:
-			{
-				KownedLinePID(0,1,0,dirFlag);
-				if(Pos.x <= 30*SPEED/45)
-				{
-					changeFlag = 0;
-					dirFlag = 1;
-				}
-			}break;
-			default:
-				break;	
-		
-		}
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t",(int)errorRadius,(int)setAngle_R);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t",(int)uOutAngle,(int)uOutDis);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t",(int)phase1,(int)phase2);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t\r\n",(int)Pos.angle,(int)Pos.x,(int)Pos.y);
+		WalkRoundPID(&Rnd_PID);
+
 	}
 }
 

@@ -4,15 +4,18 @@
 * @param  vel: 速度，单位：mm每秒，范围：最小速度限制到最大速度限制
 */
 float setAngle = 0;
+float setAngle_R = 0;
 float shouldX = 0 ,shouldY = 0 ;
 float errorAngle = 0;
-float errorDis = 0;
+float errorDis = 0;//直线距离
+float errorRadius = 0;//圆心距离
 float Uout = 0;
 float phase1 = 0,phase2 = 0,uOutAngle = 0,uOutDis = 0;
 char updownFlag = 0;
 extern Pos_t Pos;
 extern PId_t Angle_PId;
 extern PId_t	Dis_PId;
+float compareAngle = 0;
 //PosNow_t PosNow;
 void WalkLine(float vel)
 {
@@ -64,17 +67,43 @@ void WalkRound(float vel,float radius,char side)
 		VelCrl(CAN2,2,-phase1);
 	}
 }
+/**
+* @brief  圆形闭环函数
+* @param  vel: 速度，单位：mm每秒，范围：最小速度限制到最大速度限制
+* @param  radius: 半径，单位：mm，范围：最小限制到最大限制
+* @param  x,y: 圆心坐标，单位：mm，范围：最小限制到最大限制
+* @param  side: 顺时针-1 逆时针1
+*/
+void WalkRoundPID(Round_t* PID_RndTYPE)
+{	
+	if(PID_RndTYPE->side == 1)
+		setAngle_R = atan2f((Pos.x-PID_RndTYPE->x),-(Pos.y-PID_RndTYPE->y)) * 180 / PI - 90;
+	else if(PID_RndTYPE->side == -1)
+		setAngle_R = atan2f(-(Pos.x-PID_RndTYPE->x),(Pos.y-PID_RndTYPE->y)) * 180 / PI - 90;
+	errorRadius = sqrtf(powf((Pos.x-PID_RndTYPE->x),2) + powf((Pos.y-PID_RndTYPE->y),2)) - PID_RndTYPE->radius;
+	if(PID_RndTYPE->side == -1) //圆外顺时针
+		errorRadius = -errorRadius;
+	else if (PID_RndTYPE->side == 1)//圆内逆时针
+		errorRadius = errorRadius;
+	setAngle_R = setAngle_R + (PID_RndTYPE->side * PID_RndTYPE->vel ) / (PID_RndTYPE->radius * 100) * 180 / PI;
+	Angle_PID(PID_RndTYPE->vel,setAngle_R + Dis_PID(errorRadius));
+}
 
 float PID_Compentate(float err,PId_t* PId_tTYPE)
 {
 	
 	PId_tTYPE->sumErr += err;
-	Uout = PId_tTYPE->Kp * err + PId_tTYPE->Ki * PId_tTYPE->sumErr + PId_tTYPE->Kd *(err - PId_tTYPE->lastErr);
+	if(PId_tTYPE->Ki * PId_tTYPE->sumErr >= 10)
+		Uout = PId_tTYPE->Kp * err + 10 + PId_tTYPE->Kd *(err - PId_tTYPE->lastErr);
+	else if(PId_tTYPE->Ki * PId_tTYPE->sumErr <= -10)
+		Uout = PId_tTYPE->Kp * err - 10 + PId_tTYPE->Kd *(err - PId_tTYPE->lastErr);
+	else
+		Uout = PId_tTYPE->Kp * err + PId_tTYPE->Ki * PId_tTYPE->sumErr + PId_tTYPE->Kd *(err - PId_tTYPE->lastErr);
 	PId_tTYPE->lastErr = err;
-//	if(Uout > 1100)
-//		Uout = 1100;
-//	else if(Uout < -1100)
-//		Uout = -1100;
+	if(Uout > 800)
+		Uout = 800;
+	else if(Uout < -800)
+		Uout = -800;
 	return Uout;
 }
 /**
@@ -185,10 +214,6 @@ void Angle_PID(float vel,float value)
 	else if(errorAngle < -180.0f)
 		errorAngle = 360.0f + errorAngle;
 	uOutAngle = PID_Compentate(errorAngle,&Angle_PId);
-	if(uOutAngle >= 800)
-		uOutAngle = 800;
-	else if(uOutAngle <= -800)
-		uOutAngle = -800;
 	phase1 = 4096.f * (vel + uOutAngle)/ (WHEEL_DIAMETER * PI);
 	phase2 = 4096.f * (vel - uOutAngle)/ (WHEEL_DIAMETER * PI);
 	VelCrl(CAN2,1,phase1);

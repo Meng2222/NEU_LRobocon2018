@@ -12,7 +12,15 @@ typedef struct {
 	float lastErr;
 	float sumErr;
 }PId_t;
-#define SPEED 1000
+
+typedef struct {
+	float x;
+	float y;
+	float radius;
+	float vel;
+	float side;
+}Round_t;
+#define SPEED 800
 void KownedLinePID(float a,float b,float c,char dir);
 void WalkLine(float vel);
 void WalkLine2PID(float vel,float setAngle);
@@ -20,6 +28,7 @@ void WalkRound(float vel,float radius,char side);
 float PID_Compentate(float err,PId_t* PId_tTYPE);
 void Angle_PID(float vel,float value);
 float Dis_PID(float error);
+void WalkRoundPID(Round_t* PID_RndTYPE);
 //typedef struct {
 //	float x;
 //	float y;
