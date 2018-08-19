@@ -21,51 +21,48 @@
 extern float angle;
 extern float xpos;
 extern float ypos;
-#define ROBOT 1
+#define ROBOT 4
 
-	#if ROBOT == 1
-	float GetAngle(void)
-	{
-		return -angle;
-	}
+#if ROBOT == 1
+float GetAngle(void)
+{
+	return -angle;
+}
 
-	float GetXpos(void)
-	{
-		return ypos;
-	}
+float GetXpos(void)
+{
+	return ypos;
+}
 
-	float GetYpos(void)
-	{
-		return -xpos;
-	}
+float GetYpos(void)
+{
+	return -xpos;
+}
 	
-	#elif ROBOT == 4
-	float GetAngle(void)
-	{
-		return angle;
-	}
+#elif ROBOT == 4
+float GetAngle(void)
+{
+	return angle;
+}
 
-	float GetXpos(void)
-	{
-		return xpos;
-	}
+float GetXpos(void)
+{
+	return xpos;
+}
 
-	float GetYpos(void)
-	{
-		return ypos;
-	}
-	#endif
+float GetYpos(void)
+{
+	return ypos;
+}
+#endif
 
 	
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *MoveSem;
 OS_EVENT *BluetoothSem;
 
-extern double 		SlopeSetLine ;
-extern float  		Distance;
-extern float		AngleError;
+extern float 		AngleTangentLine;
 extern float		AngleControl;
-extern float 		LocationControl;
 extern float		PID_SetAngle;
 extern uint8_t		LocationFlag;
 static OS_STK		App_ConfigStk[Config_TASK_START_STK_SIZE];
@@ -116,10 +113,19 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2, 2, 8000, 8000);
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
+	#if ROBOT == 1
+	{
 	delay_ms(2000);
 	DriveGyro();
-	delay_ms(12000);	//延时13s 用于启动定位系统
+	delay_ms(12000);	
 	delay_ms(3000);
+	}
+	#elif ROBOT == 4
+	{
+	delay_ms(12000);	
+	delay_ms(2000);
+	}
+	#endif
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
@@ -131,7 +137,7 @@ void MoveTask(void)
 	while (1)
 	{
 		OSSemPend(MoveSem, 0, &os_err);
-		RectangleAround(2000, 2000, 1000); //(长(mm), 宽(mm), 基础速度(mm/s))
+		CircleAround(500, 0, 500, 1000, 1);	//(圆心横坐标(mm), 圆心纵坐标(mm), 半径(mm)), 线速度(mm/s), 绕行方向(1为顺时针, 2为逆时针))
 	}
 }
 
@@ -143,16 +149,14 @@ void BluetoothTask(void)
 	while (1)
 	{
 		OSSemPend(BluetoothSem, 0, &os_err);
-		
 		USART_OUT(UART4, (uint8_t*)"  x = %d  ",(int)GetXpos());
 		USART_OUT(UART4, (uint8_t*)"  y = %d  ",(int)GetYpos());
 		USART_OUT(UART4, (uint8_t*)"  angle = %d  ",(int)GetAngle());
-		USART_OUT(UART4, (uint8_t*)"  LocationFlag  = %d ",(int)LocationFlag );
+		USART_OUT(UART4, (uint8_t*)"  AngleTangentLine  = %d ",(int)AngleTangentLine );
 		USART_OUT(UART4, (uint8_t*)"  PID_SetAngle = %d  ",(int)PID_SetAngle);
 		USART_OUT(UART4, (uint8_t*)"  AngleControl = %d \r\n",(int)AngleControl);
 		/*
 		
-		USART_OUT(UART4, (uint8_t*)" SlopeSetLine = %d ",(int)SlopeSetLine );
 		*/
 	}
 }

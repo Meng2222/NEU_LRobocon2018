@@ -36,45 +36,66 @@ float  AngleSetLine = 0;
 float  InterceptSetLine = 0;	//设定直线截距
 float  InterceptActual = 0;		//实际截距
 
+float AngleTangentLine = 0;
+
 double InverseTangentSlopeSetLineVaule = 0;
-float  Distance = 0;
+float  DistanceActual = 0;
 float  PID_SetAngle = 0;
 
-float  AngleError = 0;
 float  AngleControl = 0;
-float  LocationError = 0;
-float  LocationControl = 0;
 
 float  xpos = 0;
 float  ypos = 0;
 extern float angle;
 
-void CircleAround(float radius, float speed) //(半径(mm)), 速度(mm/s))
+void CircleAround(float CenterXpos, float CenterYpos,float radius, float BasicSpeed, uint8_t direction) //(圆心横坐标(mm), 圆心纵坐标(mm), 半径(mm)), 线速度(mm/s), 绕行方向(1为顺时针, 2为逆时针))
 {
-	float PulseR = 0;
-	float PulseL = 0; 
-	PulseR = ((((2.f*radius - WHEEL_TREAD - WHEEL_WIDTH) * speed)/(2.f*radius)) * COUNTS_PER_ROUND)/(WHEEL_DIAMETER * 3.14f);
-	PulseL = ((radius+((WHEEL_WIDTH+WHEEL_TREAD)/2))/(radius-((WHEEL_WIDTH+WHEEL_TREAD)/2.0f))) * PulseR;
-	VelCrl(CAN2, 1, (int)PulseR);	//右轮(正为向前)
-	VelCrl(CAN2, 2, (int)-PulseL);	//左轮(负为向前)
+	float SlopeTangentLine = 0;
+	
+	if(direction == 1)
+	{
+		SlopeTangentLine = atan(-((GetXpos() - CenterXpos)/(GetYpos() - CenterYpos)));
+		AngleTangentLine = ((SlopeTangentLine*180)/3.141f) - 90;
+		if(GetYpos() >= CenterYpos)
+		{
+			DistanceActual = sqrt((GetXpos() - CenterXpos)*(GetXpos() - CenterXpos) + (GetYpos() - CenterYpos)*(GetYpos() - CenterYpos));
+			PID_SetAngle = CircleDistancePID(P_CircleDistance, I_CircleDistance, D_CircleDistance, radius, DistanceActual) + AngleTangentLine;
+		}
+		if(GetYpos() < CenterYpos)
+		{
+			DistanceActual = sqrt((GetXpos() - CenterXpos)*(GetXpos() - CenterXpos) + (GetYpos() - CenterYpos)*(GetYpos() - CenterYpos));
+			PID_SetAngle = CircleDistancePID(P_CircleDistance, I_CircleDistance, D_CircleDistance, radius, DistanceActual)+ AngleTangentLine + 180;
+		}
+		//角度PID控制器输入量限幅
+		if(PID_SetAngle > 180)
+		{
+			PID_SetAngle -= 360;
+		}
+		if(PID_SetAngle < -180)
+		{
+			PID_SetAngle += 360;
+		}
+		Move(BasicSpeed - (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2), \
+		BasicSpeed + (AnglePID(P_Angle, I_Angle, D_Angle, PID_SetAngle, GetAngle())/2));	
+	}		
 }
 
 void RectangleAround(float length, float width, float BasicSpeed) //(长(mm), 宽(mm), 基础速度(mm/s))
 {
 	//位置判断程序
-	if(GetXpos() <= 450 && GetYpos() <= width-450)
+	if(GetXpos() <= 700 && GetYpos() <= width-700)
 	{
 		LocationFlag = 1;	//直线 x = 0
 	}
-	else if(GetXpos() <= length-450 && GetYpos() > width-450)
+	else if(GetXpos() <= length-700 && GetYpos() > width-700)
 	{
 		LocationFlag = 2;	//直线 y = width
 	}
-	else if(GetXpos() > length-450 && GetYpos() >= 450)
+	else if(GetXpos() > length-700 && GetYpos() >= 700)
 	{
 		LocationFlag = 3;	//直线 x= length
 	}
-	else if(GetXpos() > 450 && GetYpos() <450)
+	else if(GetXpos() > 700 && GetYpos() <700)
 	{
 		LocationFlag = 4;	//直线 y= 0
 	}
@@ -105,11 +126,11 @@ void LockLineMove(uint8_t ExistSlope, double k, float b, float SetXpos, float Ba
 		SlopeSetLine = k; 	//设定直线斜率
 		InterceptSetLine = b;
 		InverseTangentSlopeSetLineVaule = atan(SlopeSetLine);	//反正切(弧度制)
-		AngleSetLine = ((InverseTangentSlopeSetLineVaule*180)/3.141) - 90;	//转换为角度制并进行坐标变换
-		Distance =  (SlopeSetLine*GetXpos() - GetYpos() + InterceptSetLine)/sqrt(SlopeSetLine*SlopeSetLine + 1);	//计算到目标直线距离
+		AngleSetLine = ((InverseTangentSlopeSetLineVaule*180)/3.141f) - 90;	//转换为角度制并进行坐标变换
+		DistanceActual =  (SlopeSetLine*GetXpos() - GetYpos() + InterceptSetLine)/sqrt(SlopeSetLine*SlopeSetLine + 1);	//计算到目标直线距离
 		if(direction == 1)
 		{
-			PID_SetAngle = LocationPID(P_Location, I_Location, D_Location, 0, -Distance) + AngleSetLine;
+			PID_SetAngle = LocationPID(P_Location, I_Location, D_Location, 0, -DistanceActual) + AngleSetLine;
 			if(PID_SetAngle > 180)
 			{
 				PID_SetAngle -= 360;
@@ -123,7 +144,7 @@ void LockLineMove(uint8_t ExistSlope, double k, float b, float SetXpos, float Ba
 		}
 		if(direction == 0)
 		{
-			PID_SetAngle = LocationPID(P_Location, I_Location, D_Location, 0, Distance) + AngleSetLine + 180;
+			PID_SetAngle = LocationPID(P_Location, I_Location, D_Location, 0, DistanceActual) + AngleSetLine + 180;
 			if(PID_SetAngle > 180)
 			{
 				PID_SetAngle -= 360;
@@ -172,6 +193,7 @@ void LockLineMove(uint8_t ExistSlope, double k, float b, float SetXpos, float Ba
 
 float AnglePID(float Kp, float Ki, float Kd, float AngleSet, float AngleActual)
 {
+	float  AngleError = 0;
 	static float AngleLastError =0;
 	static float AngleIntegralError = 0;
 	AngleError = AngleSet - AngleActual;
@@ -191,22 +213,46 @@ float AnglePID(float Kp, float Ki, float Kd, float AngleSet, float AngleActual)
 
 float LocationPID(float Kp, float Ki, float Kd, float LocationSet, float LocationActual)
 {
+	float  LocationError = 0;
+	float  LocationControl = 0;
 	static float LocationLastError =0;
 	static float LocationIntegralError = 0;
 	LocationError = LocationSet - LocationActual;
-	if(LocationError >= 90)
-	{
-		LocationError = 90;
-	}
-	if(LocationError <= -90)
-	{
-		LocationError = -90;
-	}
 	LocationIntegralError += LocationError;
 	LocationControl = Kp*LocationError + Ki*LocationIntegralError + Kd*(LocationError - LocationLastError);
 	LocationLastError = LocationError;
+	if(LocationControl >= 90)
+	{
+		LocationControl = 90;
+	}
+	if(LocationControl <= -90)
+	{
+		LocationControl = -90;
+	}
 	return LocationControl;
 }
+
+float CircleDistancePID(float Kp, float Ki, float Kd, float RadiusSet, float DistanceToCenterActual)
+{
+	float CircleDistanceError = 0;
+	float CircleDistanceControl = 0;
+	static float CircleDistanceLastError =0;
+	static float CircleDistanceIntegralError = 0;
+	CircleDistanceError = RadiusSet - DistanceToCenterActual;
+	CircleDistanceIntegralError += CircleDistanceError;
+	CircleDistanceControl = Kp*CircleDistanceError + Ki*CircleDistanceIntegralError + Kd*(CircleDistanceError - CircleDistanceLastError);
+	CircleDistanceLastError = CircleDistanceError;
+	if(CircleDistanceControl > 180)
+	{
+		CircleDistanceControl = 180;			
+	}
+	if(CircleDistanceControl < -180)
+	{
+		CircleDistanceControl = -180;
+	}
+	return CircleDistanceControl;
+}
+	
 void Move(float SpeedL, float  SpeedR)
 {
 	static int PulseR = 0;
