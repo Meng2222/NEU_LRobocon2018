@@ -106,10 +106,11 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
+extern OS_EVENT *CPUUsageSem;
 
 void TIM2_IRQHandler(void)
 {
-#define PERIOD_COUNTER 10
+#define PERIOD_COUNTER 100
 
 	//用来计数10次，产生10ms的定时器
 	static uint8_t periodCounter = PERIOD_COUNTER;
@@ -121,9 +122,9 @@ void TIM2_IRQHandler(void)
 
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-
 		//实现10ms 发送1次信号量
 		periodCounter--;
+		OSSemPost(CPUUsageSem);
 		if (periodCounter == 0)
 		{
 			OSSemPost(PeriodSem);
@@ -489,6 +490,7 @@ void HardFault_Handler(void)
 	/* Go to infinite loop when Hard Fault exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t*)"HardFault\r\n");
 	}
 }
 
@@ -502,6 +504,7 @@ void MemManage_Handler(void)
 	/* Go to infinite loop when Memory Manage exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t*)" MemManage\r\n");
 	}
 }
 
@@ -516,6 +519,7 @@ void BusFault_Handler(void)
 	/* Go to infinite loop when Bus Fault exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t*)" BusFaul\r\n");
 	}
 }
 
@@ -530,6 +534,7 @@ void UsageFault_Handler(void)
 	/* Go to infinite loop when Usage Fault exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t*)" UsageFault\r\n");
 	}
 }
 

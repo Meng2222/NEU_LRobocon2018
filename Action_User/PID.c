@@ -2,10 +2,10 @@
 
 
 /*
-===============================================================
+=========================================================================
 							直行
 					入口参数：速度,单位mm/s
-===============================================================
+=========================================================================
 */
 void WalkStraight(int v)                             
 {
@@ -13,12 +13,12 @@ void WalkStraight(int v)
 	VelCrl(CAN2,2,-((4096/378)*v));
 }
 /*
-===============================================================
+=========================================================================
 						    画圈
 入口参数;               前进方向  ACW  or  CW;
                        轴中间的速度 v 单位mm/s
                         圈的半径  r   单位mm
-===============================================================
+=========================================================================
 */
 void WalkRound(u8 direction, int v,int r)           //画圈，入口参数
 {
@@ -36,21 +36,23 @@ void WalkRound(u8 direction, int v,int r)           //画圈，入口参数
 }
 
 /*
-===============================================================
+=========================================================================
                        PID控制——底盘
 误差分析：	1.车轮打滑（1m/s刹车有100mm误差）；
 			2.定位系统陀螺仪漂移（两圈1度左右）；
 			3.车速导致的转弯误差（1m/s转弯有250mm）；
 			4.PID角度超调（0.05左右的超调）；
-			5.PID坐标函数应用在直线PID上时不好控制误差
-===============================================================
+			5.PID坐标函数应用在直线PID上时不好控制误差；
+			6.车轮有最大加速度（经不完全计算大概）
+			7.以后如果需要提高精度，可以考虑把PID函数控制精度改为0.1mm/s
+========================================================================
 */
 
 int angle_set = 0;
 extern u8 isOKFlag;
 extern u8 issendOK;
 float kp = 20;
-float ki = 0;
+float ki = 0.01;
 float kd = 40;
 float lastAngle = 0;
 float velocity = 0;
@@ -112,8 +114,10 @@ void PID_Angle(u8 status,float Angle_Set,float Angle,int v)          //PID角度控
 		if(Angle<=Angle_Set+180) Angle = Angle-Angle_Set;
 		else Angle = Angle - 360 - Angle_Set;
 	}
-	
+//	if(Angle_Set - lastAngle>10 || Angle_Set - lastAngle<-10)
 	float error = 0 - Angle;
+	if(error>10 || error<-10) ki = 0.05;
+	else ki = 0.2;
 	ITerm += ki*error;
 	if(ITerm > velocityMax1) ITerm= velocityMax1;
     if(ITerm < velocityMax2) ITerm= velocityMax2;
@@ -127,8 +131,8 @@ void PID_Angle(u8 status,float Angle_Set,float Angle,int v)          //PID角度控
 //  if(velocity < 0 && velocity > velocityMin2) velocity = velocityMin2;
 	lastAngle = Angle;
 	lastStatus = status;
-	VelCrl(CAN2,1,(((4096/378)*(velocity))+(4096/378)*v));
-	VelCrl(CAN2,2,(((4096/378)*(velocity))-(4096/378)*v));
+	VelCrl(CAN2,1,(((4096/378)*velocity)+(4096/378)*v));
+	VelCrl(CAN2,2,(((4096/378)*velocity)-(4096/378)*v));
 }
 
 extern union u8andfloat                                              //引用定位系统数据
@@ -145,7 +149,9 @@ void PID_Coordinate(float x0,float y0,int v)                         //PID坐标控
 	if(posture.ActVal[3]>x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(90-((atan((y0-posture.ActVal[4])/(posture.ActVal[3]-x0)))*(180/3.141592))),posture.ActVal[0],v);
 	if(posture.ActVal[3]<x0 && posture.ActVal[4]>y0) PID_Angle(Auto,(-90-((atan((posture.ActVal[4]-y0)/(x0-posture.ActVal[3])))*(180/3.141592))),posture.ActVal[0],v);
 	if(posture.ActVal[3]<x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(-90+((atan((y0-posture.ActVal[4])/(x0-posture.ActVal[3])))*(180/3.141592))),posture.ActVal[0],v);
-	if((x0-50)<posture.ActVal[3] && posture.ActVal[3]<(x0+50) && (y0-50)<posture.ActVal[4] && posture.ActVal[4]<(y0+50)) coordinateCnt++;
+	if(posture.ActVal[3]==x0 && posture.ActVal[4]<y0) PID_Angle(Auto,0,posture.ActVal[0],v);
+	if(posture.ActVal[3]==x0 && posture.ActVal[4]>=y0) PID_Angle(Auto,180,posture.ActVal[0],v);
+//	if((x0-50)<posture.ActVal[3] && posture.ActVal[3]<(x0+50) && (y0-50)<posture.ActVal[4] && posture.ActVal[4]<(y0+50)) coordinateCnt++;
 }
 
 void PID_Line(float x1,float y1,float x2,float y2,int v)             //PID直线，保证车子在一条直线上前进
@@ -207,6 +213,40 @@ void PID_Sauare(float v)                                             //PID正方形
 			lineCnt = 0;
 			break;
 	}	
+}
+
+void PID_Round(float x0,float y0,float r,float v,u8 direction)       //PID圆形，可输入圆心，半径，速度，方向
+{
+	float error = sqrt((posture.ActVal[3]-x0)*(posture.ActVal[3]-x0)+(posture.ActVal[4]-y0)*(posture.ActVal[4]-y0))-r;
+	if(error>900) error = 900;
+	if(error<-900) error = -900;
+	if(error>-100 && error<100) SetTunings(20,0,20);
+	else SetTunings(30,0,40);
+	if(direction == ACW)
+	{
+		if(posture.ActVal[3]>x0 && posture.ActVal[4]>y0) PID_Angle(Auto,(+((atan((posture.ActVal[4]-y0)/(posture.ActVal[3]-x0)))*(180/3.141592))+error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]>x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(-((atan((y0-posture.ActVal[4])/(posture.ActVal[3]-x0)))*(180/3.141592))+error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]<x0 && posture.ActVal[4]>y0) PID_Angle(Auto,(-180-((atan((posture.ActVal[4]-y0)/(x0-posture.ActVal[3])))*(180/3.141592))+error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]<x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(-180+((atan((y0-posture.ActVal[4])/(x0-posture.ActVal[3])))*(180/3.141592))+error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]==x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(-90+error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]==x0 && posture.ActVal[4]>=y0) PID_Angle(Auto,(90+error/10),posture.ActVal[0],v);
+	}
+	if(direction == CW)
+	{
+		if(posture.ActVal[3]>x0 && posture.ActVal[4]>y0) PID_Angle(Auto,(180+((atan((posture.ActVal[4]-y0)/(posture.ActVal[3]-x0)))*(180/3.141592))-error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]>x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(180-((atan((y0-posture.ActVal[4])/(posture.ActVal[3]-x0)))*(180/3.141592))-error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]<x0 && posture.ActVal[4]>y0) PID_Angle(Auto,(-((atan((posture.ActVal[4]-y0)/(x0-posture.ActVal[3])))*(180/3.141592))-error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]<x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(+((atan((y0-posture.ActVal[4])/(x0-posture.ActVal[3])))*(180/3.141592))-error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]==x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(90-error/10),posture.ActVal[0],v);
+		if(posture.ActVal[3]==x0 && posture.ActVal[4]>=y0) PID_Angle(Auto,(-90-error/10),posture.ActVal[0],v);
+	}
+}
+
+void PID_Coordinate_following(float v)                               //PID坐标跟随，y=sinx，未完成(开始时的加速段会有较大振荡)
+{	
+	float x = posture.ActVal[3]+50;
+	float y = 500*sin(x*3.141592f/1000);
+	PID_Coordinate(x,y,v);
 }
 /*
 //	int x_last = 0;
