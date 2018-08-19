@@ -12,18 +12,18 @@
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
 #include <math.h>
-#define Kp1 (210)   //角度PID参数
+#define Kp1 (98)   //角度PID参数
 #define Ki1 (0)
 #define Kd1 (0) 
-#define Kp2 (800.0/speed)*8.5 //位置PID参数
+#define Kp2 7 //位置PID参数
 #define Ki2 (0)
 #define Kd2 (0)
-#define speed (1000)
-
-float State1=0,State2=0,State3=0;//state1 直线不同方向标志位;state2 正负斜率标志位;state3 Y轴特殊情况标志位
+#define speed (500)  //小车速度
+#define R (500.0)   //圆的半径，+为顺时针，-为逆时针
+#define pointX  (500.0f)  //pointX，pointY：给定圆形的坐标
+#define pointY  (0.0f)
 float nowAngle;
 float u1,u2;
-int count;
 extern char isOKFlag;
 extern char pposokflag;
 void driveGyro(void)
@@ -108,80 +108,64 @@ void ConfigTask(void)
 }
 /**
 * @brief  角度闭环
-* @param  u2:位置闭环的输出
-* @param  pointAng:给定角
+* @param  u2:半径闭环的输出
 */
-void uAng(float u2,float pointAng)
+void uAng()
 {
 	static float lastErr = 0;
 	static float sumErr = 0;
-	float err;
-	if(u2>90)
-		u2=90;
-	if(u2<-90)
-		u2=-90;
-	if(State1==0)
-	{
-	  nowAngle=GetAngle()+90;
-	  if(nowAngle>180)
-	  nowAngle=nowAngle-360;
-	  err=u2+pointAng-nowAngle;
-	}
-	else
-	{
-		nowAngle=GetAngle()-90;
-		if(nowAngle<-180)
-		nowAngle=nowAngle+360;
-	  err=-u2+pointAng-nowAngle; 
-	}
+	float err,pointAngle;
+	if(R>0)
+		pointAngle=atan2(pointX-GetXpos(),GetYpos()-pointY)*180/PI;
+	if(R<0)
+		pointAngle=atan2(GetXpos()-pointX,pointY-GetYpos())*180/PI;
+			nowAngle=GetAngle()+90;
+		    if(nowAngle>180)
+			  nowAngle=nowAngle-360;
+		err=pointAngle-nowAngle+u2;
 	if(err>180)
 		err=err-360;
 	if(err<-180)
 		err=err+360;
 	sumErr += err;
-	u1= Kp1 * err + Ki1 * sumErr +Kd1 *(err - lastErr);
+	u1= -Kp1 * err + Ki1 * sumErr +Kd1 *(err - lastErr);
 	lastErr = err;
 }
 /**
-* @brief  位置闭环
-* @param  k:给定直线斜率
-* @param  x1，y1：给定直线的一个点坐标
-* @param  a:直线x=a的特殊情况
+* @brief  半径闭环
+* @param  r:给定圆的半径
 */
-void uPlace(float k,float x1,float y1,float a)
+void uPlace()
 {
 	static float lastErr = 0;
 	static float sumErr = 0;
-	float err;
-	if(State3==0)
-	{
-	err=fabs(k*GetXpos()-GetYpos()+y1-k*x1)/sqrt(k*k+1);
-	if(k*GetXpos()-k*x1+y1<GetYpos()&&State2==0)
-	err=-err;
-    if(k*GetXpos()-k*x1+y1>GetYpos()&&State2==1)
-	err=-err;
-    }	
-	if(State3==1)
-	{
-		err=GetXpos()-a;
-	}
+	float err,distance;
+    distance=sqrt((pointX-GetXpos())*(pointX-GetXpos())+(pointY-GetYpos())*(pointY-GetYpos()));
+	err=R-distance;
+	if(R<0)
+		err=-err;
 	sumErr += err;
 	u2= Kp2*0.01*err + Ki2 * sumErr +Kd2 *(err - lastErr);
+	if(u2>90)
+		u2=90;
+	if(u2<-90)
+		u2=-90;
 	lastErr = err;
 }
-/**
-* @brief  给小车左右轮速度让小车直线走
-* @param  speed:给小车的行进速度，单位mm/s
-*/
-void WalkStright()
-{
-	float pulse;
-	pulse=4096*speed/(WHEEL_DIAMETER*PI);
-	VelCrl(CAN2,1,pulse+u1);
-	VelCrl(CAN2,2,-pulse);
-}
+///**
+//* @brief  给小车左右轮速度让小车直线走
+//* @param  speed:给小车的行进速度，单位mm/s
+//*/
+//void WalkStright()
+//{
+//	float pulse;
+//	pulse=4096*speed/(WHEEL_DIAMETER*PI);
+//	VelCrl(CAN2,1,pulse+u1);
+//	VelCrl(CAN2,2,-pulse);
+//}
 void WalkTask(void)
 {
+	float buff1,buff2,pulse;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
@@ -193,44 +177,51 @@ void WalkTask(void)
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetYpos());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)u2);
 		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)u1);
-		switch(count)
-		{
-		 case 0:
-		    State1=0;
-		    State3=1;
-		    WalkStright();
-		    uPlace(1,0,1000,0);
-	        uAng(u2,90);
-		 if(GetYpos()>800.0/speed*1700)
-			 count=1;
-		 break;
-		 case 1:
-		    State1=0;
-		    State3=0;
-		    WalkStright();
-		    uPlace(0,1000,2000,0);
-	        uAng(u2,0);
-		 if(GetXpos()>800.0/speed*1700)
-			 count=2;
-		 break;
-		 case 2:
-            State1=1;
-		    State3=1;
-		    WalkStright();
-		    uPlace(0,2000,1000,2000);
-	        uAng(u2,90);
-		 if(GetYpos()<2000-800.0/speed*1700)
-			 count=3;
-		 break;
-		 case 3:
-            State1=1;
-		    State3=0;
-		    WalkStright();
-		    uPlace(0,1000,0,0);
-	        uAng(u2,0);
-		 if(GetXpos()<2000-800.0/speed*1700)
-			 count=0;
-		 break;
+		uPlace();
+		uAng();
+		pulse=4096*speed/(WHEEL_DIAMETER*PI);
+		buff1=(1+0.5*WHEEL_TREAD/R)*pulse+u1;//左轮       u+左， u-右，
+		buff2=(1-0.5*WHEEL_TREAD/R)*pulse-u1;//右轮
+	    VelCrl(CAN2,1,buff2);
+		VelCrl(CAN2,2,-buff1);
+//		switch(count)
+//		{
+//		 case 0:
+//		    State1=0;
+//		    State3=1;
+//		    WalkStright();
+//		    uPlace(1,0,1000,0);
+//	        uAng(u2,90);
+//		 if(GetYpos()>800.0/speed*1700)
+//			 count=1;
+//		 break;
+//		 case 1:
+//		    State1=0;
+//		    State3=0;
+//		    WalkStright();
+//		    uPlace(0,1000,2000,0);
+//	        uAng(u2,0);
+//		 if(GetXpos()>800.0/speed*1700)
+//			 count=2;
+//		 break;
+//		 case 2:
+//            State1=1;
+//		    State3=1;
+//		    WalkStright();
+//		    uPlace(0,2000,1000,2000);
+//	        uAng(u2,90);
+//		 if(GetYpos()<2000-800.0/speed*1700)
+//			 count=3;
+//		 break;
+//		 case 3:
+//            State1=1;
+//		    State3=0;
+//		    WalkStright();
+//		    uPlace(0,1000,0,0);
+//	        uAng(u2,0);
+//		 if(GetXpos()<2000-800.0/speed*1700)
+//			 count=0;
+//		 break;
 //       if(State3==1)
 //       {
 //		 uPlace(1,0,100);
@@ -242,7 +233,7 @@ void WalkTask(void)
 //		 uAng(u2,atan(0)*180/PI+State2*180);
 //	   }
 //	    WalkStright(500);
-	}
+//	}
   }		
 }
 
