@@ -484,78 +484,44 @@ float AnglePID(float Angle,float SetAngle)
 	return pid;
 }
 
-float xyPID(int a,int b,int c,int x,int y)
+float xyPID(float distance)
 {
+	float distancepid;
 	struct PID xy;
-	xy.p=5;
-	xy.i=0;
-	xy.d=0;
+	xy.p=0.04;
 	float errxy=0,pid=0,errangle=0,err2=0;
 	int angle=0,xielv;
-	if(b!=0)
-	{
-		xielv=-a/b;
-		if(xielv>=0)
-		{
-			errxy=a*x+b*y-c;
-		}
-		if(xielv<0)
-			
-		{
-			errxy=c-a*x-b*y;
-		}
-	}
-		if(b==0)
-		{
-			errxy=a*x-c;
-		}
 	
-//	err1=SetAngle-Angle;
-//	if(err1>=0)
-//		err2=err1-360;
-//	else
-//		err2=360+err1;
-//	if(err1>180||err1<-180)
-//	{
-//		err=err2;
-//	}
-//	else
-//	{
-//		err=err1;
-//	}
-//	i+=err;
-	pid=xy.p*errxy;
-	return pid;
+		distancepid=xy.p*distance;
+	return distancepid;
 }
-//extern float setangle;
-//int AngleChange(void)
-//{
-//	int flag=1;
-//	#if car==4
-//	if(pos_t.y>=1750&&ChangeFlag==0&&setangle==0)
-//		ChangeFlag=1;
-//	else if(pos_t.x<=-1750&&ChangeFlag==1&&setangle==90)
-//		ChangeFlag=2;
-//	else if(pos_t.y<=250&&ChangeFlag==2&&(setangle==180||setangle==-180))
-//		ChangeFlag=3;
-//	else if(pos_t.x>=-250&&ChangeFlag==3&&setangle==-90)
-//		ChangeFlag=0;
-//	else
-//		flag=0;
-//	#elif car==1
-//	if(pos_t.y>=2000&&ChangeFlag==0&&setangle==0)
-//		ChangeFlag=1;
-//	else if(pos_t.x<=-2000&&ChangeFlag==1&&setangle==90)
-//		ChangeFlag=2;
-//	else if(pos_t.y<=0&&ChangeFlag==2&&(setangle==180||setangle==-180))
-//		ChangeFlag=3;
-//	else if(pos_t.x>=0&&ChangeFlag==3&&setangle==-90)
-//		ChangeFlag=0;
-//	else
-//		flag=0;
-//	#endif
-//	return flag;
-//}
+extern float setangle;
+int AngleChange(void)
+{
+	float Ang,x,y;
+	#if Car==4
+	Ang=GetAngle();
+	x=GetXpos();
+	y=GetYpos();
+	#elif Car==1
+	Ang=-GetAngle();
+	y=-GetXpos();
+	x=GetYpos();
+	#endif
+
+	int flag=1;
+	if(y>=1750&&ChangeFlag==0&&setangle==0)
+		ChangeFlag=1;
+	else if(x<=-1750&&ChangeFlag==1&&setangle==90)
+		ChangeFlag=2;
+	else if(y<=250&&ChangeFlag==2&&(setangle==180||setangle==-180))
+		ChangeFlag=3;
+	else if(x>=-250&&ChangeFlag==3&&setangle==-90)
+		ChangeFlag=0;
+	else
+		flag=0;
+	return flag;
+}
 
 
 
