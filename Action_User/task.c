@@ -92,6 +92,7 @@ pos_t action;
     //float cc=0;
 	int cycle_flag=0;//cycle_flag为全局变量，两个函数都能改变
 	int change=1;//change为全局变量，两个函数都能改变
+	float Ra=0;//(可变半径)
 //	#define nn 1//(方向指定，1为向X轴上方，-1为向x轴下方，当倾斜角=0（aa=0）时，-2为x轴负向，2为x轴正向,)
 /*
 ==================================================================================
@@ -603,8 +604,14 @@ void WalkTask(void)
   
   if(car==44)
   {
-	  
-	  loop(500,500,1000,1.0,1);//逆时针转为1,顺时针为-1
+	  if(action.x>0&&(action.y<=-1000+1)&&(action.y>=-1000-1))
+	  {
+	   if(Ra<=750)	  
+	  Ra=Ra+250;
+	   if(Ra>2000)
+	  Ra=Ra-250;
+	  }	  
+	  loop(0,1000,Ra,2.0,1);//逆时针转为1,顺时针为-1
 	  X=(int)action.x;
 	  Y=(int)action.y;
       Angle=(int)action.angle;	  
