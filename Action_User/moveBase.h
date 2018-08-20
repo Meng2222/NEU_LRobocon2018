@@ -72,12 +72,18 @@
 
 void Straight(float speed);
 void Round(float rightSpeed,float radius);
-void Turn(float angle);
+void Turn(float angle,float gospeed);
+void BackTurn(float angle,float gospeed);
 void BTP(float angle);
 void Square(void);
 void straightLine(float A1,float B1,float C1,uint8_t dir);
-void ShrinkSquare(void);
+uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir);
+void BiggerSquareOne(void);
+void BiggerSquareTwo(void);
 void SquareTwo(void);
+void RoundTwo(float centerX,float centerY,float r,uint8_t o,float speed);
+float Speed_X(void);
+float Speed_Y(void);
 #endif /* ___H */
 
 

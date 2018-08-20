@@ -26,7 +26,7 @@
 #include <stdint.h>
 
 
-#define CAR 1
+#define CAR 4
 /*
 *********************************************************************************************************
 *                                       MODULE ENABLE / DISABLE
@@ -68,7 +68,7 @@ static	void CarOne(void);
 */
 #define  APP_TASK_START_STK_SIZE					256u
 #define  Config_TASK_START_STK_SIZE					256u
-#define  Walk_TASK_STK_SIZE							512u
+#define  Walk_TASK_STK_SIZE							2048u
 
 /*
 *********************************************************************************************************

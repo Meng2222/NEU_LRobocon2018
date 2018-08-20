@@ -36,6 +36,7 @@
 #include "usart.h"
 #include "timer.h"
 #include "can.h"
+#include "adc.h"
 #include "gpio.h"
 #include "elmo.h"
 #include "app_cfg.h"
@@ -453,9 +454,13 @@ float GetAngle(void)
 {
 	return angle;
 }
+
+extern float axis_Xerr;
+
 float GetPosX(void)
 {
-	return posX;
+	
+	return posX-(axis_Xerr/2);
 }
 float GetPosY(void)
 {

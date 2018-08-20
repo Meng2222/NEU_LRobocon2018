@@ -2,6 +2,8 @@
 
 static float outMax=800;
 static float outMin=-800;
+static float outMax2=90;
+static float outMin2=-90;
 static struct PIDPara_{
 	float aKp;
 	float aKi;
@@ -56,13 +58,13 @@ float DistancePid(float valueSet,float valueNow)
 	err=valueSet-valueNow;
 	iTerm+=(pid_Para.dKi*err);
 
-	if(iTerm > outMax) iTerm=outMax;
-	if(iTerm < outMin) iTerm=outMin;
+	if(iTerm > 10) iTerm=8;
+	if(iTerm < -10) iTerm=-8;
 	
 	valueOut=(pid_Para.dKp*err)+iTerm+(pid_Para.dKd*(err-errLast));
 	
-	if(valueOut > outMax) valueOut=outMax;
-	if(valueOut < outMin) valueOut=outMin;
+	if(valueOut > outMax2) valueOut=outMax2;
+	if(valueOut < outMin2) valueOut=outMin2;
 	errLast=err;
 	return valueOut;
 }
