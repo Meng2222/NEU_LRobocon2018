@@ -350,20 +350,20 @@ void USART3_IRQHandler(void) //更新频率200Hz
 		
 }
 
-void USART6_IRQHandler(void)
-{
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
+//void USART3_IRQHandler(void)
+//{
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
 
-	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
-	}
+//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+//	{
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+//	}
 
-	OSIntExit();
-}
+//	OSIntExit();
+//}
 
 void UART5_IRQHandler(void)
 {

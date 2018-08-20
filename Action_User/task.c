@@ -10,7 +10,7 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
-#include "stm32f4xx_adc.h"
+#include "pps.h"
 /*
 ===============================================================
 						信号量定义
@@ -118,6 +118,10 @@ void ConfigTask(void)
      delay_s(10);	
 	  delay_s(5);
 	 #endif
+	
+	USART3_Init(115200);
+	/*一直等待定位系统初始化完成*/
+	WaitOpsPrepare();
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
