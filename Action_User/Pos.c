@@ -126,7 +126,11 @@ float LineDir(const linewithdir thisline)
     float tempangle = 0;
     if(thisline.a == 0)
     {
-        if(thisline.linedir == forward)
+        if(thisline.b == 0)
+        {
+            return GetA();
+        }
+        else if(thisline.linedir == forward)
         {
             return 90;
         }

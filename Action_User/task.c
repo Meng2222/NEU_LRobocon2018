@@ -15,10 +15,10 @@
 #include "environmental.h"
 #include "Pos.h"
 
-#define DT 500
+//#define DT 500
 #define safe 1
-#define X1 100
-#define X2 200
+#define X1 50
+#define X2 100
 /*
 ===============================================================
 						信号量定义
@@ -32,23 +32,27 @@ PIDCtrlStructure PidB;
 
 point nowPoint;
 
-static const linewithdir line1 = {0, 1, 0, forward};
-static const linewithdir line2 = {1, 0, 0, forward};
-static const linewithdir line3 = {0, 1, -2000, backward};
-static const linewithdir line4 = {1, 0, -2000, backward};
+//static const linewithdir line1 = {0, 1, 0, forward};
+//static const linewithdir line2 = {1, 0, 0, forward};
+//static const linewithdir line3 = {0, 1, -2000, backward};
+//static const linewithdir line4 = {1, 0, -2000, backward};
 
-static const linewithdir corss1 = {1000-DT, 1000, -1 * (1000*(2000 - DT)), forward};
-static const linewithdir corss2 = {1000, DT - 1000, -1 * DT * 1000, forward};
+//static const linewithdir corss1 = {1000-DT, 1000, -1 * (1000*(2000 - DT)), forward};
+//static const linewithdir corss2 = {1000, DT - 1000, -1 * DT * 1000, forward};
 
-static linewithdir Target =
-{
-    .a = 1,
-    .b = 0,
-    .c = 0,
-    .linedir = forward,
-};
+#define CCX 1000
+#define CCY 1000
+static point circlecentre;
+static const reldir circledir = right;
+static const float circleradius = 1000;
 
-//Target = {1, 0, 0};
+//static linewithdir Target =
+//{
+//    .a = 1,
+//    .b = 0,
+//    .c = 0,
+//    .linedir = forward,
+//};
 
 void App_Task()
 {
@@ -127,13 +131,15 @@ float LengthProcessing3(float x)
 
 float GetP(void)
 {
-    if(RelDir2Line(Target, nowPoint) == right)
+    float tempNum = 0;
+    tempNum =Point2Point(circlecentre, nowPoint) - circleradius;
+    if(tempNum > 0)
     {
-        return LengthProcessing(Point2Line(Target, nowPoint));
+        return LengthProcessing(__fabs(tempNum));
     }
-    else if(RelDir2Line(Target, nowPoint) == left)
+    else if(tempNum < 0)
     {
-        return -1 * LengthProcessing(Point2Line(Target, nowPoint));
+        return -1 * LengthProcessing(__fabs(tempNum));
     }
     else
     {
@@ -141,55 +147,57 @@ float GetP(void)
     }
 }
 
-void ChangeRoad(void)
-{
-    reldir dir2corss1,dir2corss2;
-    dir2corss1 = RelDir2Line(corss1, nowPoint);
-    dir2corss2 = RelDir2Line(corss2, nowPoint);
-    if(dir2corss1 == left)
-    {
-        if(dir2corss2 == right)
-        {
-            Target = line1;
-        }
-        else if(dir2corss2 == left)
-        {
-            Target = line2;
-        }
-    }
-    else if(dir2corss1 == right)
-    {
-        if(dir2corss2 == left)
-        {
-            Target = line3;
-        }
-        else if(dir2corss2 == right)
-        {
-            Target = line4;
-        }
-    }
-}
+//void ChangeRoad(void)
+//{
+//    reldir dir2corss1,dir2corss2;
+//    dir2corss1 = RelDir2Line(corss1, nowPoint);
+//    dir2corss2 = RelDir2Line(corss2, nowPoint);
+//    if(dir2corss1 == left)
+//    {
+//        if(dir2corss2 == right)
+//        {
+//            Target = line1;
+//        }
+//        else if(dir2corss2 == left)
+//        {
+//            Target = line2;
+//        }
+//    }
+//    else if(dir2corss1 == right)
+//    {
+//        if(dir2corss2 == left)
+//        {
+//            Target = line3;
+//        }
+//        else if(dir2corss2 == right)
+//        {
+//            Target = line4;
+//        }
+//    }
+//}
 
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-    MotorOn(CAN2, 1);
-    MotorOn(CAN2, 2);
+    float uout1 = 0, uout2 = 0; 
+    linewithdir line2centre;
 	OSSemSet(PeriodSem, 0, &os_err);
     PidA.KP = 20; //20
     PidA.KI = 0.01; //0.01
     PidA.KD = 10; //20
     PidA.GetVar = GetA;
-    PidA.ExOut = LineDir(Target);
-    PidB.KP = 10; //10
+    PidA.ExOut = VDirForLine(line2centre, circledir);
+    PidB.KP = 5; //10
     PidB.KI = 0.0001; //0.0001
     PidB.KD = 10; //20
     PidB.GetVar = GetA;
-    PidB.ExOut = 0;
+    PidB.ExOut = PidA.ExOut + 90 * GetP();
+    circlecentre = setPointXY(CCX, CCY);
+    MotorOn(CAN2, 1);
+    MotorOn(CAN2, 2);
     PIDCtrlInit1();
     PIDCtrlInit2();
-    float uout1 = 0, uout2 = 0; 
 //    float anglediff = 0;
 //    reldir reldirNow2Line;
     USART_OUT(UART4, (uint8_t *)"u1   u2   x   y   a   ea2   ea   jl   e1   e2\r\n");
@@ -199,9 +207,10 @@ void WalkTask(void)
         nowPoint = GetNowPoint();
 //        reldirNow2Line = RelDir2Line(&Target, linedir);
 //        anglediff = __fabs(GetA() - PidB.ExOut);
-        ChangeRoad();
-        PidA.ExOut = LineDir(Target);
-        PidB.ExOut = PidA.ExOut + 90 * GetP();
+//        ChangeRoad();
+        line2centre = DirlinePoint2Point(circlecentre, nowPoint);
+        PidA.ExOut = VDirForLine(line2centre, circledir);
+        PidB.ExOut = PidA.ExOut - 90 * GetP();
         if(PidB.ExOut >= 180)
         {
             PidB.ExOut -= 360;
@@ -242,7 +251,7 @@ void WalkTask(void)
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) GetA());
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidB.ExOut);
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidA.ExOut);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Point2Line(Target, nowPoint));
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Point2Point(circlecentre, nowPoint));
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidA.ExOut - GetA());
         USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) PidB.ExOut - GetA());
 	}
