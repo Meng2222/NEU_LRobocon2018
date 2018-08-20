@@ -20,10 +20,10 @@ void WalkStraight(int v)
                         È¦µÄ°ë¾¶  r   µ¥Î»mm
 =========================================================================
 */
-void WalkRound(u8 direction, int v,int r)           //»­È¦£¬Èë¿Ú²ÎÊý
+void WalkRound(u8 direction4, int v,int r)           //»­È¦£¬Èë¿Ú²ÎÊý
 {
 	int w = v/r;
-	if(direction == CW)
+	if(direction4 == CW)
 	{
 		VelCrl(CAN2,1,(4096/378)*(w*(r-217)));
 		VelCrl(CAN2,2,-((4096/378)*(w*(r+217))));
@@ -48,7 +48,7 @@ void WalkRound(u8 direction, int v,int r)           //»­È¦£¬Èë¿Ú²ÎÊý
 ========================================================================
 */
 
-int angle_set = 0;
+float angle_set = 0;
 extern u8 isOKFlag;
 extern u8 issendOK;
 float kp = 20;
@@ -61,6 +61,7 @@ float velocityMax1 = 3600;
 float velocityMax2 = -3600;
 float velocityMin1 = 100;
 float velocityMin2 = -100;
+u8 squareCnt = 0;
 extern float angle;
 u8 coordinateCnt = 0;
 void driveGyro(void)                                                 //1³µ¶¨Î»ÏµÍ³Ê¹ÄÜ
@@ -93,7 +94,7 @@ void Init_PID(float angle)                                           //PID²ÎÊý³õ
     else if(ITerm < velocityMax2) ITerm= velocityMax2;
 }
 
-void PID_Angle(u8 status,float Angle_Set,float Angle,int v)          //PID½Ç¶È¿ØÖÆ£¬Ê¹³µÍ·Ëø¶¨Ò»¸ö¹Ì¶¨·½Ïò
+void PID_Angle(u8 status,float Angle_Set,float Angle,float v)          //PID½Ç¶È¿ØÖÆ£¬Ê¹³µÍ·Ëø¶¨Ò»¸ö¹Ì¶¨·½Ïò
 {
 	static u8 lastStatus = 0;
 	if(status == manual)
@@ -116,8 +117,16 @@ void PID_Angle(u8 status,float Angle_Set,float Angle,int v)          //PID½Ç¶È¿Ø
 	}
 //	if(Angle_Set - lastAngle>10 || Angle_Set - lastAngle<-10)
 	float error = 0 - Angle;
-	if(error>10 || error<-10) ki = 0.05;
-	else ki = 0.2;
+	if(error>2 || error<-2) 
+	{
+		ki = 0.001;
+		kd = 20;
+	}
+	else 
+	{
+		ki = 0.01;
+		kd = 1000;
+	}
 	ITerm += ki*error;
 	if(ITerm > velocityMax1) ITerm= velocityMax1;
     if(ITerm < velocityMax2) ITerm= velocityMax2;
@@ -125,14 +134,15 @@ void PID_Angle(u8 status,float Angle_Set,float Angle,int v)          //PID½Ç¶È¿Ø
 //	if(ITerm < 0 && ITerm > velocityMin2) ITerm = velocityMin2;
 	float DTerm = lastAngle - Angle;
 	velocity = kp*error + ITerm + kd*DTerm;
+	v = v/((abs((int)(DTerm*8)))+1);
 	if(velocity > velocityMax1) velocity = velocityMax1;
     if(velocity < velocityMax2) velocity = velocityMax2;
 //	if(velocity > 0 && velocity < velocityMin1) velocity = velocityMin1;
 //  if(velocity < 0 && velocity > velocityMin2) velocity = velocityMin2;
 	lastAngle = Angle;
 	lastStatus = status;
-	VelCrl(CAN2,1,(((4096/378)*velocity)+(4096/378)*v));
-	VelCrl(CAN2,2,(((4096/378)*velocity)-(4096/378)*v));
+	VelCrl(CAN2,1,(int)(((4096/378)*velocity)+(4096/378)*v));
+	VelCrl(CAN2,2,(int)(((4096/378)*velocity)-(4096/378)*v));
 }
 
 extern union u8andfloat                                              //ÒýÓÃ¶¨Î»ÏµÍ³Êý¾Ý
@@ -143,7 +153,7 @@ extern union u8andfloat                                              //ÒýÓÃ¶¨Î»Ï
 
 
 
-void PID_Coordinate(float x0,float y0,int v)                         //PID×ø±ê¿ØÖÆ£¬Òýµ¼³µ×ÓÊ»ÏòÒ»¸ö¹Ì¶¨×ø±ê
+void PID_Coordinate(float x0,float y0,float v)                         //PID×ø±ê¿ØÖÆ£¬Òýµ¼³µ×ÓÊ»ÏòÒ»¸ö¹Ì¶¨×ø±ê
 {
 	if(posture.ActVal[3]>x0 && posture.ActVal[4]>y0) PID_Angle(Auto,(90+((atan((posture.ActVal[4]-y0)/(posture.ActVal[3]-x0)))*(180/3.141592))),posture.ActVal[0],v);
 	if(posture.ActVal[3]>x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(90-((atan((y0-posture.ActVal[4])/(posture.ActVal[3]-x0)))*(180/3.141592))),posture.ActVal[0],v);
@@ -154,7 +164,7 @@ void PID_Coordinate(float x0,float y0,int v)                         //PID×ø±ê¿Ø
 //	if((x0-50)<posture.ActVal[3] && posture.ActVal[3]<(x0+50) && (y0-50)<posture.ActVal[4] && posture.ActVal[4]<(y0+50)) coordinateCnt++;
 }
 
-void PID_Line(float x1,float y1,float x2,float y2,int v)             //PIDÖ±Ïß£¬±£Ö¤³µ×ÓÔÚÒ»ÌõÖ±ÏßÉÏÇ°½ø
+void PID_Line(float x1,float y1,float x2,float y2,float v)             //PIDÖ±Ïß£¬±£Ö¤³µ×ÓÔÚÒ»ÌõÖ±ÏßÉÏÇ°½ø
 {
 	float Line_A = y1-y2;
 	float Line_B = x2-x1;
@@ -162,33 +172,33 @@ void PID_Line(float x1,float y1,float x2,float y2,int v)             //PIDÖ±Ïß£¬
 	float error = (Line_A*posture.ActVal[3]+Line_B*posture.ActVal[4]+Line_C)/sqrt(Line_A*Line_A+Line_B*Line_B);
 	if(error>900) error = 900;
 	if(error<-900) error = -900;
-	if(error>-100 && error<100) SetTunings(20,0,20);
-	else SetTunings(30,0,40);
+	if(error>-100 && error<100) kp = 20;
+	else kp = 30;
 	if(x1>x2 && y1>=y2) PID_Angle(Auto,(90+((atan((y1-y2)/(x1-x2)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
 	if(x1>x2 && y1<y2) PID_Angle(Auto,(90-((atan((y2-y1)/(x1-x2)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
 	if(x1<x2 && y1>=y2) PID_Angle(Auto,(-90-((atan((y1-y2)/(x2-x1)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
 	if(x1<x2 && y1<y2) PID_Angle(Auto,(-90+((atan((y2-y1)/(x2-x1)))*(180/3.141592)))-error/20,posture.ActVal[0],v);
 	if(x1==x2 && y2>=y1) 
 	{
-		if((posture.ActVal[3]-x1)<=450 && (posture.ActVal[3]-x1)>=-450) error = posture.ActVal[3]-x1;
+		if((posture.ActVal[3]-x1)<=900 && (posture.ActVal[3]-x1)>=-900) error = posture.ActVal[3]-x1;
 		else if(error>900) error = 900;
 		else if(error<-900) error = -900;
-		if(error>-100 && error<100) SetTunings(20,0,20);
-		else SetTunings(30,0,40);
+		if(error>-100 && error<100) kp = 20;
+		else kp = 30;
 		PID_Angle(Auto,0+error/20,posture.ActVal[0],v);
 	}
-	if(x1==x2 && y2<y1) 
+	if(x1==x2 && y2<y1)
 	{
-		if((posture.ActVal[3]-x1)<=450 && (posture.ActVal[3]-x1)>=-450) error = posture.ActVal[3]-x1;
+		if((posture.ActVal[3]-x1)<=900 && (posture.ActVal[3]-x1)>=-900) error = posture.ActVal[3]-x1;
 		else if(error>900) error = 900;
 		else if(error<-900) error = -900;
-		if(error>-100 && error<100) SetTunings(20,0,20);
-		else SetTunings(30,0,40);
-		PID_Angle(Auto,180-(posture.ActVal[3]-x1)/20,posture.ActVal[0],v);
+		if(error>-100 && error<100) kp = 20;
+		else kp = 30;
+		PID_Angle(Auto,180-error/20,posture.ActVal[0],v);
 	}
 }
 
-void PID_Sauare(float v)                                             //PIDÕý·½ÐÎ£¬Á½Ã×¼û·½£¬ËÙ¶È1mµÄ²ÎÊý
+void PID_Square(float v)                                             //PIDÕý·½ÐÎ£¬Á½Ã×¼û·½£¬ËÙ¶È1mµÄ²ÎÊý
 {
 	static u8 lineCnt = 0;
 	switch(lineCnt)
@@ -215,14 +225,14 @@ void PID_Sauare(float v)                                             //PIDÕý·½ÐÎ
 	}	
 }
 
-void PID_Round(float x0,float y0,float r,float v,u8 direction)       //PIDÔ²ÐÎ£¬¿ÉÊäÈëÔ²ÐÄ£¬°ë¾¶£¬ËÙ¶È£¬·½Ïò
+void PID_Round(float x0,float y0,float r,float v,u8 direction3)       //PIDÔ²ÐÎ£¬¿ÉÊäÈëÔ²ÐÄ£¬°ë¾¶£¬ËÙ¶È£¬·½Ïò
 {
 	float error = sqrt((posture.ActVal[3]-x0)*(posture.ActVal[3]-x0)+(posture.ActVal[4]-y0)*(posture.ActVal[4]-y0))-r;
 	if(error>900) error = 900;
 	if(error<-900) error = -900;
 	if(error>-100 && error<100) SetTunings(20,0,20);
 	else SetTunings(30,0,40);
-	if(direction == ACW)
+	if(direction3 == ACW)
 	{
 		if(posture.ActVal[3]>x0 && posture.ActVal[4]>y0) PID_Angle(Auto,(+((atan((posture.ActVal[4]-y0)/(posture.ActVal[3]-x0)))*(180/3.141592))+error/10),posture.ActVal[0],v);
 		if(posture.ActVal[3]>x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(-((atan((y0-posture.ActVal[4])/(posture.ActVal[3]-x0)))*(180/3.141592))+error/10),posture.ActVal[0],v);
@@ -231,7 +241,7 @@ void PID_Round(float x0,float y0,float r,float v,u8 direction)       //PIDÔ²ÐÎ£¬
 		if(posture.ActVal[3]==x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(-90+error/10),posture.ActVal[0],v);
 		if(posture.ActVal[3]==x0 && posture.ActVal[4]>=y0) PID_Angle(Auto,(90+error/10),posture.ActVal[0],v);
 	}
-	if(direction == CW)
+	if(direction3 == CW)
 	{
 		if(posture.ActVal[3]>x0 && posture.ActVal[4]>y0) PID_Angle(Auto,(180+((atan((posture.ActVal[4]-y0)/(posture.ActVal[3]-x0)))*(180/3.141592))-error/10),posture.ActVal[0],v);
 		if(posture.ActVal[3]>x0 && posture.ActVal[4]<y0) PID_Angle(Auto,(180-((atan((y0-posture.ActVal[4])/(posture.ActVal[3]-x0)))*(180/3.141592))-error/10),posture.ActVal[0],v);
@@ -248,6 +258,112 @@ void PID_Coordinate_following(float v)                               //PID×ø±ê¸ú
 	float y = 500*sin(x*3.141592f/1000);
 	PID_Coordinate(x,y,v);
 }
+
+void PID_Square_x(float length,float v,u8 direction2)                                            
+{
+	static u8 lineCnt = 0;
+	float update = 650;
+	if(direction2 == ACW)
+	{
+		switch(lineCnt)
+		{
+			case 0:
+				PID_Line(length/2,0,length/2,2000,v);
+				if(posture.ActVal[4]>(2200+length/2-update)) lineCnt++;
+				break;
+			case 1:
+				PID_Line(2000,2200+length/2,-2000,2200+length/2,v);
+				if(posture.ActVal[3]<(update-length/2)) lineCnt++;
+				break;
+			case 2:
+				PID_Line(0-length/2,2000,0-length/2,0,v);
+				if(posture.ActVal[4]<2200-length/2+update) lineCnt++;
+				break;
+			case 3:
+				PID_Line(-2000,2200-length/2,0,2200-length/2,v);
+				if(length>3000)
+				{
+					if(posture.ActVal[3]>(length)/2-update)
+					{
+						lineCnt=0;
+						squareCnt++;
+					}
+				}
+				else
+				{
+					if(posture.ActVal[3]>(length+1000)/2-update)
+					{
+						lineCnt=0;
+						squareCnt++;
+					}
+				}
+				break;
+			default:
+				lineCnt = 0;			
+				break;
+		}	
+	}
+	if(direction2 == CW)
+	{
+		switch(lineCnt)
+		{
+			case 0:				
+				PID_Line((0-length/2),0,(0-length/2),2000,v);
+				if(posture.ActVal[4]>(2200+length/2-update)) lineCnt++;
+				break;
+			case 1:
+				PID_Line(-2000,2200+length/2,2000,2200+length/2,v);			
+				if(posture.ActVal[3]>(length/2-update)) lineCnt++;
+				break;
+			case 2:				
+				PID_Line(length/2,2000,length/2,0,v);
+				if(posture.ActVal[4]<2200-length/2+update) lineCnt++;
+				break;
+			case 3:
+				PID_Line(0,2200-length/2,-2000,2200-length/2,v);
+				if(length>3000)
+				{
+					if(posture.ActVal[3]<-length/2+update) 
+					{
+						lineCnt=0;
+						squareCnt++;
+					}
+				}
+				else
+				{
+					if(posture.ActVal[3]<-1000-length/2+update) 
+					{
+						lineCnt=0;
+						squareCnt++;
+					}
+				}
+				break;
+			default:
+				lineCnt = 0;
+				break;
+		}
+	}
+}
+
+void PID_RUN(float v,u8 direction1)
+{	
+	switch(squareCnt)
+	{
+		case 0:
+			PID_Square_x(1500,v,direction1);
+			break;
+		case 1:
+			PID_Square_x(2500,v,direction1);
+			break;
+		case 2:
+			PID_Square_x(3500,v,direction1);
+			break;
+		default:
+			squareCnt = 2;			
+			break;			
+	}
+}
+
 /*
 //	int x_last = 0;
 //	int y_last = 0;

@@ -429,6 +429,11 @@
               <FileType>1</FileType>
               <FilePath>..\Action_User\PID.c</FilePath>
             </File>
+            <File>
+              <FileName>adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\adc.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

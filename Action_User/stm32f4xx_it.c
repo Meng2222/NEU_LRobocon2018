@@ -110,7 +110,7 @@ extern OS_EVENT *CPUUsageSem;
 
 void TIM2_IRQHandler(void)
 {
-#define PERIOD_COUNTER 100
+#define PERIOD_COUNTER 1
 
 	//用来计数10次，产生10ms的定时器
 	static uint8_t periodCounter = PERIOD_COUNTER;
@@ -124,7 +124,7 @@ void TIM2_IRQHandler(void)
 	{
 		//实现10ms 发送1次信号量
 		periodCounter--;
-		OSSemPost(CPUUsageSem);
+//		OSSemPost(CPUUsageSem);
 		if (periodCounter == 0)
 		{
 			OSSemPost(PeriodSem);
@@ -569,6 +569,7 @@ void DebugMon_Handler(void)
 u8 isOKFlag = 0;
 u8 issendOK = 0;
 float angle = 0;
+extern float error;
 
 union u8andfloat
 {   
@@ -634,14 +635,14 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 				posture.ActVal[0] = receieve.ActVal[0] ;//角度    
 				posture.ActVal[1] = receieve.ActVal[1];    
 				posture.ActVal[2] = receieve.ActVal[2];     
-				posture.ActVal[3] = receieve.ActVal[3];//x    
+				posture.ActVal[3] = receieve.ActVal[3]+error;//x    
 				posture.ActVal[4] = receieve.ActVal[4];//y      
 				posture.ActVal[5] = receieve.ActVal[5];
 				#elif CarNumber == 1
 				posture.ActVal[0] = -receieve.ActVal[0] ;//角度    
 				posture.ActVal[1] = receieve.ActVal[1];    
 				posture.ActVal[2] = receieve.ActVal[2];     
-				posture.ActVal[3] = receieve.ActVal[4];//x  
+				posture.ActVal[3] = receieve.ActVal[4]+error;//x  
 				posture.ActVal[4] = -receieve.ActVal[3];//y 				     
 				posture.ActVal[5] = receieve.ActVal[5];				
 				#endif

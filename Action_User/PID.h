@@ -15,21 +15,24 @@
 #include "stm32f4xx.h"
 #include <ucos_ii.h>
 #include <math.h>
+#include "adc.h"
 
-#define ACW 0
-#define CW 1
+#define ACW 2
+#define CW 3
 #define manual 1
 #define Auto 0
 void WalkStraight(int v);
-void WalkRound(u8 direction, int v,int r);
+void WalkRound(u8 direction4, int v,int r);
 void driveGyro(void);
 void SetTunings(float p,float i,float d);
 void Init_PID(float angle);
-void PID_Angle(u8 status,float Angle_Set,float Angle,int v);
-void PID_Coordinate(float x0,float y0,int v);
-void PID_Line(float x1,float y1,float x2,float y2,int v);
-void PID_Sauare(float v);
-void PID_Round(float x0,float y0,float r,float v,u8 direction);
+void PID_Angle(u8 status,float Angle_Set,float Angle,float v);
+void PID_Coordinate(float x0,float y0,float v);
+void PID_Line(float x1,float y1,float x2,float y2,float v);
+void PID_Square(float v);
+void PID_Round(float x0,float y0,float r,float v,u8 direction3);
 void PID_Coordinate_following(float v);
+void PID_Square_x(float length,float v,u8 direction2);          
+void PID_RUN(float v,u8 direction1);
 
 #endif
