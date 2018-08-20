@@ -17,10 +17,7 @@
 #ifndef __MOVEBASE_H
 #define __MOVEBASE_H
 
-#include <stdint.h>
-#include "pid.h"
-#include "stm32f4xx_it.h"
-#include "usart.h"
+
 
 /* Includes ------------------------------------------------------------------*/
 
@@ -42,9 +39,7 @@
   * @{
   */
 
-#define PI (3.141593)
-#define TURN_RIGHT 0
-#define TURN_LEFT  1
+//#define 
 
 //电机旋转一周的脉冲数
 #define COUNTS_PER_ROUND (4096.0f)
@@ -57,17 +52,7 @@
 //轮子宽度（单位：mm）
 #define WHEEL_WIDTH (40.0f)
 //两个轮子中心距离（单位：mm）
-<<<<<<< HEAD
-#define WHEEL_TREAD (424.0f)
-
-=======
 #define WHEEL_TREAD (434.0f)
-<<<<<<< HEAD
-=======
-
-#define Pi 3.1415926
->>>>>>> b81ad2c1713741a2f487f820b46d8e14758b5c17
->>>>>>> master
 
 
 /**
@@ -79,20 +64,9 @@
 /* Exported functions --------------------------------------------------------*/
 
 
-void Straight(float speed);
-void Round(float rightSpeed,float radius);
-void Turn(float angle,float gospeed);
-void BackTurn(float angle,float gospeed);
-void BTP(float angle);
-void Square(void);
-void straightLine(float A1,float B1,float C1,uint8_t dir);
-uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir);
-void BiggerSquareOne(void);
-void BiggerSquareTwo(void);
-void SquareTwo(void);
-void RoundTwo(float centerX,float centerY,float r,uint8_t o,float speed);
-float Speed_X(void);
-float Speed_Y(void);
+
+
+
 #endif /* ___H */
 
 
