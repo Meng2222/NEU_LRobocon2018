@@ -44,7 +44,7 @@ static  void  App_TaskStart(void);
 static 	void  ConfigTask(void);
 static 	void  WalkTask(void);
 static	void  Init(void);
-static	void CarOne(void);
+static	void  CarOne(void);
 
 
 /*

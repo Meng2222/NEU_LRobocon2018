@@ -57,17 +57,9 @@
 //轮子宽度（单位：mm）
 #define WHEEL_WIDTH (40.0f)
 //两个轮子中心距离（单位：mm）
-<<<<<<< HEAD
 #define WHEEL_TREAD (424.0f)
 
-=======
-#define WHEEL_TREAD (434.0f)
-<<<<<<< HEAD
-=======
 
-#define Pi 3.1415926
->>>>>>> b81ad2c1713741a2f487f820b46d8e14758b5c17
->>>>>>> master
 
 
 /**

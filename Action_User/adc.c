@@ -79,7 +79,7 @@ void GetDirection(uint8_t *getFlag)
 {
 	uint16_t Laser_A=0;
 	uint16_t Laser_B=0;
-	axis_Xerr=Get_Adc_Average(ADC_Channel_14,20)-Get_Adc_Average(ADC_Channel_15,20);
+	axis_Xerr=(Get_Adc_Average(ADC_Channel_14,50)-Get_Adc_Average(ADC_Channel_15,50))*0.92;
 	
 	while(1)
 	{

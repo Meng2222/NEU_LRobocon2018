@@ -47,14 +47,12 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
-<<<<<<< HEAD
 void SetAngle(void);
 void SetX(void);
 void SetY(void);
 float GetAngle(void);
 float GetPosX(void);
 float GetPosY(void);
-=======
 
 //存储接收定位系统x, y, angle数据结构体
 typedef struct
@@ -64,7 +62,6 @@ typedef struct
 	float angle;
 	
 }Pos_t;
->>>>>>> master
 #ifdef __cplusplus
 }
 #endif
