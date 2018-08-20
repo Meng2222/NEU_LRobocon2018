@@ -78,10 +78,10 @@ float Angle_Pid(float err)
 	Dterm=Kd*(err-errlast);
 	errlast=err;
 	Uk=Kp*err+Iterm+Dterm;
-//	if(Uk>=400)
-//		Uk=400;
-//	else if(Uk<=-400)
-//		Uk=-400;
+	if(Uk>=1500)
+		Uk=1500;
+	else if(Uk<=-1500)
+		Uk=-1500;
 	return Uk;
 }
 float Distance_Pid(float err)
@@ -212,6 +212,7 @@ float Angle_change(float a1,float a2,int c)
 }
 
 void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)
+	
 {
 	static float d=0,err=0,output=0,ang1=0,ang2=0,angle1=0,angle2=0,speed_f=0,speed_s=0;
 	d=sqrtf((GetXpos()-x0)*(GetXpos()-x0)+(GetYpos()-y0)*(GetYpos()-y0));
@@ -255,13 +256,13 @@ void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)
 			}
 			break;
 	}
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle1);
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle2);
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)ang1);
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)err);
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)output);
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetXpos());
-	USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetYpos());
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle1);
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle2);
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)ang1);
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)err);
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)output);
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetXpos());
+//	USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetYpos());
 }	
 void ConfigTask(void)
 {
@@ -290,8 +291,9 @@ void ConfigTask(void)
 
 void WalkTask(void)
 {
-	int cnt=0,i=0;
-	float pid_out;
+//	int cnt=0,LV=0,Arm=0,v=1000;
+	int dir=0,counter=0,flg=0;
+	float pid_out,dis_R,dis_L;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
@@ -299,32 +301,65 @@ void WalkTask(void)
 	{
 		
 		OSSemPend(PeriodSem, 0, &os_err);
-			//USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
-//			USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetXpos());
-//			USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetYpos());
-			//USART_OUT(UART4,(uint8_t*) "%d\t",(int)r2);
-		  //USART_OUT(UART4,(uint8_t*) "%d\t",(int)Angle_Pid(GetAngle()));
-			//USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)err2);
+		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
+		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetXpos());
+		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetYpos());
 		
-		Virer_PID_Out(-1000,0,500,1000,0);
+		dis_R=(4400.f*4096.f)/(float)Get_Adc_Average(14,10);
+		dis_L=(4400.f*4096.f)/(float)Get_Adc_Average(15,10);
+		if(dis_R<=20)
+			dir=1;
+		else if(dis_L<=20)
+			dir=2;
+		switch(dir)
+		{
+			case 1:
+				Virer_PID_Out(0,2000,2000-counter*200,1000,0);
+				if(GetAngle()<=-85&&GetAngle()>=-95)
+				{
+					if(counter>=8)
+						flg=1;
+					else if(counter==0)
+						flg=0;
+					if(flg==0)
+						counter++;
+					else if(flg==1)
+						counter--;		
+				}	
+				break;
+			case 2:
+				Virer_PID_Out(0,2000,2000-counter*200,1000,1);
+				if(GetAngle()<=95&&GetAngle()>=85)
+				{
+					if(counter>=8)
+						flg=1;
+					else if(counter==0)
+						flg=0;
+					if(flg==0)
+						counter++;
+					else if(flg==1)
+						counter--;	
+				}	
+				break;	
+		}
+		 
 			
 //		switch(cnt)
 //		{
 //			case 0:
-//				if(GetYpos()<(1750-LV*500))
+//				if(GetXpos()>-1500)
 //				{
-//					pid_out=PID_OUT(GetXpos(),GetYpos(),1,0,0,7);
+//					pid_out=PID_OUT(GetXpos(),GetYpos(),0,1,0,6);
 //					Walk_Straight(v-pid_out,v+pid_out);
 //				}
-//				else
+//				else 
 //				{
 //					cnt++;
 //				}
-//				break;
 //			case 1:
-//				if(GetXpos()>-(1750-LV*500))
+//				if(GetYpos()<(3750-LV*300))
 //				{
-//					pid_out=PID_OUT(GetXpos(),GetYpos(),0,1,-2000,6);
+//					pid_out=PID_OUT(GetXpos(),GetYpos(),1,0,1750-Arm*300,7);
 //					Walk_Straight(v-pid_out,v+pid_out);
 //				}
 //				else
@@ -333,9 +368,20 @@ void WalkTask(void)
 //				}
 //				break;
 //			case 2:
-//				if(GetYpos()>(250+LV*500))
+//				if(GetXpos()<(1500-LV*300))
 //				{
-//					pid_out=PID_OUT(GetXpos(),GetYpos(),1,0,2000,8);
+//					pid_out=PID_OUT(GetXpos(),GetYpos(),0,1,-(4000-Arm*300),5);
+//					Walk_Straight(v-pid_out,v+pid_out);
+//				}
+//				else
+//				{
+//					cnt++;
+//				}
+//				break;
+//			case 3:
+//				if(GetYpos()>(1000+LV*300))
+//				{
+//					pid_out=PID_OUT(GetXpos(),GetYpos(),1,0,-(1750-Arm*300),8);
 //					Walk_Straight(v-pid_out,v+pid_out);
 //				}
 //				else
@@ -343,15 +389,17 @@ void WalkTask(void)
 //					cnt++;
 //				}
 //				break;	
-//			case 3:
-//				if(GetXpos()<-(250+LV*500))
+//			case 4:
+//				if(GetXpos()>-(1000-LV*300))
 //				{
-//					pid_out=PID_OUT(GetXpos(),GetYpos(),0,1,0,5);
+//					pid_out=PID_OUT(GetXpos(),GetYpos(),0,1,-(750+Arm*300),6);
 //					Walk_Straight(v-pid_out,v+pid_out);
 //				}
 //				else
 //				{
-//					cnt=0;
+//					cnt=1;
+//					LV++;
+//					Arm++;
 //				}
 //				break;	
 //		}
