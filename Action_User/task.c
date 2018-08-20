@@ -12,6 +12,7 @@
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
 #include "adc.h"
+#include "pps.h"
 #include <math.h>
 #define Kp1 (98)   //角度PID参数
 #define Ki1 (0)
@@ -24,20 +25,6 @@
 #define pointY  (2250.0f)
 float nowAngle,R=2250;
 float u1,u2;
-extern char isOKFlag;
-extern char pposokflag;
-void driveGyro(void)
-{
-	while(!isOKFlag)
-	{
-		delay_ms(5);
-		USART_SendData(USART3,'A');
-		USART_SendData(USART3,'T');
-		USART_SendData(USART3,'\r');
-		USART_SendData(USART3,'\n');
-	}
-	isOKFlag = 0;
-}
 /*
 ===============================================================
 						信号量定义
@@ -94,17 +81,11 @@ void ConfigTask(void)
 	TIM_Init(TIM2,999,83,0,0);
 	
 	USART3_Init(115200);   //定位器串口
+	/*一直等待定位系统初始化完成*/
+	WaitOpsPrepare();
 	UART4_Init(921600);    //蓝牙串口
 	Adc_Init();
-	
 	Motor_Init();
-	delay_s(2);
-	#if CARNUM == 1
-	driveGyro();
-	while(!pposokflag);
-	#elif CARNUM == 4
-	delay_s(10);
-	#endif
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 /**
@@ -117,9 +98,9 @@ void uAng()
 	static float sumErr = 0;
 	float err,pointAngle;
 	if(R>0)
-		pointAngle=atan2(pointX-GetXpos(),GetYpos()-pointY)*180/PI;
+		pointAngle=atan2(pointX-GetX(),GetY()-pointY)*180/PI;
 	if(R<0)
-		pointAngle=atan2(GetXpos()-pointX,pointY-GetYpos())*180/PI;
+		pointAngle=atan2(GetX()-pointX,pointY-GetY())*180/PI;
 	nowAngle=GetAngle()+90;
 	if(nowAngle>180)
 	 nowAngle=nowAngle-360;
@@ -141,7 +122,7 @@ void uPlace()
 	static float lastErr = 0;
 	static float sumErr = 0;
 	float err,distance;
-    distance=sqrt((pointX-GetXpos())*(pointX-GetXpos())+(pointY-GetYpos())*(pointY-GetYpos()));
+    distance=sqrt((pointX-GetX())*(pointX-GetX())+(pointY-GetY())*(pointY-GetY()));
 	err=R-distance;
 	if(R<0)
 		err=-err;
@@ -153,17 +134,6 @@ void uPlace()
 		u2=-90;
 	lastErr = err;
 }
-///**
-//* @brief  给小车左右轮速度让小车直线走
-//* @param  speed:给小车的行进速度，单位mm/s
-//*/
-//void WalkStright()
-//{
-//	float pulse;
-//	pulse=4096*speed/(WHEEL_DIAMETER*PI);
-//	VelCrl(CAN2,1,pulse+u1);
-//	VelCrl(CAN2,2,-pulse);
-//}
 void WalkTask(void)
 {
 	float buff1,buff2,pulse,startState,distance1,distance2;
@@ -178,30 +148,30 @@ void WalkTask(void)
 		distance1=Get_Adc_Average(14,10)*(4400/4096);			//设置ADC1通道14,15，平均值获取次数为10
 		distance2=Get_Adc_Average(15,10)*(4400/4096);
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)nowAngle);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetYpos());
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetX());
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetY());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)R);
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)distance1);
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)distance2);
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)u1);
 		if(nowAngle>91)
 			startState=1;
-		if(startState==1&&fabs(lastX-GetXpos())<2&&fabs(lastY-GetYpos())<2)
+		if(startState==1&&fabs(lastX-GetX())<2&&fabs(lastY-GetY())<2)
 		{
 			errState=1;
 		}
 		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)errState);
-	    lastX=(int)GetXpos();
-		lastY=(int)GetYpos();
+	    lastX=(int)GetX();
+		lastY=(int)GetY();
 		if(R>=2250)
 			state=0;
 		if(R<=250)
 		state=1;
 		if(state==0)
-			if(GetXpos()<10&&GetXpos()>3)
+			if(GetX()<10&&GetX()>3)
 				R-=150;
 		if(state==1)
-			if(GetXpos()<=10&&GetXpos()>=3)
+			if(GetX()<=10&&GetX()>=3)
 				R+=150;
 		uPlace();
 		uAng();
@@ -232,7 +202,7 @@ void WalkTask(void)
 //		    WalkStright();
 //		    uPlace(1,0,1000,0);
 //	        uAng(u2,90);
-//		 if(GetYpos()>800.0/speed*1700)
+//		 if(GetY()>800.0/speed*1700)
 //			 count=1;
 //		 break;
 //		 case 1:
@@ -241,7 +211,7 @@ void WalkTask(void)
 //		    WalkStright();
 //		    uPlace(0,1000,2000,0);
 //	        uAng(u2,0);
-//		 if(GetXpos()>800.0/speed*1700)
+//		 if(GetX()>800.0/speed*1700)
 //			 count=2;
 //		 break;
 //		 case 2:
@@ -250,7 +220,7 @@ void WalkTask(void)
 //		    WalkStright();
 //		    uPlace(0,2000,1000,2000);
 //	        uAng(u2,90);
-//		 if(GetYpos()<2000-800.0/speed*1700)
+//		 if(GetY()<2000-800.0/speed*1700)
 //			 count=3;
 //		 break;
 //		 case 3:
@@ -259,7 +229,7 @@ void WalkTask(void)
 //		    WalkStright();
 //		    uPlace(0,1000,0,0);
 //	        uAng(u2,0);
-//		 if(GetXpos()<2000-800.0/speed*1700)
+//		 if(GetX()<2000-800.0/speed*1700)
 //			 count=0;
 //		 break;
 //       if(State3==1)

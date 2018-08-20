@@ -2,7 +2,6 @@
 #define __PPS_H
 #include "stdint.h"
 
-
 /*接受几个来自定位系统的float数据*/
 #define GET_PPS_VALUE_NUM      6
 /*接受几个来自定位系统的uint8_t数据*/ /* 6 * 4byte = 24*/
