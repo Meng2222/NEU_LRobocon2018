@@ -632,6 +632,10 @@ void ADC_ClearFlag(ADC_TypeDef* ADCx, uint8_t ADC_FLAG);
 ITStatus ADC_GetITStatus(ADC_TypeDef* ADCx, uint16_t ADC_IT);
 void ADC_ClearITPendingBit(ADC_TypeDef* ADCx, uint16_t ADC_IT);
 
+void Adc_Init(void);
+u16 Get_Adc(u8 ch) ;
+u16 Get_Adc_Average(u8 ch,u8 times);
+
 #ifdef __cplusplus
 }
 #endif

@@ -11,6 +11,7 @@
 #include "gpio.h"
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_gpio.h"
+#include "stm32f4xx_adc.h"	
 
 /**
   * @brief  set the pins of a specific GPIO group to be input or output driver pin.

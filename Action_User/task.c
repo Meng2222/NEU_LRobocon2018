@@ -11,7 +11,7 @@
 #include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
-#include "math.h"
+#include "stm32f4xx_adc.h"
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi
 #define pai 3.1415926
@@ -19,25 +19,15 @@
 #define bb 0
 #define cc 0
 #define FB 2
-#define xx -1000
-#define yy 1000
-#define r  1000
+#define xx -2200
+#define yy 0
+#define r 1000
 //顺1逆2
-#define Set_Clock 1
 #define Speed 1
 /*
 一个脉冲是4096/(120*Pi)
 定义输入速度mm/s和半径mm
 */
-/**float ratio1,ratio2;
-void vel_radious(float vel,float radious)
-{
-	ratio1=(radious+WHEEL_TREAD/2)/radious;
-	ratio2=(radious-WHEEL_TREAD/2)/radious;
-	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
-	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
-}
-**/
 extern int isOKFlag;
 void driveGyro(void)
 {
@@ -87,7 +77,9 @@ void App_Task()
    初始化任务
    ===============================================================
 */
+int startflag=0;
 extern int posokflag;
+int left,right;
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
@@ -95,6 +87,7 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	//定时器10ms pwm CAN通信 右1左2 轮子CAN2  引脚 串口3/4
 	TIM_Init(TIM2,999,83,0x00,0x00);
+	Adc_Init();
 	USART3_Init(115200);
 	UART4_Init(921600);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
@@ -112,25 +105,29 @@ void ConfigTask(void)
 	#elif CAR_CONTRAL==4
 		delay_s(10);
 	#endif
+	USART_OUT(UART4,(uint8_t*)"ss\r\n");
+	while(!startflag)
+	{
+	  left=Get_Adc_Average(15,5);
+	  right=Get_Adc_Average(14,5);
+	  if(left<100)
+		  startflag=1;
+	  else if(right<100)
+		  startflag=2;
+	  else startflag=0;
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",left,right,startflag);
+	}
+	USART_OUT(UART4,(uint8_t*)"ok\r\n");
 	OSTaskSuspend(OS_PRIO_SELF);
-	/**TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
-
-	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	
-	VelLoopCfg(CAN2,1, 5000, 5000);				//驱动器速度环初始化
-	VelLoopCfg(CAN2,2, 5000, 5000);
-	
-	ElmoInit(CAN2);								//驱动器初始化
-	MotorOn(CAN2,1);							//电机使能（通电）
-	MotorOn(CAN2,2);**/
 }
-// 用position.XY？或者把2000往前提提,179与-179
+
+int mark=0;
 float Out_Agl=0;
 int vel1,vel2,vel,turnflag=0;
 int X,Y,angle;
 int Out_Pulse;
-int flag=0;
+int flag=0,Flag=0;
+float R_cover=2000;
 extern struct Pos_t position;
 void Round(float speed,float R);
 void PID(int Agl_Flag);
@@ -140,6 +137,7 @@ void Strght_Walk (float a,float b,float c,int F_B);
 void Square_Walk(void);
 void SET_openRound(float x,float y,float R,float clock,float speed);
 void SET_closeRound(float x,float y,float R,float clock,float speed);
+void Round_Cover(void);
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
@@ -151,8 +149,9 @@ void WalkTask(void)
 		X=(int)(position.X);
 		Y=(int)(position.Y);
 		angle=(int)(position.angle);
-		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",X,Y,Out_Pulse);
-    SET_closeRound(xx,yy,r,Set_Clock,Speed);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\r\n",X,Y,angle,Flag,R_cover);
+		Round_Cover();
+    //SET_closeRound(xx,yy,r,Set_Clock,Speed);
 		//Square_Walk();
 		//Strght_Walk (aa,bb,cc,FB);
 		//Round(0.1,0.2);
@@ -218,7 +217,7 @@ void WalkTask(void)
 		}**/
 	}
 }
-//1m/s走任意固定直线PID：通过距离PID的输出值输入到角度PID，让距离越来越近的同时角度越来越接近设定角度值
+//1m/s走任0意固定直线PID：通过距离PID的输出值输入到角度PID，让距离越来越近的同时角度越来越接近设定角度值
 /**void Strght_Walk (float a,float b,float c,int F_B)
 {
 	float k,Agl,Dis;;
@@ -416,6 +415,7 @@ void WalkTask(void)
 		VelCrl(CAN2,2,-8000-Out_Pulse);
 }**/
 
+//走任意固定圆
 void SET_closeRound(float x,float y,float R,float clock,float speed)
 {
 	float Distance=0;
@@ -423,6 +423,7 @@ void SET_closeRound(float x,float y,float R,float clock,float speed)
 	float Agl;
 	Distance=sqrt(pow(position.X-x,2)+pow(position.Y-y,2))-R;
 	k=(position.X-x)/(y-position.Y);
+	//顺1逆2
 	if(clock==1)
 	{
 		if(position.Y<y)
@@ -456,6 +457,60 @@ void SET_closeRound(float x,float y,float R,float clock,float speed)
 	vel=(int)(speed*10865);
 	VelCrl(CAN2,1,vel-Out_Pulse);
 	VelCrl(CAN2,2,-vel-Out_Pulse);
+}
+
+void Round_Cover(void)
+{
+	static int count=0,lastcount=0,set=0,number=0;
+	float last_x,last_y;
+	SET_closeRound(xx,yy,R_cover,startflag,Speed);
+	if(startflag==1)
+	{
+		if(position.angle>-87&&position.angle<-85)
+		  count=1;
+	  else 
+		  count=0;
+	  if(position.angle>0&&position.angle<90)
+		  set=1;
+  }
+	else if(startflag==2)
+	{
+		if(position.angle>85&&position.angle<87)
+		  count=1;
+	  else 
+	   	count=0;
+		if(position.angle>-90&&position.angle<0)
+		  set=1;
+  }
+	if(R_cover>1800)
+		Flag=1;
+	else if(R_cover<600)
+		Flag=0;
+	if(count==1&&lastcount==0&&set)
+	{
+		if(Flag)
+			R_cover=R_cover-400;
+		else
+			R_cover=R_cover+400;
+		set=0;
+	}
+	if(position.X>last_x-5&&position.X<last_x+5&&position.Y>last_y-5&&position.Y<last_y+5)
+	  number++;
+	else number=0;
+	if(number>=5)
+	{
+		number=0;
+		//倒退
+		//VelCrl(CAN2,1,-8000);
+	  //VelCrl(CAN2,2,8000);
+		if(R_cover>400)
+			R_cover=R_cover-400;
+		else 
+			R_cover=R_cover+400;
+	}
+	lastcount=count;
+	last_x=position.X;
+	last_y=position.Y;
 }
 void PID_Agl(float Set_Angle)
 {
