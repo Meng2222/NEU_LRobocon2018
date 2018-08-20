@@ -11,6 +11,7 @@
 #include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+<<<<<<< HEAD
 #include "moveBase.h"
 #include "math.h"
 #define PAI 3.14
@@ -46,6 +47,9 @@ void driveGyro(void)
 	}
 isOKFlag=0;
 }
+=======
+#include "pps.h"
+>>>>>>> master
 /*
 ===============================================================
 						信号量定义
@@ -149,6 +153,7 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+<<<<<<< HEAD
 	TIM_Init(TIM2, 999, 839, 0x00, 0x00);
 	//CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
@@ -188,6 +193,14 @@ void ConfigTask(void)
 		 sn=-1;
 	 OSTaskSuspend(OS_PRIO_SELF);
 
+=======
+	
+	USART3_Init(115200);
+	/*一直等待定位系统初始化完成*/
+	WaitOpsPrepare();
+	
+	OSTaskSuspend(OS_PRIO_SELF);
+>>>>>>> master
 }
 
 int mission=1;
