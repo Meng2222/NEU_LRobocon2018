@@ -12,6 +12,7 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "math.h"
+#include "adc.h"
 
 
 extern int isOKFlag;
@@ -21,6 +22,7 @@ float errSum=0,lasterror=0;
 double Output,Dis_Output;
 float Kp,Ki,Kd,Kp2,Ki2,Kd2;
 float ratio1,ratio2;
+int flag=1;
 
 //float Pos_PID(float Pos_Kp,float Pos_Ki,float Pos_Kd,float Set_Pos,float Tar_Pos);
 
@@ -29,26 +31,53 @@ void driveGyro(void);
 void Angle_PID(float a,float b,float c,int dir);
 void SetTuning(float kp,float ki,float kd);		//设定PID值
 void Dis_Pidtuning(float Dis_kp,float Dis_ki,float Dis_kd);
+
+//设置，转圆圈，距离PID参数，以及角度PID
+void Circle_Dis_PID(float x,float y,float r,float vel,float orient);
+void Circle_Angle_PID(float x,float y,float r,float vel,float orient);
 /*
 1mm是4096/(120*Pi)
 定义输入速度mm/s和半径mm
 */
 
-//void vel_radious(float vel,float radious)		//转圈
-//{
-//	ratio1=(radious-Whirl_Vel/2)/radious;
-//	ratio2=(radious+Whirl_Vel/2)/radious;
+//void vel_radious(float vel,float radious)		//差速轮，转圈，没加PID调节
+//{												//
+//	ratio1=(radious-WHEEL_DIAMETER/2)/radious;
+//	ratio2=(radious+WHEEL_DIAMETER/2)/radious;
 //	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);			//右轮
 //	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);		//左轮
 //}
 
 
 
-void walk_stragiht(float speed)
+/*
+画圆形轨迹，需保证点到圆心的距离等于半径。圆心A(X,Y),设置半径为radious，小车获得位置为GetXpos(),GetYpos();
+即radious=sqrt((GetXpos()-X)*(GetXpos()-X)+(GetYpos()-Y)*(GetYpos()-Y))
+先实现（1000,1000）半径为500的圆
+
+*/
+
+void walk_circle(float x,float y,float r,float vel)
+{
+		ratio1=(r+WHEEL_TREAD/2)/r;
+		ratio2=(r-WHEEL_TREAD/2)/r;
+		VelCrl(CAN2,1,ratio1*vel*Pulse2mm+Output/2);			//右轮
+		VelCrl(CAN2,2,-ratio2*vel*Pulse2mm+Output/2);		//左轮
+}
+
+
+void walk_stragiht(float speed)					//走直线，给定速度
 {
 	VelCrl(CAN2,1,speed*COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)+Output/2);						
 	VelCrl(CAN2,2,-speed*COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)+Output/2);	//mm/s
 }
+
+
+void PID_Set(float a,float b,float c,float dir)
+{
+	Distance_PID(a,b,c,dir);	
+	Angle_PID(a,b,c,dir);	
+}	
 
 void Bias(void)
 {
@@ -58,12 +87,7 @@ void Bias(void)
 	{error+=360;}
 }
 
-void PID_Set(float a,float b,float c,int dir)
-{
-	Distance_PID(a,b,c,dir);
-	Angle_PID(a,b,c,dir);	
-}
-
+// 
 
 /*
 ===============================================================
@@ -102,11 +126,12 @@ void App_Task()
    ===============================================================
    */
 void ConfigTask(void)
+	
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-
+	Adc_Init();
 	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
 
 	USART3_Init(115200);
@@ -142,6 +167,7 @@ void WalkTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	int state=1;
+	static float dec_value=0;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
@@ -149,50 +175,118 @@ void WalkTask(void)
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetYpos());
-		USART_OUT(UART4,(uint8_t*)"Input:%dOut:%d\tDis_Out:%d\r\n",(int)Input,(int)Output,(int)Dis_Output);
-		SetTuning(380,0,0);					//PID参数
-		Dis_Pidtuning(0.07,0,0);			
-//		PID_Set(1.0f,0.0f,-1000.0f,-1);		//x=+1000,Y轴负方向，速度1m/s
-//		walk_stragiht(1000);						
+		USART_OUT(UART4,(uint8_t*)"Input:%d\tOut:%d\tDis_Out:%d\r\n",(int)Input,(int)Output,(int)Dis_Output);
+//		SetTuning(100,0,0);								//对应0.07的是380
+//		Dis_Pidtuning(0.07,0,0);						//闭环方形，0.07，与速度成反比		
+//		Circle_Dis_PID(500,500,500,1000,1);
+//		Circle_Angle_PID(500,500,500,1000,1);
+//		walk_circle(500,500,500,1000);
+/*
+		控制机器人走过整个赛区
+				
+*/
+		SetTuning(420,0,0);					//PID参数
+		Dis_Pidtuning(0.07,0,0);	
 		switch(state)
-		{
+		{		
 			case 1:
-				PID_Set(1.0f,0.0f,0.0f,1);		//x=0,Y轴正方向，速度1m/s
+				PID_Set(1.0f,0.0f,1800.0f-dec_value,1);			//x=0,Y轴正方向，速度1m/s
 				walk_stragiht(Whirl_Vel);
-				if(GetYpos()>=1430)
+				if(GetYpos()>=3300-dec_value*2)
 				{
 					state++;
 				}	break;
 			case 2:
-				PID_Set(0.0f,1.0f,-2000.0f,1);		//y=+2000,X轴正方向，速度1m/s
+				PID_Set(0.0f,1.0f,-3600.0f+dec_value*2,1);		//y=3600,X轴正方向，速度1m/s
 				walk_stragiht(Whirl_Vel);
-				if(GetXpos()>=1430)
+				if(GetXpos()>=1500-dec_value)
 				{
 					state++;
 				}	break;
 			case 3:
-				PID_Set(1.0f,0.0f,-2000.0f,-1);		//x=+2000,Y轴负方向，速度1m/s
+				PID_Set(1.0f,0.0f,-1800.0f+dec_value,-1);		//x=+2000,Y轴负方向，速度1m/s
 				walk_stragiht(Whirl_Vel);
-				if(GetYpos()<=580)
+				if(GetYpos()<=500)
 				{
 					state++;
 				}	break;
 			case 4:
-				PID_Set(0.0f,1.0f,0.0f,-1);		//y=0,X轴负方向，速度1m/s
+				PID_Set(0.0f,1.0f,0.0f,-1);						//y=0,X轴负方向，速度1m/s
 				walk_stragiht(Whirl_Vel);
-				if(GetXpos()<=610)
+				if(GetXpos()<=-1500+dec_value)
 				{
 					state=1;
+					if(flag==1)
+					{
+						dec_value+=200;
+						if(dec_value >= 1400)
+						{
+							dec_value=1400;
+							flag=0;
+						}
+					}
+
+					if(flag == 0)
+					{
+						dec_value-=200;
+						if(dec_value<=0)
+						{
+							dec_value=0;
+							flag=1;
+						}
+					}
 				}	break;
 			default:break;
 				
 		}
+		
+		
+		
+		
+	
+		
+//		SetTuning(380,0,0);					//PID参数
+//		Dis_Pidtuning(0.07,0,0);								
+//		switch(state)
+//		{
+//			case 1:
+//				PID_Set(1.0f,0.0f,0.0f,1);		//x=0,Y轴正方向，速度1m/s
+//				walk_stragiht(Whirl_Vel);
+//				if(GetYpos()>=1430)
+//				{
+//					state++;
+//				}	break;
+//			case 2:
+//				PID_Set(0.0f,1.0f,-2000.0f,1);		//y=+2000,X轴正方向，速度1m/s
+//				walk_stragiht(Whirl_Vel);
+//				if(GetXpos()>=1430)
+//				{
+//					state++;
+//				}	break;
+//			case 3:
+//				PID_Set(1.0f,0.0f,-2000.0f,-1);		//x=+2000,Y轴负方向，速度1m/s
+//				walk_stragiht(Whirl_Vel);
+//				if(GetYpos()<=580)
+//				{
+//					state++;
+//				}	break;
+//			case 4:
+//				PID_Set(0.0f,1.0f,0.0f,-1);		//y=0,X轴负方向，速度1m/s
+//				walk_stragiht(Whirl_Vel);
+//				if(GetXpos()<=610)
+//				{
+//					state=1;
+//				}	break;
+//			default:break;
+//				
+//		}
 
 	}
 }
 
 
-void Angle_PID(float a,float b,float c,int dir)				//PID控制角度偏差
+
+void Angle_PID(float a,float b,float c,int dir)				//PID控制角度偏差【方形】
 {
 	if((dir == 1&& a*b<0)||(dir == -1&& a*b>0))
 	{ 
@@ -289,6 +383,51 @@ void Distance_PID(float a,float b,float c,int dir)				//PID控制角度偏差
 		Dis_Output=-90;
 	Dis_lasterr=Dis_error;
 }
+
+
+
+//void Circle_Dis_PID(float x,float y,float r,float vel,float orient)
+//{
+//	static float Dis_lasterr,Dis_errSum=0,Dis_error=0;
+//	float dDis_Err;
+//	float d;				//d表示点到圆心的距离
+//	d=sqrt((GetXpos()-x)*(GetXpos()-x)+(GetYpos()-y)*(GetYpos()-y));
+//	if(d >= r)
+//	{
+//		Dis_error = r-d;
+//	}
+//	else if(d < r)
+//	{
+//		Dis_error = d-r;
+//	}
+//	Dis_errSum+=Dis_error;
+//	dDis_Err=Dis_error-Dis_lasterr;
+//	Dis_Output=Kp2*Dis_error+Ki2*Dis_errSum+Kd2*dDis_Err;
+//	if(Dis_Output>90)
+//		Dis_Output=90;
+//	else if(Dis_Output<-90)
+//		Dis_Output=-90;
+//	Dis_lasterr=Dis_error;
+//}
+
+//void Circle_Angle_PID(float x,float y,float r,float vel,float orient)
+//{
+//	Input=GetAngle()+90;
+//	if(orient == 1)
+//	{
+//		Setpoint=atan2(y-GetYpos(),x-GetXpos())*180/Pi + 90 ;
+//	}
+//	else if(orient == -1)	
+//	{
+//		Setpoint=atan2(y-GetYpos(),x-GetXpos())*180/Pi - 90 + 360 ;
+//	}
+//	error = Setpoint - Input + Dis_Output;
+//	Bias();
+//	errSum+=error;
+//	float dErr=error-lasterror;
+//	Output=Kp*error+Ki*errSum+Kd*dErr;
+//	lasterror=error;	
+//}
 
 void Dis_Pidtuning(float Dis_kp,float Dis_ki,float Dis_kd)
 {
