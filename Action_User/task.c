@@ -11,6 +11,7 @@
 #include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "pps.h"
 #include "stm32f4xx_adc.h"
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi
@@ -118,6 +119,8 @@ void ConfigTask(void)
 		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",left,right,startflag);
 	}
 	USART_OUT(UART4,(uint8_t*)"ok\r\n");
+	/*一直等待定位系统初始化完成*/
+	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
