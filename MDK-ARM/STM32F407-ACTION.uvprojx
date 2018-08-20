@@ -426,6 +426,16 @@
               <FileType>1</FileType>
               <FilePath>..\Action_User\moveBase.c</FilePath>
             </File>
+            <File>
+              <FileName>pps.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\pps.c</FilePath>
+            </File>
+            <File>
+              <FileName>void.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\void.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
