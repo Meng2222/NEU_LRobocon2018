@@ -81,12 +81,13 @@ static 	void  WalkTask(void);
 *                                                  LIB
 *********************************************************************************************************
 */
-#define   LV     (0)
-#define   v     (500+LV*500)
-#define   Kp    (15)
+//#define   LV     (0)
+//#define   v     (500+LV*500)
+#define   Kp    (100)
 #define   Ki    (0)
 #define   Kd    (0)
-#define   Distance_Kp    (300*0.35/v)
+//#define   Distance_Kp    (300*0.35/v)
+#define   Distance_Kp    (0.08)
 #define   Distance_Ki    (0)
 #define   Distance_Kd    (0)
 
