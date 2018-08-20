@@ -102,7 +102,6 @@ void CAN2_RX0_IRQHandler(void)
 
 extern OS_EVENT *PeriodSem;
 int t=0;
-int t1=0;
 void TIM2_IRQHandler(void)//定时器中断
 {
 #define PERIOD_COUNTER 10
@@ -117,7 +116,6 @@ void TIM2_IRQHandler(void)//定时器中断
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 		t++;
-		t1++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)

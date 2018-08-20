@@ -15,17 +15,12 @@
 
 //#define Veh 1         //车号选择 【1】 || 【4】
 extern int t;           //时间校正【1ms】   
-extern int t1;          //时间校正【1ms】
 extern float X,Y,Angl;  //【系统反馈数据】XY坐标（浮点） 校正角度（浮点）
-int j1=0;
 int j=0;
 
 void delay1(void)       //计时函数【100ms】
 {if(t<100){j=0;}
 if(t>=100){j=1;}}
-void delay_D(void)      //计时函数【10ms】
-{if(t1<10){j1=0;}
-if(t1>=10){j1=1;}}
 
 void Move(int V1,int V2)//运动函数
 {
@@ -181,7 +176,7 @@ void ConfigTask(void)        //初始化
 //| |_| |_| |_| |_| |_| |_| |_| |_| |_【参数选择】_| |_| |_| |_| |_| |_| |_| |_| |_| |
 //
 //====================================================================================
-#define v          1       //【Mode1】【Mode2】【Mode3】【Mode4】【Mode5】车身速度（m/s）
+#define v          1     //【Mode1】【Mode2】【Mode3】【Mode4】【Mode5】车身速度（m/s）
 #define r          1.f     //【Mode1】【Mode2】         【Mode4】【Mode5】        半径 || 边长（m）
                            //【Mode1】：车身旋转半径（填入0则直行）（r>0逆时针运动；r<0顺时针运动）
                            //【Mode2】：正方形边长（r=0为直行）
@@ -245,6 +240,7 @@ int x,y,angl;      //XY坐标（整数） 校正角度（整数）
 //                            定义车1、车4 【x】、【y】、【angl】（坐标翻转）
 //====================================================================================
 int ex;
+float exf;
 void Teh_Choose(void)          //坐标反转函数
 {
 if(Veh==1)
@@ -253,6 +249,10 @@ ex=(int)Y;
 y=-(int)X;
 x=ex;
 angl=-(int)Angl;
+
+exf=Y;
+Y=-X;
+X=exf;
 }
 else if(Veh==4)
 {
@@ -412,6 +412,8 @@ void Angle_Lock2(int ang)//锁定角度方案二
 	}
 }
 */
+int v1_record=0,v2_record=0;
+
 
 void Angle_Lock3(int ang)//锁定角度方案3【成功】
 {
@@ -461,7 +463,7 @@ void Angle_Lock3(int ang)//锁定角度方案3【成功】
 		{Move(v1+600*(360-angl+ang),-v1);}
 	}
 }
-
+int v1_record,v2_record;
 int ANG;                 //角度差（测量值angl-预期量ang）
 void Angle_Lock4(int ang)//锁定角度方案4【成功】——————最终采纳方案4
 {
@@ -474,6 +476,10 @@ if(ANG>180){ANG=ANG-360;}
 if(ANG<-180){ANG=ANG+360;}
 //运行
 Move(v1-Kp_A*ANG,-v1-Kp_A*ANG);
+
+//记录v1、v2
+v1_record=v1-Kp_A*ANG;
+v2_record=-v1-Kp_A*ANG;
 }
 
 //====================================================================================
@@ -833,8 +839,12 @@ void Circle_Lock5(void)//【圆闭环】
 //====================================================================================
 
 int square_edg=2000;
-void Square_Sweep_Left1(int square_m , int square_e)//回到原定路线
+int sweep_mode=0;
+void Square_Sweep_Right1(int square_m , int square_e)//回到原定路线
 {
+if(square_edg>=2000) {sweep_mode=0;}
+if(square_edg<=500)  {sweep_mode=1;}
+
 if(Cho==0){Line_Lock4(-90,square_m-square_e,0);}
 if(Cho==0&&x>=square_e-p_a){Cho=1;Line_Lock4(0,0,square_e);}
 if(Cho==1){Line_Lock4(0,0,square_e);}
@@ -842,12 +852,32 @@ if(Cho==1&&y>=(square_m +square_e-p_a)){Cho=2;Line_Lock4(90,square_m +square_e,0
 if(Cho==2){Line_Lock4(90,square_m +square_e,0);}
 if(Cho==2&&x<-square_e+p_a){Cho=3;Line_Lock4(180,0,-square_e);}
 if(Cho==3){Line_Lock4(180,0,-square_e);}
-if(Cho==3&&y<=square_m -square_e+p_a){Cho=0;Line_Lock4(-90,square_m -square_e,0);square_edg=square_edg-300;}
+if(Cho==3&&y<=square_m -square_e+p_a)
+{
+if(sweep_mode==0){Cho=0;Line_Lock4(-90,square_m -square_e,0);square_edg=square_edg-300;}
+if(sweep_mode==1){Cho=0;Line_Lock4(-90,square_m -square_e,0);square_edg=square_edg+300;}
+}
 }
 
-void Square_Sweep_Right1(int square_m , int square_e)
+void Square_Sweep_Left1(int square_m , int square_e)
 {
-
+if(square_edg>=2000) {sweep_mode=0;}
+if(square_edg<=500)  {sweep_mode=1;}
+	
+if(Cho==0){Line_Lock4(90,square_m-square_e,0);}
+if(Cho==0&&x<=-square_e+p_a){Cho=1;Line_Lock4(0,0,-square_e);}
+if(Cho==1){Line_Lock4(0,0,-square_e);}
+if(Cho==1&&y>=(square_m +square_e-p_a)){Cho=2;Line_Lock4(-90,square_m +square_e,0);}
+if(Cho==2){Line_Lock4(-90,square_m +square_e,0);}
+if(Cho==2&&x>square_e-p_a){Cho=3;Line_Lock4(180,0,square_e);}
+if(Cho==3){Line_Lock4(180,0,square_e);}
+if(Cho==3&&y<=square_m -square_e+p_a)
+{
+if(sweep_mode==0)
+{Cho=0;Line_Lock4(90,square_m -square_e,0);square_edg=square_edg-300;}
+if(sweep_mode==1)
+{Cho=0;Line_Lock4(90,square_m -square_e,0);square_edg=square_edg+300;}	
+}
 }
 //====================================================================================
 //                                 ADC激光
@@ -881,16 +911,44 @@ V5_f*=1000;
 USART_OUT(UART4,(uint8_t*)"%d",V4_i);
 // 发字符
 USART_OUT(UART4,(uint8_t*)"%s",".");
-USART_OUT(UART4,(uint8_t*)"%d",(int) V4_f);
-USART_OUT(UART4,(uint8_t*)"%s  ","V");//输出V
+USART_OUT(UART4,(uint8_t*)"%d  ",(int) V4_f);
 
 
 USART_OUT(UART4,(uint8_t*)"%d",V5_i);
 // 发字符
 USART_OUT(UART4,(uint8_t*)"%s",".");
-USART_OUT(UART4,(uint8_t*)"%d",(int) V5_f);
-USART_OUT(UART4,(uint8_t*)"%s  ","V");//输出V
+USART_OUT(UART4,(uint8_t*)"%d  ",(int) V5_f);
 }
+
+//====================================================================================
+//                                 死亡重启
+//====================================================================================
+float x_p10=0;
+float x_p20=0;
+float y_p10=0;
+float y_p20=0;
+
+int t_col=0;
+int square_break=0;
+
+float v_cal;
+float v_real;
+
+void square_edg_jump(void)
+{
+
+
+}	
+	
+void Collision_Processing(void)
+{
+v_cal=(v1_record-v2_record)/(2*10865);
+v_real=0.1*sqrt((X-x_p10)*(X-x_p10)+(Y-y_p10)*(Y-y_p10));
+if(v_real<0.5*v_cal){t_col++;}
+if(v_real>0.5*v_cal){t_col=0;}
+if(t_col>=100){square_break=1;square_edg_jump();}
+}
+
 //===================================================================================================================================================
 //===================================================================================================================================================
  
@@ -904,10 +962,6 @@ int   mo=1;         //mode2正方形边初始坐标记录
 float Angle_p10=0;  //10ms前角度值
 float Angle_p20=0;  //20ms前角度值
 float d_Angle;      //角度微分（10ms）
-
-float l_p10;
-float l_p20;
-float d_l;
 
 int   flo;          //【反馈】输出检测
 int t_adc=0;
@@ -926,12 +980,15 @@ void WalkTask(void)
 		OSSemPend(PeriodSem, 0, &os_err);
 		Teh_Choose();//坐标反转函数（一定要放在while开始，OSSemPend后一行）	
 		
-		delay_D();
-		while(j1)//记录10ms前、20ms前角度值
+        //记录10ms前、20ms前角度值
 		{
-		Angle_p20=Angle_p10;	
+		Angle_p20=Angle_p10;
 		Angle_p10=Angl;
-		j1=0;t1=0;
+			
+		x_p20=x_p10;
+		x_p10=X;
+		y_p20=y_p10;
+		y_p10=Y;
 		}
 		
 
@@ -1089,13 +1146,6 @@ void WalkTask(void)
 		
 		if(Mode==5)
 		{
-			float exf;
-			if(Veh==1)
-			{
-			exf=Y;
-			Y=-X;
-			X=exf;
-			}	
 			
 			v1=(int)10865*v;
 			Circle_Lock1();
@@ -1124,41 +1174,38 @@ void WalkTask(void)
 			if(t_adc>=100){right=1;}
 			if(t_adc<=-100){left=1;}               //判断左、右
 			
-			flo=(int)V4;                           //反馈数据
-			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
-			flo=(int)V5;
-			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
-			flo=(int)left;
-			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
-			flo=(int)right;
-			USART_OUT(UART4,(uint8_t*)"%d  ",flo);		
-			flo=(int)t_adc;
-			USART_OUT(UART4,(uint8_t*)"%d  ",flo);
-			
-			v1=(int)10865*v;                        //基础速度
-			
-			if(right==1)                            //右
+				flo=(int)left;                     //反馈数据
+				USART_OUT(UART4,(uint8_t*)"%d  ",flo);
+				flo=(int)right;
+				USART_OUT(UART4,(uint8_t*)"%d  ",flo);		
+				flo=(int)t_adc;
+				USART_OUT(UART4,(uint8_t*)"%d  ",flo);
+			if(left==1||right==1)
 			{
-			if(square_edg>=500)
-			{Square_Sweep_Left1(2200 , square_edg);}
-			if(square_edg<1000)
-			{Square_Sweep_Left1(2200 , 500);}
-
-			flo=(int)square_edg;
-			USART_OUT(UART4,(uint8_t*)"%d\r\n",flo);	
-			}
-			else if(left==1)	                     //左
-			{
-			if(square_edg>=500)
-			{Square_Sweep_Right1(2200 , square_edg);}  //【Square_Sweep_Right1还没写】！！！！！
-			if(square_edg<1000)
-			{Square_Sweep_Right1(2200 , 500);}
-
-			flo=(int)square_edg;
-			USART_OUT(UART4,(uint8_t*)"%d\r\n",flo);	
-			}	
+				v1=(int)10865*v;                         //基础速度
+				//判断是否被卡住
+				
+				//如果被卡住
+				
+				//如果没有被卡住
+				{
+				if(right==1)                             //右
+				{
+				{Square_Sweep_Right1(2200 , square_edg);}
+					flo=(int)square_edg;
+					USART_OUT(UART4,(uint8_t*)"%d  ",flo);	
+				}
+				
+				else if(left==1)	                      //左
+				{
+				{Square_Sweep_Left1(2200 , square_edg);}  //【Square_Sweep_Right1还没写】！！！！！
+					flo=(int)square_edg;
+					USART_OUT(UART4,(uint8_t*)"%d  ",flo);	
+				}
+			    }
+		    }
        		
-//			USART_OUT(UART4,(uint8_t*)"\r\n");	//换行（独列）
+			USART_OUT(UART4,(uint8_t*)"\r\n");	//换行（独列）
 		}
 		
 //		OSSemPend(PeriodSem, 0, &os_err);
