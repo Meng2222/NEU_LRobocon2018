@@ -21,12 +21,12 @@ int X=0;         //蓝牙发数的整型转换
 int Y=0;
 int max=8000;//最大偏差
 //调车参数///////////////
-float Ierr=0;
-float I_value=0;
-float KI=-0.12;
-float rate=0.09;//  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04,           0.15
-float duty=800;   //提前量：duty=650(1m/s)，   1.5m/s duty为900，
-float KP=280; //Kp给300(1m/s)，，，kp给450（1.5m/s）
+float Ierr=0;//圆形
+float I_value=0;//圆形
+float KI=-0.12;//圆形
+float rate=0.09;// 正方形  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04,           0.15
+float duty=800;   //正方形  提前量：duty=650(1m/s)，   1.5m/s duty为900，
+float KP=400; //Kp给300(1m/s)，，，kp给450（1.5m/s）
 float V0=0.5;//车的基础速度(m/s)
 float buff=500;//(最大偏离区域)
 //////////////////////////////////////////////////////
@@ -60,14 +60,19 @@ static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 ==================================================================================
 						自定义添加函数
 */
+u16 Get_Adc(u8 ch);
+u16 Get_Adc_Average(u8 ch,u8 times);//ADC磨块
+void  Adc_Init(void);
 void  go_straight(float V,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx);
 void  go_round(float V,float R,int ElmoNum1,int ElmoNum2 ,CAN_TypeDef* CANx);
 void straight(float setValue,float feedbackValue);
+void turn(float setValue,float feedbackValue,float direc);//原地转
 float err(float distance,float ANGLE);//距离转化角度函数
 float a_gen(float a,float b,int n);//角度生成函数（输入直线参数，给出角度）
 void run_to(float BETA,float Vm);//跑向特定方向BETA
 int line(float aa, float bb, float cc, float nn);//车在干扰下跑向任意直线·，注：aa<0,当aa=0时，bb=0；nn=1控制向X轴上方走，n=-1向x轴下方，n=-2向x轴正向走，n=2向x轴负向走
 void loop(float corex,float corey,float Radium,float V_loop,int SN);//顺时针转
+int ADC_judge();//ADC判断朝哪个方向
 float meters(float V1)//米每秒转化成脉冲每秒
 {
 	float Va;
@@ -92,7 +97,23 @@ pos_t action;
     //float cc=0;
 	int cycle_flag=0;//cycle_flag为全局变量，两个函数都能改变
 	int change=1;//change为全局变量，两个函数都能改变
-	float Ra=0;//(可变半径)
+	float Ra=1500;//(可变半径)
+	int add_flag=0;//(半径增减的标志位)
+	int start_flag=0;
+	int sn=0;//如果sn为1则逆时针，sn为-1则顺时针
+	float last_x=0;
+	float last_y=0;
+	float last_angle=0;
+	//后退的程序变量
+	int back();//后退程序
+	int back_flag=0;
+	int mark_flag=0;
+	float back_angel=0;//被卡住的时刻的角度
+	float move_angel=0;//需要转到的角度
+	float back_sn=1;//后退的时候转的方向
+	float back_time=0;//卡住的时间
+	float back_accident=0;
+	int accident_flag=1;//意外判断标识符
 //	#define nn 1//(方向指定，1为向X轴上方，-1为向x轴下方，当倾斜角=0（aa=0）时，-2为x轴负向，2为x轴正向,)
 /*
 ==================================================================================
@@ -131,6 +152,7 @@ void ConfigTask(void)
 	TIM_Init(TIM2, 999, 839, 0x00, 0x00);
 	//CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	Adc_Init();
 	//驱动器初始化
 	ElmoInit( CAN2);
 	//速度环和位置环初始化
@@ -158,6 +180,12 @@ void ConfigTask(void)
 	 delay_s(5);
 
 	 }
+	 //ADC给出出发命令
+	 while(ADC_judge()==0);
+	 if(ADC_judge()==1)//左边被挡住
+		 sn=1;
+	  if(ADC_judge()==-1)//右边被挡住
+		 sn=-1;
 	 OSTaskSuspend(OS_PRIO_SELF);
 
 }
@@ -175,7 +203,7 @@ void WalkTask(void)
       float Cc=0;
       float Nn=0;
     float last_change=0;//记录上次状态
-	
+
 	  
 	CPU_INT08U os_err;
 	os_err = os_err;
@@ -226,12 +254,12 @@ void WalkTask(void)
 		}
 		if(mission==2)//纠偏维持角度为0
 		{
-			turn(0,action.angle);
+			turn(0,action.angle,1);
 			
 		}
 		if(mission==3)//转向到90
 		{
-			turn(90,action.angle);
+			turn(90,action.angle,1);
 			
 		}
 		
@@ -245,12 +273,12 @@ void WalkTask(void)
 		}
 		if(mission==5)//纠偏 维持角度为90
 		{
-			turn(90,action.angle);
+			turn(90,action.angle,1);
 			
 		}
 		if(mission==6)//转向到180
 		{
-			turn(180,action.angle);
+			turn(180,action.angle,1);
 		
 		}
 		
@@ -262,12 +290,12 @@ void WalkTask(void)
 		}
 		if(mission==8)//纠偏 维持角度为180
 		{
-			turn(180,action.angle);
+			turn(180,action.angle,1);
 		
 		}
 		if(mission==9)//转向到-90
 		{
-			turn(-90,action.angle);
+			turn(-90,action.angle,1);
 		
 		}
 		
@@ -279,12 +307,12 @@ void WalkTask(void)
 		}
 		if(mission==11)//纠偏 维持角度为-90
 		{
-			turn(-90,action.angle);
+			turn(-90,action.angle,1);
 		
 		}
 		if(mission==12)//转向到0
 		{
-			turn(0,action.angle);
+			turn(0,action.angle,1);
 		
 		}		
 	//	cnt++;
@@ -356,12 +384,12 @@ void WalkTask(void)
 		}
 		if(mission==2)//纠偏维持角度为0
 		{
-			turn(0,action.angle);
+			turn(0,action.angle,1);
 			
 		}
 		if(mission==3)//转向到90
 		{
-			turn(90,action.angle);
+			turn(90,action.angle,1);
 			
 		}
 		
@@ -373,12 +401,12 @@ void WalkTask(void)
 		}
 		if(mission==5)//纠偏 维持角度为90
 		{
-			turn(90,action.angle);
+			turn(90,action.angle,1);
 			
 		}
 		if(mission==6)//转向到180
 		{
-			turn(180,action.angle);
+			turn(180,action.angle,1);
 		
 		}
 		
@@ -390,12 +418,12 @@ void WalkTask(void)
 		}
 		if(mission==8)//纠偏 维持角度为180
 		{
-			turn(180,action.angle);
+			turn(180,action.angle,1);
 		
 		}
 		if(mission==9)//转向到-90
 		{
-			turn(-90,action.angle);
+			turn(-90,action.angle,1);
 		
 		}
 		
@@ -407,12 +435,12 @@ void WalkTask(void)
 		}
 		if(mission==11)//纠偏 维持角度为-90
 		{
-			turn(-90,action.angle);
+			turn(-90,action.angle,1);
 		
 		}
 		if(mission==12)//转向到0
 		{
-			turn(0,action.angle);
+			turn(0,action.angle,1);
 		
 		}		
 //		cnt++;
@@ -451,7 +479,7 @@ void WalkTask(void)
 		//	turn(0,action.angle);
 			straight(2000,action.y);
 		if(((action.angle>1&&action.angle<180)||(action.angle<-1&&action.angle>-179)))
-			turn(0,action.angle);
+			turn(0,action.angle,1);
 //			car_cnt++;
 //		if(car_cnt>0&&car_cnt<=100)
 //			turn(-90,action.angle);
@@ -603,35 +631,130 @@ void WalkTask(void)
  
   
   if(car==44)
+{
+	  if(sn!=0)
+{
+	if(back()==0)
+	 accident_flag=0;
+  if(accident_flag==0)
   {
-	  if(action.x>0&&(action.y<=-1000+1)&&(action.y>=-1000-1))
+	  if((action.x>20)&&(action.y>=-1500+Ra-75)&&(action.y<=-1500+Ra+75))
 	  {
-	   if(Ra<=750)	  
-	  Ra=Ra+250;
-	   if(Ra>2000)
-	  Ra=Ra-250;
+	   if(add_flag==0)
+	   Ra=Ra-250;
+	   if(add_flag==1)
+	   Ra=Ra+250;
+	   if(Ra==750)	  
+	   add_flag=1;
+	   if(Ra==1500)
+	   add_flag=0;
 	  }	  
-	  loop(0,1000,Ra,2.0,1);//逆时针转为1,顺时针为-1
+	  
+	  if(action.y<-2950&&action.y>-3050&&action.x>0)
+	  {
+	   VelCrl(CAN2, 01,18000);
+	   VelCrl(CAN2, 02,-18000); 
+	  }
+	  else  loop(0,-1500,Ra,Ra/1000,sn);//逆时针转为1,顺时针为-1
+		 
 	  X=(int)action.x;
 	  Y=(int)action.y;
       Angle=(int)action.angle;	  
+	  USART_OUT( UART4, (uint8_t*)"%d ", Ra);
 	  USART_OUT( UART4, (uint8_t*)"%d ", X);
 	  USART_OUT( UART4, (uint8_t*)"%d ", Y);
 	  USART_OUT( UART4, (uint8_t*)"%d ", Angle);
 	  USART_OUT(UART4,(uint8_t*)"\r\n");
+	  
+	  //撞墙判断程序
+	 	  	last_angle=action.angle;
+            last_x=action.x;
+            last_y=action.y;
+	  
+	  //碰撞向后退，角度判断
+	  {
+		  
+	  }
+	  //碰撞向前冲，角度判断
+	  {
+		  
+	  }
+   }//accident_flag=0无故障运行
+}//sn!=0//启动
+	
 
+  }//car=44	
 	
-	
-	
-  }	
-	
-	}
-}
+	}//while
+}//task
 
 int cnt_flag=0;
 float last_amount=0;
 float last_P0=0;
 float last_cycle_num=0;
+
+
+int ADC_judge()
+{
+	float Analog_L=0;
+	float Analog_R=0;
+	float judge_L=10000;
+	float judge_R=10000;
+	Analog_L=Get_Adc_Average(15,10);	
+   // judge_L=(100000.0f/4096.0f)*Analog_L;
+	Analog_R=Get_Adc_Average(14,10);	
+    //judge_R=(100000.0f/4096.0f)*Analog_R;
+//	if(Analog_R<200)
+//		start_flag=-1;
+	if(Analog_L<200)
+		start_flag=1;
+	int Analog_l=0;
+		Analog_l=(int)Analog_L;
+	int Analog_r=0;
+        Analog_r=(int)Analog_R;
+	USART_OUT(UART4,(uint8_t*)"%d ",Analog_l);
+	USART_OUT(UART4,(uint8_t*)"%d ",Analog_r);
+	USART_OUT(UART4,(uint8_t*)"%d ",start_flag);
+	return start_flag;
+	
+}
+
+int back()
+ {
+		  if(fabs(action.x-last_x)<5&&fabs(action.y-last_y)<5)//被卡住
+		  {
+			  mark_flag=1;
+			  back_flag=1;
+		  }		  
+		  if(mark_flag==1)//acccident_flag
+		  {	    
+		      back_angel=action.angle;
+			  move_angel=action.angle+180;
+			  if(move_angel>180)
+				  move_angel=move_angel-360;
+			  mark_flag=0;
+			  //后退
+			  	VelCrl(CAN2, 01,10000); 
+	            VelCrl(CAN2, 02,10000); 
+		  }	  
+		  if(back_flag==1&&(fabs(action.angle-90)<1||fabs(action.angle-0)<1||fabs(action.angle+90)<1||action.angle+180<1||(180-action.angle)<1))//被墙壁垂直卡住accident_flag
+		  {
+			  
+			  back_time++;
+			  if(back_time==100)
+			  {
+				  if(fabs(action.angle-back_angel)<10)//说明没有转过去，卡在死角需要向另一个方向转 
+				  back_sn=-1;
+		      }
+			  turn(move_angel,action.angle,back_sn);
+			  if(fabs(action.angle-move_angel)<10)
+             	back_accident=0;  
+		  }
+		USART_OUT( UART4, (uint8_t*)"%d ", back_flag);
+	    USART_OUT( UART4, (uint8_t*)"%d ", back_angel);
+	    USART_OUT( UART4, (uint8_t*)"%d ", back_time);
+		  return back_accident;
+	  }
 float auto_PID(float P0)//输入值是当前圈数和是否走完一圈标号
 {
 	float amount_x=0;
@@ -679,6 +802,53 @@ float auto_PID(float P0)//输入值是当前圈数和是否走完一圈标号
 
 
 
+
+
+
+void square(float length)
+{
+	float Aa=0;
+	float Bb=0;
+	float Cc=0;
+	float Nn=0;
+	if((action.x<-(2000-duty))&&change==1)//到达转换该x=-2000的地方
+{//x=-1900
+	Aa=-1;
+	Bb=0;
+	Cc=-length;
+	Nn=1;
+	change=2;
+}	
+
+if((action.y>2000-duty)&&change==2)
+{//y=1900
+	Aa=0;
+	Bb=1;
+	Cc=-2*length;
+	Nn=2;
+    change=3;
+}
+if((action.x>-duty)&&change==3)
+{//x=2000
+	Aa=-1;
+	Bb=0;
+	Cc=length;
+	Nn=-1;
+    change=4;
+}
+if((action.y<duty)&&change==4)
+{//y=0
+	Aa=0;
+	Bb=1;
+	Cc=00;
+	Nn=-2;
+    change=1;
+}
+
+//执行
+line(Aa, Bb, Cc, Nn);
+USART_OUT( UART4, (uint8_t*)"%d ", change);
+   }   
 
 
 
@@ -1098,17 +1268,6 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 
 void USART3_IRQHandler(void) //更新频率 200Hz 
 {  
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
  static uint8_t ch; 
 
  static union 
@@ -1169,14 +1328,24 @@ break;
   case 4:    if (ch == 0x0d)    
 {   
  opsflag=1;
- action.angle =posture.ActVal[0] ;//角度 
-	
-
- posture.ActVal[1] = posture.ActVal[1];     
-posture.ActVal[2] = posture.ActVal[2];    
-action.x = posture.ActVal[3];//x     
-action.y = posture.ActVal[4];//y       
-}  
+	if(Car==4)
+	{
+		 action.angle =-posture.ActVal[0] ;//角度
+		
+         posture.ActVal[1] = posture.ActVal[1];     
+         posture.ActVal[2] = posture.ActVal[2];    
+         action.y = -posture.ActVal[3];//x     
+         action.x = posture.ActVal[4];//y    
+	}
+	if(Car==1)
+    {
+      action.angle =posture.ActVal[0] ;//角度 
+      posture.ActVal[1] = posture.ActVal[1];     
+      posture.ActVal[2] = posture.ActVal[2];    
+      action.x = posture.ActVal[3];//x     
+      action.y = posture.ActVal[4];//y       
+    }
+	}  
   count = 0;   
   break;   
   case 5:    
@@ -1196,3 +1365,7 @@ action.y = posture.ActVal[4];//y
   }
 OSIntExit();  
   } 
+
+  
+  
+  
