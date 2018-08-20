@@ -50,14 +50,14 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	
+
 	//CAN1口接受任意数据以通过标志位中断
 	uint32_t StdId = 0;
 	uint8_t CAN1Buffer[8] = {0};
 	uint8_t receiveLength = 8;
 	CanRxMsg RxMessage;
     CAN_RxMsg(CAN1, 0x00, CAN1Buffer, &receiveLength);
-	
+
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -84,14 +84,14 @@ void CAN2_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	
+
 	//CAN2口接受任意数据以通过标志位中断
 	uint32_t StdId = 0;
 	uint8_t CAN2Buffer[8] = {0};
 	uint8_t receiveLength = 8;
 	CanRxMsg RxMessage;
     CAN_RxMsg(CAN1, 0x00, CAN2Buffer, &receiveLength);
-	
+
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -341,115 +341,20 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-Pos_t posTmp;
-//定位系统串口接受中断函数，更新频率200Hz
-#if CarNum == CarOne
-extern int isOKFlag;
-extern uint8_t opsFlag;
-#endif
-void USART3_IRQHandler(void) 
-{
-	static uint8_t ch;
-	static union {
-		uint8_t data[24];
-		float ActVal[6];
-	} posture;
-	static uint8_t count = 0;
-	static uint8_t i = 0;
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
+//void USART3_IRQHandler(void)
+//{
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
 
-	if(USART_GetITStatus(USART3, USART_IT_ORE_ER) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
-		USART_ReceiveData(USART3);
-	}
-	
-	if(USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-		ch = USART_ReceiveData(USART3);
-		switch(count)
-		{
-		case 0:
-			if(ch == 0x0d)
-				count++;
-			#if CarNum == CarOne
-			else if(ch == 'O')
-                count = 5;
-			#endif
-			else
-				count = 0;
-			break;
+//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+//	{
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+//	}
 
-		case 1:
-			if(ch == 0x0a)
-			{
-				i = 0;
-				count++;
-			}
-			else if(ch == 0x0d)
-			{
-				
-			}
-			else
-				count = 0;
-			break;
-
-		case 2:
-			posture.data[i] = ch;
-			i++;
-			if(i >= 24)
-			{
-				i = 0;
-				count++;
-			}
-			break;
-
-		case 3:
-			if(ch == 0x0a)
-				count++;
-			else
-				count = 0;
-			break;
-
-		case 4:
-			if(ch == 0x0d)
-			{
-				#if CarNum == CarOne
-				opsFlag = 1;
-				#endif
-				posTmp.angle = posture.ActVal[0];
-				posture.ActVal[1] = posture.ActVal[1];
-				posture.ActVal[2] = posture.ActVal[2];
-				posTmp.x=posture.ActVal[3];
-	            posTmp.y=posture.ActVal[4];
-				posture.ActVal[5] = posture.ActVal[5];	
-			}
-			count = 0;
-			break;
-		#if CarNum == CarOne
-		case 5:
-            count = 0;
- 		    if(ch == 'K')
-				isOKFlag = 1;
-            break;
-		#endif
-
-		default:
-			count = 0;
-			break;
-		}
-	}
-	else
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-		USART_ReceiveData(USART3);
-	}
-	OSIntExit();	
-}
+//	OSIntExit();
+//}
 
 
 void UART5_IRQHandler(void)

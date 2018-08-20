@@ -10,14 +10,9 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "pps.h"
 #include "moveBase.h"
 #include "math.h"
-#define num five
-#define one 1
-#define two 2
-#define three 3
-#define four 4
-#define five 5
 /*
 ===============================================================
 						信号量定义
@@ -94,28 +89,20 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
 	TIM_Init(TIM2, 999, 83, 0, 0);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
 	CAN_Config(CAN2, 500, GPIOB, GPIO_Pin_5, GPIO_Pin_6);
-	
+
 	ElmoInit(CAN2);
 	VelLoopCfg(CAN2, 1, 53333333, 53333333);
 	VelLoopCfg(CAN2, 2, 53333333, 53333333);
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
-	
-	//定位系统初始化延时
-    #if CarNum == CarOne        
-		delay_s(2);
-		driveGyro();
-		while(!opsFlag);
-    #elif CarNum == CarFour
-		delay_s(10);
-		delay_s(5);
-    #endif
+	USART3_Init(115200);
+	/*一直等待定位系统初始化完成*/
+	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
@@ -131,7 +118,7 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		
+
 		//将四号车的坐标系转化为一号车的标准坐标系
 		#if CarNum == CarOne
 		    pos.x = posTmp.y;
@@ -142,7 +129,7 @@ void WalkTask(void)
 		    pos.y = posTmp.y;
 		    pos.angle = posTmp.angle;
         #endif
-		
+
 		#if num == 1
 		    BaseVelocity = Go(0.5);
 		    VelCrl(CAN2, 1, (int)(BaseVelocity));//右轮
@@ -162,23 +149,23 @@ void WalkTask(void)
 		    Line.Line_A = -1.0;
 		    Line.Line_B = -1.0;
 		    Line.Line_C = -1.0;
-            Line.Line_Mode = 1;			
+            Line.Line_Mode = 1;
 		    Line_Operation(&Line);
 		    adjustVelocityLine = PID_Line_Operation(pos.angle, &Line, &PID_Line);
 			VelCrl(CAN2, 1, (int)(BaseVelocity + adjustVelocityLine));//右轮
 		    VelCrl(CAN2, 2, (int)((BaseVelocity - adjustVelocityLine) * -1.0));//左轮
 		#elif num == 5
-		    BaseVelocity = Go(0.5);		 
+		    BaseVelocity = Go(0.5);
             Round.Round_Center_x = -1.5;             //圆心横坐标x          -1.5m
             Round.Round_Center_y  = 1.5;             //圆心纵坐标y          1.5m
             Round.Round_Radius = 1.0;                //圆半径               1.0m
 		    Round_Operation(&Round);
 		    adjustVelocityRound = PID_Round_Operation(pos.angle, &Round, &PID_Round);
 		    VelCrl(CAN2, 1, (int)(BaseVelocity + adjustVelocityRound));//右轮
-		    VelCrl(CAN2, 2, (int)((BaseVelocity - adjustVelocityRound) * -1.0));//左轮			
+		    VelCrl(CAN2, 2, (int)((BaseVelocity - adjustVelocityRound) * -1.0));//左轮
 		#endif
 
-		
+
 		//以20 * 10ms为间隔发送数据
 		cntSendTime++;
 		cntSendTime = cntSendTime % 20;
