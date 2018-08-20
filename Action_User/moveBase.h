@@ -59,7 +59,7 @@ void TurnRight(float angle,float v);
 void AnglePID(float setAngle,float feedbackAngle);
 void GetFunction(float x1,float y1,float x2,float y2);
 void linePID(float x1,float y1,float x2,float y2,float v);
-
+void CirclePID(float x0,float y0,float R,float v,int status);
 /**
   * @}
   */

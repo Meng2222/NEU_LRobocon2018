@@ -131,6 +131,7 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
+int Cnt,time;
 void TIM2_IRQHandler(void)
 {
 #define PERIOD_COUNTER 10
@@ -144,18 +145,28 @@ void TIM2_IRQHandler(void)
 
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
+		Cnt++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
 		{
 			OSSemPost(PeriodSem);
+			time++;
 			periodCounter = PERIOD_COUNTER;
 		}
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 	}
 	OSIntExit();
 }
-
+int Get_Time_Flag(void)
+{
+	if(Cnt>1000)
+	{	Cnt=0;
+		return 1;
+	}
+	else
+		return 0;		
+}	
 void TIM1_UP_TIM10_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -417,7 +428,16 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 				{
 					#if CAR_NUM==1
 					beginFlag=1;
-					#endif
+					angle =-posture.ActVal[0] ;//角度
+					posture.ActVal[1] = posture.ActVal[1];
+					posture.ActVal[2] = posture.ActVal[2];
+					xpos = -posture.ActVal[4];//x
+					ypos = posture.ActVal[3];//y
+					posture.ActVal[5] = posture.ActVal[5];
+					SetXpos(xpos);
+					SetYpos(ypos);
+					SetAngle(angle);
+					#elif CAR_NUM==4
 					angle =posture.ActVal[0] ;//角度
 					posture.ActVal[1] = posture.ActVal[1];
 					posture.ActVal[2] = posture.ActVal[2];
@@ -427,6 +447,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 					SetXpos(xpos);
 					SetYpos(ypos);
 					SetAngle(angle);
+					#endif
 				}
 				count = 0;
 				break;

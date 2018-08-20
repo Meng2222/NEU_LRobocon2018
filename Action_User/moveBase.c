@@ -39,7 +39,7 @@
   * @retval None
   */
 #define pi 3.141592f
-float Kp=200,Ki=0.01,Kd=1,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1,Vkl=0,Sumli=0;
+float Kp=200,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1,Vkl=0,Sumli=0;
 void Straight(float v)
 {
 	VelCrl(CAN2,1,v*4096/(pi*WHEEL_DIAMETER)+Vk);
@@ -47,34 +47,33 @@ void Straight(float v)
 }	
 void Spin(float R,float v)
 {
-	VelCrl(CAN2,1,v*4096/(pi*WHEEL_DIAMETER));
-	VelCrl(CAN2,2,-v*4096*(R+(WHEEL_TREAD-WHEEL_WIDTH)/2)/((R-(WHEEL_TREAD-WHEEL_WIDTH)/2)*pi*WHEEL_DIAMETER));
+	VelCrl(CAN2,1,v*4096/(pi*WHEEL_DIAMETER)+Vk);
+	VelCrl(CAN2,2,-v*4096*(R+(WHEEL_TREAD-WHEEL_WIDTH)/2)/((R-(WHEEL_TREAD-WHEEL_WIDTH)/2)*pi*WHEEL_DIAMETER)+Vk);
 }
 void TurnRight(float angle,float v)
 {
 	VelCrl(CAN2,1,0);
 	VelCrl(CAN2,2,-v*4096*WHEEL_TREAD*angle*2/((WHEEL_DIAMETER)*360));
 }	
-
 void AnglePID(float setAngle,float feedbackAngle)
 {
-	if(setAngle>180)
-		err=-(360-setAngle);
+	/*(setAngle>180)
+		setAngle=-(360-setAngle);
 	if(setAngle<-180)
-		err=360+setAngle;
+		setAngle=360+setAngle;*/
 	err=setAngle-feedbackAngle;
 	if(err>180)
 		err=-(360-err);
 	if(err<-180)
+		
 		err=360+err;
 	Sumi+=Ki*err;
-	if((int)err==0)
-		Sumi=0;
 	Vk=Kp*err+Sumi+Kd*(err-lastErr);
 	lastErr=err;
 }	
-float k,b,lAngle,setAngle,x,y;
+float k,b,lAngle,setAngle,x,y,d;
 static int flag;
+extern float dLeft,dRight;
 void GetFunction(float x1,float y1,float x2,float y2)
 {
 		if(x1-0.1<x2&&x2<x1+0.1)
@@ -96,60 +95,94 @@ void GetFunction(float x1,float y1,float x2,float y2)
 				else 
 					lAngle=(atan(k)*180/pi)+90;
 			}	
-			else if(k<0)
+			else 
 			{
 				if(y2-y1>=0)
 					lAngle=(atan(k)*180/pi)+90;
 				else 
 					lAngle=(atan(k)*180/pi)-90;
 			}	
-			else
+			if(y1-0.5<y2&&y2<y1+0.5)
 			{	
 				if(x2-x1>0)
 					lAngle=-90;
-				else
+				if(x2<x1)
 					lAngle=90;
 			}	
 			flag=1;
 		}
+		#if CAR_NUM==1
+			lAngle=-lAngle;
+		#endif
 }	
 void linePID(float x1,float y1,float x2,float y2,float v)
 {
+		
 		GetFunction(x1,y1,x2,y2);
-		#if CAR_NUM==1
-		x=-GetYpos();
-		y=GetXpos();
-		#elif CAR_NUM==4
 		x=GetXpos();
 		y=GetYpos();
-		#endif
 		if(flag)
 		{
 			if(k>0)
-				if(y>k*x+b)
-					setAngle=lAngle-90*(1-500/(y-k*x-b+500));
+				if((y-k*x-b)*(y2-y1)>0)
+					setAngle=lAngle-90*(1-1000/(y-k*x-b+1000));
 				else
-					setAngle=lAngle+90*(1-500/(-y+k*x+b+500));
+					setAngle=lAngle+90*(1-1000/(-y+k*x+b+1000));
 			else
-				if(y>k*x+b)
-					setAngle=lAngle+90*(1-500/(y-k*x-b+500));
+				if((y-k*x-b)*(y2-y1)>0)
+					setAngle=lAngle+90*(1-1000/(y-k*x-b+1000));
 				else
-					setAngle=lAngle-90*(1-500/(-y+k*x+b+500));
+					setAngle=lAngle-90*(1-1000/(-y+k*x+b+1000));
+			//斜率为0	
+			if(y1-0.5<y2&&y2<y1+0.5)
+			{	
+				if(x2>x1)
+					if(y>y1)
+						setAngle=lAngle-90*(1-1000/(y-b+1000));
+					else
+						setAngle=lAngle+90*(1-1000/(-y+b+1000));
+				else
+					if(y>y1)
+						setAngle=lAngle+90*(1-1000/(y-b+1000));
+					else
+						setAngle=lAngle-90*(1-1000/(-y+b+1000));	
+			}	
 		}	
+		//斜率不存在
 	 	else
 		{	
-			if(y2-y1>0)
-				if(x<x1)
+			if((y2-y1)*(x-x1)<0)
 					setAngle=lAngle-90*(1-1000/(fabs(x-x1)+1000));
-				else
+			else
 					setAngle=lAngle+90*(1-1000/(fabs(x-x1)+1000));	
-			else 	
-				if(x<x1)	
-					setAngle=lAngle+90*(1-1000/(fabs(x-x1)+1000));		
-				else
-					setAngle=lAngle-90*(1-1000/(fabs(x-x1)+1000));
 		}
 		AnglePID(setAngle,GetAngle());
 		Straight(v);
+		
+}	
+void CirclePID(float x0,float y0,float R,float v,int status)
+{
+	x=GetXpos();
+	y=GetYpos();
+	GetFunction(x,y,x0,y0);
+	d=(x-x0)*(x-x0)+(y-y0)*(y-y0);
+	//逆时针
+	if(status==0)
+	{	
+		if(sqrt(d)>R)
+			setAngle=lAngle-90*(1000/(fabs(sqrt(d)-R)+1000));	
+		else
+			setAngle=lAngle-180+90*(1000/(fabs(sqrt(d)-R)+1000));		
+	}	
+	//顺时针
+	if(status==1)
+	{	
+		if(sqrt(d)>R)
+			setAngle=lAngle+90*(1000/(fabs(sqrt(d)-R)+1000));
+		else
+			setAngle=lAngle+180-90*(1000/(fabs(sqrt(d)-R)+1000));
+	}	
+	AnglePID(setAngle,GetAngle());
+	Straight(v);
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/

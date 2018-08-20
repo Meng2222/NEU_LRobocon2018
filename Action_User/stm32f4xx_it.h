@@ -53,6 +53,7 @@ void SetYpos(float val);
 float GetAngle(void);
 float GetXpos(void);
 float GetYpos(void);
+int Get_Time_Flag(void);
 #define CAR_NUM (4)
 #ifdef __cplusplus
 }
