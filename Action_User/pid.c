@@ -1,4 +1,5 @@
 #include "pid.h"
+#include "pps.h"
 /**
 * @brief  直线函数
 * @param  vel: 速度，单位：mm每秒，范围：最小速度限制到最大速度限制
@@ -12,7 +13,6 @@ float errorRadius = 0;//圆心距离
 float Uout = 0;
 float phase1 = 0,phase2 = 0,uOutAngle = 0,uOutDis = 0;
 char updownFlag = 0;
-extern Pos_t Pos;
 extern PId_t Angle_PId;
 extern PId_t	Dis_PId;
 float compareAngle = 0;
@@ -31,7 +31,7 @@ void WalkLine(float vel)
 */
 void WalkLine2PID(float vel,float setAngle)
 {
-	errorAngle = setAngle - Pos.angle;
+	errorAngle = setAngle - GetAngle();
 	if(errorAngle > 180.0f)
 		errorAngle = errorAngle - 360.0f;
 	else if(errorAngle < -180.0f)
@@ -77,10 +77,10 @@ void WalkRound(float vel,float radius,char side)
 void WalkRoundPID(Round_t* PID_RndTYPE)
 {	
 	if(PID_RndTYPE->side == 1)
-		setAngle_R = atan2f((Pos.x-PID_RndTYPE->x),-(Pos.y-PID_RndTYPE->y)) * 180 / PI - 90;
+		setAngle_R = atan2f((GetX()-PID_RndTYPE->x),-(GetY()-PID_RndTYPE->y)) * 180 / PI - 90;
 	else if(PID_RndTYPE->side == -1)
-		setAngle_R = atan2f(-(Pos.x-PID_RndTYPE->x),(Pos.y-PID_RndTYPE->y)) * 180 / PI - 90;
-	errorRadius = sqrtf(powf((Pos.x-PID_RndTYPE->x),2) + powf((Pos.y-PID_RndTYPE->y),2)) - PID_RndTYPE->radius;
+		setAngle_R = atan2f(-(GetX()-PID_RndTYPE->x),(GetY()-PID_RndTYPE->y)) * 180 / PI - 90;
+	errorRadius = sqrtf(powf((GetX()-PID_RndTYPE->x),2) + powf((GetY()-PID_RndTYPE->y),2)) - PID_RndTYPE->radius;
 	if(PID_RndTYPE->side == -1) //圆外顺时针
 		errorRadius = -errorRadius;
 	else if (PID_RndTYPE->side == 1)//圆内逆时针
@@ -115,7 +115,7 @@ float PID_Compentate(float err,PId_t* PId_tTYPE)
 void KownedLinePID(float a,float b,float c,char Dir)
 {
 	
-	errorDis = fabsf(a * Pos.x + b * Pos.y + c) / sqrtf(a *a + b * b); 
+	errorDis = fabsf(a * GetX() + b * GetY() + c) / sqrtf(a *a + b * b); 
 	//y轴正半轴
 	if (b == 0 && Dir == 1)
 	{
@@ -168,7 +168,7 @@ void KownedLinePID(float a,float b,float c,char Dir)
 	//updownFlag 1右侧2 左侧 
 	if(a == 0)
 	{
-		if(Pos.y > (-c)/b)
+		if(GetY() > (-c)/b)
 			updownFlag = 2;
 		else
 			updownFlag = 1;
@@ -176,8 +176,8 @@ void KownedLinePID(float a,float b,float c,char Dir)
 	
 	else 
 		{
-			shouldX  = (- b * Pos.y - c)/a;
-			if(shouldX < Pos.x)
+			shouldX  = (- b * GetY() - c)/a;
+			if(shouldX < GetX())
 				updownFlag = 1;
 			else
 				updownFlag = 2;
@@ -208,7 +208,7 @@ void Angle_PID(float vel,float value)
 		value = value -360.0f;
 	else if(value < -180.0f)
 		value = value + 360.0f;
-	errorAngle = value - Pos.angle;
+	errorAngle = value - GetAngle();
 	if(errorAngle > 180.0f)
 		errorAngle = errorAngle - 360.0f;
 	else if(errorAngle < -180.0f)

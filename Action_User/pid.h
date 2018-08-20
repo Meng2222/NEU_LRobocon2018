@@ -20,7 +20,7 @@ typedef struct {
 	float vel;
 	float side;
 }Round_t;
-#define SPEED 800
+#define SPEED 1200
 void KownedLinePID(float a,float b,float c,char dir);
 void WalkLine(float vel);
 void WalkLine2PID(float vel,float setAngle);

@@ -47,11 +47,6 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
-typedef struct{
-	float x;
-	float y;
-	float angle;
-}Pos_t;
 
 #ifdef __cplusplus
 }

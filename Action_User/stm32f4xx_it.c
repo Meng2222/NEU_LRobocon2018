@@ -239,189 +239,116 @@ void USART2_IRQHandler(void)
 	}
 	OSIntExit();
 }
-Pos_t Pos;
 
-
-void USART3_IRQHandler(void) //更新频率200Hz
-{
-	static uint8_t ch;	
-	static uint8_t count = 0;
-	static uint8_t i = 0;
-	static union {
-		uint8_t data[24];
-		float ActVal[6];
-} posture;
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-		ch = USART_ReceiveData(USART3);
-		switch (count)
-		{
-		case 0:
-			if (ch == 0x0d)
-				count++;
-			else if(ch == 'O')
-				count = 5;
-			else
-				count = 0;
-			break;
-
-		case 1:
-			if (ch == 0x0a)
-			{
-				i = 0;
-				count++;
-			}
-			else
-				count = 0;
-			break;
-
-		case 2:
-			posture.data[i] = (uint8_t)ch;
-			i++;
-			if (i >= 24)
-			{
-				i = 0;
-				count++;
-			}
-			break;
-
-		case 3:
-			if (ch == 0x0a)
-				count++;
-			else
-				count = 0;
-			break;
-
-		case 4:
-			#if CARNUM == 4
-			if (ch == 0x0d)
-			{
-				pposokflag = 1;
-				Pos.angle = posture.ActVal[0];
-				posture.ActVal[1] = posture.ActVal[1];
-				posture.ActVal[2] = posture.ActVal[2];
-				Pos.x = posture.ActVal[3];
-				Pos.y = posture.ActVal[4];
-				posture.ActVal[5] = posture.ActVal[5];
-			}
-			#elif CARNUM == 1
-			if (ch == 0x0d)
-			{
-				pposokflag = 1;
-				Pos.angle = -posture.ActVal[0];
-				posture.ActVal[1] = posture.ActVal[1];
-				posture.ActVal[2] = posture.ActVal[2];
-				Pos.y = -posture.ActVal[3];
-				Pos.x = posture.ActVal[4];
-				posture.ActVal[5] = posture.ActVal[5];
-			}
-			#endif
-			count = 0;
-			break;
-		case 5:
-			count = 0;
-		if(ch == 'K')
-			isOKFlag = 1;
-			break;
-		default:
-			count = 0;
-			break;
-		}
-	}
-	else
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_PE);
-		USART_ClearITPendingBit(USART3, USART_IT_TXE);
-		USART_ClearITPendingBit(USART3, USART_IT_TC);
-		USART_ClearITPendingBit(USART3, USART_IT_ORE_RX);
-		USART_ClearITPendingBit(USART3, USART_IT_IDLE);
-		USART_ClearITPendingBit(USART3, USART_IT_LBD);
-		USART_ClearITPendingBit(USART3, USART_IT_CTS);
-		USART_ClearITPendingBit(USART3, USART_IT_ERR);
-		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
-		USART_ClearITPendingBit(USART3, USART_IT_NE);
-		USART_ClearITPendingBit(USART3, USART_IT_FE);
-		USART_ReceiveData(USART3);
-	}
-	OSIntExit();
-}
-//void USART3_IRQHandler(void) //更新频率 200Hz
+//void USART6_IRQHandler(void) //更新频率200Hz
 //{
-//	static uint8_t ch;
+//	static uint8_t ch;	
+//	static uint8_t count = 0;
+//	static uint8_t i = 0;
 //	static union {
 //		uint8_t data[24];
 //		float ActVal[6];
-//		} posture;
-//	static uint8_t count = 0;
-//	static uint8_t i = 0;
-//	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
+//} posture;
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
+//	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
 //	{
-//		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
-//		USART_ReceiveData(USART3);
-//	}
-//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-//	{
-//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-//		ch = USART_ReceiveData(USART3);
+//		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
+//		ch = USART_ReceiveData(USART6);
 //		switch (count)
 //		{
-//			case 0:
-//				if (ch == 0x0d)
-//					count++;
-//				else
-//					count = 0;
-//				break;
-//			case 1:
-//				if (ch == 0x0a)
-//				{
-//					i = 0;
-//					count++;
-//				}
-//				else
-//					count = 0;break;
-//			case 2:
-//				posture.data[i] = ch;
-//				i++;
-//				if (i >= 24)
-//				{
-//					i = 0;
-//					count++;
-//				}
-//				break;
-//			case 3:
-//				if (ch == 0x0a)
-//					count++;
-//				else
-//					count = 0;
-//				break;
-//			case 4:
-//				if (ch == 0x0d)
-//				{
-//					Pos.angle =posture.ActVal[0] ;//角度
-//					posture.ActVal[1] = posture.ActVal[1];
-//					posture.ActVal[2] = posture.ActVal[2];
-//					Pos.x = posture.ActVal[3];//x
-//					Pos.y = posture.ActVal[4];//y
-//					posture.ActVal[5] = posture.ActVal[5];
-//				}
+//		case 0:
+//			if (ch == 0x0d)
+//				count++;
+//			else if(ch == 'O')
+//				count = 5;
+//			else
 //				count = 0;
-//					break;
-//			default:
+//			break;
+
+//		case 1:
+//			if (ch == 0x0a)
+//			{
+//				i = 0;
+//				count++;
+//			}
+//			else
 //				count = 0;
-//				break;
+//			break;
+
+//		case 2:
+//			posture.data[i] = (uint8_t)ch;
+//			i++;
+//			if (i >= 24)
+//			{
+//				i = 0;
+//				count++;
+//			}
+//			break;
+
+//		case 3:
+//			if (ch == 0x0a)
+//				count++;
+//			else
+//				count = 0;
+//			break;
+
+//		case 4:
+//			#if CARNUM == 4
+//			if (ch == 0x0d)
+//			{
+//				pposokflag = 1;
+//				Pos.angle = posture.ActVal[0];
+//				posture.ActVal[1] = posture.ActVal[1];
+//				posture.ActVal[2] = posture.ActVal[2];
+//				Pos.x = posture.ActVal[3];
+//				Pos.y = posture.ActVal[4];
+//				posture.ActVal[5] = posture.ActVal[5];
+//			}
+//			#elif CARNUM == 1
+//			if (ch == 0x0d)
+//			{
+//				pposokflag = 1;
+//				Pos.angle = -posture.ActVal[0];
+//				posture.ActVal[1] = posture.ActVal[1];
+//				posture.ActVal[2] = posture.ActVal[2];
+//				Pos.y = -posture.ActVal[3];
+//				Pos.x = posture.ActVal[4];
+//				posture.ActVal[5] = posture.ActVal[5];
+//			}
+//			#endif
+//			count = 0;
+//			break;
+//		case 5:
+//			count = 0;
+//		if(ch == 'K')
+//			isOKFlag = 1;
+//			break;
+//		default:
+//			count = 0;
+//			break;
 //		}
 //	}
 //	else
 //	{
-//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-//		USART_ReceiveData(USART3);
+//		USART_ClearITPendingBit(USART6, USART_IT_PE);
+//		USART_ClearITPendingBit(USART6, USART_IT_TXE);
+//		USART_ClearITPendingBit(USART6, USART_IT_TC);
+//		USART_ClearITPendingBit(USART6, USART_IT_ORE_RX);
+//		USART_ClearITPendingBit(USART6, USART_IT_IDLE);
+//		USART_ClearITPendingBit(USART6, USART_IT_LBD);
+//		USART_ClearITPendingBit(USART6, USART_IT_CTS);
+//		USART_ClearITPendingBit(USART6, USART_IT_ERR);
+//		USART_ClearITPendingBit(USART6, USART_IT_ORE_ER);
+//		USART_ClearITPendingBit(USART6, USART_IT_NE);
+//		USART_ClearITPendingBit(USART6, USART_IT_FE);
+//		USART_ReceiveData(USART6);
 //	}
+//	OSIntExit();
 //}
+
 //void USART3_IRQHandler(void)
 //{
 //	OS_CPU_SR cpu_sr;
