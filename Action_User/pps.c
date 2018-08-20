@@ -29,7 +29,7 @@ static PosSend_t posture={0};
 /*定义定位系统返回值结构体*/
 static Pos_t ppsReturn={0.f};
 
-
+extern pos_t xya;
 void USART3_IRQHandler(void)
 {
 		static uint8_t ch;
@@ -99,12 +99,14 @@ void USART3_IRQHandler(void)
 						SetWZ(posture.value[5]);
 
 						/*定义的全局结构体变量可以在这里赋值*/
-						//						=posture.value[0];
+						xya.angle=posture.value[0]+90;
 						//						=posture.value[1];
 						//						=posture.value[2];
-						//						=posture.value[3];
-						//						=posture.value[4];
+						xya.x=-posture.value[3];
+						xya.y=-posture.value[4];
 						//						=posture.value[5];
+						if(xya.angle>180)
+							xya.angle-=360;
 					}
 					count=0;
 				break;

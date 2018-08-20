@@ -10,6 +10,7 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
+#include "stm32f4xx_adc.h"
 #include "pps.h"
 /*
 ===============================================================
@@ -27,8 +28,8 @@ static float set_angle=0;
 int iSOKFlag=0;
 static int if_go=0;
 int t=0;
-float last_angle;
-float new_angle;
+int last_angle=90;
+int new_angle;
 int kpa=200;
 int kpd=15;
 int kdd=2;
@@ -40,7 +41,7 @@ static float Aout=0;
 static float Dout=0;
 float Left_d;
 float Right_d;
-int light_number=1;
+
 float tangent_angle;
 float add_or_dec=-1;
 float R=1900;
@@ -107,20 +108,10 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2,2,50000,50000);
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
-	delay_s(2);
 	Adc_Init();
-	#if car==1
-		
-     driveGyro();
-     //USART_OUT(UART4,(uint8_t*)"OKOPSOPS");
-	 while(!opsFlag);
-	#elif car == 4
-     delay_s(10);	
-	  delay_s(5);
-	 #endif
-	
 	USART3_Init(115200);
 	/*一直等待定位系统初始化完成*/
+	delay_ms(2000);
 	WaitOpsPrepare();
 	
 	OSTaskSuspend(OS_PRIO_SELF);
@@ -172,32 +163,33 @@ void go(float v)
 	 int right;
 	 int left;
 	  
-//	if(light_number==1)
-//	{ Light(1,0,0,1);
-//	}else if(light_number==2)
-//	{ Light(0,1,-2000,1);
-//	}else if(light_number==3)
-//	{ Light(1,0,-2000,-1);
-//	}else if(light_number==4)
-//	{ Light(0,1,0,-1);
-//	}
+
    
     if(if_go!=0)	
 	 Round(0,1900,R,V,if_go);
     if(time_number<compare_number)
     {		
 		if_back=0;
-		if(compare_number==5)
-		compare_number=10;
+		//if(compare_number==5)
+		//compare_number=10;
 		if_add=1;
+		right_cril=Right_cr1+Dout+Aout;
+        left_cril=Left_cr2+Dout+Aout;	
 	}
-	else
-	{ 
-		if(time_number>=compare_number)
-		time_number=compare_number;
-		compare_number=10;
+	else if(time_number>=compare_number)
+	{	
+		
+		//compare_number=10;
 		 if_back=1;		 
 		 if_add=0;
+		for(i=0;i<=1000;i++)
+		{   
+			VelCrl(CAN2,1,-10000);
+			VelCrl(CAN2,2,10000);
+			time_number=0;
+		}
+		right_cril=0;
+        left_cril=0;	
 	}
     
 	if(if_back>last_back)
@@ -206,22 +198,9 @@ void go(float v)
 		
 	}
 	last_back=if_back;
-	   if(if_back==1)
-		   { 
-			   for(i=0;i<=1000;i++)
-			{   
-		     VelCrl(CAN2,1,-10000);
-	         VelCrl(CAN2,2,10000);
-				time_number=0;
-			}
-			
-		   
-	   }else 
-	   { 
-		   right_cril=Right_cr1+Dout+Aout;
-		   left_cril=Left_cr2+Dout+Aout;
-	   }
-	 
+	   
+	   
+      
 	 VelCrl(CAN2,1,right_cril);
 	 VelCrl(CAN2,2,left_cril);
 	 right=right_cril;
@@ -378,14 +357,14 @@ void Light(float a,float b,int n,int round)
 		}
 		
 	}
-
-//每十次比较一次//
-     if(fabs(last_angle-set_angle)<=1)
+     new_angle=set_angle;
+    //比较//
+     if(new_angle==last_angle)
 	{
 		time_number++;
 		
 	}else time_number=0;
-	last_angle=set_angle;
+	last_angle=new_angle;
 	
 	if(round==-1)
 	{ 

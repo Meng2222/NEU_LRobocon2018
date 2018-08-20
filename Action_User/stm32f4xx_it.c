@@ -236,119 +236,119 @@ void USART2_IRQHandler(void)
 extern pos_t xya;
 extern int iSOKFlag;
 uint8_t opsFlag = 0;
-void USART3_IRQHandler(void) //更新频率200Hz
-{
-	static uint8_t ch;
-	static union {
-		uint8_t data[24];
-		float ActVal[6];
-	} posture;
-	static uint8_t count = 0;
-	static uint8_t i = 0;
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
+//void USART3_IRQHandler(void) //更新频率200Hz
+//{
+//	static uint8_t ch;
+//	static union {
+//		uint8_t data[24];
+//		float ActVal[6];
+//	} posture;
+//	static uint8_t count = 0;
+//	static uint8_t i = 0;
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
 
-	if(USART_GetITStatus(USART3,USART_IT_ORE_ER)==SET)
-	{
-		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
-		USART_ReceiveData(USART3);
-	}
-	
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-		ch = USART_ReceiveData(USART3);
-		switch (count)
-		{
-		case 0:
-			if (ch == 0x0d)
-				count++;
-			else if(ch=='O')
-                count=5;
-			else
-				count = 0;
-			break;
+//	if(USART_GetITStatus(USART3,USART_IT_ORE_ER)==SET)
+//	{
+//		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
+//		USART_ReceiveData(USART3);
+//	}
+//	
+//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+//	{
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+//		ch = USART_ReceiveData(USART3);
+//		switch (count)
+//		{
+//		case 0:
+//			if (ch == 0x0d)
+//				count++;
+//			else if(ch=='O')
+//                count=5;
+//			else
+//				count = 0;
+//			break;
 
-		case 1:
-			if (ch == 0x0a)
-			{
-				i = 0;
-				count++;
-			}
-			
-			else
-				count = 0;
-			break;
+//		case 1:
+//			if (ch == 0x0a)
+//			{
+//				i = 0;
+//				count++;
+//			}
+//			
+//			else
+//				count = 0;
+//			break;
 
-		case 2:
-			posture.data[i] = ch;
-			i++;
-			if (i >= 24)
-			{
-				i = 0;
-				count++;
-			}
-			break;
+//		case 2:
+//			posture.data[i] = ch;
+//			i++;
+//			if (i >= 24)
+//			{
+//				i = 0;
+//				count++;
+//			}
+//			break;
 
-		case 3:
-			if (ch == 0x0a)
-				count++;
-			else
-				count = 0;
-			break;
+//		case 3:
+//			if (ch == 0x0a)
+//				count++;
+//			else
+//				count = 0;
+//			break;
 
-		case 4:
-			if (ch == 0x0d)
-			{
-				opsFlag = 1;
+//		case 4:
+//			if (ch == 0x0d)
+//			{
+//				opsFlag = 1;
 
-				#if car == 4
-				
-					xya.angle = posture.ActVal[0]+90;
-				 
-			    #elif car==1
-				
-					xya.angle = -posture.ActVal[0]+90;
-				 
-				 #endif
-				if(xya.angle>180)
-				   xya.angle-=360;
-				posture.ActVal[1] = posture.ActVal[1];
-				posture.ActVal[2] = posture.ActVal[2];
-				#if car ==4
-				xya.x=posture.ActVal[3];
-	            xya.y=posture.ActVal[4];
-				#elif car==1
-				xya.x=posture.ActVal[4];
-	            xya.y=-posture.ActVal[3];
-				#endif
-				posture.ActVal[5] = posture.ActVal[5];
-					
-			}
-			count = 0;
-			break;
-		case 5:
-            count=0;
- 		    if(ch=='K')
-            iSOKFlag=1;
-            break;
+//				#if car == 4
+//				
+//					xya.angle = posture.ActVal[0]+90;
+//				 
+//			    #elif car==1
+//				
+//					xya.angle = -posture.ActVal[0]+90;
+//				 
+//				 #endif
+//				if(xya.angle>180)
+//				   xya.angle-=360;
+//				posture.ActVal[1] = posture.ActVal[1];
+//				posture.ActVal[2] = posture.ActVal[2];
+//				#if car ==4
+//				xya.x=posture.ActVal[3];
+//	            xya.y=posture.ActVal[4];
+//				#elif car==1
+//				xya.x=posture.ActVal[4];
+//	            xya.y=-posture.ActVal[3];
+//				#endif
+//				posture.ActVal[5] = posture.ActVal[5];
+//					
+//			}
+//			count = 0;
+//			break;
+//		case 5:
+//            count=0;
+// 		    if(ch=='K')
+//            iSOKFlag=1;
+//            break;
 
-		default:
-			count = 0;
-			break;
-		}
-	}
-	else
-	{
+//		default:
+//			count = 0;
+//			break;
+//		}
+//	}
+//	else
+//	{
 
-		USART_ClearITPendingBit(USART3,USART_IT_RXNE);
-		USART_ReceiveData(USART3);
-	}
-	OSIntExit();
-		
-}
+//		USART_ClearITPendingBit(USART3,USART_IT_RXNE);
+//		USART_ReceiveData(USART3);
+//	}
+//	OSIntExit();
+//		
+//}
 
 //void USART3_IRQHandler(void)
 //{
