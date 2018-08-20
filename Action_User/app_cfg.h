@@ -39,7 +39,7 @@ extern  void  App_Task(void);
 static  void  App_TaskStart(void);
 static 	void  ConfigTask(void);
 static 	void  WalkTask(void);
-static 	void  controlsrTask(void);
+
 
 /*
 *********************************************************************************************************
@@ -50,7 +50,7 @@ static 	void  controlsrTask(void);
 #define  APP_TASK_START_PRIO						10u
 #define  Config_TASK_START_PRIO						11u
 #define  Walk_TASK_PRIO								12u
-#define  controlsr_TASK_PRIO								13u
+
 
 
 
@@ -63,7 +63,7 @@ static 	void  controlsrTask(void);
 #define  APP_TASK_START_STK_SIZE					256u
 #define  Config_TASK_START_STK_SIZE					256u
 #define  Walk_TASK_STK_SIZE							512u
-#define  controlsr_TASK_STK_SIZE							512u
+
 /*
 *********************************************************************************************************
 *                                            TASK STACK
