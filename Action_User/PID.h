@@ -23,7 +23,7 @@
 #define Auto 0
 void WalkStraight(int v);
 void WalkRound(u8 direction4, int v,int r);
-void driveGyro(void);
+//void driveGyro(void);
 void SetTunings(float p,float i,float d);
 void Init_PID(float angle);
 void PID_Angle(u8 status,float Angle_Set,float Angle,float v);

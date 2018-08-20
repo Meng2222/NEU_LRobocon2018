@@ -1,11 +1,11 @@
-<<<<<<< HEAD
+
 #include "PID.h"
 extern union u8andfloat                                              //引用定位系统数据
 {   
 	uint8_t data[24];
 	float ActVal[6];
 }posture;
-=======
+
 #include "includes.h"
 #include <app_cfg.h>
 #include "misc.h"
@@ -19,7 +19,7 @@ extern union u8andfloat                                              //引用定
 #include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
-<<<<<<< HEAD
+
 #include "moveBase.h"
 #define PI (3.1415)                               //圆周率                 3.1415
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
@@ -27,8 +27,7 @@ extern union u8andfloat                                              //引用定
 #define CarOne 1                                  //一号车编号             1
 #define CarFour 4                                 //四号车编号             4
 #define Side_Length (2000)                        //方形边长               2m
-#define Angle_Error_Range (3)                     //角度误差范围           3 
-=======
+
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
 
@@ -46,8 +45,7 @@ void vel_radious(float vel,float radious)
 }
 
 
->>>>>>> b81ad2c1713741a2f487f820b46d8e14758b5c17
->>>>>>> master
+
 /*
 ===============================================================
 						信号量定义
@@ -71,9 +69,9 @@ Target tar;
 
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
-<<<<<<< HEAD
+
 static OS_STK RunTaskStk[RUN_TASK_STK_SIZE];
-=======
+
 static int CarNum = CarOne;
 
 int isOKFlag = 0;    //定位系统初始化完毕标志位
@@ -124,7 +122,8 @@ typedef struct{
     float out_max;       //输出上限
     float out_min;       //输出下限
 }PID_Value;
-PID_Value PID_Angle;
+
+PID_Value PID_Angle_;
 
 /**
 * @brief  PID控制器
@@ -191,7 +190,7 @@ void Go(float velocity, float radius, char mode)
 		VelCrl(CAN2, 2, (int)(velocity * One_Meter_Per_Second * -1));
 	}
 }
->>>>>>> master
+
 
 /*
 ===============================================================
@@ -217,16 +216,16 @@ void App_Task(void)
 	os_err = OSTaskCreate((void (*)(void *))WalkTask,
 						  (void *)0,							  
 						  (OS_STK *)&WalkTaskStk[Walk_TASK_STK_SIZE - 1],
-<<<<<<< HEAD
+
 						  (INT8U)Walk_TASK_PRIO);				 
 //	os_err = OSTaskCreate((void (*)(void *))RunTask,
 //						  (void *)0,
 //						  (OS_STK *)&RunTaskStk[RUN_TASK_STK_SIZE-1],
 //						  (INT8U)RUN_TASK_PRIO);	  
-=======
-						  (INT8U)Walk_TASK_PRIO);
-	OSTaskSuspend(OS_PRIO_SELF);
->>>>>>> master
+
+//						  (INT8U)Walk_TASK_PRIO);
+//	OSTaskSuspend(OS_PRIO_SELF);
+
 }
 
 
@@ -236,133 +235,135 @@ void App_Task(void)
                           初始化任务
 ===============================================================
 */
-float error = 0;
-void ConfigTask(void)
-{
-	CPU_INT08U os_err;
-	os_err = os_err;
-<<<<<<< HEAD
-	int ADC_Left = 0;
-	int ADC_Right = 0;
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
-	TIM_Init(TIM2,9999,83,0,0);                                        //时钟2初始化，1ms周期
-	Adc_Init();
-	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);                //can1初始化
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);                //can2初始化	
-	ElmoInit(CAN2);                                                  //驱动器初始化
-	VelLoopCfg(CAN2,2,80000000,80000000);                            //左电机速度环初始化
-	VelLoopCfg(CAN2,1,80000000,80000000);                            //右电机速度环初始化
-	MotorOn(CAN2,1);                                                 //右电机使能
-	MotorOn(CAN2,2);                                                 //左电机使能
-	USART3_Init(115200);
-	UART4_Init(921600);
-	#if CarNumber == 4
-	TIM_Delayms(TIM4,15000);
-	#elif CarNumber == 1
-	TIM_Delayms(TIM4,5000);
-	driveGyro();
-	#endif
-	float error1 = 0;
-	error1 = ((Get_Adc_Average(15,100) - Get_Adc_Average(14,100))/2)*0.922854;
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL();                                         /*互斥访问*/
-	error = error1;
-	OS_EXIT_CRITICAL();
-	while(1)
-	{
-		ADC_Left = Get_Adc_Average(15,100);
-		ADC_Right = Get_Adc_Average(14,100);
-		if(ADC_Left<100)
-		{
-			OSMboxPost(adc_msg,(void *)3);
-			OSTaskSuspend(OS_PRIO_SELF);                                     //挂起初始化函数
-		}
-		else if(ADC_Right<100)
-		{
-			OSMboxPost(adc_msg,(void *)2);
-			OSTaskSuspend(OS_PRIO_SELF);                                     //挂起初始化函数
-		}
-		else USART_OUT(UART4,(uint8_t*)"%s","wait for adc data\r\n");		
-	}
-//	MotorOff(CAN2,2);                                                //左电机失能
-//	MotorOff(CAN2,1);                                                //右电机失能	
-}
+//float error = 0;
+//void ConfigTask(void)
+//{
+//	int ADC_Left = 0;
+//	int ADC_Right = 0;
+//	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
+//	TIM_Init(TIM2,9999,83,0,0);                                        //时钟2初始化，1ms周期
+//	Adc_Init();
+//	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);                //can1初始化
+//	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);                //can2初始化	
+//	ElmoInit(CAN2);                                                  //驱动器初始化
+//	VelLoopCfg(CAN2,2,80000000,80000000);                            //左电机速度环初始化
+//	VelLoopCfg(CAN2,1,80000000,80000000);                            //右电机速度环初始化
+//	MotorOn(CAN2,1);                                                 //右电机使能
+//	MotorOn(CAN2,2);                                                 //左电机使能
+//	USART3_Init(115200);
+//	UART4_Init(921600);
+//	#if CarNumber == 4
+//	TIM_Delayms(TIM4,15000);
+//	#elif CarNumber == 1
+//	TIM_Delayms(TIM4,5000);
+//	driveGyro();
+//	#endif
+//	float error1 = 0;
+//	error1 = ((Get_Adc_Average(15,100) - Get_Adc_Average(14,100))/2)*0.922854;
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL();                                         /*互斥访问*/
+//	error = error1;
+//	OS_EXIT_CRITICAL();
+//	while(1)
+//	{
+//		ADC_Left = Get_Adc_Average(15,100);
+//		ADC_Right = Get_Adc_Average(14,100);
+//		if(ADC_Left<100)
+//		{
+//			OSMboxPost(adc_msg,(void *)3);
+//			OSTaskSuspend(OS_PRIO_SELF);                                     //挂起初始化函数
+//		}
+//		else if(ADC_Right<100)
+//		{
+//			OSMboxPost(adc_msg,(void *)2);
+//			OSTaskSuspend(OS_PRIO_SELF);                                     //挂起初始化函数
+//		}
+//		else USART_OUT(UART4,(uint8_t*)"%s","wait for adc data\r\n");		
+//	}
+////	MotorOff(CAN2,2);                                                //左电机失能
+////	MotorOff(CAN2,1);                                                //右电机失能	
+//}
 
 /*
 ===============================================================
                    WalkTask      初始化后执行
 ===============================================================
 */
-int cnt = 0;                                                     //计数用
-void WalkTask(void)
-{
-	CPU_INT08U os_err;
-	os_err = os_err;                                                 //防报错
-	OSSemSet(PeriodSem, 0, &os_err);                 	 //信号量归零
-	int lasttime = 0;                                                //计数用
-	int time = 0;                                                    //计数用
-	while (1)
-	{
-		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
-		static u32 direction = 0;
-		if(direction == 0) direction = (u32)OSMboxPend(adc_msg,0,&os_err);
-//		PID_Line(-500,0,-500,1000,500);                         //走线函数
-//		PID_Square(1000);
-//		PID_Round(0,2000,1000,1000,direction);
-//		PID_Coordinate_following(500);
-		OS_CPU_SR cpu_sr;
-		OS_ENTER_CRITICAL();                                         /*互斥访问*/
-		PID_RUN(500,direction);
-		OS_EXIT_CRITICAL();
-//	    PID_Square_x(1000,500,direction);
+//int cnt = 0;                                                     //计数用
+//void WalkTask(void)
+//{
+//	CPU_INT08U os_err;
+//	os_err = os_err;                                                 //防报错
+//	OSSemSet(PeriodSem, 0, &os_err);                 	 //信号量归零
+//	int lasttime = 0;                                                //计数用
+//	int time = 0;                                                    //计数用
+//	while (1)
+//	{
+//		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
+//		static u32 direction = 0;
+//		if(direction == 0) direction = (u32)OSMboxPend(adc_msg,0,&os_err);
+////		PID_Line(-500,0,-500,1000,500);                         //走线函数
+////		PID_Square(1000);
+////		PID_Round(0,2000,1000,1000,direction);
+////		PID_Coordinate_following(500);
 //		OS_CPU_SR cpu_sr;
-//		OS_ENTER_CRITICAL(); /*互斥访问*/
-	    cnt++; 
-		if(cnt>799) cnt = 0;
-		time = cnt/1;                                               //10ms周期发状态，只有x，y坐标 
+//		OS_ENTER_CRITICAL();                                         /*互斥访问*/
+//		PID_RUN(500,direction);
 //		OS_EXIT_CRITICAL();
-		if(lasttime != time)
-		{
-			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[3]);
-			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[4]);
-			USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(15,10));
-			USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(14,10));
-			USART_SendData(UART4,'\r');
-			USART_SendData(UART4,'\n');
-			lasttime = time;
-		}
-	}
-}
+////	    PID_Square_x(1000,500,direction);
+////		OS_CPU_SR cpu_sr;
+////		OS_ENTER_CRITICAL(); /*互斥访问*/
+//	    cnt++; 
+//		if(cnt>799) cnt = 0;
+//		time = cnt/1;                                               //10ms周期发状态，只有x，y坐标 
+////		OS_EXIT_CRITICAL();
+//		if(lasttime != time)
+//		{
+//			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[3]);
+//			USART_OUT(UART4,(uint8_t*)"%d	", (int)posture.ActVal[4]);
+//			USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(15,10));
+//			USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(14,10));
+//			USART_SendData(UART4,'\r');
+//			USART_SendData(UART4,'\n');
+//			lasttime = time;
+//		}
+//	}
+//}
 
-void RunTask(void)
+//void RunTask(void)
+//{
+//	CPU_INT08U os_err;
+//	os_err = os_err;                                                 //防报错
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /*互斥访问*/
+//	int last_pdate = cnt;
+//	OS_EXIT_CRITICAL();
+//	int pdate_now = last_pdate;
+//	static int cnt1 = 100;
+//	while(1)
+//	{
+//		OSSemPend(CPUUsageSem,0,&os_err);		
+//		cnt1--;
+//		OS_CPU_SR cpu_sr;
+//		OS_ENTER_CRITICAL();                                          /*互斥访问*/
+//		pdate_now = cnt;
+//		OS_EXIT_CRITICAL();
+//		if(pdate_now != last_pdate)
+//		{
+//			USART_OUT(UART4,(uint8_t*)"CPU load is: %d",cnt1);
+//			USART_SendData(UART4,'%');
+//			USART_SendData(UART4,'\r');
+//			USART_SendData(UART4,'\n');
+//			cnt1 = 100;
+//			last_pdate = pdate_now;
+//		}
+//		OSSemSet(CPUUsageSem, 0, &os_err);                            	 //信号量归零               
+//	}
+//}
+void ConfigTask(void)
 {
 	CPU_INT08U os_err;
-	os_err = os_err;                                                 //防报错
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /*互斥访问*/
-	int last_pdate = cnt;
-	OS_EXIT_CRITICAL();
-	int pdate_now = last_pdate;
-	static int cnt1 = 100;
-	while(1)
-	{
-		OSSemPend(CPUUsageSem,0,&os_err);		
-		cnt1--;
-		OS_CPU_SR cpu_sr;
-		OS_ENTER_CRITICAL();                                          /*互斥访问*/
-		pdate_now = cnt;
-		OS_EXIT_CRITICAL();
-		if(pdate_now != last_pdate)
-		{
-			USART_OUT(UART4,(uint8_t*)"CPU load is: %d",cnt1);
-			USART_SendData(UART4,'%');
-			USART_SendData(UART4,'\r');
-			USART_SendData(UART4,'\n');
-			cnt1 = 100;
-			last_pdate = pdate_now;
-		}
-		OSSemSet(CPUUsageSem, 0, &os_err);                            	 //信号量归零               
-=======
+	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
 
@@ -420,7 +421,7 @@ void WalkTask(void)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
-<<<<<<< HEAD
+
 		
 		//以50 * 10ms为间隔发送数据
 		cntSendTime++;
@@ -493,17 +494,18 @@ void WalkTask(void)
 		}
 		
 	    
-		PID_Angle.setValue = tar.angle;
-        PID_Angle.feedbackValue = pos.angle;		
-		PID_Angle.error = PID_Angle.setValue - PID_Angle.feedbackValue;
+		PID_Angle_.setValue = tar.angle;
+        PID_Angle_.feedbackValue = pos.angle;		
+		PID_Angle_.error = PID_Angle_.setValue - PID_Angle_.feedbackValue;
 
-		adjustVelocity = PID_operation(&PID_Angle) * One_Meter_Per_Second;//逆时针旋转时，四号车adjustVelocity为负数
+//		adjustVelocity = PID_operation(&PID_Angle) * One_Meter_Per_Second;//逆时针旋转时，四号车adjustVelocity为负数
 		//adjustVelocity = constrain_float(adjustVelocity, PID_Angle.out_max, PID_Angle.out_min);
 		
 		VelCrl(CAN2, 1, (int)(baseVelocity - adjustVelocity));//右轮
 		VelCrl(CAN2, 2, (int)((baseVelocity + adjustVelocity) * -1));//左轮
 
 		//角度误差在允许范围内时停止转弯turnFlag = 0，设置下一个目标的位置信息switchNextModeFlag = 1，转弯计数加1
+		int Angle_Error_Range = 1;
 		if((fabs(tar.angle - pos.angle) < Angle_Error_Range) && (turnFlag == 1))
 		{
 			turnFlag = 0;
@@ -540,9 +542,8 @@ void WalkTask(void)
 		    }
 		}
 		OSSemSet(PeriodSem, 0, &os_err);
-=======
+
 		vel_radious(500.0,500.0);			//半径为0.5m，速度为0.5m/s
->>>>>>> b81ad2c1713741a2f487f820b46d8e14758b5c17
->>>>>>> master
+
 	}
 }

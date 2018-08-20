@@ -53,10 +53,10 @@ void CAN1_RX0_IRQHandler(void)
 	OS_EXIT_CRITICAL();
 	
 
-	CanRxMsg RxMessage;
-	for(int i=0;i<8;i++) RxMessage.Data[i]=0;
-	CAN_Receive(CAN1, CAN_FIFO0, &RxMessage);
-	CAN_Receive(CAN1, CAN_FIFO1, &RxMessage);
+//	CanRxMsg RxMessage;
+//	for(int i=0;i<8;i++) RxMessage.Data[i]=0;
+//	CAN_Receive(CAN1, CAN_FIFO0, &RxMessage);
+//	CAN_Receive(CAN1, CAN_FIFO1, &RxMessage);
 
 
 	//CAN1口接受任意数据以通过标志位中断
@@ -95,10 +95,10 @@ void CAN2_RX0_IRQHandler(void)
 	OS_EXIT_CRITICAL();
 	
 
-	CanRxMsg RxMessage;
-	for(int i=0;i<8;i++) RxMessage.Data[i]=0;
-	CAN_Receive(CAN2, CAN_FIFO0, &RxMessage);
-	CAN_Receive(CAN2, CAN_FIFO1, &RxMessage);
+//	CanRxMsg RxMessage;
+//	for(int i=0;i<8;i++) RxMessage.Data[i]=0;
+//	CAN_Receive(CAN2, CAN_FIFO0, &RxMessage);
+//	CAN_Receive(CAN2, CAN_FIFO1, &RxMessage);
 
 
 	//CAN2口接受任意数据以通过标志位中断
@@ -690,124 +690,124 @@ void DebugMon_Handler(void)
 
 
 
-u8 isOKFlag = 0;
-u8 issendOK = 0;
-float angle = 0;
-extern float error;
+//u8 isOKFlag = 0;
+//u8 issendOK = 0;
+//float angle = 0;
+//extern float error;
 
-union u8andfloat
-{   
-	uint8_t data[24];
-	float ActVal[6];  
-}posture;
+//union u8andfloat
+//{   
+//	uint8_t data[24];
+//	float ActVal[6];  
+//}posture;
 
-union
-{
-	uint8_t data[24];
-	float ActVal[6];
-}receieve;
-void USART3_IRQHandler(void) //更新频率 200Hz 
-{ 
-	static uint8_t ch;  	  
-	static uint8_t count = 0;
-	static uint8_t i = 0;
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
-	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET) 
-	{   
-		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
-		USART_ReceiveData(USART3);  
-	}   
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)  
-	{   
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);   
-		ch = USART_ReceiveData(USART3);   
-		switch (count)   
-		{   
-		case 0:    
-			if (ch == 0x0d)	count++;    
-			else if(ch=='O') count=5;    
-			else count = 0;    
-			break;  
-		case 1:    
-			if (ch == 0x0a)    
-			{     
-				i = 0;    
-				count++;    
-			}    
-			else count = 0;   
-			break;  
-		case 2:    
-			receieve.data[i] = ch;  
-			i++;   
-			if (i >= 24)  
-			{   
-				i = 0;  
-				count++;  
-			}    
-			break;  
-		case 3:   
-			if (ch == 0x0a) count++;  
-			else count = 0;  
-			break;  
-		case 4:  
-			if (ch == 0x0d)  
-			{    
-				#if CarNumber == 4
-				OS_CPU_SR cpu_sr;
-				OS_ENTER_CRITICAL();                                         /*互斥访问*/
-				posture.ActVal[0] = receieve.ActVal[0] ;//角度    
-				posture.ActVal[1] = receieve.ActVal[1];    
-				posture.ActVal[2] = receieve.ActVal[2];     
-				posture.ActVal[3] = receieve.ActVal[3]+error;//x    
-				posture.ActVal[4] = receieve.ActVal[4];//y      
-				posture.ActVal[5] = receieve.ActVal[5];
-				OS_EXIT_CRITICAL();
-				#elif CarNumber == 1
-				OS_CPU_SR cpu_sr;
-				OS_ENTER_CRITICAL();   
-				posture.ActVal[0] = -receieve.ActVal[0] ;//角度    
-				posture.ActVal[1] = receieve.ActVal[1];    
-				posture.ActVal[2] = receieve.ActVal[2];     
-				posture.ActVal[3] = receieve.ActVal[4]+error;//x  
-				posture.ActVal[4] = -receieve.ActVal[3];//y 				     
-				posture.ActVal[5] = receieve.ActVal[5];			
-				OS_EXIT_CRITICAL();
-				#endif
-		//		SetXpos(posX);     
-		//		SetYpos(posY);     
-		//		SetAngle(angle);    
-			} 			
-			issendOK = 1;
-			count = 0;    
-			break;   
-		case 5:    
-			count = 0;    
-			if(ch=='K')     
-			isOKFlag=1;    
-			break;        
-		default:    
-			count = 0; 
-			break;   
-		}  
-	}  
-	else  
-	{   
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);   
-		USART_ReceiveData(USART3); 
-	}       
-	OSIntExit();
-}
-	
+//union
+//{
+//	uint8_t data[24];
+//	float ActVal[6];
+//}receieve;
+//void USART3_IRQHandler(void) //更新频率 200Hz 
+//{ 
+//	static uint8_t ch;  	  
+//	static uint8_t count = 0;
+//	static uint8_t i = 0;
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
+//	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET) 
+//	{   
+//		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
+//		USART_ReceiveData(USART3);  
+//	}   
+//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)  
+//	{   
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);   
+//		ch = USART_ReceiveData(USART3);   
+//		switch (count)   
+//		{   
+//		case 0:    
+//			if (ch == 0x0d)	count++;    
+//			else if(ch=='O') count=5;    
+//			else count = 0;    
+//			break;  
+//		case 1:    
+//			if (ch == 0x0a)    
+//			{     
+//				i = 0;    
+//				count++;    
+//			}    
+//			else count = 0;   
+//			break;  
+//		case 2:    
+//			receieve.data[i] = ch;  
+//			i++;   
+//			if (i >= 24)  
+//			{   
+//				i = 0;  
+//				count++;  
+//			}    
+//			break;  
+//		case 3:   
+//			if (ch == 0x0a) count++;  
+//			else count = 0;  
+//			break;  
+//		case 4:  
+//			if (ch == 0x0d)  
+//			{    
+//				#if CarNumber == 4
+//				OS_CPU_SR cpu_sr;
+//				OS_ENTER_CRITICAL();                                         /*互斥访问*/
+//				posture.ActVal[0] = receieve.ActVal[0] ;//角度    
+//				posture.ActVal[1] = receieve.ActVal[1];    
+//				posture.ActVal[2] = receieve.ActVal[2];     
+//				posture.ActVal[3] = receieve.ActVal[3]+error;//x    
+//				posture.ActVal[4] = receieve.ActVal[4];//y      
+//				posture.ActVal[5] = receieve.ActVal[5];
+//				OS_EXIT_CRITICAL();
+//				#elif CarNumber == 1
+//				OS_CPU_SR cpu_sr;
+//				OS_ENTER_CRITICAL();   
+//				posture.ActVal[0] = -receieve.ActVal[0] ;//角度    
+//				posture.ActVal[1] = receieve.ActVal[1];    
+//				posture.ActVal[2] = receieve.ActVal[2];     
+//				posture.ActVal[3] = receieve.ActVal[4]+error;//x  
+//				posture.ActVal[4] = -receieve.ActVal[3];//y 				     
+//				posture.ActVal[5] = receieve.ActVal[5];			
+//				OS_EXIT_CRITICAL();
+//				#endif
+//		//		SetXpos(posX);     
+//		//		SetYpos(posY);     
+//		//		SetAngle(angle);    
+//			} 			
+//			issendOK = 1;
+//			count = 0;    
+//			break;   
+//		case 5:    
+//			count = 0;    
+//			if(ch=='K')     
+//			isOKFlag=1;    
+//			break;        
+//		default:    
+//			count = 0; 
+//			break;   
+//		}  
+//	}  
+//	else  
+//	{   
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);   
+//		USART_ReceiveData(USART3); 
+//	}       
+//	OSIntExit();
+//}
+//	
 
-u8 isOKSend(void)
-{
-	return isOKFlag;
-}
+//u8 isOKSend(void)
+//{
+//	return isOKFlag;
+//}
 
-void resetOK(void)
-{
-	isOKFlag = 0;
-}
+//void resetOK(void)
+//{
+//	isOKFlag = 0;
+//}
