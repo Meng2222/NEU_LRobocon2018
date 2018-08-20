@@ -43,8 +43,10 @@
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
 uint8_t qwe[4]={0};
-uint32_t a;
-uint8_t b;
+uint32_t w;
+uint8_t m;
+char isOKFlag = 0;
+char pposokflag = 0;
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -53,7 +55,7 @@ void CAN1_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	
-	CAN_RxMsg(CAN1,&a,qwe,&b);
+	CAN_RxMsg(CAN1,&w,qwe,&m);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -101,7 +103,7 @@ void CAN2_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	
-	CAN_RxMsg(CAN1,&a,qwe,&b);
+	CAN_RxMsg(CAN1,&w,qwe,&m);
 
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
@@ -322,6 +324,8 @@ void USART3_IRQHandler(void) //更新频率200Hz
 		case 0:
 			if (ch == 0x0d)
 				count++;
+			else if(ch=='O')
+				count=5;
 			else
 				count = 0;
 			break;
@@ -332,10 +336,9 @@ void USART3_IRQHandler(void) //更新频率200Hz
 				i = 0;
 				count++;
 			}
-			else if (ch == 0x0d)
-				;
-			else
-				count = 0;
+			else 
+				count=0;
+			
 			break;
 
 		case 2:
@@ -356,9 +359,11 @@ void USART3_IRQHandler(void) //更新频率200Hz
 			break;
 
 		case 4:
+			
+			#if CARNUM == 4
 			if (ch == 0x0d)
 			{
-
+				pposokflag = 1;
 				angle= posture.ActVal[0];
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
@@ -369,10 +374,32 @@ void USART3_IRQHandler(void) //更新频率200Hz
 				Setposy(posy);
 				SetAngle(angle);
 			}
+			#elif CARNUM == 1
+			if (ch == 0x0d)
+			{
+				pposokflag = 1;
+				angle= -posture.ActVal[0];
+				posture.ActVal[1] = posture.ActVal[1];
+				posture.ActVal[2] = posture.ActVal[2];
+				posy = -posture.ActVal[3];
+				posx= posture.ActVal[4];
+				
+				posture.ActVal[5]= posture.ActVal[5];
+				Setposx(posx);
+				Setposy(posy);
+				SetAngle(angle);
+			}
 			
+			#endif
 			count = 0;
 			break;
-
+			
+		case 5:
+			count = 0;
+		if(ch == 'K')
+				
+			isOKFlag = 1;
+			break;
 		default:
 			count = 0;
 			break;

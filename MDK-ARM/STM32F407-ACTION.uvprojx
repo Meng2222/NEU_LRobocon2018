@@ -457,6 +457,11 @@
               <FileType>1</FileType>
               <FilePath>..\Action_User\moveBase.c</FilePath>
             </File>
+            <File>
+              <FileName>pid.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\pid.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

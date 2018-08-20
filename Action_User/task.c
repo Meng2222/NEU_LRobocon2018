@@ -11,20 +11,28 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
-#define long 100
-void controltype1(void);
-void controltype2(void);
-void controlrightv(void);
-void controlleftv(void);
-void controlbalancev(void);
-void Compute(void);
-void SetTunings(double Kp,double Ki,double Kd);
-double Input,Output,Setpoint;
-double errSum=0,lastErr=0;
-double kp,ki,kd,error;
-int SampleTime=1000;
-//unsigned long lastTime;
-int count=0;
+#include "pid.h"	
+
+
+
+extern char isOKFlag;
+extern char pposokflag;
+extern double Input1,Output1,Output2;
+extern float Angle_qie;
+extern float Angle_w;
+
+void driveGyro(void)
+{
+	while(!isOKFlag)
+	{
+		delay_ms(5);
+		USART_SendData(USART3,'A');
+		USART_SendData(USART3,'T');
+		USART_SendData(USART3,'\r');
+		USART_SendData(USART3,'\n');
+	}
+	isOKFlag = 0;
+}
 /*
 ===============================================================
 						信号量定义
@@ -62,8 +70,8 @@ void App_Task()
    ===============================================================
    */
 void ConfigTask(void)
-{	
-	delay_s(10);
+{	 
+	
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -77,112 +85,64 @@ void ConfigTask(void)
 	MotorOn(CAN2,2);
 	VelLoopCfg(CAN2,1,1000,1000);
 	VelLoopCfg(CAN2,2,1000,1000);
-	OSTaskSuspend(OS_PRIO_SELF);
+	delay_s(2);
 	
+	#if CARNUM == 1
+	driveGyro();
+	while(!pposokflag);
+	#elif CARNUM == 4
+	delay_s(10);
+	#endif
+	OSTaskSuspend(OS_PRIO_SELF);
 }
 
 
-int state=1;
+
 void WalkTask(void)
 {
 
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
+	SetTunings1(70,0,0);
+	SetTunings2(0.1,0.5*0.01,0);
+	int state=1;
 	while (1)
 	{
-		OSSemPend(PeriodSem,0, &os_err);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle());
+		OSSemPend(PeriodSem,0,&os_err);
+		
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)Input1);
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)Getposx());
-		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)Getposy());
-//		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)Setpoint);
-//		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)error);
-		SetTunings(600,0,0);
-		Compute();
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)Getposy());
+		
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)Angle_qie);
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)Angle_w);
+		
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)Output1);		
+		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)Output2);
+		
+		Double_closed_loop(500,0,500,SPEED,1);
+		
 		switch(state)
 		{
-			case 1:	Setpoint=0;
-					if(GetAngle()>=-1&&GetAngle()<=1)
-					{
-						VelCrl(CAN2,1,COUNTS_PER_ROUND);
-						VelCrl(CAN2,2,-COUNTS_PER_ROUND);
-					}
-					else
-					{
-						VelCrl(CAN2,1,COUNTS_PER_ROUND+Output/2);
-						VelCrl(CAN2,2,-COUNTS_PER_ROUND+Output/2);
-					}
-					if(Getposy()>(2000-long)&&Getposy()<2000)
-							state=2;
-				break;
+			case 1:
+					Double_closed_loop(2400,2400,2000,SPEED,1);
 					
-			case 2:	 Setpoint=-90;
-					if(GetAngle()>=-91&&GetAngle()<=-89)
-					{
-						VelCrl(CAN2,1,COUNTS_PER_ROUND);
-						VelCrl(CAN2,2,-COUNTS_PER_ROUND);
-					}
-					else
-					{
-						VelCrl(CAN2,1,COUNTS_PER_ROUND+Output/2);
-						VelCrl(CAN2,2,-COUNTS_PER_ROUND+Output/2);
-					}
-					if(Getposx()>(2000-long)&&Getposx()<2000)
-							state=3;	
-				break;
-			case 3:	Setpoint=-180;
-					if((GetAngle()>=-180&&GetAngle()<=-179)||(GetAngle()>=179&&GetAngle()<=180))
-					{
-						VelCrl(CAN2,1,COUNTS_PER_ROUND);
-						VelCrl(CAN2,2,-COUNTS_PER_ROUND);
-					}
-					else
-					{
-						VelCrl(CAN2,1,COUNTS_PER_ROUND+Output/2);
-						VelCrl(CAN2,2,-COUNTS_PER_ROUND+Output/2);
-					}
-					if(Getposy()>0&&Getposy()<long)
-							state=4;
-				break;
-			case 4:	Setpoint=90;
-					if(GetAngle()>=89&&GetAngle()<=91)
-					{
-						VelCrl(CAN2,1,COUNTS_PER_ROUND);
-						VelCrl(CAN2,2,-COUNTS_PER_ROUND);
-					}
-					else
-					{
-						VelCrl(CAN2,1,COUNTS_PER_ROUND+Output/2);
-						VelCrl(CAN2,2,-COUNTS_PER_ROUND+Output/2);
-					}
-					if(Getposx()>0&&Getposx()<long)
-							state=1;
-				break;	
-		
+					
+			
+			
+			
 		}
-	}
-}
-
-void Compute(void)
-{
-	Input=GetAngle();
-	error=Setpoint-Input;
-	if(error > 180)
-		error = error - 360;
-	else if(error < -180)
-		error = error +360;
 		
-	errSum+=error;
-	double dErr=error-lastErr;
-	Output=kp*error+ki*errSum+kd*dErr;
-	lastErr=error;
+		
+	}
+	
 }
 
-void SetTunings(double Kp,double Ki,double Kd)
-{
-	double SampleTimeInSec=((double)SampleTime)/1000;
-	kp=Kp;
-	ki=Ki*SampleTimeInSec;
-	kd=Kd*SampleTimeInSec;
 
-}
+
+
+
+
+
+
