@@ -11,18 +11,18 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
+#include "adc.h"
 #include <math.h>
 #define Kp1 (98)   //角度PID参数
 #define Ki1 (0)
 #define Kd1 (0) 
-#define Kp2 7 //位置PID参数
+#define Kp2 500.0/800*7 //位置PID参数
 #define Ki2 (0)
 #define Kd2 (0)
-#define speed (500)  //小车速度
-#define R (500.0)   //圆的半径，+为顺时针，-为逆时针
-#define pointX  (500.0f)  //pointX，pointY：给定圆形的坐标
-#define pointY  (0.0f)
-float nowAngle;
+#define speed (800)  //小车速度
+#define pointX  (0.0f)  //pointX，pointY：给定圆形的坐标
+#define pointY  (2250.0f)
+float nowAngle,R=2250;
 float u1,u2;
 extern char isOKFlag;
 extern char pposokflag;
@@ -95,7 +95,8 @@ void ConfigTask(void)
 	
 	USART3_Init(115200);   //定位器串口
 	UART4_Init(921600);    //蓝牙串口
-    
+	Adc_Init();
+	
 	Motor_Init();
 	delay_s(2);
 	#if CARNUM == 1
@@ -119,10 +120,10 @@ void uAng()
 		pointAngle=atan2(pointX-GetXpos(),GetYpos()-pointY)*180/PI;
 	if(R<0)
 		pointAngle=atan2(GetXpos()-pointX,pointY-GetYpos())*180/PI;
-			nowAngle=GetAngle()+90;
-		    if(nowAngle>180)
-			  nowAngle=nowAngle-360;
-		err=pointAngle-nowAngle+u2;
+	nowAngle=GetAngle()+90;
+	if(nowAngle>180)
+	 nowAngle=nowAngle-360;
+     err=pointAngle-nowAngle+u2;
 	if(err>180)
 		err=err-360;
 	if(err<-180)
@@ -165,25 +166,64 @@ void uPlace()
 //}
 void WalkTask(void)
 {
-	float buff1,buff2,pulse;
+	float buff1,buff2,pulse,startState,distance1,distance2;
+	static float lastX=-1,lastY=-1,errState;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
+	float state;
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		distance1=Get_Adc_Average(14,10)*(4400/4096);			//设置ADC1通道14,15，平均值获取次数为10
+		distance2=Get_Adc_Average(15,10)*(4400/4096);
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)nowAngle);
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetXpos());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetYpos());
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)u2);
-		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)u1);
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)R);
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)distance1);
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)distance2);
+		USART_OUT(UART4,(uint8_t*)"%d\t",(int)u1);
+		if(nowAngle>91)
+			startState=1;
+		if(startState==1&&fabs(lastX-GetXpos())<2&&fabs(lastY-GetYpos())<2)
+		{
+			errState=1;
+		}
+		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)errState);
+	    lastX=(int)GetXpos();
+		lastY=(int)GetYpos();
+		if(R>=2250)
+			state=0;
+		if(R<=250)
+		state=1;
+		if(state==0)
+			if(GetXpos()<10&&GetXpos()>3)
+				R-=150;
+		if(state==1)
+			if(GetXpos()<=10&&GetXpos()>=3)
+				R+=150;
 		uPlace();
 		uAng();
 		pulse=4096*speed/(WHEEL_DIAMETER*PI);
-		buff1=(1+0.5*WHEEL_TREAD/R)*pulse+u1;//左轮       u+左， u-右，
+		buff1=(1+0.5*WHEEL_TREAD/R)*pulse+u1;//左轮       u+右， u-左，
 		buff2=(1-0.5*WHEEL_TREAD/R)*pulse-u1;//右轮
-	    VelCrl(CAN2,1,buff2);
-		VelCrl(CAN2,2,-buff1);
+	   if(errState==0)
+	   {
+		   VelCrl(CAN2,1,buff2);
+		   VelCrl(CAN2,2,-buff1);
+	   }
+	   if(errState>=1)
+	   {
+		   VelCrl(CAN2,1,-10000);
+		   VelCrl(CAN2,2,10000);
+		   errState++;
+		   if(errState>=10)
+		   {
+			   errState=0;
+			   R-=150;
+		   }
+	   }
 //		switch(count)
 //		{
 //		 case 0:
