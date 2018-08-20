@@ -303,21 +303,27 @@ void USART3_IRQHandler(void) //更新频率200Hz
 			if (ch == 0x0d)
 			{
 				opsFlag = 1;
+
 				#if car == 4
 				
 					xya.angle = posture.ActVal[0]+90;
 				 
 			    #elif car==1
 				
-					xya.angle = -posture.ActVal[0]+180;
+					xya.angle = -posture.ActVal[0]+90;
 				 
 				 #endif
 				if(xya.angle>180)
 				   xya.angle-=360;
 				posture.ActVal[1] = posture.ActVal[1];
 				posture.ActVal[2] = posture.ActVal[2];
+				#if car ==4
 				xya.x=posture.ActVal[3];
 	            xya.y=posture.ActVal[4];
+				#elif car==1
+				xya.x=posture.ActVal[4];
+	            xya.y=-posture.ActVal[3];
+				#endif
 				posture.ActVal[5] = posture.ActVal[5];
 					
 			}

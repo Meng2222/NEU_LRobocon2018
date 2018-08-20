@@ -10,7 +10,7 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
-
+#include "stm32f4xx_adc.h"
 /*
 ===============================================================
 						信号量定义
@@ -25,19 +25,34 @@ static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 static float set_angle=0;
 int iSOKFlag=0;
-static int up_down;
+static int if_go=0;
 int t=0;
-int kpa=50;
-int kpd=6;
+float last_angle;
+float new_angle;
+int kpa=200;
+int kpd=15;
 int kdd=2;
 int aord;
-static float d;
+int if_add=1;
+int if_compare=1;
+static float d=1900;
 static float Aout=0;
 static float Dout=0;
+float Left_d;
+float Right_d;
 int light_number=1;
-float car_v=0.5;
 float tangent_angle;
-int o;
+float add_or_dec=-1;
+float R=1900;
+float right_cril;
+float left_cril;
+int time_number=0;
+int leftorright=1;
+float car_v=1000;
+int compare_number=100;
+int if_back=0;
+int last_back=0;
+int i=0;
 void driveGyro(void)
 {
 	while(!iSOKFlag)
@@ -93,7 +108,7 @@ void ConfigTask(void)
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
 	delay_s(2);
-	
+	Adc_Init();
 	#if car==1
 		
      driveGyro();
@@ -120,7 +135,20 @@ void WalkTask(void)
 	while (1)
 	{		
 		OSSemPend(PeriodSem,  0, &os_err);
-		
+        Right_d=Get_Adc_Average(14,10);
+		Left_d=Get_Adc_Average(15,10);
+		if(leftorright)
+		{if(Right_d<100)
+			{ 
+				leftorright=0;
+				if_go=1;
+			}
+		if(Left_d<100)
+		    { 
+				leftorright=0;
+				if_go=-1;
+		    }
+	    }
 		x=(int)xya.x;
 		y=(int)xya.y;
 		angle=(int)xya.angle;
@@ -136,9 +164,10 @@ void go(float v)
      
 	 //void Light(float,float,float,int);
      void Round(float ,float ,float ,float ,float );
-   	 float V=v*1000;	 
+   	 float V=v;	 
 	 int right;
 	 int left;
+	  
 //	if(light_number==1)
 //	{ Light(1,0,0,1);
 //	}else if(light_number==2)
@@ -148,18 +177,56 @@ void go(float v)
 //	}else if(light_number==4)
 //	{ Light(0,1,0,-1);
 //	}
-
-	 Round (0,1000,1000,V,-1);
-
-	 VelCrl(CAN2,1,Right_cr1+Dout+Aout);
-	 VelCrl(CAN2,2,Left_cr2+Dout+Aout);
-	
-	 right=Right_cr1+Dout;
-	 left=Left_cr2+Dout;	
+   
+    if(if_go!=0)	
+	 Round(0,1900,R,V,if_go);
+    if(time_number<compare_number)
+    {		
+		if_back=0;
+		if(compare_number==5)
+		compare_number=10;
+		if_add=1;
+	}
+	else
+	{ 
+		if(time_number>=compare_number)
+		time_number=compare_number;
+		compare_number=10;
+		 if_back=1;		 
+		 if_add=0;
+	}
+    
+	if(if_back>last_back)
+	{  
+		if_go=-if_go;
+		
+	}
+	last_back=if_back;
+	   if(if_back==1)
+		   { 
+			   for(i=0;i<=1000;i++)
+			{   
+		     VelCrl(CAN2,1,-10000);
+	         VelCrl(CAN2,2,10000);
+				time_number=0;
+			}
+			
+		   
+	   }else 
+	   { 
+		   right_cril=Right_cr1+Dout+Aout;
+		   left_cril=Left_cr2+Dout+Aout;
+	   }
+	 
+	 VelCrl(CAN2,1,right_cril);
+	 VelCrl(CAN2,2,left_cril);
+	 right=right_cril;
+	 left=left_cril;	
 	 Aout=0;
 	 Dout=0;
-	 USART_OUT(UART4,(uint8_t*)"Right=%d\t",right);
+	 USART_OUT(UART4,(uint8_t*)"Right=%d\t",right);	   
 	 USART_OUT(UART4,(uint8_t*)"Left=%d\t",left);
+	 USART_OUT(UART4,(uint8_t*)"time_number=%d\t",time_number);
 }
 
 void pid_angle(float angle,int second_driection)
@@ -219,18 +286,20 @@ void pid_xy(float D,int n,int r)
 //	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
 }
 
-
+int cril_flag=0;
+int lastcril_flag=0;
+int if_in=0;
 void Light(float a,float b,int n,int round)
 {  
 	void pid_angle(float,int);
 	
-	
+
 	//float light=a*xya.x+xya.y*b+c;
 	
-	int di;
-	int l;
+
+	int set_R;
 	int second_driection;
-	int f;
+	
 		
     //d=fabs(light)/sqrt((a*a)+(b*b));
 	
@@ -305,7 +374,14 @@ void Light(float a,float b,int n,int round)
 		}
 		
 	}
-	
+
+//每十次比较一次//
+     if(fabs(last_angle-set_angle)<=1)
+	{
+		time_number++;
+		
+	}else time_number=0;
+	last_angle=set_angle;
 	
 	if(round==-1)
 	{ 
@@ -318,7 +394,7 @@ void Light(float a,float b,int n,int round)
 		if(tangent_angle>180)
 			tangent_angle-=360;
 	}
-    di=d;	
+	
 	
 	
 //	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",di);
@@ -336,13 +412,37 @@ void Light(float a,float b,int n,int round)
 		else second_driection=-1;
 		
 	}
-
+  if(if_add)	
+  {
+	if(set_angle<=-80&&set_angle>=-82)
+	{
+		cril_flag=1;
+		if_in=1;
+	}else cril_flag=0;
+	
+	if(cril_flag>lastcril_flag)
+	{
+		R=add_or_dec*249+R;
+		
+		if(R>=1900)
+		add_or_dec=-1;
+        if(R<=800)	
+		add_or_dec=1;
+	}
+	
+	lastcril_flag=cril_flag;
+  }
+    set_R=R;
+	USART_OUT(UART4,(uint8_t*)"set_R=%d\t",set_R);
+	USART_OUT(UART4,(uint8_t*)"if_in=%d\t",if_in);
 	pid_angle(tangent_angle,second_driection);
 	t=0;
+	if_in=0;
+    if_add=1;
 }
 void Round(float x,float y,float r,float v,float round)
 { 
-	int s;
+	
 	int D;
 	d= sqrt(pow((xya.x-x),2)+pow((xya.y-y),2));
 	Right_cr1=(v/r*(r+round*217))/377*4096;
@@ -360,3 +460,5 @@ void Round(float x,float y,float r,float v,float round)
 	
 	 
 }
+
+
