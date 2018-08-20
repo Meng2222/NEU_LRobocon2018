@@ -117,7 +117,7 @@ void PID_Angle(u8 status,float Angle_Set,float Angle,float v)          //PID½Ç¶È
 	}
 //	if(Angle_Set - lastAngle>10 || Angle_Set - lastAngle<-10)
 	float error = 0 - Angle;
-	if(error>2 || error<-2) 
+	if(error>3 || error<-3) 
 	{
 		ki = 0.001;
 		kd = 20;
@@ -150,8 +150,6 @@ extern union u8andfloat                                              //ÒýÓÃ¶¨Î»Ï
 	uint8_t data[24];
 	float ActVal[6];
 }posture;
-
-
 
 void PID_Coordinate(float x0,float y0,float v)                         //PID×ø±ê¿ØÖÆ£¬Òýµ¼³µ×ÓÊ»ÏòÒ»¸ö¹Ì¶¨×ø±ê
 {

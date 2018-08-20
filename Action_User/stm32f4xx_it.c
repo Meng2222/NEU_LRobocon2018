@@ -632,19 +632,25 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 			if (ch == 0x0d)  
 			{    
 				#if CarNumber == 4
+				OS_CPU_SR cpu_sr;
+				OS_ENTER_CRITICAL();                                         /*互斥访问*/
 				posture.ActVal[0] = receieve.ActVal[0] ;//角度    
 				posture.ActVal[1] = receieve.ActVal[1];    
 				posture.ActVal[2] = receieve.ActVal[2];     
 				posture.ActVal[3] = receieve.ActVal[3]+error;//x    
 				posture.ActVal[4] = receieve.ActVal[4];//y      
 				posture.ActVal[5] = receieve.ActVal[5];
+				OS_EXIT_CRITICAL();
 				#elif CarNumber == 1
+				OS_CPU_SR cpu_sr;
+				OS_ENTER_CRITICAL();   
 				posture.ActVal[0] = -receieve.ActVal[0] ;//角度    
 				posture.ActVal[1] = receieve.ActVal[1];    
 				posture.ActVal[2] = receieve.ActVal[2];     
 				posture.ActVal[3] = receieve.ActVal[4]+error;//x  
 				posture.ActVal[4] = -receieve.ActVal[3];//y 				     
-				posture.ActVal[5] = receieve.ActVal[5];				
+				posture.ActVal[5] = receieve.ActVal[5];			
+				OS_EXIT_CRITICAL();
 				#endif
 		//		SetXpos(posX);     
 		//		SetYpos(posY);     

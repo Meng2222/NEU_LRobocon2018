@@ -32,7 +32,7 @@ void App_Task(void)
 	/*创建信号量*/
 	PeriodSem = OSSemCreate(0);
 	CPUUsageSem = OSSemCreate(0);
-	adc_msg = OSMboxCreate((void *)0); 
+	adc_msg = OSMboxCreate(NULL); 
 
 	/*创建任务*/
 	os_err = OSTaskCreate((void (*)(void *))ConfigTask, /*初始化任务*/
@@ -90,20 +90,20 @@ void ConfigTask(void)
 	OS_EXIT_CRITICAL();
 	while(1)
 	{
-		ADC_Left = Get_Adc_Average(15,10);
-		ADC_Right = Get_Adc_Average(14,10);
-		if(ADC_Left<500)
+		ADC_Left = Get_Adc_Average(15,100);
+		ADC_Right = Get_Adc_Average(14,100);
+		if(ADC_Left<100)
 		{
 			OSMboxPost(adc_msg,(void *)3);
 			OSTaskSuspend(OS_PRIO_SELF);                                     //挂起初始化函数
 		}
-		if(ADC_Right<500)
+		else if(ADC_Right<100)
 		{
 			OSMboxPost(adc_msg,(void *)2);
 			OSTaskSuspend(OS_PRIO_SELF);                                     //挂起初始化函数
 		}
-		USART_OUT(UART4,(uint8_t*)"%s","wait for adc data\r\n");		
-	}	
+		else USART_OUT(UART4,(uint8_t*)"%s","wait for adc data\r\n");		
+	}
 //	MotorOff(CAN2,2);                                                //左电机失能
 //	MotorOff(CAN2,1);                                                //右电机失能	
 }
@@ -118,7 +118,7 @@ void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;                                                 //防报错
-	OSSemSet(PeriodSem, 0, &os_err);                            	 //信号量归零
+	OSSemSet(PeriodSem, 0, &os_err);                 	 //信号量归零
 	int lasttime = 0;                                                //计数用
 	int time = 0;                                                    //计数用
 	while (1)
@@ -130,8 +130,11 @@ void WalkTask(void)
 //		PID_Square(1000);
 //		PID_Round(0,2000,1000,1000,direction);
 //		PID_Coordinate_following(500);
-//		PID_RUN(500,direction);
-	PID_Square_x(1000,500,direction);
+		OS_CPU_SR cpu_sr;
+		OS_ENTER_CRITICAL();                                         /*互斥访问*/
+		PID_RUN(500,direction);
+		OS_EXIT_CRITICAL();
+//	    PID_Square_x(1000,500,direction);
 //		OS_CPU_SR cpu_sr;
 //		OS_ENTER_CRITICAL(); /*互斥访问*/
 	    cnt++; 
