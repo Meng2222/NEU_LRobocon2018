@@ -82,7 +82,7 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		Walkline(0,0,Radius(),AdcFlag(),0.7);   ////setx  sety  r  方向  速度
+		Walkline(0,2200,Radius(),AdcFlag(),0.7);   ////setx  sety  r  方向  速度
 		errdeal();
 //////////////////发数测试////////////////////////////		
 // 	USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius());

@@ -220,14 +220,25 @@ int AdcFlag(void)
 		{
 			AdcFLAG=1;  ////逆时针
 		}
-		//USART_OUT(UART4,(uint8_t*)"%d	%d	%d\n",adc_num1,adc_num2,AdcFLAG);	
+		USART_OUT(UART4,(uint8_t*)"%d	%d	%d\n",adc_num1,adc_num2,AdcFLAG);	
 		return AdcFLAG;
 }
-
+extern int errFlag;
 int Radius(void)
 {
 		float LastAngle;
 		int r=2000;    ////初始半径
+		if(errFlag)
+		{
+			if(r>700)
+			{
+				r-=200;
+			}
+			if(r<=700)
+			{
+				r+=200;
+			}
+		}
 		if(GetAngle()>0&&LastAngle<0)
 		{
 			if(r>=700)
@@ -242,10 +253,11 @@ int Radius(void)
 		LastAngle=GetAngle();
 		return(r);
 }
-
+int errFlag;
 void errdeal(void)
 {
 		int Lastx,Lasty,errtime;
+		errFlag=0;
 		if((Lastx==(int)GetX())&&(Lasty==(int)GetY())&&AdcFlag()!=0)
 		{
 			errtime++;
@@ -262,6 +274,7 @@ void errdeal(void)
 					i++;
 				}
 				errtime=0;
+				errFlag=1;
 			}			
 		Lastx=(int)GetX();
 		Lasty=(int)GetY();
