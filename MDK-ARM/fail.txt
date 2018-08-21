@@ -1,0 +1,385 @@
+//====================================================================================
+//                                角度闭环（方案）
+//====================================================================================
+/*
+#define para 1/180
+
+void Angle_Lock(int ang)//锁定角度方案一
+{
+	if(ang>0&&ang<=90)
+	{
+		if(angl<=ang+2&&angl>ang-2)
+		{Move(v1,-v1);}
+		if(angl<=-135)
+		{Move((-0.005*v1*(360+angl-ang)),-v1);}//
+		if(angl>ang+2)
+		{Move(-0.005*v1*(angl-ang),-v1);}//
+		if(angl<=ang-2&&angl>-135)
+		{Move(v1,0.005*v1*(ang-angl));}//
+	}
+	if(ang>90&&ang<=180)
+	{
+		if(angl<=ang+2&&angl>ang-2)
+		{Move(v1,-v1);}
+		if(angl<=-45)
+		{Move(-0.005*v1*(360+angl-ang),-v1);}
+		if(angl>ang+2)
+		{Move(-0.005*v1*(angl-ang),-v1);}
+		if(angl<=ang-2&&angl>-45)
+		{Move(v1,0.005*v1*(ang-angl));}
+	}
+	if(ang>-180&&ang<=-90)
+	{
+		if(angl<=ang+2&&angl>ang-2)
+		{Move(v1,-v1);}
+		if(angl<=45&&angl>ang+2)
+		{Move(-0.005*v1*(angl-ang),-v1);}
+		if(angl<=ang-2)
+		{Move(v1,0.005*v1*(ang-angl));}
+		if(angl>45)
+		{Move(v1,0.005*v1*(360-angl+ang));}
+	}
+	
+	if(ang>-90&&ang<=0)
+	{
+		if(angl<=ang+2&&angl>ang-2)
+		{Move(v1,-v1);}
+		if(angl<=135&&angl>ang+2)
+		{Move(-0.005*v1*(angl-ang),-v1);}
+		if(angl<=ang-2)
+		{Move(v1,0.005*v1*(ang-angl));}
+		if(angl>135)
+		{Move(v1,0.005*v1*(360-angl+ang));}
+	}
+//if(angl<=A+2&&angl>=A-2)
+//{Move(v1,-v1);}
+//if(angl>A+2)
+//{Move(0,-v1);}
+//if(angl<A-2)
+//{Move(v1,0);}
+}
+
+void Angle_Lock2(int ang)//锁定角度方案二
+{
+	if(ang>0&&ang<=90)
+	{
+	if(angl<=ang+2&&angl>ang-2)
+	{Move(v1,-v1);}
+	if(angl<=-135)
+	{Move(-(0.005*(360+angl-ang))*(0.005*(360+angl-ang))*(0.005*(360+angl-ang))*(0.005*(360+angl-ang))*(0.005*(360+angl-ang))*v1,-v1);}//
+	if(angl>ang+2)
+	{Move(-0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*v1,-v1);}//
+	if(angl<=ang-2&&angl>-135)
+	{Move(v1,0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*v1);}//
+	}
+	if(ang>90&&ang<=180)
+	{
+	if(angl<=ang+2&&angl>ang-2)
+	{Move(v1,-v1);}
+	if(angl<=-45)
+	{Move(-0.005*(360+angl-ang)*0.005*(360+angl-ang)*0.005*(360+angl-ang)*0.005*(360+angl-ang)*0.005*(360+angl-ang)*v1,-v1);}
+	if(angl>ang+2)
+	{Move(-0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*v1,-v1);}
+	if(angl<=ang-2&&angl>-45)
+	{Move(v1,0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*v1);}
+	}
+	if(ang>-180&&ang<=-90)
+	{
+	if(angl<=ang+2&&angl>ang-2)
+	{Move(v1,-v1);}
+	if(angl<=45&&angl>ang+2)
+	{Move(-0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*v1,-v1);}
+	if(angl<=ang-2)
+	{Move(v1,0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*v1);}
+	if(angl>45)
+	{Move(v1,0.005*(360-angl+ang)*0.005*(360-angl+ang)*0.005*(360-angl+ang)*0.005*(360-angl+ang)*0.005*(360-angl+ang)*v1);}
+	}
+	
+	if(ang>-90&&ang<=0)
+	{
+	if(angl<=ang+2&&angl>ang-2)
+	{Move(v1,-v1);}
+	if(angl<=135&&angl>ang+2)
+	{Move(-0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*0.005*(angl-ang)*v1,-v1);}
+	if(angl<=ang-2)
+	{Move(v1,0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*0.005*(ang-angl)*v1);}
+	if(angl>135)
+	{Move(v1,0.005*(360-angl+ang)*0.005*(360-angl+ang)*0.005*(360-angl+ang)*0.005*(360-angl+ang)*0.005*(360-angl+ang)*v1);}
+	}
+}
+*/
+
+int v1_record=0,v2_record=0;
+
+void Angle_Lock3(int ang)//锁定角度方案3【成功】
+{
+	if(ang>0&&ang<=90)
+	{
+		if(positioni.Angle==ang)
+		{Move(v1,-v1);}
+		if(positioni.Angle<=-135)
+		{Move(v1,-v1-600*(360+positioni.Angle-ang));}//
+		if(positioni.Angle>ang)
+		{Move(v1,-v1-600*(positioni.Angle-ang));}//
+		if(positioni.Angle<=ang&&positioni.Angle>-135)
+		{Move(v1+600*(ang-positioni.Angle),-v1);}//
+	}
+	if(ang>90&&ang<=180)
+	{
+		if(positioni.Angle==ang)
+		{Move(v1,-v1);}
+		if(positioni.Angle<=-45)
+		{Move(v1,-v1-600*(360+positioni.Angle-ang));}
+		if(positioni.Angle>ang)
+		{Move(v1,-v1-600*(positioni.Angle-ang));}
+		if(positioni.Angle<=ang&&positioni.Angle>-45)
+		{Move(v1+600*(ang-positioni.Angle),-v1);}
+	}
+	if(ang>-180&&ang<=-90)
+	{
+		if(positioni.Angle==ang)
+		{Move(v1,-v1);}
+		if(positioni.Angle<=45&&positioni.Angle>ang)
+		{Move(v1,-v1-600*(positioni.Angle-ang));}
+		if(positioni.Angle<=ang)
+		{Move(v1+600*(ang-positioni.Angle),-v1);}
+		if(positioni.Angle>45)
+		{Move(v1+600*(360-positioni.Angle+ang),-v1);}
+	}
+	
+	if(ang>-90&&ang<=0)
+	{
+		if(positioni.Angle==ang)
+		{Move(v1,-v1);}
+		if(positioni.Angle<=135&&positioni.Angle>ang)
+		{Move(v1,-v1-600*(positioni.Angle-ang));}
+		if(positioni.Angle<=ang)
+		{Move(v1+600*(ang-positioni.Angle),-v1);}
+		if(positioni.Angle>135)
+		{Move(v1+600*(360-positioni.Angle+ang),-v1);}
+	}
+}
+
+//====================================================================================
+//                          多边形运动（方案）————凉凉【】失败
+//====================================================================================
+/*
+int t1=0;
+void Move_Mode2 (int d1,int a1)//多边形——————【失败】
+{
+	t=0;
+	while(1)
+	{
+	if(y<1000*r&&t1==0){Move(v1,-v1);}
+	if(y>=1000*r){t1=t;  Move(0,-v1);  t=0;}
+	if(angl+angle>=-180&&angl+angle<=180){a1=angl+angle;}
+	if(angl+angle>=180){a1=angl+angle-360;}
+	if(angl<angl+angle&&a1>=-180&&a1<=180){}//角度转换边长问题【未解决】（8.11）。。。凉了凉了（8.12）
+	}
+}
+*/
+
+//====================================================================================
+//                                直线闭环（方案）
+//====================================================================================
+/*
+//void Line_Lock1(int ang)//直线闭环方案1
+//{
+//ANG=angl-ang;
+//if(ANG>180){ANG=ANG-360;}
+//if(ANG<-180){ANG=ANG+360;}
+////{Move(v1-300*ANG,-v1-300*ANG);}
+
+//	if(ang== 90){{Move(v1-Pa*ANG+Pl*y,-v1-Pa*ANG+Pl*y);}}
+//	if(ang==-90){{Move(v1-300*ANG-Pl*y,-v1-300*ANG-Pl*y);}}
+//	if(ang!=90&&ang!=-90)
+//	{
+//		k=tan (ang*pi/180);
+//		b=y-k*x;
+//		d=b/(1+k*k);
+//		if(ang<=0){Move(v1-Pa*ANG-Pl*d,-v1-Pa*ANG-Pl*d);}
+//		if(ang>0){Move(v1-Pa*ANG+Pl*d,-v1-Pa*ANG+Pl*d);}
+//	}
+//}
+*/
+/*
+void Line_Lock2(int ang_l, float y_b, float x_b)
+{
+if(ang_l==0)
+{
+	if(x>(p_a+x_b)){Angle_Lock4(90);}
+	if(x<(-p_a+x_b)){Angle_Lock4(-90);}
+	if(x<=(p_a+x_b)&&x>=(-p_a+x_b)){Angle_Lock4(90*(x-x_b)/p_a);}
+}
+if(ang_l==180||ang_l==-180)
+{
+    if(x>(p_a+x_b)){Angle_Lock4(-90);}
+	if(x<(-p_a+x_b)){Angle_Lock4(90);}
+	if(x<=(p_a+x_b)&&x>=(-p_a+x_b)){Angle_Lock4(180-(90*(x-x_b))/p_a);}
+}
+if(ang_l!=0&&ang_l!=180&&ang_l!=-180)
+{
+	if(ang_l== 90)
+    {
+		if(y>(p_a+y_b)){Angle_Lock4(ang_l+90);}
+		if(y<(-p_a+y_b)){Angle_Lock4(ang_l-90);}
+		if(y<=(p_a+y_b)&&y>=(-p_a+y_b)){Angle_Lock4(ang_l+(90*(y-y_b))/p_a);}
+	}
+	if(ang_l==-90)
+    {
+		if(y>(p_a+y_b)){Angle_Lock4(ang_l-90);}
+		if(y<(-p_a+y_b)){Angle_Lock4(ang_l+90);}
+		if(y<=(p_a+y_b)&&y>=(-p_a+y_b)){Angle_Lock4(ang_l-(90*(y-y_b))/p_a);}
+	}
+	if(ang_l!=90&&ang_l!=-90)
+	{
+		if(ang_l>-90&&ang_l<90)
+		{k=tan(pi*(ang_l+90)/180);}
+		if(ang_l>90){k=tan(pi*(ang_l-90)/180);}
+		if(ang_l<-90){k=tan(pi*(ang_l+270)/180);}
+		d=(y-k*x-y_b)/(sqrt(1+k*k));
+		if(ang_l>0)
+		{
+			if(d>p_a){Angle_Lock4(ang_l+90);}
+			if(d<-p_a){Angle_Lock4(ang_l-90);}
+			if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l+90*d/p_a);}
+		}
+		if(ang_l<0)
+		{
+			if(d>p_a){Angle_Lock4(ang_l-90);}
+			if(d<-p_a){Angle_Lock4(ang_l+90);}
+			if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l-90*d/p_a);}
+		}
+	}
+}
+}
+*/
+/*
+void Line_Lock3(int ang_l, float y_b, float x_b)
+{
+if(ang_l==0)                {d=x-x_b;}
+if(ang_l==180||ang_l==-180) {d=x_b-x;}
+if(ang_l!=0&&ang_l!=180&&ang_l!=-180)  
+{
+	if(ang_l>=-90&&ang_l<=90){k=tan(pi*(ang_l+90)/180);}
+	if(ang_l>90){k=tan(pi*(ang_l-90)/180);}
+	if(ang_l<-90){k=tan(pi*(ang_l+270)/180);}
+	d=(y-k*x-y_b)/(sqrt(1+k*k));
+}
+if(ang_l>=0)
+{
+	if(d>p_a){Angle_Lock4(ang_l+90);}
+	if(d<-p_a){Angle_Lock4(ang_l-90);}
+	if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l+Kp_l*d);}
+}
+if(ang_l<0)
+{
+	if(d>p_a){Angle_Lock4(ang_l-90);}
+	if(d<-p_a){Angle_Lock4(ang_l+90);}
+	if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l-Kp_l*d);}
+}
+}
+*/
+
+
+/*
+float Kp_line;
+void Line_Lock5(int ang_l, float y_b, float x_b)
+{
+if(ang_l==0)                {d=x-x_b;}
+if(ang_l==180||ang_l==-180) {d=x_b-x;}
+if(ang_l!=0&&ang_l!=180&&ang_l!=-180)  
+{
+	if(ang_l>=-180&&ang_l<=0){k=tan(pi*(ang_l+90)/180);}
+	if(ang_l>0){k=tan(pi*(ang_l-90)/180);}
+//	if(ang_l<-90){k=tan(pi*(ang_l+270)/180);}
+	d=(y-k*x-y_b)/(sqrt(1+k*k));
+}
+Kp_line=((1/5000000)*d*d-(1/5000)*d+0.09);
+if(ang_l>=0)
+{
+	if(d>p_a){Angle_Lock4(ang_l+90);}
+	if(d<-p_a){Angle_Lock4(ang_l-90);}
+	if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l+Kp_line*d);}
+}
+if(ang_l<0)
+{
+	if(d>p_a){Angle_Lock4(ang_l-90);}
+	if(d<-p_a){Angle_Lock4(ang_l+90);}
+	if(d<=p_a&&d>=-p_a){Angle_Lock4(ang_l-Kp_line*d);}
+}
+}
+*/
+
+//====================================================================================
+//                                正圆闭环（方案）
+//====================================================================================
+float angle_C;   //机器人最终行进角度
+float angle_Cl;	 //机器人与圆心连线角度
+float dangle_C;  //机器人（切线）偏差角度
+float dangle_Cd; //机器人偏差距离校正
+float d_C;       //机器人到圆心距离
+/*
+void Circle_Lock2(void)//【角度闭环】距离决定角偏差量（大于r为锐角、小于r为钝角）
+{}
+*/
+
+
+/*
+void Circle_Lock4(void)//【改变基础分频】基础圆++变轨角（距离决定）
+{
+d_C=sqrt((x_C-x)*(x_C-x)+(y_C-y)*(y_C-y));
+if(d_C>r+1000)
+{}
+if(d_C<=r+1000)
+{
+	if(d_C>=r&&d_C<r+1000)
+	{}
+	if(d_C<r)
+	{}
+}
+}
+void Circle_Lock5(void)//【圆闭环】
+{}
+
+*/
+//int isOKFlag=0;////////////////////////////////////////////////////////////|
+//int IsSendOK(void)                                                       //|
+//{                                                                        //|  
+//return isOKFlag;                                                         //|
+//}                                                                        //|
+//void SetOKFlagZero(void)                                                 //|
+//{                                                                        //|
+//isOKFlag=0;                                                              //|
+//}                                                                        //|
+//void driveGyro(void)                                                     //|
+//{                                                                        //|————————确认蓝牙连接AT\OK
+//while(!IsSendOK())                                                       //|
+//{                                                                        //|
+//delay_ms(5);                                                             //|
+//USART_SendData(USART3,'A');                                              //|
+//USART_SendData(USART3,'T');                                              //|
+//USART_SendData(USART3,'\r');                                             //|
+//USART_SendData(USART3,'\n');                                             //|
+//}                                                                        //|
+//SetOKFlagZero();                                                         //|
+//}//////////////////////////////////////////////////////////////////////////|
+
+
+//#define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
+
+
+///*
+//一个脉冲是4096/(120*Pi)
+//定义输入速度mm/s和半径mm
+//*/
+//float ratio1,ratio2;
+//void vel_radious(float vel,float radious)
+//{
+//	ratio1=(radious+WHEEL_TREAD/2)/radious;
+//	ratio2=(radious-WHEEL_TREAD/2)/radious;
+//	VelCrl(CAN2,1,ratio1*vel*Pulse2mm);
+//	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
+//}
+
+//extern int asd;

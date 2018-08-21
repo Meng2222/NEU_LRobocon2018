@@ -382,6 +382,11 @@
           <GroupName>User</GroupName>
           <Files>
             <File>
+              <FileName>pps.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\pps.c</FilePath>
+            </File>
+            <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Action_User\main.c</FilePath>
@@ -430,6 +435,21 @@
               <FileName>adc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Action_User\adc.c</FilePath>
+            </File>
+            <File>
+              <FileName>MRKSteven.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\MRKSteven.c</FilePath>
+            </File>
+            <File>
+              <FileName>MRKSteven.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Action_User\MRKSteven.h</FilePath>
+            </File>
+            <File>
+              <FileName>fail.txt</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\fail.txt</FilePath>
             </File>
           </Files>
         </Group>

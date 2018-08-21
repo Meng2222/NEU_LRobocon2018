@@ -333,7 +333,7 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	OSIntExit();
 }
-
+/*
 float Angl;
 float X;
 float Y;                   
@@ -342,11 +342,7 @@ int asd=1;
 extern int isOKFlag;
 void USART3_IRQHandler(void)//更新频率200Hz
 {
-//	OS_CPU_SR cpu_sr;
-//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-//	OSIntNesting++;
-//	OS_EXIT_CRITICAL();
-//	
+	
 	static uint8_t ch;
 	static union
 	{ 
@@ -482,6 +478,15 @@ void USART3_IRQHandler(void)//更新频率200Hz
 	}
 	OSIntExit();
 }
+*/
+
+//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
+//	{
+//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+//	}
+
+//	OSIntExit();
+//}
 
 void UART5_IRQHandler(void)
 {
