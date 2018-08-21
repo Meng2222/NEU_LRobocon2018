@@ -11,7 +11,7 @@
 #include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
-<<<<<<< HEAD
+#include "pps.h"
 #include "moveBase.h"
 #include "math.h"
 #define PAI 3.14
@@ -26,15 +26,21 @@ float Ierr=0;//圆形
 float I_value=0;//圆形
 float KI=-0.12;//圆形
 float rate=0.09;// 正方形  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04,           0.15
-float duty=800;   //正方形  提前量：duty=650(1m/s)，   1.5m/s duty为900，
-float KP=400; //Kp给300(1m/s)，，，kp给450（1.5m/s）
+   //正方形  提前量：duty=650(1m/s)，   1.5m/s duty为900，
+float KP=300; //Kp给300(1m/s)，，，kp给450（1.5m/s）
 float V0=0.5;//车的基础速度(m/s)
 float buff=500;//(最大偏离区域)
 //////////////////////////////////////////////////////
-
+	//x=-400
+	float Aa=-1;
+	float Bb=0;
+	float Cc=-400;
+	float Nn=1;
 
 //蓝牙发数的整型转换
 static int isOKFlag=0;
+static PosSend_t posture={0};
+
 float out_angle=0;//距离环换算的角度
 void driveGyro(void)
 {
@@ -47,9 +53,9 @@ void driveGyro(void)
 	}
 isOKFlag=0;
 }
-=======
-#include "pps.h"
->>>>>>> master
+
+
+
 /*
 ===============================================================
 						信号量定义
@@ -74,15 +80,17 @@ void turn(float setValue,float feedbackValue,float direc);//原地转
 float err(float distance,float ANGLE);//距离转化角度函数
 float a_gen(float a,float b,int n);//角度生成函数（输入直线参数，给出角度）
 void run_to(float BETA,float Vm);//跑向特定方向BETA
-int line(float aa, float bb, float cc, float nn);//车在干扰下跑向任意直线·，注：aa<0,当aa=0时，bb=0；nn=1控制向X轴上方走，n=-1向x轴下方，n=-2向x轴正向走，n=2向x轴负向走
+int line(float aa, float bb, float cc, float nn,float VL);//车在干扰下跑向任意直线·，注：aa<0,当aa=0时，bb=0；nn=1控制向X轴上方走，n=-1向x轴下方，n=-2向x轴正向走，n=2向x轴负向走
 void loop(float corex,float corey,float Radium,float V_loop,int SN);//顺时针转
+void square(float length,float square_corex,float square_corey,int square_sn,float Vsq,float duty);//闭环正方形
 int ADC_judge();//ADC判断朝哪个方向
+int accident_check();//检测障碍
 float meters(float V1)//米每秒转化成脉冲每秒
 {
 	float Va;
 	Va=4096*V1/(PAI*0.12);
 	return Va;
-}
+} 
 
   	   typedef struct{
 	float x;
@@ -99,17 +107,17 @@ pos_t action;
 	//float aa=0;     //（输入aa的值应该a<0）
     //float bb=0;        //(如果a=0，b应该也>0)
     //float cc=0;
-	int cycle_flag=0;//cycle_flag为全局变量，两个函数都能改变
-	int change=1;//change为全局变量，两个函数都能改变
-	float Ra=1500;//(可变半径)
-	int add_flag=0;//(半径增减的标志位)
+	int cycle_flag=0;//cycle_flag为全局变量，两个函数都能改变(autoPID)
+	int change=1;//change为全局变量，两个函数都能改变(auto_PID)
+	float Ra=2000;//(可变半径)
+	int add_flag=-1;//(半径增减的标志位)
 	int start_flag=0;
 	int sn=0;//如果sn为1则逆时针，sn为-1则顺时针
 	float last_x=0;
 	float last_y=0;
 	float last_angle=0;
 	//后退的程序变量
-	int back();//后退程序
+
 	int back_flag=0;
 	int mark_flag=0;
 	float back_angel=0;//被卡住的时刻的角度
@@ -118,7 +126,16 @@ pos_t action;
 	float back_time=0;//卡住的时间
 	float back_accident=0;
 	int accident_flag=1;//意外判断标识符
-//	#define nn 1//(方向指定，1为向X轴上方，-1为向x轴下方，当倾斜角=0（aa=0）时，-2为x轴负向，2为x轴正向,)
+	int lets_go=1;//(正常走)
+	int choose=0;
+	uint8_t square_flag=0;
+	int record=0;
+	int Last_angle=0;
+	int Last_x=0;
+	int Last_y=0;
+	int R_switch=0;
+	int r_switch=0;
+
 /*
 ==================================================================================
 */
@@ -153,7 +170,7 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-<<<<<<< HEAD
+
 	TIM_Init(TIM2, 999, 839, 0x00, 0x00);
 	//CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
@@ -171,20 +188,22 @@ void ConfigTask(void)
 	MotorOn(CAN2, 01);
 	MotorOn(CAN2, 02);
 	//定位系统串口初始化
-     USART3_Init(115200);
+	USART3_Init(115200);
+	/*一直等待定位系统初始化完成*/
+	delay_s(2);
+	WaitOpsPrepare();
 	 //蓝牙串口
 	 UART4_Init(921600); 
-	 delay_s(5);
-     if(Car==4)
+//     if(Car==4)
 	 delay_s(10);
 	 
-	 if(Car==1)
-	 {
-	 driveGyro();
-	 while(!opsflag)
-	 delay_s(5);
+//	 if(Car==1)
+//	 {
+//	 driveGyro();
+//	 while(!opsflag)
+//	 delay_s(5);
 
-	 }
+//	 }
 	 //ADC给出出发命令
 	 while(ADC_judge()==0);
 	 if(ADC_judge()==1)//左边被挡住
@@ -193,14 +212,7 @@ void ConfigTask(void)
 		 sn=-1;
 	 OSTaskSuspend(OS_PRIO_SELF);
 
-=======
-	
-	USART3_Init(115200);
-	/*一直等待定位系统初始化完成*/
-	WaitOpsPrepare();
-	
-	OSTaskSuspend(OS_PRIO_SELF);
->>>>>>> master
+
 }
 
 int mission=1;
@@ -215,7 +227,6 @@ void WalkTask(void)
       float Bb=0;
       float Cc=0;
       float Nn=0;
-    float last_change=0;//记录上次状态
 
 	  
 	CPU_INT08U os_err;
@@ -225,313 +236,8 @@ void WalkTask(void)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
-		if(car==1)//1号车走正方形
-	{
-			//任务切换		
-		if(action.angle>=-2&&action.angle<=2&&(mission==12||mission==2))
-			mission=1;//直行________Uk取反
-		if(((action.angle>2&&action.angle<180)|(action.angle<-2&&action.angle>-179))&&mission==1)
-			mission=2;//纠偏
-		if(action.x>=-2050&&action.x<=-1950&&mission==1)
-			mission=3;//转向
-		
-		
-		if(action.angle>=88&&action.angle<=92&&(mission==3||mission==5))
-			mission=4;//直行——————UK取反
-		if(((action.angle>=-180&&action.angle<88)|(action.angle>92&&action.angle<=180)|(action.angle<=0&&action.angle>=-180))&&mission==4)
-			mission=5;//纠偏
-		if(action.y>=-2050&&action.y<=-1950&&mission==4)
-			mission=6;//转向
-		
-		
-		if(((action.angle>=178&&action.angle<=180)|(action.angle<=-178&&action.angle>=-179))&&(mission==6||mission==8))
-		    mission=7;//直行
-		if((action.angle<177&action.angle>-178)&&mission==7)
-			mission=8;//纠偏
-		if(action.x>=-50&&action.x<=50&&mission==7)
-			mission=9;//转向
-		
-		
-		if((action.angle<=-88&&action.angle>=-92)&&mission==9)
-			mission=10;//直行
-		if(((action.angle>-88&&action.angle<=180)|(action.angle>-92&&action.angle<=-180))&&(mission==10))
-		    mission=11;//纠偏
-		if(action.y>=-50&&action.y<=50&&mission==10)
-			mission=12;//转向
-		
-       //第一阶段
-		if(mission==1)//直行（目标：-2000，0）
-		{
-			straight(-2000,action.x);
-			
-		}
-		if(mission==2)//纠偏维持角度为0
-		{
-			turn(0,action.angle,1);
-			
-		}
-		if(mission==3)//转向到90
-		{
-			turn(90,action.angle,1);
-			
-		}
-		
-		
-		
-		//第二阶段
-		if(mission==4)//直行（目标：-2000,-2000）
-		{
-			straight(-2000,action.y);
-			
-		}
-		if(mission==5)//纠偏 维持角度为90
-		{
-			turn(90,action.angle,1);
-			
-		}
-		if(mission==6)//转向到180
-		{
-			turn(180,action.angle,1);
-		
-		}
-		
-		//第三阶段
-		if(mission==7)//直行（目标：0,2000）
-		{
-			straight(0,action.x);
-		
-		}
-		if(mission==8)//纠偏 维持角度为180
-		{
-			turn(180,action.angle,1);
-		
-		}
-		if(mission==9)//转向到-90
-		{
-			turn(-90,action.angle,1);
-		
-		}
-		
-		//第四阶段
-		if(mission==10)//直行（目标：0,0）
-		{
-			straight(0,action.y);
-		
-		}
-		if(mission==11)//纠偏 维持角度为-90
-		{
-			turn(-90,action.angle,1);
-		
-		}
-		if(mission==12)//转向到0
-		{
-			turn(0,action.angle,1);
-		
-		}		
-	//	cnt++;
-//蓝牙发送
-        
-		Angle=(int)action.angle;
-		X=(int)action.x;
-		Y=(int)action.y;
-	//	if(cnt==100)
-		{	
-		USART_OUT(UART4,(uint8_t*)"Angle=");
-		USART_OUT( UART4, (uint8_t*)"%d ", Angle);
-		USART_OUT(UART4,(uint8_t*)"X=");
-		USART_OUT( UART4, (uint8_t*)"%d ", X);
-		USART_OUT(UART4,(uint8_t*)"Y=");
-		USART_OUT( UART4, (uint8_t*)"%d ", Y);
-			
-		USART_OUT(UART4,(uint8_t*)"mission=");
-		USART_OUT( UART4, (uint8_t*)"%d ", mission);	
-			
-		uk_1=(int)Uk_1;
-		USART_OUT(UART4,(uint8_t*)"angleUk=");
-		USART_OUT( UART4, (uint8_t*)"%d ", uk_1);
-		uk_2=(int)Uk_2;
-		USART_OUT(UART4,(uint8_t*)"dietanceUk=");
-		USART_OUT( UART4, (uint8_t*)"%d ", uk_2);
-		USART_OUT(UART4,(uint8_t*)"\r\n");
-//		cnt=0;	
-		}
-	}
-      if(car==4)//4号车走正方形
-  {
-		if(action.angle>=-2&&action.angle<=2&&(mission==12||mission==2))
-			mission=1;//直行
-		if(((action.angle>2&&action.angle<180)||(action.angle<-2&&action.angle>-179))&&mission==1)
-			mission=2;//纠偏
-		if(action.y<=2020&&action.y>=1980&&mission==1)
-			mission=3;//转向
-		
-		
-		if(action.angle>=88&&action.angle<=98&&(mission==3||mission==5))
-			mission=4;//直行
-		if(((action.angle>=-179&&action.angle<88)||(action.angle>92&&action.angle<=180)||(action.angle<=0&&action.angle>=-180))&&mission==4)
-			mission=5;//纠偏
-		if(action.x<=-1980&&action.x>=-2020&&mission==4)
-			mission=6;//转向
-		
-		
-		if(((action.angle>=178&&action.angle<=180)||(action.angle<=-178&&action.angle>=-179))&&(mission==6||mission==8))
-		    mission=7;//直行
-		if((action.angle<178&action.angle>-178)&&mission==7)
-			mission=8;//纠偏
-		if(action.y>=-20&&action.y<=20&&mission==7)
-			mission=9;//转向
-		
-		
-		if((action.angle<=-88&&action.angle>=-98)&&(mission==9||mission==11))
-			mission=10;//直行
-		if(((action.angle>-88&&action.angle<=180)||(action.angle>-98&&action.angle<=-180))&&(mission==10))
-		    mission=11;//纠偏
-		if(action.x>=-20&&action.x<=20&&mission==10)
-			mission=12;//转向
 
-        //第一阶段
-		if(mission==1)//直行（目标：0，2000）
-		{
-			straight(2000,action.y);
-			
-		}
-		if(mission==2)//纠偏维持角度为0
-		{
-			turn(0,action.angle,1);
-			
-		}
-		if(mission==3)//转向到90
-		{
-			turn(90,action.angle,1);
-			
-		}
 		
-		//第二阶段
-		if(mission==4)//直行（目标：-2000,2000）
-		{
-			straight(-2000,action.x);
-			
-		}
-		if(mission==5)//纠偏 维持角度为90
-		{
-			turn(90,action.angle,1);
-			
-		}
-		if(mission==6)//转向到180
-		{
-			turn(180,action.angle,1);
-		
-		}
-		
-		//第三阶段
-		if(mission==7)//直行（目标：-2000,0）
-		{
-			straight(0,action.y);
-		
-		}
-		if(mission==8)//纠偏 维持角度为180
-		{
-			turn(180,action.angle,1);
-		
-		}
-		if(mission==9)//转向到-90
-		{
-			turn(-90,action.angle,1);
-		
-		}
-		
-		//第四阶段
-		if(mission==10)//直行（目标：0,0）
-		{
-			straight(0,action.x);
-		
-		}
-		if(mission==11)//纠偏 维持角度为-90
-		{
-			turn(-90,action.angle,1);
-		
-		}
-		if(mission==12)//转向到0
-		{
-			turn(0,action.angle,1);
-		
-		}		
-//		cnt++;
-//蓝牙发送
-        
-		Angle=(int)action.angle;
-		X=(int)action.x;
-		Y=(int)action.y;
-	//	if(cnt==100)
-		{	
-		//USART_OUT(UART4,(uint8_t*)"Angle=");
-		//USART_OUT( UART4, (uint8_t*)"%d ", Angle);
-	//	USART_OUT(UART4,(uint8_t*)"X=");
-		USART_OUT( UART4, (uint8_t*)"%d ", X);
-	//	USART_OUT(UART4,(uint8_t*)"Y=");
-		USART_OUT( UART4, (uint8_t*)"%d ", Y);
-			
-	//	USART_OUT(UART4,(uint8_t*)"mission=");
-		//USART_OUT( UART4, (uint8_t*)"%d ", mission);	
-			
-	//	uk_1=(int)Uk_1;
-		//USART_OUT(UART4,(uint8_t*)"angleUk=");
-		//USART_OUT( UART4, (uint8_t*)"%d ", uk_1);
-		//uk_2=(int)Uk_2;
-		//USART_OUT(UART4,(uint8_t*)"dietanceUk=");
-		//USART_OUT( UART4, (uint8_t*)"%d ", uk_2);
-		USART_OUT(UART4,(uint8_t*)"\r\n");
-	//	cnt=0;	
-		}
-	}
-		if(car==3)//测试
-	{
-			
-			
-			//if(car_cnt<=100&&car>=50)
-		//	turn(0,action.angle);
-			straight(2000,action.y);
-		if(((action.angle>1&&action.angle<180)||(action.angle<-1&&action.angle>-179)))
-			turn(0,action.angle,1);
-//			car_cnt++;
-//		if(car_cnt>0&&car_cnt<=100)
-//			turn(-90,action.angle);
-//		if(car_cnt>100&&car_cnt<=200)
-//			turn(180,action.angle);
-//		if(car_cnt>200&&car_cnt<=300)
-//			turn(0,action.angle);
-//		if(car==400)
-//			car_cnt=0;
-//--------------------------------------------------------------------------------------			
-//			if(car_cnt>200&&car_cnt<=300)
-//			turn(180,action.angle);
-//			
-//			if(car_cnt>300&&car_cnt<400)
-//			turn(-90,action.angle);	
-//			
-//			if(car_cnt==400)
-//			car_cnt=0;	
-//			if(car_cnt%5==0)
-          if(!(action.y<20&&action.y>-20))		  
-		{	
-		Angle=(int)action.angle;
-		X=(int)action.x;
-		Y=(int)action.y;
-		USART_OUT(UART4,(uint8_t*)"Angle=");
-		USART_OUT( UART4, (uint8_t*)"%d ", Angle);
-		USART_OUT(UART4,(uint8_t*)"X=");
-		USART_OUT( UART4, (uint8_t*)"%d ", X);
-		USART_OUT(UART4,(uint8_t*)"Y=");
-		USART_OUT( UART4, (uint8_t*)"%d ", Y);
-		uk_1=(int)Uk_1;
-		USART_OUT(UART4,(uint8_t*)"angleUk=");
-		USART_OUT( UART4, (uint8_t*)"%d ", uk_1);
-		uk_2=(int)Uk_2;
-		USART_OUT(UART4,(uint8_t*)"dietanceUk=");
-		USART_OUT( UART4, (uint8_t*)"%d ", uk_2);
-		USART_OUT(UART4,(uint8_t*)"\r\n");					
-	  }
-	}
 
 	
  
@@ -645,54 +351,108 @@ void WalkTask(void)
   
   if(car==44)
 {
-	  if(sn!=0)
-{
-	if(back()==0)
-	 accident_flag=0;
-  if(accident_flag==0)
-  {
-	  if((action.x>20)&&(action.y>=-1500+Ra-75)&&(action.y<=-1500+Ra+75))
+	  if( sn!=0)
+{	  
+	if(record==50)
 	  {
-	   if(add_flag==0)
-	   Ra=Ra-250;
+		  if(accident_check()==0)
+		    lets_go=1;
+		  else lets_go=0;
+		    last_angle=action.angle;
+            last_x=action.x;
+            last_y=action.y;
+		    record=0;
+		  Last_angle=(int)last_angle;
+		  Last_x=(int)last_x;
+		  Last_y=(int)last_y;
+		  USART_OUT( UART4, (uint8_t*)"%d ", Last_angle);
+		  USART_OUT( UART4, (uint8_t*)"%d ", Last_x);
+		  USART_OUT( UART4, (uint8_t*)"%d ", Last_y);
+		  USART_OUT(UART4,(uint8_t*)"\r\n");
+	  }//
+  if(lets_go==1)
+  {
+	  if(action.y>0&&last_y<0&&action.x>-2400)
+	  {
+		R_switch=1;  
+	    if(R_switch!=r_switch)  
+  { 
+	   if(add_flag==-1)
+	   Ra=Ra-200;
 	   if(add_flag==1)
-	   Ra=Ra+250;
-	   if(Ra==750)	  
-	   add_flag=1;
-	   if(Ra==1500)
-	   add_flag=0;
-	  }	  
-	  
-	  if(action.y<-2950&&action.y>-3050&&action.x>0)
+	   Ra=Ra+200;
+      
+	 
+	  if(Ra<=800)	  
+	   {
+		   choose++;
+		   if(choose%2==1)//正方形和圆形的切换
+		   {
+			   square_flag=2;
+			   add_flag=0;
+			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
+		   }
+			   if(choose%2==0)
+		   {
+			   add_flag=1;
+			   square_flag=0;
+			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
+			   choose=0;
+		   }
+	   }
+	   if(Ra>=2000)
+	   {
+	     choose++;
+		   if(choose%2==1)
+		   {
+			   square_flag=2;    //1为小正方形，2为大正方形
+			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
+			   add_flag=0;
+		   }
+		   if(choose%2==0)
+		   {
+			  add_flag=-1;
+			  square_flag=0;
+			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
+			  choose=0;
+		   }
+	   }
+   }  r_switch=R_switch;
+	  }	  else R_switch=0;
+	 r_switch =R_switch;
+	  if(square_flag==0)
+	  {
+		  if((fabs(action.y)<2050&&fabs(action.y)>1950&&action.x>-2350&&action.x<2450)||(action.x>-4450&&action.x<-4350&&fabs(action.y)<50))//最大的圈会冲一下
 	  {
 	   VelCrl(CAN2, 01,18000);
 	   VelCrl(CAN2, 02,-18000); 
 	  }
-	  else  loop(0,-1500,Ra,Ra/1000,sn);//逆时针转为1,顺时针为-1
-		 
+	  else  loop(-2400,0,Ra,Ra/1000,sn);//逆时针转为1,顺时针为-1
+      }
+	  if(square_flag==1)
+	square(1200,-2400,0,1,1,0);//走到半径最小值开始走边长1200的正方形，（边长，x，y顺逆）
+	  if(square_flag==2)
+	square(3600,-2400,0,1,1.5,500);//走到半径最大开始走边长4000的正方形	  
 	  X=(int)action.x;
 	  Y=(int)action.y;
-      Angle=(int)action.angle;	  
-	  USART_OUT( UART4, (uint8_t*)"%d ", Ra);
+      Angle=(int)action.angle;	
+     int rr=(int)Ra;
+	  
+	  USART_OUT( UART4, (uint8_t*)"%d ", rr);
 	  USART_OUT( UART4, (uint8_t*)"%d ", X);
 	  USART_OUT( UART4, (uint8_t*)"%d ", Y);
 	  USART_OUT( UART4, (uint8_t*)"%d ", Angle);
+	  USART_OUT( UART4, (uint8_t*)"%d ", square_flag);
+	 
+      USART_OUT( UART4, (uint8_t*)"%d ", record);
+	  
 	  USART_OUT(UART4,(uint8_t*)"\r\n");
 	  
 	  //撞墙判断程序
-	 	  	last_angle=action.angle;
-            last_x=action.x;
-            last_y=action.y;
-	  
-	  //碰撞向后退，角度判断
-	  {
-		  
-	  }
-	  //碰撞向前冲，角度判断
-	  {
-		  
-	  }
-   }//accident_flag=0无故障运行
+	  record++;
+
+
+    }//accident_check=0无故障运行
 }//sn!=0//启动
 	
 
@@ -707,6 +467,228 @@ float last_P0=0;
 float last_cycle_num=0;
 
 
+void accident_turn(int turn_dire)//单轮转90度,-1为（逆时针），1为顺时针
+{
+float turn_Setvalue=0;
+float turn_err=0;
+int turn_time=0;
+uint8_t turn_over=0;//是否转到指定角度标志位
+ if(turn_dire==-1)//向右转
+ {
+	turn_Setvalue=action.angle-90;
+    if(turn_Setvalue<-180)
+    turn_Setvalue=turn_Setvalue+360;//超过-180
+	do
+	{
+	turn_time++;
+	if(turn_time==50)
+	{
+		turn_err=turn_Setvalue-action.angle;//偏差值为负
+	    VelCrl(CAN2, 01,0);
+		VelCrl(CAN2, 02,-turn_err*100); //右轮不转，左轮反	
+	turn_time=0;
+	}
+     if(fabs(fabs(action.angle)-fabs(action.angle))<10)
+		 turn_over=1;
+	}while(turn_over==1);//转到指定角度
+ }
+ if(turn_dire==1)
+ {
+	 turn_Setvalue=action.angle+90;
+	 if(turn_Setvalue>180)
+     turn_Setvalue=turn_Setvalue-360;//超过-180
+	 do
+	{
+		turn_time++;
+		if(turn_time==50)
+		{
+			turn_err=turn_Setvalue-action.angle;//偏差值为正
+			VelCrl(CAN2, 01,-turn_err*100);
+		    VelCrl(CAN2, 02,0); //右轮不转，左轮反	
+			turn_time=0;
+		}
+		  if(fabs(fabs(action.angle)-fabs(action.angle))<10)
+		  turn_over=1;
+	 }
+	
+	 while(turn_over==1);
+ }
+}
+int accident_check()
+{
+	float check_angel=0;
+	float last_check_angel=0;
+	uint8_t accident_conner=0;//意外判断--卡在角落
+	uint8_t accident_back=0;//意外判断--被撞退
+    uint8_t accident_ahead=0;	//意外判断--遇到阻力
+	uint8_t accident_frame=0;//意外判断--碰到边框
+	uint8_t accident_clear=0;//意外是否清除
+//	check_angel=atan2(action.y-0,action.x-(-2400))*180/PAI;
+//	last_check_angel=atan2(last_y-0,last_x-(-2400))*180/PAI;
+	
+	
+	if(fabs(action.x-last_x)<100&&fabs(action.y-last_y)<100)//被卡住
+	{
+		accident_back=1;
+//			accident_clear=1;
+//		if(action.x<-4300&&action.y>1900&action.y<2900)//卡在右上角
+//		{
+//			if(action.angle==0)//头朝上
+//			accident_conner=1;//
+//			if(action.angle==90)//头朝右
+//			accident_conner=2;
+//		}
+//		if(action.x<-4300&&action.y<-1900)//卡z在左上角
+//	{	
+//		if(action.angle==0)
+//			accident_conner=3;//头朝上
+//		if(action.angle==-90)
+//		   accident_conner=4;	//头朝左
+//	}
+//	   if(action.x>-500&&action.y<-1900)//卡在左下角
+//	   {
+//		   if(action.angle==180&&action.angle==-179)//头朝下
+//			   accident_conner=5;
+//		   if(action.angle==-90)//头朝左
+//			   accident_conner=6;
+//	   }
+//	   if(action.x<-500&&action.y>1900)//卡在右下角
+//		   if(action.angle==180&&action.angle==-179)//头朝下
+//			   accident_conner=7;
+//		   if(action.angle==90)//头朝右
+//			   accident_conner=8;
+//		if(action.x<=-500&&action.x>=-4300&&action.y>1900)  //卡在右边框 
+//			 accident_frame=1;
+//		if(action.y<=-1900&&action.y>=1900&&action.x<-4300)//卡在上边框
+//		     accident_frame=2;
+//		if(action.x<=-500&&action.x>=-4300&&action.y<-1900)//卡在左边框
+//			accident_frame=3;
+//		if(action.y<=-1900&&action.y>=1900&&action.x>-500)//卡在下边框
+//			accident_frame=4;
+	}
+	//可能需要知道顺时针还是逆时针
+	{
+		if(accident_back==1)//被撞退后退，去下一个圆
+		{
+			for(back_time=0;back_time<1000;back_time++)
+			{
+				VelCrl(CAN2, 01,-10000);//倒车· 
+	            VelCrl(CAN2, 02,10000); //倒车
+			}
+			if(add_flag==-1)
+				Ra=Ra-200;
+			if(add_flag==1)
+				Ra=Ra+200;
+			if(Ra>=2200)
+			{	
+			   Ra=1800;
+			   add_flag=-1;
+			}
+			if(Ra<=600)
+			{
+			   Ra=800;
+				add_flag=1;
+			}
+			accident_back=0;//故障解除	
+		}
+		if(accident_ahead==1)//遇到阻力，向前加速
+		{
+			for(back_time=0;back_time<100;back_time++)
+			{
+			if(Ra<=1600)
+			loop(-2400,0,Ra,(Ra/1000)+0.5,sn);
+		     }
+			accident_ahead=0;//故障解除
+		}
+		if(accident_conner!=0)
+		{
+			for(back_time=0;back_time<50;back_time++)
+				{
+					VelCrl(CAN2, 01,-10000);//倒车· 
+					VelCrl(CAN2, 02,10000); //倒车
+				}
+			if(accident_conner==1||accident_conner==4||accident_conner==5||accident_conner==8)
+			accident_turn(-1);
+			if(accident_conner==2||accident_conner==3||accident_conner==6||accident_conner==7)
+			accident_turn(1);
+			accident_conner=0;//故障解除
+		}
+		if(accident_frame==1)
+		{
+		while(accident_frame!=0)
+		{
+			back_time++;
+			if(back_time==50)
+			{
+				turn(0,action.angle,1);//原地单轮转到固定角度
+				back_time=0;
+			}
+			if(fabs(action.angle)<5)
+				accident_frame=0;
+		}
+		}
+		
+		
+		if(accident_frame==2)
+		{
+		while(accident_frame!=0)
+		{
+			back_time++;
+			if(back_time==50)
+			{
+				turn(-90,action.angle,1);//原地单轮转到固定角度
+				back_time=0;
+			}
+			if(fabs(action.angle+90)<5)
+				accident_frame=0;
+		}
+		}
+		
+		
+		if(accident_frame==4)
+		{
+		while(accident_frame!=0)
+		{
+			back_time++;
+			if(back_time==50)
+			{
+				turn(90,action.angle,1);//原地单轮转到固定角度
+				back_time=0;
+			}
+			if(fabs(action.angle-90)<5)
+				accident_frame=0;
+		}
+		}
+		
+		if(accident_frame==3)
+		{
+		while(accident_frame!=0)
+		{
+			back_time++;
+			if(back_time==50)
+			{
+				turn(180,action.angle,1);//原地单轮转到固定角度
+				back_time=0;
+			}
+			if(((action.angle>0)&&(180-action.angle)<10)||((action.angle<0)&&(action.angle+180)<10))
+				accident_frame=0;
+		}
+		}
+		
+	}
+	
+	if(accident_back==0)
+	   accident_clear=0;
+	
+	USART_OUT( UART4, (uint8_t*)"%d ", accident_back);
+	USART_OUT( UART4, (uint8_t*)"%d ", accident_conner);
+	USART_OUT( UART4, (uint8_t*)"%d ", accident_frame);
+	USART_OUT( UART4, (uint8_t*)"%d ", accident_clear);
+	return accident_clear;
+}
+
+
+
 int ADC_judge()
 {
 	float Analog_L=0;
@@ -719,7 +701,7 @@ int ADC_judge()
     //judge_R=(100000.0f/4096.0f)*Analog_R;
 //	if(Analog_R<200)
 //		start_flag=-1;
-	if(Analog_L<200)
+	if(Analog_L<500)
 		start_flag=1;
 	int Analog_l=0;
 		Analog_l=(int)Analog_L;
@@ -731,43 +713,6 @@ int ADC_judge()
 	return start_flag;
 	
 }
-
-int back()
- {
-		  if(fabs(action.x-last_x)<5&&fabs(action.y-last_y)<5)//被卡住
-		  {
-			  mark_flag=1;
-			  back_flag=1;
-		  }		  
-		  if(mark_flag==1)//acccident_flag
-		  {	    
-		      back_angel=action.angle;
-			  move_angel=action.angle+180;
-			  if(move_angel>180)
-				  move_angel=move_angel-360;
-			  mark_flag=0;
-			  //后退
-			  	VelCrl(CAN2, 01,10000); 
-	            VelCrl(CAN2, 02,10000); 
-		  }	  
-		  if(back_flag==1&&(fabs(action.angle-90)<1||fabs(action.angle-0)<1||fabs(action.angle+90)<1||action.angle+180<1||(180-action.angle)<1))//被墙壁垂直卡住accident_flag
-		  {
-			  
-			  back_time++;
-			  if(back_time==100)
-			  {
-				  if(fabs(action.angle-back_angel)<10)//说明没有转过去，卡在死角需要向另一个方向转 
-				  back_sn=-1;
-		      }
-			  turn(move_angel,action.angle,back_sn);
-			  if(fabs(action.angle-move_angel)<10)
-             	back_accident=0;  
-		  }
-		USART_OUT( UART4, (uint8_t*)"%d ", back_flag);
-	    USART_OUT( UART4, (uint8_t*)"%d ", back_angel);
-	    USART_OUT( UART4, (uint8_t*)"%d ", back_time);
-		  return back_accident;
-	  }
 float auto_PID(float P0)//输入值是当前圈数和是否走完一圈标号
 {
 	float amount_x=0;
@@ -818,49 +763,52 @@ float auto_PID(float P0)//输入值是当前圈数和是否走完一圈标号
 
 
 
-void square(float length)
+void square(float length,float square_corex,float square_corey,int square_sn,float Vsq,float duty)
 {
-	float Aa=0;
-	float Bb=0;
-	float Cc=0;
-	float Nn=0;
-	if((action.x<-(2000-duty))&&change==1)//到达转换该x=-2000的地方
-{//x=-1900
-	Aa=-1;
-	Bb=0;
-	Cc=-length;
-	Nn=1;
+
+	if(square_sn==1)//逆时针
+{
+if((action.y>(square_corey+0.5*length-duty))&&change==1)//到达转换该y=1/2 length的地方
+{//y=coreyy+0.5 length
+	Aa=0;
+	Bb=1;
+	Cc=-square_corey-(0.5)*length;
+	Nn=-2;
 	change=2;
 }	
 
-if((action.y>2000-duty)&&change==2)
-{//y=1900
-	Aa=0;
-	Bb=1;
-	Cc=-2*length;
-	Nn=2;
-    change=3;
-}
-if((action.x>-duty)&&change==3)
-{//x=2000
+if((action.x<square_corex-0.5*length+duty)&&change==2)
+{//x=corex-0.5*lenth
 	Aa=-1;
 	Bb=0;
-	Cc=length;
+	Cc=square_corey-0.5*length;
 	Nn=-1;
-    change=4;
+    change=3;
 }
-if((action.y<duty)&&change==4)
-{//y=0
+if((action.y<square_corey-0.5*length+duty)&&change==3)
+{//y=corey-0.5*lenth
 	Aa=0;
 	Bb=1;
-	Cc=00;
-	Nn=-2;
+	Cc=-square_corey+0.5*length;
+	Nn=2;
+    change=4;
+}
+if((action.x>square_corex+0.5*length-duty)&&change==4)
+{//x=corex+0.5lenth
+	Aa=-1;
+	Bb=0;
+	Cc=square_corex+0.5*length;
+	Nn=1;
     change=1;
 }
-
+}
 //执行
-line(Aa, Bb, Cc, Nn);
-USART_OUT( UART4, (uint8_t*)"%d ", change);
+if(Vsq>=1.5)
+	Vsq=1;
+if(Vsq<=1)
+	Vsq=1;
+line(Aa, Bb, Cc, Nn,Vsq);
+ USART_OUT( UART4, (uint8_t*)"%d ", change);
    }   
 
 
@@ -1041,7 +989,7 @@ float err(float distance,float ANGLE)//距离偏差转化辅助角度函数
 		}	
 		
 
-void run_to(float BETA,float Vm)//由当前角度转向BETA
+void run_to(float BETA,float Vm)//由当前角度pao向BETA
 {
 	float B_err=0;
 	float B_Uk=0;
@@ -1085,7 +1033,7 @@ void run_to(float BETA,float Vm)//由当前角度转向BETA
 	
 	
 	
-int line(float aa, float bb, float cc, float nn)
+int line(float aa, float bb, float cc, float nn,float VL)
 {
 	   float d=0;
 	   float aSetvalue=0;//距离转化角度函数返回的角度，存在一个地方
@@ -1098,7 +1046,7 @@ int line(float aa, float bb, float cc, float nn)
 	   target=a_gen(aa,bb,nn);//得出直线设定角
 	   aSetvalue=err(d,target);//根据距离转化出的角度
 	   //转向这个角度
-       run_to(aSetvalue,1);
+       run_to(aSetvalue,VL);
 	
 	   X=(int)action.x;
 	   Y=(int)action.y;
@@ -1107,13 +1055,6 @@ int line(float aa, float bb, float cc, float nn)
 	   ASetvalue=(int)aSetvalue;
 	   D=(int)d;
 	   
-	   USART_OUT( UART4, (uint8_t*)"%d ", X);
-	   USART_OUT( UART4, (uint8_t*)"%d ", Y);
-	   USART_OUT( UART4, (uint8_t*)"%d ", Angle);
-	   USART_OUT( UART4, (uint8_t*)"%d ", D);
-	   USART_OUT( UART4, (uint8_t*)"%d ", Target);
-	   USART_OUT( UART4, (uint8_t*)"%d ", ASetvalue);
-	   USART_OUT(UART4,(uint8_t*)"\r\n");
 }
 
 
@@ -1136,12 +1077,15 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 	float distance_err=0;//距离圆心的偏差
 	float DISTANCE=0;//距离圆心的距离
 	float tangent=0;
-	float fake_tan=0; int Tangent=0;
-	int Fake_tan=0;
+	float fake_tan=0;
 	DISTANCE=sqrt((action.x-corex)*(action.x-corex)+(action.y-corey)*(action.y-corey));
 	distance_err=DISTANCE-Radium;//偏离圆周的距离
 	Ierr=Ierr+distance_err;
 	I_value=Ierr*KI;
+	if(V_loop<0.8)
+		V_loop=0.8;//速度不小于1米每秒
+	if(V_loop>=1.0)
+		V_loop=1.0;
 	if(SN==1)//逆时针
 	{
 		if(action.y>corey)
@@ -1197,10 +1141,6 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 			}
 		}
 		run_to(fake_tan,V_loop);//由当前角度转向BETA
-		Tangent=(int)(tangent);
-		Fake_tan=(int)fake_tan;
-		 USART_OUT(UART4,(uint8_t*)"%d ",Tangent);
-		 USART_OUT(UART4,(uint8_t*)"%d ",Fake_tan);
 		
 	}
 	if(SN==-1)
@@ -1260,10 +1200,7 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 			}
 		}
 		run_to(fake_tan,V_loop);//由当前角度转向BETA
-		Tangent=(int)(tangent);
-		Fake_tan=(int)fake_tan;
-		USART_OUT(UART4,(uint8_t*)"%d ",Tangent);
-		USART_OUT(UART4,(uint8_t*)"%d ",Fake_tan);
+
 	}
 	
     
@@ -1279,106 +1216,109 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 
 
 
-void USART3_IRQHandler(void) //更新频率 200Hz 
-{  
- static uint8_t ch; 
 
- static union 
-{   
-	uint8_t data[24];   
-    float ActVal[6]; 
- } posture;  
-    static uint8_t count = 0;  
-    static uint8_t i = 0; 
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL(); 
- if(USART_GetITStatus(USART3,USART_IT_ORE_ER)==SET)  
-{  
-USART_ClearITPendingBit(USART3,USART_IT_ORE_ER); 
-USART_ReceiveData(USART3); 
-}  
-if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)  
-	{  
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);  
-		ch = USART_ReceiveData(USART3);  
-		switch (count) 
-			{   
-				case 0:  
-			if (ch == 0x0d)    
-				count++;  
-			else if(ch=='O')   
-				count=5;  
-			else    
-				count = 0; 
-			break; 
- 
-  case 1:   
- if (ch == 0x0a)  
-  {  
-  i = 0;  
-  count++; 
-  } 
-   else   
-	   count = 0;  
-   break; 
- 
-  case 2:   
-posture.data[i] = ch;   
-  i++; 
-   if (i >= 24)    
-{     
-i = 0;     
-count++;    
-}    
-break; 
- 
-  case 3:    if (ch == 0x0a)     
-	  count++;   
-  else     count = 0;    break; 
- 
-  case 4:    if (ch == 0x0d)    
-{   
- opsflag=1;
-	if(Car==4)
-	{
-		 action.angle =-posture.ActVal[0] ;//角度
+void USART3_IRQHandler(void)
+{
+		static uint8_t ch;
+		static uint8_t count=0;
+		static uint8_t i=0;
+	    extern uint8_t ppsTalkOk;
+		OS_CPU_SR  cpu_sr;
+		OS_ENTER_CRITICAL();/* Tell uC/OS-II that we are starting an ISR*/
+		OSIntNesting++;
+		OS_EXIT_CRITICAL();
+
+		if(USART_GetITStatus(USART3, USART_IT_RXNE)==SET)   
+		{
+			USART_ClearITPendingBit(USART3,USART_IT_RXNE);
+			ch=USART_ReceiveData(USART3);
+			switch(count)
+			{
+				case 0:
+					if(ch==0x0d||ch=='O')
+						count++;
+					else
+						count=0;
+				break;
+
+				case 1:
+					if(ch==0x0a)
+					{
+						i=0;
+						count++;
+					}
+					else if(ch=='K')
+					{
+						ppsTalkOk=1;
+						count=0;
+					}
+				else if(ch==0x0d);
+				else
+					count=0;
+				break;
+
+				case 2:
+					posture.data[i]=ch;
+					i++;
+					if(i>=GET_PPS_DATA_NUM)
+					{
+						i=0;
+						count++;
+					}
+				break;
+
+				case 3:
+					if(ch==0x0a)
+						count++;
+					else
+						count=0;
+				break;
+
+				case 4:
+					if(ch==0x0d)
+					{
+						SetOpsReady(1);
+						/*传入定位系统返回的值*/
+						SetAngle( posture.value[0]);
+						SetSpeedX(posture.value[1]);
+						SetSpeedY(posture.value[2]);
+						SetX(posture.value[3]);
+						SetY(posture.value[4]);
+						SetWZ(posture.value[5]);
+						
+                        
+						/*定义的全局结构体变量可以在这里赋值*/
+												action.angle=-posture.value[0];
+					    //					    action.x=posture.value[1];
+						//						action.y=posture.value[2];
+												action.y=-posture.value[3];
+												action.x=posture.value[4];//y
+						//						=posture.value[5];
+					}
+					count=0;
+				break;
+
+				default:
+					count=0;
+				break;		 
+			}
+		}
+		else
+		{
+			USART_ClearITPendingBit(USART3, USART_IT_PE);
+			USART_ClearITPendingBit(USART3, USART_IT_TXE);
+			USART_ClearITPendingBit(USART3, USART_IT_TC);
+			USART_ClearITPendingBit(USART3, USART_IT_ORE_RX);
+			USART_ClearITPendingBit(USART3, USART_IT_IDLE);
+			USART_ClearITPendingBit(USART3, USART_IT_LBD);
+			USART_ClearITPendingBit(USART3, USART_IT_CTS);
+			USART_ClearITPendingBit(USART3, USART_IT_ERR);
+			USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
+			USART_ClearITPendingBit(USART3, USART_IT_NE);
+			USART_ClearITPendingBit(USART3, USART_IT_FE);
+			USART_ReceiveData(USART3);
+		}
 		
-         posture.ActVal[1] = posture.ActVal[1];     
-         posture.ActVal[2] = posture.ActVal[2];    
-         action.y = -posture.ActVal[3];//x     
-         action.x = posture.ActVal[4];//y    
-	}
-	if(Car==1)
-    {
-      action.angle =posture.ActVal[0] ;//角度 
-      posture.ActVal[1] = posture.ActVal[1];     
-      posture.ActVal[2] = posture.ActVal[2];    
-      action.x = posture.ActVal[3];//x     
-      action.y = posture.ActVal[4];//y       
-    }
-	}  
-  count = 0;   
-  break;   
-  case 5:    
-  count = 0;  
-  if(ch=='K')    
-  isOKFlag=1;    
-  break;      
-  default:  
-   count = 0; 
-   break;   
-  }  
-  }  
-  else 
- { 
-  USART_ClearITPendingBit(USART3, USART_IT_RXNE);   
-  USART_ReceiveData(USART3); 
-  }
-OSIntExit();  
-  } 
+		OSIntExit();
 
-  
-  
-  
+}

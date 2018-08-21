@@ -109,7 +109,7 @@ void correct_direction()
 
  
 
-void turn(float setValue,float feedbackValue,float direc)//原地转
+void turn(float setValue,float feedbackValue,float direc)//原地单轮转到固定角度
 {
 //    float Ierr_1=0;
     float err_value_1;
@@ -132,15 +132,15 @@ void turn(float setValue,float feedbackValue,float direc)//原地转
 	Uk_1=-10000;
 	motor1_value_1=(int)Uk_1; 
 	motor2_value_1=(int)Uk_1;
-if(direc==1)//顺时针	
+if(direc==1)//逆时针	
 {
-	VelCrl(CAN2, 01,-motor1_value_1); 
-	VelCrl(CAN2, 02,-motor2_value_1); 
+	VelCrl(CAN2, 01,0); 
+	VelCrl(CAN2, 02,-motor1_value_1); 
 }
-if(direc==-1)
+if(direc==-1)//顺时针
 {
-	VelCrl(CAN2, 01,motor1_value_1); 
-	VelCrl(CAN2, 02,motor2_value_1); 
+	VelCrl(CAN2, 01,motor2_value_1); 
+	VelCrl(CAN2, 02,0);
 }	
 	//USART_OUT( UART4, (uint8_t*)"Amotor value: " );
 	//USART_OUT( UART4, (uint8_t*)"%d ",motor1_value_1 );
