@@ -15,7 +15,7 @@
 #include "stm32f4xx_adc.h"
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi
-#define pai 3.1415926
+#define pai 3.1415926f
 #define aa 1
 #define bb 0
 #define cc 0
@@ -26,7 +26,14 @@
 //#define Set_Clock 1
 //顺1逆2
 #define Speed 1
-
+#define COLLECT_BALL_ID (8)
+#define PUSH_BALL_ID (6)
+#define PUSH_POSITION (4500)
+#define PUSH_RESET_POSITION (5)
+#define GUN_YAW_ID (7)
+#define COUNT_PER_ROUND (4096.0f)
+#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
+#define YAW_REDUCTION_RATIO (4.0f)
 /*
 ===============================================================
 						信号量定义
@@ -74,15 +81,34 @@ void ConfigTask(void)
 	//定时器10ms pwm CAN通信 右1左2 轮子CAN2  引脚 串口3/4
 	TIM_Init(TIM2,999,83,0x00,0x00);
 	Adc_Init();
+	//用串口1发射枪电机发送转速
+	USART1_Init(921600);
+	//串口1接收定位系统返回的信息
 	USART3_Init(115200);
+	//连接主控板和电脑，使电脑读到定位系统给主控板发回的信息
 	UART4_Init(921600);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	//驱动器初始化
+	ElmoInit(CAN1);
 	ElmoInit(CAN2);
+	//轮子 左2右1 用CAN2
 	VelLoopCfg(CAN2,1,1000,0);
 	VelLoopCfg(CAN2,2,1000,0);
+	//棍子收球电机位置环初始化
+	VelLoopCfg(CAN1, 8, 50000, 50000);
+	//推球电机位置环初始化
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+	//使能右轮
 	MotorOn(CAN2,1);
+	//使能左轮
 	MotorOn(CAN2,2);
+	//使能棍子收球电机
+	MotorOn(CAN1,8);
+	//使能推球电机
+	MotorOn(CAN1,6);
+	//使能航向电机
+	MotorOn(CAN1,7);
 	delay_s(2);
 	/*一直等待定位系统初始化完成*/
 	WaitOpsPrepare();
@@ -119,7 +145,10 @@ void Square_Walk(void);
 void SET_openRound(float x,float y,float R,float clock,float speed);
 void SET_closeRound(float x,float y,float R,float clock,float speed);
 void Round_Cover(void);
+void SendUint8(void);
+void YawAngleCtr(float yawAngle);
 
+int timCnt=0,pushCnt;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
@@ -128,11 +157,24 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		timCnt++;
+		timCnt=timCnt%1000;
+		if(timCnt%200==0) 
+			pushCnt++;
+		pushCnt=pushCnt%100;
 		X=(int)(position.ppsX);
 		Y=(int)(position.ppsY);
 		angle=(int)(position.ppsAngle);
 		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",X,Y,angle);
-    Round_Cover();
+		SendUint8();
+		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
+		if(pushCnt%2)
+		  PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+		else
+		  PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+		YawAngleCtr(45);
+		//走遍大部分场地
+    //Round_Cover();
     //SET_closeRound(xx,yy,r,Set_Clock,Speed);
 		//Square_Walk();
 		//Strght_Walk (aa,bb,cc,FB);
@@ -572,3 +614,38 @@ void PID_Awy(float D_err)
   vel2=-(int)(10865*speed*(R+0.217)/R);
 }
 **/
+
+
+typedef union
+{
+    //这个32位整型数是给电机发送的速度（脉冲/s）
+    int32_t Int32 ;
+    //通过串口发送数据每次只能发8位
+    uint8_t Uint8[4];
+
+}num_t;
+
+//定义联合体
+num_t u_Num;
+void SendUint8(void)
+{
+    u_Num.Int32 = 1000;
+
+    //起始位
+    USART_SendData(USART1, 'A');
+    //通过串口1发数
+    USART_SendData(USART1, u_Num.Uint8[0]);
+    USART_SendData(USART1, u_Num.Uint8[1]);
+    USART_SendData(USART1, u_Num.Uint8[2]);
+    USART_SendData(USART1, u_Num.Uint8[3]);
+    //终止位
+    USART_SendData(USART1, 'J');
+}
+float YawTransform(float yawAngle)
+{
+	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
+}
+void YawAngleCtr(float yawAngle)
+{
+	PosCrl(CAN1, GUN_YAW_ID, ABSOLUTE_MODE, YawTransform(yawAngle));
+}
