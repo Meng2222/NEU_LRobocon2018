@@ -19,6 +19,25 @@
 */
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
+// 宏定义棍子收球电机ID
+#define COLLECT_BALL_ID (8)
+// 宏定义推球电机ID
+#define PUSH_BALL_ID (6)
+// 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
+#define PUSH_POSITION (4500)
+// 宏定义送弹机构收回时电机位置
+#define PUSH_RESET_POSITION (5)
+
+#define GUN_YAW_ID (7)
+// 电机旋转一周的脉冲数
+#define COUNT_PER_ROUND (4096.0f)
+// 宏定义每度对应脉冲数
+#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
+// 宏定义航向角减速比
+#define YAW_REDUCTION_RATIO (4.0f)
+// 发射航向角转换函数 由度转换为脉冲
+// yawAngle为角度，范围180到-180之间，初始位置为0度。
+int push_balltime=0;
 float last_error;
 float new_error;
 pos_t xya;
@@ -83,20 +102,42 @@ void App_Task()
 
 void ConfigTask(void)
 {
+	
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	TIM_Init(TIM2,1000-1,84-1,0x00,0x00);
+	USART1_Init(921600);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	ElmoInit(CAN2);
+	ElmoInit(CAN1);
+	
 	VelLoopCfg(CAN2,1,50000,50000);
 	VelLoopCfg(CAN2,2,50000,50000);
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
+	
 	Adc_Init();
+	
+	//棍子收球电机//
+	// 配置速度环
+    VelLoopCfg(CAN1, 8, 50000, 50000);
+    		
+	//推球电机//
+	
+	// 推球装置配置位置环
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+   	
+	//航向电机配置位置环//
+	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
+
+
+    MotorOn(CAN1,6);
+	MotorOn(CAN1,7);
+	MotorOn(CAN1,8);
 	USART3_Init(115200);
 	/*一直等待定位系统初始化完成*/
 	delay_ms(2000);
@@ -108,7 +149,9 @@ static int Right_cr1;
 static int Left_cr2;
 void WalkTask(void)
 {   void Anglepid();
+	void SendUint8();
     void go(float);
+	void YawAngleCtr(float);
 	CPU_INT08U os_err;
 	os_err = os_err;
     int x;
@@ -122,6 +165,23 @@ void WalkTask(void)
 	while (1)
 	{		
 		OSSemPend(PeriodSem,  0, &os_err);
+		push_balltime++;
+		// 控制电机的转速，脉冲//
+        VelCrl(CAN1,8,60*4096); 
+		//控制发射枪电机转速//
+	    SendUint8();
+		
+		//航向电机//	
+	    YawAngleCtr(90);
+		
+		if(push_balltime==300)
+		{ // 推球
+	      PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+		}else if(push_balltime==600)
+		{// 复位
+	    PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+		}
+		push_balltime%=600;
         Right_d=Get_Adc_Average(14,10);
 		Left_d=Get_Adc_Average(15,10);
 		if(leftorright)
@@ -150,7 +210,7 @@ void WalkTask(void)
 		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\r\n",x,y,angle);		
 		USART_OUT(UART4,(uint8_t*)"x_v=%d",xv);
         USART_OUT(UART4,(uint8_t*)"y_v=%d\r\n",yv);			
-		go(car_v);
+		//go(car_v);
 		
 	}
 }
@@ -483,3 +543,53 @@ void Round(float x,float y,float r,float v,float round)
 }
 
 
+typedef union
+{
+    //这个32位整型数是给电机发送的速度（脉冲/s）
+    int32_t Int32 ;
+    //通过串口发送数据每次只能发8位
+    uint8_t Uint8[4];
+
+}num_t;
+
+//定义联合体
+num_t u_Num;
+
+void SendUint8(void)
+{
+    u_Num.Int32 = 1000;
+
+    //起始位
+    USART_SendData(USART1, 'A');
+    //通过串口1发数
+    USART_SendData(USART1, u_Num.Uint8[0]);
+    USART_SendData(USART1, u_Num.Uint8[1]);
+    USART_SendData(USART1, u_Num.Uint8[2]);
+    USART_SendData(USART1, u_Num.Uint8[3]);
+    //终止位
+    USART_SendData(USART1, 'J');
+}
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+// 宏定义发射机构航向电机ID
+#define GUN_YAW_ID (7)
+// 电机旋转一周的脉冲数
+#define COUNT_PER_ROUND (4096.0f)
+// 宏定义每度对应脉冲数
+#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
+// 宏定义航向角减速比
+#define YAW_REDUCTION_RATIO (4.0f)
+// 发射航向角转换函数 由度转换为脉冲
+// yawAngle为角度，范围180到-180之间，初始位置为0度。
+
+// 将角度转换为脉冲
+float YawTransform(float yawAngle)
+{
+	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
+}
+
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+void YawAngleCtr(float yawAngle)
+{
+	PosCrl(CAN1, GUN_YAW_ID, RELATIVE_MODE, YawTransform(yawAngle));
+}
+// 同样要配置位置环
