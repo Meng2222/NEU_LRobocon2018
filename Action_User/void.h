@@ -5,7 +5,6 @@
 void straight(float v);
 void circular(float v,float r,char direction);
 int exchange(float v);
-
 void SetAngle(float val);
 void SetXpos(float val);
 void SetYpos(float val);

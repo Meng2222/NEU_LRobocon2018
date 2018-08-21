@@ -205,6 +205,6 @@ void Walkline( int setx,int sety, int r,int direction , float v )
 
 void Walkback(float v)
 {
-	VelCrl(CAN2,0x01,-exchange(v));
-	VelCrl(CAN2,0x01,exchange(v));
+	VelCrl(CAN2,0x01,-exchange(v)+2000);
+	VelCrl(CAN2,0x02,exchange(v)+2000);
 }
