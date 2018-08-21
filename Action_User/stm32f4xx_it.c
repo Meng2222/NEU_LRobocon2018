@@ -233,9 +233,7 @@ void USART2_IRQHandler(void)
 	}
 	OSIntExit();
 }
-extern pos_t xya;
-extern int iSOKFlag;
-uint8_t opsFlag = 0;
+
 //void USART3_IRQHandler(void) //更新频率200Hz
 //{
 //	static uint8_t ch;

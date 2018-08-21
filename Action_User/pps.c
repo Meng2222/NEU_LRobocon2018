@@ -100,11 +100,11 @@ void USART3_IRQHandler(void)
 
 						/*定义的全局结构体变量可以在这里赋值*/
 						xya.angle=posture.value[0]+90;
-						//						=posture.value[1];
-						//						=posture.value[2];
+						xya.x_v=-posture.value[1];
+						xya.y_v=-posture.value[2];
 						xya.x=-posture.value[3];
 						xya.y=-posture.value[4];
-						//						=posture.value[5];
+						xya.angle_v=posture.value[5];
 						if(xya.angle>180)
 							xya.angle-=360;
 					}
