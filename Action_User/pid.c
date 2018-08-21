@@ -198,8 +198,7 @@ void KownedLinePID(float a,float b,float c,char Dir)
 	{
 		errorDis = -errorDis;
 	}
-		Angle_PID(SPEED,setAngle + Dis_PID(errorDis));
-			
+		Angle_PID(SPEED,setAngle + Dis_PID(errorDis));			
 }
 //角度环PID
 void Angle_PID(float vel,float value)

@@ -20,6 +20,11 @@ typedef struct {
 	float vel;
 	float side;
 }Round_t;
+typedef struct{
+	float x;
+	float y;
+	float angle;
+}LastPos_t;
 #define SPEED 1200
 void KownedLinePID(float a,float b,float c,char dir);
 void WalkLine(float vel);
