@@ -171,7 +171,7 @@ void go(float v)
 		Round(0,2000,R,V,if_go);
 		q++;
 	}
-	if(q>=300)
+	if(q>=100)
 	{ if(Add_V>150)
      {		
 		if_back=0;
@@ -211,11 +211,11 @@ void go(float v)
 	    }
 		right_cril=0;
         left_cril=0;	
-		
+		q=0;
 	 }
 	 
     }
-    q%=300;
+    q%=100;
 	
 	if(if_back>last_back)
 	{  
