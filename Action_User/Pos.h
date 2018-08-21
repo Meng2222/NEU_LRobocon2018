@@ -2,6 +2,7 @@
 #define POS_H
 
 #include "math.h"
+#include "moveBase.h"
 
 //位置,成员为x,y,角度
 typedef struct
