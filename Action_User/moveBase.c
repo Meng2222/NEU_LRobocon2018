@@ -25,7 +25,7 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "math.h"
-
+#include "pps.h"
 /* Private typedef ------------------------------------------------------------------------------------*/
 /* Private define -------------------------------------------------------------------------------------*/
 /* Private macro --------------------------------------------------------------------------------------*/
@@ -119,8 +119,8 @@ void linePID(float x1,float y1,float x2,float y2,float v)
 {
 		
 		GetFunction(x1,y1,x2,y2);
-		x=GetXpos();
-		y=GetYpos();
+		x=GetX();
+		y=GetY();
 		if(flag)
 		{
 			if(k>0)
@@ -162,8 +162,8 @@ void linePID(float x1,float y1,float x2,float y2,float v)
 }	
 void CirclePID(float x0,float y0,float R,float v,int status)
 {
-	x=GetXpos();
-	y=GetYpos();
+	x=GetX();
+	y=GetY();
 	GetFunction(x,y,x0,y0);
 	d=(x-x0)*(x-x0)+(y-y0)*(y-y0);
 	//逆时针
@@ -186,3 +186,17 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 	Straight(v);
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
+// 发射航向角转换函数 由度转换为脉冲
+// yawAngle为角度，范围180到-180之间，初始位置为0度。
+// 将角度转换为脉冲
+float YawTransform(float yawAngle)
+{
+	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
+}
+
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+void YawAngleCtr(float yawAngle)
+{
+	PosCrl(CAN1, GUN_YAW_ID, ABSOLUTE_MODE, YawTransform(yawAngle));
+}
+// 同样要配置位置环

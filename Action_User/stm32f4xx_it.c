@@ -38,31 +38,6 @@
 #include "can.h"
 #include "gpio.h"
 #include "elmo.h"
-float angle=0,xpos=0,ypos=0;
-void SetAngle(float val)
-{
-	angle=val;
-}	
-void SetXpos(float val)
-{
-	xpos=val;
-}	
-void SetYpos(float val)
-{
-	ypos=val;
-}	
-float GetAngle(void)
-{
-	return angle;
-}	
-float GetXpos(void)
-{
-	return xpos;
-}	
-float GetYpos(void)
-{
-	return ypos;
-}	
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
@@ -160,8 +135,9 @@ void TIM2_IRQHandler(void)
 }
 int Get_Time_Flag(void)
 {
-	if(Cnt>1000)
-	{	Cnt=0;
+	if(Cnt>=1000)
+	{
+		Cnt=0;
 		return 1;
 	}
 	else
@@ -370,104 +346,6 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	OSIntExit();
 }
-int isOKFlag,beginFlag=0;
-void USART3_IRQHandler(void) //更新频率 200Hz
-{
-	static uint8_t ch;
-	static union {
-		uint8_t data[24];
-		float ActVal[6];
-	} posture;
-	static uint8_t count = 0;
-	static uint8_t i = 0;
-	if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)
-	{
-		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
-		USART_ReceiveData(USART3);
-	}
-	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-		ch = USART_ReceiveData(USART3);
-		switch (count)
-		{
-			case 0:
-				if (ch == 0x0d)
-					count++;
-				else if(ch=='O')
-					count=5;
-				else
-					count = 0;
-				break;
-			case 1:
-				if (ch == 0x0a)
-				{
-					i = 0;
-					count++;
-				}
-				else
-					count = 0;
-				break;
-			case 2:
-				posture.data[i] = ch;
-				i++;
-				if (i >= 24)
-				{
-					i = 0;
-					count++;
-				}
-				break;
-			case 3:
-				if (ch == 0x0a)
-					count++;
-				else
-					count = 0;
-				break;
-			case 4:
-				if (ch == 0x0d)
-				{
-					#if CAR_NUM==1
-					beginFlag=1;
-					angle =-posture.ActVal[0] ;//角度
-					posture.ActVal[1] = posture.ActVal[1];
-					posture.ActVal[2] = posture.ActVal[2];
-					xpos = -posture.ActVal[4];//x
-					ypos = posture.ActVal[3];//y
-					posture.ActVal[5] = posture.ActVal[5];
-					SetXpos(xpos);
-					SetYpos(ypos);
-					SetAngle(angle);
-					#elif CAR_NUM==4
-					angle =posture.ActVal[0] ;//角度
-					posture.ActVal[1] = posture.ActVal[1];
-					posture.ActVal[2] = posture.ActVal[2];
-					xpos = posture.ActVal[3];//x
-					ypos = posture.ActVal[4];//y
-					posture.ActVal[5] = posture.ActVal[5];
-					SetXpos(xpos);
-					SetYpos(ypos);
-					SetAngle(angle);
-					#endif
-				}
-				count = 0;
-				break;
-			case 5:
-				count = 0;
-				if(ch=='K')
-					isOKFlag=1;
-				break;
-			default:
-				count = 0;
-			break;
-		}
-	}
-	else
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-		USART_ReceiveData(USART3);
-	}
-}
-
 void UART5_IRQHandler(void)
 {
 
