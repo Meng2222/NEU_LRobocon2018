@@ -52,7 +52,7 @@ void App_Task()
    初始化任务
    ===============================================================
    */
-
+float chenhao = 0;
 void  Walk_Straight(float speed1,float speed2)
 {
 	VelCrl(CAN2,1,speed1*10.87f);
@@ -77,10 +77,13 @@ float Angle_Pid(float err)
 	Dterm=Kd*(err-errlast);
 	errlast=err;
 	Uk=Kp*err+Iterm+Dterm;
-	if(Uk>=1500)
-		Uk=1500;
-	else if(Uk<=-1500)
-		Uk=-1500;
+//	if(Uk>=6000)
+//		Uk=6000;
+//	else if(Uk<=-6000)
+//		Uk=-6000;
+//	chenhao = Uk;
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)chenhao);
+//		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetAngle());
 	return Uk;
 }
 float Distance_Pid(float err)
@@ -88,6 +91,10 @@ float Distance_Pid(float err)
 	static float Iterm=0;
 	float Dterm=0,errlast=0,Uk=0;
 	Iterm +=Distance_Ki*err;
+	if(Iterm>=10)
+		Iterm = 10;
+	else if(Iterm<=-10)
+		Iterm = -10;
 	Dterm=Distance_Kd*(err-errlast);
 	errlast=err;
 	Uk=Distance_Kp*err+Iterm+Dterm;
@@ -210,8 +217,7 @@ float Angle_change(float a1,float a2,int c)
 	return a3;		
 }
 
-void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)
-	
+void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)	
 {
 	static float d=0,err=0,output=0,ang1=0,ang2=0,angle1=0,angle2=0,speed_f=0,speed_s=0;
 	d=sqrtf((GetX()-x0)*(GetX()-x0)+(GetY()-y0)*(GetY()-y0));
@@ -222,8 +228,8 @@ void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)
 		err=90;
 	ang2=360/(2*PI*radius/speed*100);
 	angle1=atan2f(y0-GetY(),x0-GetX())*180/PI;
-	speed_f=(radius+WHEEL_TREAD/2)/radius*(speed*4096/(120*PI));
-	speed_s=(radius-WHEEL_TREAD/2)/radius*(speed*4096/(120*PI));
+	speed_f=(speed*4096/(120*PI));
+	speed_s=(speed*4096/(120*PI));
 	switch(Direction)
 	{
 		case 0:
@@ -231,11 +237,13 @@ void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)
 			ang1=Angle_change(angle2,90,0);
 			if(d>radius)
 			{
+				chenhao = -err+ang2+(ang1-GetAngle());
 				output=Angle_Pid(-err+ang2+(ang1-GetAngle()));
 			  Walk_Virer(speed_f+output,speed_s-output);
 			}
 			else if(d<radius)
 			{
+				chenhao = -err+ang2+(ang1-GetAngle());
 				output=Angle_Pid(-err+ang2+(ang1-GetAngle()));
 				Walk_Virer(speed_f+output,speed_s-output);
 			}
@@ -255,13 +263,16 @@ void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)
 			}
 			break;
 	}
-//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle1);
-//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle2);
-//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)ang1);
-//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)err);
-//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)output);
-//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetX());
-//	USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetY());
+	USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle1);
+	//USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle2);
+	USART_OUT(UART4,(uint8_t*) "%d\t",(int)ang1);
+	USART_OUT(UART4,(uint8_t*) "%d\t",(int)err);
+		USART_OUT(UART4,(uint8_t*) "%d\t",(int)ang2);
+	
+	USART_OUT(UART4,(uint8_t*) "%d\t",(int)output);
+	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
+	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetX());
+	USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetY());
 }	
 void ConfigTask(void)
 {
@@ -271,6 +282,7 @@ void ConfigTask(void)
 	USART3_Init(115200);
 	UART4_Init(921600);
 	TIM_Init(TIM2,999,83,1,0);
+	Adc_Init();
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	ElmoInit(CAN2);
@@ -279,11 +291,7 @@ void ConfigTask(void)
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
 	delay_s(2);
-	#if CARNUM == 1
-	driveGyro();
-	#elif CARNUM == 4
-	delay_s(12);
-	#endif
+
 
 	/*一直等待定位系统初始化完成*/
 	WaitOpsPrepare();
@@ -292,9 +300,9 @@ void ConfigTask(void)
 
 void WalkTask(void)
 {
-//	int cnt=0,LV=0,Arm=0,v=1000;
-	int dir=0,counter=0,flg=0;
-	float pid_out,dis_R,dis_L;
+	int cnt=0,LV=0,Arm=0;
+	int dir=0,counter=0,counter_v=0,flg=0,flag=0,jg_flg=0,count=0,tr_cnt=0,dir_v=0;
+	float pid_out,dis_R,dis_L,X_last=10000,Y_last=10000;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
@@ -302,53 +310,145 @@ void WalkTask(void)
 	{
 		
 		OSSemPend(PeriodSem, 0, &os_err);
-		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
-		USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetX());
-		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetY());
+		dis_R=(4400.f/4096.f)*(float)Get_Adc_Average(14,10);
+		dis_L=(4400.f/4096.f)*(float)Get_Adc_Average(15,10);
+		count++;
+		if(count>=100&&dir!=0)
+		{
+			count=0;
+			if(fabs(X_last-GetX())<=100&&fabs(Y_last-GetY())<=100)
+			{
+				dir_v=dir;
+				dir=3;
+			}
+			
+			X_last=GetX();
+			Y_last=GetY();
+			
+		}
+		//USART_OUT(UART4,(uint8_t*) "%d\t",(int)dis_R);
+		//USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)dis_L);
+		if(jg_flg==0)
+		{
+			
+			if(dis_R<=50)
+			{
+				dir=1;
+				jg_flg=1;
+			}
+			else if(dis_L<=50)
+			{
+				dir=2;
+				jg_flg=1;
+			}
+		}
 		
-		dis_R=(4400.f*4096.f)/(float)Get_Adc_Average(14,10);
-		dis_L=(4400.f*4096.f)/(float)Get_Adc_Average(15,10);
-		if(dis_R<=20)
-			dir=1;
-		else if(dis_L<=20)
-			dir=2;
 		switch(dir)
 		{
 			case 1:
-				Virer_PID_Out(0,2000,2000-counter*200,1000,0);
-				if(GetAngle()<=-85&&GetAngle()>=-95)
+				Virer_PID_Out(0,2200,2000-counter*400,v,0);
+				if(GetAngle()<=-150&&GetAngle()>=-170)
 				{
-					if(counter>=8)
-						flg=1;
-					else if(counter==0)
-						flg=0;
-					if(flg==0)
-						counter++;
-					else if(flg==1)
-						counter--;		
-				}	
+					flag=1;
+				}
+				if(GetAngle()<=-80&&GetAngle()>=-110&&GetX()>=-50&&GetX()<=50&&flag==1)
+						{
+							flag=0;
+							if(counter>=3)
+								flg=1;
+							else if(counter==0)
+								flg=0;
+							if(flg==0)
+								counter++;
+							else if(flg==1)
+								counter--;		
+						}	
 				break;
 			case 2:
-				Virer_PID_Out(0,2000,2000-counter*200,1000,1);
-				if(GetAngle()<=95&&GetAngle()>=85)
+				Virer_PID_Out(0,2200,2000-counter*400,v,1);
+				if(GetAngle()>=150&&GetAngle()<=170)
 				{
-					if(counter>=8)
-						flg=1;
-					else if(counter==0)
-						flg=0;
-					if(flg==0)
-						counter++;
-					else if(flg==1)
-						counter--;	
-				}	
+					flag=1;
+				}
+				if(GetAngle()>=80&&GetAngle()<=110&&GetX()>=-50&&GetX()<=50&&flag==1)
+						{
+							flag=0;
+							if(counter>=3)
+								flg=1;
+							else if(counter==0)
+								flg=0;
+							if(flg==0)
+								counter++;
+							else if(flg==1)
+								counter--;		
+						}	
 				break;	
+			case 3:
+				tr_cnt++;
+//				counter_v=counter;
+				if(tr_cnt<=100)
+				{
+					Walk_Straight(-1000,-1000);
+				}
+				else
+				{
+					tr_cnt=0;
+					if(counter==3)
+						counter--;
+					else
+						counter++;
+					dir=dir_v;
+//					dir=4;
+				}
+				break;
+//			case 4:
+//				counter=2;
+//				tr_cnt++;
+//				if(tr_cnt<=150)
+//				{
+//					if(dir_v==1)
+//						Virer_PID_Out(0,2200,2000-counter*400,v,0);
+//					else if(dir_v==2)
+//						Virer_PID_Out(0,2200,2000-counter*400,v,1);
+//				}
+//				else
+//				{
+//					tr_cnt=0;
+//					dir=dir_v;
+//					counter=counter_v;
+//				}
+//				break;
+//				
+				
 		}
+
+
+
+
+
+//		Virer_PID_Out(0,2200,2000-counter*400,v,0);
+//		if(GetAngle()<=-150&&GetAngle()>=-170)
+//		{
+//			flag=1;
+//		}
+//		if(GetAngle()<=-80&&GetAngle()>=-110&&GetX()>=-50&&GetX()<=50&&flag==1)
+//				{
+//					flag=0;
+//					if(counter>=3)
+//						flg=1;
+//					else if(counter==0)
+//						flg=0;
+//					if(flg==0)
+//						counter++;
+//					else if(flg==1)
+//						counter--;		
+//				}	
 		 
 			
 //		switch(cnt)
 //		{
 //			case 0:
-//				if(GetX()>-1500)
+//				if(GetX()>-1200)
 //				{
 //					pid_out=PID_OUT(GetX(),GetY(),0,1,0,6);
 //					Walk_Straight(v-pid_out,v+pid_out);
@@ -358,7 +458,7 @@ void WalkTask(void)
 //					cnt++;
 //				}
 //			case 1:
-//				if(GetY()<(3750-LV*300))
+//				if(GetY()<(3450-LV*300))
 //				{
 //					pid_out=PID_OUT(GetX(),GetY(),1,0,1750-Arm*300,7);
 //					Walk_Straight(v-pid_out,v+pid_out);
@@ -369,7 +469,7 @@ void WalkTask(void)
 //				}
 //				break;
 //			case 2:
-//				if(GetX()<(1500-LV*300))
+//				if(GetX()<(1200-LV*300))
 //				{
 //					pid_out=PID_OUT(GetX(),GetY(),0,1,-(4000-Arm*300),5);
 //					Walk_Straight(v-pid_out,v+pid_out);
@@ -380,7 +480,7 @@ void WalkTask(void)
 //				}
 //				break;
 //			case 3:
-//				if(GetY()>(1000+LV*300))
+//				if(GetY()>(1300+LV*300))
 //				{
 //					pid_out=PID_OUT(GetX(),GetY(),1,0,-(1750-Arm*300),8);
 //					Walk_Straight(v-pid_out,v+pid_out);
@@ -391,7 +491,7 @@ void WalkTask(void)
 //				}
 //				break;	
 //			case 4:
-//				if(GetX()>-(1000-LV*300))
+//				if(GetX()>-(700-LV*300))
 //				{
 //					pid_out=PID_OUT(GetX(),GetY(),0,1,-(750+Arm*300),6);
 //					Walk_Straight(v-pid_out,v+pid_out);
