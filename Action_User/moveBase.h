@@ -58,7 +58,23 @@
 #define Pi 3.1415926
 
 
+//后轮电机的CAN ID号
+#define BACK_WHEEL_ID             5
+//前轮转向电机的CAN ID号
+#define TURN_AROUND_WHEEL_ID      6
 
+//新三轮底盘  前轮转向电机到后轮两轮轴中心间距
+#define TURN_AROUND_WHEEL_TO_BACK_WHEEL                               (286.f)
+
+//定位系统到后轮两轮轴中心间距
+#define OPS_TO_BACK_WHEEL                                             (116.5f)
+//前轮后轮都是3508转一周脉冲都为8192
+#define NEW_CAR_COUNTS_PER_ROUND                                      (8192)
+//转向轮子直径
+#define TURN_AROUND_WHEEL_DIAMETER                                    (50.8f)
+//3508电机减速比，相当于给出去的脉冲要多乘上减速比
+#define REDUCTION_RATIO                                               (19.2f)
+//
 /**
   * @}
   */
