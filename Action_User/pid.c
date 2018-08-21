@@ -13,7 +13,7 @@
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
 #include "pid.h"
-
+#include "pps.h"
 float a,b,r,v;
 int dir,speed;
 
@@ -65,18 +65,18 @@ void straightPID(float r,float speed,int dir)
 float Angle_pointcircle;
 float Angle_qie;
 float Angle_w;
-void Compute1(float a,float b,float r,float v,int dir)
+void Compute1(float a,float b,float r,float v,int dir)//角度PID
 {	
 	
-	Angle_pointcircle=atan2(b-Getposy(),a-Getposx())*180/3.1415;
+	Angle_pointcircle=atan2(b-GetY(),a-GetX())*180/3.1415;//点到圆心角度
 	
 	if(dir>0)
 	{
-		Angle_qie=Angle_pointcircle+90;
+		Angle_qie=Angle_pointcircle+90;//顺时针切线角度
 	}
 	if(dir<0)
 	{
-		Angle_qie=Angle_pointcircle-90;
+		Angle_qie=Angle_pointcircle-90;//逆时针切线角度
 	}
 	
 	if(Angle_qie>=180.0f)
@@ -89,9 +89,9 @@ void Compute1(float a,float b,float r,float v,int dir)
 		Angle_qie+=360.0f;
 	}
 		
-	Angle_w=3.6*r*2*3.1415/v;
+	Angle_w=3.6*r*2*3.1415/v;//每10ms角度应偏转值
 		
-	Input1=GetAngle()+90.0f;
+	Input1=GetAngle()+90.0f;//定位系统转换到直角坐标系下的当前角度
 	
 	if(Input1>=180.0f)
 	{
@@ -132,17 +132,17 @@ void SetTunings1(double Kp1,double Ki1,double Kd1)
 }
 
 float distance;
-void Compute2(float a,float b,float r,float v,int dir)
+void Compute2(float a,float b,float r,float v,int dir)//位置PID
 {	
 	
-	distance= sqrt(pow((Getposx()-a),2)+pow((Getposy()-b),2));
+	distance= sqrt(pow((GetX()-a),2)+pow((GetY()-b),2));//点到圆心距离
 	error2=dir*(distance-r);
 	errSum2+=error2;
 	double dErr2=error2-lastErr2;
-	if(ki2*errSum2>10)
-		Output2=kp2*error2+10+kd2*dErr2;
-	else if(ki2*errSum2<-10)
-		Output2=kp2*error2-10+kd2*dErr2;
+	if(ki2*errSum2>15)
+		Output2=kp2*error2+15+kd2*dErr2;
+	else if(ki2*errSum2<-15)
+		Output2=kp2*error2-15+kd2*dErr2;
 	else
 		Output2=kp2*error2+ki2*errSum2+kd2*dErr2;
 	lastErr2=error2;

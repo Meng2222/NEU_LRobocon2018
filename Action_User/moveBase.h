@@ -42,7 +42,7 @@
 //#define 
 
 //电机旋转一周的脉冲数
-#define COUNTS_PER_ROUND (4096)
+#define COUNTS_PER_ROUND (4096.0f)
 //轮子直径（单位：mm）
 #define WHEEL_DIAMETER (120.8f)
 //调试小车车长（单位：mm）

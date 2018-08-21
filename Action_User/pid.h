@@ -13,9 +13,8 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "moveBase.h"
-
-#define SPEED 800
-
+#define SPEED 1200
+#define R 2400
 void Compute1(float a,float b,float r,float v,int dir);
 void Compute2(float a,float b,float r,float v,int dir);
 void straightPID(float r,float speed,int dir);
