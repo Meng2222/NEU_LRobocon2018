@@ -1,5 +1,15 @@
 #include "PID.h"
 
+typedef struct
+{
+    float err;
+    float iSum;
+    float lasterr;
+    float dDiff;
+}PIDCtrlTemp;
+
+static PIDCtrlTemp Temp1 = {0, 0, 0, 0};
+static PIDCtrlTemp Temp2 = {0, 0, 0, 0};
 
 /**
  * [PIDCtrl 用来进行PID控制]
@@ -11,7 +21,7 @@ float PIDCtrl1(const PIDCtrlStructure PIDStructure)
     float UOut = 0;
     Temp1.err = PIDStructure.ExOut - PIDStructure.GetVar();
     /****************************************************
-    这是为了修复小车螺旋升天而加入的代码
+    这是为了修复小车螺旋升天而加入的代码QAQ
     ****************************************************/
     if(Temp1.err > 180)
     {
@@ -42,7 +52,7 @@ float PIDCtrl2(const PIDCtrlStructure PIDStructure)
     float UOut = 0;
     Temp2.err = PIDStructure.ExOut - PIDStructure.GetVar();
     /****************************************************
-    这是为了修复小车螺旋升天而加入的代码
+    这是为了修复小车螺旋升天而加入的代码QAQ
     ****************************************************/
     if(Temp2.err > 180)
     {

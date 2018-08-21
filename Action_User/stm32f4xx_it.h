@@ -34,17 +34,10 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "environmental.h"
-#include "Pos.h"
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-
-#ifdef CAR1
-static _Bool isOKFlag = 0;
-#endif
-
 
 void NMI_Handler(void);
 void HardFault_Handler(void);
@@ -53,7 +46,6 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
-_Bool GetOkFlag(void);
 
 #ifdef __cplusplus
 }

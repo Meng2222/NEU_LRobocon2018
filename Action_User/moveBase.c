@@ -53,11 +53,11 @@ void WheelSpeed(float speed, uint8_t ElmoNum)
     frequency = (int32_t)((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER));
     if(ElmoNum == 1)
     {
-        VelCrl(CAN2, ElmoNum, frequency);
+        //VelCrl(CAN2, ElmoNum, frequency);
     }
     else if(ElmoNum == 2)
     {
-        VelCrl(CAN2, ElmoNum, -1 * frequency);
+        //VelCrl(CAN2, ElmoNum, -1 * frequency);
     }
 }
 

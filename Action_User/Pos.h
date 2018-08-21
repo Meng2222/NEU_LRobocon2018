@@ -2,7 +2,6 @@
 #define POS_H
 
 #include "math.h"
-#include "environmental.h"
 
 //位置,成员为x,y,角度
 typedef struct
@@ -11,6 +10,14 @@ typedef struct
     float posY;
     float angle;
 }Pos;
+
+//速度,成员为x,y角速度
+typedef struct
+{
+    float speedX;
+    float speedY;
+    float angle;
+}speed;
 
 //位置,用直角坐标和极坐标两种表示方法
 typedef struct
@@ -50,6 +57,11 @@ typedef enum
 float GetX(void);
 float GetY(void);
 float GetA(void);
+
+//获取当前位置
+float GetSpeedX(void);
+float GetSpeedY(void);
+float GetSpeedA(void);
 
 //返回点距离特定直线的距离
 float Point2Line(linewithdir thisline, const point thispoint);

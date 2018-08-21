@@ -1,45 +1,37 @@
 #include "Pos.h"
 
-Pos Pos_t;
+Pos PosGet_t;
+speed speed_t;
 
-#ifdef CAR1
 float GetX(void)
 {
-    return Pos_t.posY;
+    return PosGet_t.posX;
 }
 
 float GetY(void)
 {
-    return -1 * Pos_t.posX;
-}
-float GetA(void)
-{
-    return -1 * Pos_t.angle;
-//    if(Pos_t.angle >= -90)
-//    {
-//        return Pos_t.angle - 90;
-//    }
-//    else
-//    {
-//        return Pos_t.angle + 270;
-//    }
-}
-#endif
-#ifdef CAR4
-float GetX(void)
-{
-    return Pos_t.posX;
+    return PosGet_t.posY;
 }
 
-float GetY(void)
-{
-    return Pos_t.posY;
-}
 float GetA(void)
 {
-    return Pos_t.angle;
+    return PosGet_t.angle;
 }
-#endif
+
+float GetSpeedX(void)
+{
+    return speed_t.speedX;
+}
+
+float GetSpeedY(void)
+{
+    return speed_t.speedY;
+}
+
+float GetSpeedA(void)
+{
+    return speed_t.angle;
+}
 
 float Point2Line(linewithdir thisline, point thispoint)
 {

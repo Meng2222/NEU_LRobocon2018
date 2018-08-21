@@ -22,7 +22,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stdint.h"
 #include "elmo.h"
-#include "environmental.h"
 #include "usart.h"
 
 
