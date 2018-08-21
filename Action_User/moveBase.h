@@ -52,12 +52,12 @@
 //轮子宽度（单位：mm）
 #define WHEEL_WIDTH (40.0f)
 //两个轮子中心距离（单位：mm）
-<<<<<<< HEAD
+
 #define WHEEL_TREAD (434.0f)
 #define Pi (3.1415926)
 
-=======
-#define WHEEL_TREAD (355.4f)
+
+//#define WHEEL_TREAD2 (355.4f)
 
 //后轮电机的CAN ID号
 #define BACK_WHEEL_ID             5
@@ -76,7 +76,7 @@
 //3508电机减速比，相当于给出去的脉冲要多乘上减速比
 #define REDUCTION_RATIO                                               (19.2f)
 //
->>>>>>> master
+
 /**
   * @}
   */
