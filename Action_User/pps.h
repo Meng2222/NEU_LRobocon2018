@@ -1,13 +1,12 @@
 #ifndef __PPS_H
 #define __PPS_H
 #include "stdint.h"
-
+#include "PID.h"
 
 /*接受几个来自定位系统的float数据*/
 #define GET_PPS_VALUE_NUM      6
 /*接受几个来自定位系统的uint8_t数据*/ /* 6 * 4byte = 24*/
 #define GET_PPS_DATA_NUM       24
-
 
 typedef union{
 	uint8_t data[GET_PPS_DATA_NUM];
@@ -29,7 +28,6 @@ typedef struct{
 		/*定位系统的z轴角速度*/
 		float ppsWZ ;
 }Pos_t;
-
 
 void TalkOpsToGetReady(void);
 /*初始化并且让程序等待定位系统发数*/
@@ -57,6 +55,11 @@ float GetSpeedX(void);
 float GetSpeedY(void);
 /*返回定位系统的Z轴角速度值*/
 float GetWZ(void);
+float ABS(float thing);
+float Compare(float a1,float b1);
+float constrain(float amt, float high, float low);
+void UART4_OUT(PID_Value *pid_out);
+
 
 
 #endif 

@@ -29,7 +29,7 @@ static PosSend_t posture={0};
 /*定义定位系统返回值结构体*/
 static Pos_t ppsReturn={0.f};
 
-
+//四号车定位系统串口接受中断函数，更新频率200Hz
 void USART3_IRQHandler(void)
 {
 		static uint8_t ch;
@@ -91,7 +91,7 @@ void USART3_IRQHandler(void)
 					{
 						SetOpsReady(1);
 						/*传入定位系统返回的值*/
-						SetAngle( posture.value[0]);
+						SetAngle(posture.value[0]);
 						SetSpeedX(posture.value[1]);
 						SetSpeedY(posture.value[2]);
 						SetX(posture.value[3]);
@@ -108,7 +108,6 @@ void USART3_IRQHandler(void)
 					}
 					count=0;
 				break;
-
 				default:
 					count=0;
 				break;		 
@@ -158,7 +157,7 @@ void TalkOpsToGetReady(void)
 void WaitOpsPrepare(void)
 {
 	  /*告诉定位系统准备*/
-	  TalkOpsToGetReady();
+		TalkOpsToGetReady();
 		/*等待定位系统准备完成*/
 		while(!GetOpsReady()){};
 }
@@ -203,7 +202,7 @@ void SetWZ(float setValue)
 	ppsReturn.ppsWZ = setValue;
 }
 
-
+extern float *error;
 /*返回定位系统的角度*/
 float GetAngle(void)
 {
@@ -212,12 +211,12 @@ float GetAngle(void)
 /*返回定位系统的X值*/
 float GetX(void)
 {
-	return ppsReturn.ppsX;
+	return (0-ppsReturn.ppsX+*error);
 }
 /*返回定位系统的Y值*/
 float GetY(void)
 {
-	return ppsReturn.ppsY;
+	return (0-ppsReturn.ppsY);
 }
 /*返回定位系统的X轴的速度*/
 float GetSpeedX(void)
@@ -227,12 +226,12 @@ float GetSpeedX(void)
 /*返回定位系统的角度*/
 float GetSpeedY(void)
 {
-	return ppsReturn.ppsSpeedY;
+	return (0-ppsReturn.ppsSpeedY);
 }
 /*返回定位系统的Z轴角速度值*/
 float GetWZ(void)
 {
-	return ppsReturn.ppsWZ;
+	return (0-ppsReturn.ppsWZ);
 }
 
 
@@ -324,3 +323,27 @@ void CorrectAngle(float value)
 
 
 /************************ (C) COPYRIGHT 2016 ACTION *****END OF FILE****/
+float ABS(float thing)
+{
+	if(thing > 0) return thing;
+	else return (0-thing);
+}
+float Compare(float a1,float b1)
+{
+	if(a1>b1) return 1.0f;
+	else return -1.0f;
+}
+float constrain(float amt, float high, float low) 
+{
+    return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
+
+void UART4_OUT(PID_Value *pid_out)
+{
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(15,10));
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(14,10));
+	USART_SendData(UART4,'\r');
+	USART_SendData(UART4,'\n');
+}
