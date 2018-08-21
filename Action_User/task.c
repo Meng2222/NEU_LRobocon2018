@@ -79,77 +79,13 @@ void WalkTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
-	int r=900,adc_num1,adc_num2,errtime=0,i=0;
-	int AdcFlag=0;
-	float LastAngle;
-	int Lastx,Lasty;
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		adc_num1=Get_Adc_Average(15,30);	///左轮
-		adc_num2=Get_Adc_Average(14,30);  ///右轮
-		if(adc_num1>20&&adc_num1<600&&AdcFlag==0)
-		{
-			AdcFlag=1;
-		}
-		else if(adc_num2>40&&adc_num2<600&&AdcFlag==0)
-		{
-			AdcFlag=2;
-		}
-		if(GetAngle()>0&&LastAngle<0)
-		{
-			if(r>=700)
-			{
-				r-=100;
-			}
-			if(r<700)
-			{
-				r+=100;
-			}
-		}
-		LastAngle=GetAngle();
-		if(AdcFlag==1)
-		{
-			Walkline(0,0,r,2,0.7);   ////setx  sety  r  方向  速度
-		}
-		else if(AdcFlag==2)
-		{
-			Walkline(0,0,r,1,0.7);   ////setx  sety  r  方向  速度
-		}
-		if((Lastx==(int)GetX())&&(Lasty==(int)GetY())&&AdcFlag!=0)
-		{
-			errtime++;
-		}
-		else if(Lastx!=(int)GetX||Lasty!=(int)GetY)
-		{
-			errtime=0;
-		}
-			if(errtime>100)   
-			{
-				for(i=0;i<2000;i++)
-				{
-					Walkback(0.7);
-					i++;
-				}
-				errtime=0;
-				if(r>700)
-				{
-					r-=200;
-				}
-				else if(r<=700)
-				{
-					r+=200;
-				}
-			}	
-//		VelCrl(CAN2,0x01,2000);
-//		VelCrl(CAN2,0x02,-2000);
-		
-		Lastx=(int)GetX();
-		Lasty=(int)GetY();
-//////////////////发数测试////////////////////////////
-	USART_OUT(UART4,(uint8_t*)"%d\n",errtime);	
-//			USART_OUT(UART4,(uint8_t*)"%d	%d	%d\n",adc_num1,adc_num2,AdcFlag);		
-// 	USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),r);
+		Walkline(0,0,Radius(),AdcFlag(),0.7);   ////setx  sety  r  方向  速度
+		errdeal();
+//////////////////发数测试////////////////////////////		
+// 	USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius());
            //////////////////////////test/////////////////////////////
 	}
 }

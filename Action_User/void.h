@@ -23,11 +23,13 @@ struct PID
 	float d;
 };
 void Walkback(float v);
-
+int AdcFlag(void);
+int Radius(void);
 //³µ1×¨ÓÃ
 int isSendOK(void);
 void SetOKFlagZero(void);
 void driveGyro(void);
+void errdeal(void);
 #define Left '1'
 #define Right '2'
 #endif

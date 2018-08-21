@@ -73,14 +73,12 @@ float DirectionPID( float distance,float setdistance )
 	}
 	return u;
 }
-////////////////限制转角///////////////
-
-
-int vright=0,vleft=0;
-float AngPID=0,DirPID=0;
+//////////////绕圈///////////////
 void Walkline( int setx,int sety, int r,int direction , float v )
 {
-	float SetAngle=0,distance=0,k=0,Ang=0,diff=0,anglek=0,distanceerr=0;
+	int vright=0,vleft=0;
+	float AngPID=0,DirPID=0;
+	float SetAngle=0,distance=0,k=0,Ang=0,diff=0,anglek=0;
 	float x=0,y=0;
 	Ang=GetAngle();
 	x=GetX();
@@ -207,4 +205,65 @@ void Walkback(float v)
 {
 	VelCrl(CAN2,0x01,-exchange(v)+2000);
 	VelCrl(CAN2,0x02,exchange(v)+2000);
+}
+
+int AdcFlag(void)
+{
+		int adc_num1,adc_num2,AdcFLAG;
+		adc_num1=Get_Adc_Average(15,30);	///左轮
+		adc_num2=Get_Adc_Average(14,30);  ///右轮
+		if(adc_num1>20&&adc_num1<600&&AdcFLAG==0)
+		{
+			AdcFLAG=2;  ////顺时针
+		}
+		else if(adc_num2>40&&adc_num2<600&&AdcFLAG==0)
+		{
+			AdcFLAG=1;  ////逆时针
+		}
+		//USART_OUT(UART4,(uint8_t*)"%d	%d	%d\n",adc_num1,adc_num2,AdcFLAG);	
+		return AdcFLAG;
+}
+
+int Radius(void)
+{
+		float LastAngle;
+		int r=2000;    ////初始半径
+		if(GetAngle()>0&&LastAngle<0)
+		{
+			if(r>=700)
+			{
+				r-=100;
+			}
+			if(r<700)
+			{
+				r+=100;
+			}
+		}
+		LastAngle=GetAngle();
+		return(r);
+}
+
+void errdeal(void)
+{
+		int Lastx,Lasty,errtime;
+		if((Lastx==(int)GetX())&&(Lasty==(int)GetY())&&AdcFlag()!=0)
+		{
+			errtime++;
+		}
+		else if(Lastx!=(int)GetX||Lasty!=(int)GetY)
+		{
+			errtime=0;
+		}
+			if(errtime>100)   
+			{
+				for(int i=0;i<2000;i++)
+				{
+					Walkback(0.7);
+					i++;
+				}
+				errtime=0;
+			}			
+		Lastx=(int)GetX();
+		Lasty=(int)GetY();
+		//	USART_OUT(UART4,(uint8_t*)"%d\n",errtime);
 }
