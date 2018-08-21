@@ -29,7 +29,7 @@ static PosSend_t posture={0};
 /*定义定位系统返回值结构体*/
 static Pos_t ppsReturn={0.f};
 
-
+Pos_t position;
 void USART3_IRQHandler(void)
 {
 		static uint8_t ch;
@@ -91,20 +91,20 @@ void USART3_IRQHandler(void)
 					{
 						SetOpsReady(1);
 						/*传入定位系统返回的值*/
-						SetAngle( posture.value[0]);
-						SetSpeedX(posture.value[1]);
-						SetSpeedY(posture.value[2]);
-						SetX(posture.value[3]);
-						SetY(posture.value[4]);
-						SetWZ(posture.value[5]);
+//						SetAngle( posture.value[0]);
+//						SetSpeedX(posture.value[1]);
+//						SetSpeedY(posture.value[2]);
+//						SetX(posture.value[3]);
+//						SetY(posture.value[4]);
+//						SetWZ(posture.value[5]);
 
 						/*定义的全局结构体变量可以在这里赋值*/
-						//						=posture.value[0];
-						//						=posture.value[1];
-						//						=posture.value[2];
-						//						=posture.value[3];
-						//						=posture.value[4];
-						//						=posture.value[5];
+						position.ppsAngle=posture.value[0];
+						position.ppsSpeedX=posture.value[1];
+						position.ppsSpeedY=posture.value[2];
+						position.ppsX=posture.value[3];
+						position.ppsY=posture.value[4];
+						position.ppsWZ=posture.value[5];
 					}
 					count=0;
 				break;

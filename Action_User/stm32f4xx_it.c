@@ -329,7 +329,7 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-float avel;
+/**float avel;
 int isOKFlag;
 int posokflag;
 struct Pos_t position;
@@ -343,7 +343,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
   static uint8_t count = 0; 
   static uint8_t i = 0;
   OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+	OS_ENTER_CRITICAL(); 
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();  
   if(USART_GetITStatus(USART3,USART_IT_ORE_ER) ==SET)  
@@ -422,9 +422,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
     USART_ReceiveData(USART3); 
   } 
   OSIntExit();	
-}
-
-=======
+}**/
 //void USART3_IRQHandler(void)
 //{
 //	OS_CPU_SR cpu_sr;
@@ -440,7 +438,6 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 //	OSIntExit();
 //}
 
->>>>>>> master
 void UART5_IRQHandler(void)
 {
 
