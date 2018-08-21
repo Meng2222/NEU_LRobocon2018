@@ -263,16 +263,16 @@ void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)
 			}
 			break;
 	}
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle1);
-	//USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle2);
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)ang1);
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)err);
-		USART_OUT(UART4,(uint8_t*) "%d\t",(int)ang2);
-	
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)output);
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
-	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetX());
-	USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetY());
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle1);
+//	//USART_OUT(UART4,(uint8_t*) "%d\t",(int)angle2);
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)ang1);
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)err);
+//		USART_OUT(UART4,(uint8_t*) "%d\t",(int)ang2);
+//	
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)output);
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetAngle());
+//	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetX());
+//	USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetY());
 }	
 void ConfigTask(void)
 {
@@ -326,8 +326,8 @@ void WalkTask(void)
 			Y_last=GetY();
 			
 		}
-		//USART_OUT(UART4,(uint8_t*) "%d\t",(int)dis_R);
-		//USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)dis_L);
+		USART_OUT(UART4,(uint8_t*) "%d\t",(int)dis_R);
+		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)dis_L);
 		if(jg_flg==0)
 		{
 			
