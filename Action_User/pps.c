@@ -78,13 +78,11 @@ void USART3_IRQHandler(void)
 
             case 2:
                 posture.data[i]=ch;
-                USART_OUT(UART4, (uint8_t *)"%d ", ch);
                 i++;
                 if(i>=GET_PPS_DATA_NUM)
                 {
                     i=0;
                     count++;
-                    USART_OUT(UART4, (uint8_t *)"\r\n");
                 }
                 break;
 

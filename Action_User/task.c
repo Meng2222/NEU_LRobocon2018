@@ -61,8 +61,8 @@ static enum {circle, fang} roadsignal = circle;
 
 static linewithdir Target =
 {
-    .a = 1,
-    .b = 0,
+    .a = 0,
+    .b = 1,
     .c = 0,
     .linedir = forward,
 };
@@ -121,8 +121,8 @@ void ConfigTask(void)
     USART3_Init(115200);
     UART4_Init(921600);
 	/*一直等待定位系统初始化完成*/
-	WaitOpsPrepare();
     delay_s(2);
+	WaitOpsPrepare();
     OSTaskSuspend(ERR_CHECK_PRIO);
     errCheckOn_Flag = 0;
 	OSTaskSuspend(OS_PRIO_SELF);
@@ -220,26 +220,31 @@ void setFangArea(float length)
 
 void ChangeRoad(void)
 {
-    static _Bool changeFlag = 0;
+    static _Bool yChangeFlag = 0;
+    static float lasta = 0;
     point relPoint;
     relPoint = RelPos(circlecentre, nowPoint);
-    if(relPoint.a < 0)
+    if(relPoint.y > 0)
     {
-        changeFlag = 1;
+        yChangeFlag = 1;
     }
-    if(relPoint.a > 0 && changeFlag)
+    if(relPoint.y < 0 && yChangeFlag)
     {
-        changeFlag = 0;
-        if(roadsignal == circle)
+        if(lasta * relPoint.a < 0)
         {
-            circleradius += 500;
-        }
-        if(roadsignal == fang)
-        {
-            length -= 500;
-            setFangArea(length);
+            yChangeFlag = 0;
+            if(roadsignal == circle)
+            {
+                circleradius += 500;
+            }
+            if(roadsignal == fang)
+            {
+                length -= 500;
+                setFangArea(length);
+            }
         }
     }
+    lasta = relPoint.a;
     if(circleradius >= 2000 && roadsignal == circle)
     {
         roadsignal = fang;
@@ -324,7 +329,7 @@ void WalkTask(void)
 //            ADCFlag = 0;
 //        }
 //    }
-//    USART_OUT(UART4, (uint8_t *)"x   y   a   ea2   ea   jl\r\n");
+    USART_OUT(UART4, (uint8_t *)"la  lb  lc  ld  x   y   a   ea2   ea   jl\r\n");
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
@@ -337,6 +342,10 @@ void WalkTask(void)
             line2centre = DirlinePoint2Point(circlecentre, nowPoint);
             PidA.ExOut = VDirForLine(line2centre, circledir);
             PidB.ExOut = PidA.ExOut - 90 * GetP4circle();
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) line2centre.a);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) line2centre.b);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) line2centre.c);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) line2centre.linedir);
         }
         else if(roadsignal == fang)
         {
@@ -347,7 +356,7 @@ void WalkTask(void)
         {
             PidB.ExOut -= 360;
         }
-        if(PidB.ExOut <= -180)
+        if(PidB.ExOut < -180)
         {
             PidB.ExOut += 360;
         }
@@ -375,12 +384,12 @@ void WalkTask(void)
             errCheckOn_Flag = 1;
             //OSTaskResume(ERR_CHECK_PRIO);
         }
-//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.x);
-//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.y);
-//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) GetA());
-//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidB.ExOut);
-//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidA.ExOut);
-//        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) Point2Point(circlecentre, nowPoint));
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.x);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.y);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) GetA());
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidB.ExOut);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) PidA.ExOut);
+        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) Point2Point(circlecentre, nowPoint));
 	}
 }
 
@@ -411,7 +420,7 @@ void ErrCheck(void)
     }
 }
 
-void ChangeRoadSignal(void)
+void ChangeDirSignal(void)
 {
     if(Dir2TurnAround == clockwise)
     {
@@ -442,7 +451,9 @@ void ErrSolve(void)
             WheelSpeed(-1 * wheelspeed.right, 1);//right
             WheelSpeed(-1 * wheelspeed.left, 2);//left
         }
-        ChangeRoadSignal();
+        ChangeDirSignal();
+        OSSemSet(PeriodSem, 0, &os_err);
+        OSSemSet(PeriodSem2, 0, &os_err);
         OSTaskResume(Walk_TASK_PRIO);
         OSTaskResume(ERR_CHECK_PRIO);
     }
