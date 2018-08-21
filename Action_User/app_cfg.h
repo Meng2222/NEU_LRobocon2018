@@ -25,8 +25,6 @@
 #include <os_cpu.h>
 #include <stdint.h>
 
-
-#define CAR 4
 /*
 *********************************************************************************************************
 *                                       MODULE ENABLE / DISABLE
@@ -44,8 +42,10 @@ static  void  App_TaskStart(void);
 static 	void  ConfigTask(void);
 static 	void  WalkTask(void);
 static	void  Init(void);
-static	void  CarOne(void);
-
+static	void  PosConfig(void);
+void SendUint8(void);
+float YawTransform(float yawAngle);
+void YawAngleCtr(float yawAngle);
 
 /*
 *********************************************************************************************************

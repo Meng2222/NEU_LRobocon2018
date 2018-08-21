@@ -423,24 +423,14 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 			 case 4: 
 				 if (ch == 0x0d) 
 				 { 
-					 
-					 #if CAR==4
+
+					 sendFlag=1;
 					 angle =posture.ActVal[0] ;//角度 
 					 posture.ActVal[1] = posture.ActVal[1]; 
 					 posture.ActVal[2] = posture.ActVal[2]; 
-					 posX = posture.ActVal[3];//x 
-					 posY = posture.ActVal[4];//y 
-					 posture.ActVal[5] = posture.ActVal[5]; 
-					 
-					 #elif CAR==1 
-					 sendFlag=1;
-					 angle =-posture.ActVal[0] ;//角度 
-					 posture.ActVal[1] = posture.ActVal[1]; 
-					 posture.ActVal[2] = posture.ActVal[2]; 
-					 posY = -posture.ActVal[3];//x 
-					 posX = posture.ActVal[4];//y 
-					 posture.ActVal[5] = posture.ActVal[5]; 
-					 #endif
+					 posX = -posture.ActVal[3];//x 
+					 posY = -posture.ActVal[4];//y 
+					 posture.ActVal[5] = posture.ActVal[5];
 				 } 
 				 count = 0; 
 				 break; 

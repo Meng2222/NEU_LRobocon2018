@@ -90,8 +90,8 @@ void Round(float rightSpeed,float radius)
 /**
   * @brief  PID 转弯
   * @note	
-* @param  angle：给定角度,为正左转，为负右转
-  * @param  getAngle：现在的角度
+  * @param  angle：给定角度,为正左转，为负右转
+  * @param  gospeed：基础速度
   * @retval None
   */
 
@@ -115,8 +115,8 @@ void Turn(float angle,float gospeed)
 /**
   * @brief  PID 转弯
   * @note	
-* @param  angle：给定角度,为正左转，为负右转
-  * @param  getAngle：现在的角度
+  * @param  angle：给定角度
+  * @param  gospeed：基础速度
   * @retval None
   */
 
@@ -141,7 +141,6 @@ void BackTurn(float angle,float gospeed)
   * @brief  PID 回正
   * @note	
   * @param  angle：给定角度
-  * @param  getAngle：现在的角度
   * @retval None
   */
 
@@ -247,7 +246,7 @@ uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir)
 	float getX=GetPosX();
 	float getY=GetPosY();
 	float distance=((A2*getX)+(B2*getY)+C2)/sqrt(A2*A2+B2*B2);
-	float angleAdd=DistancePid(distance,0);
+	float angleAdd=0.09*distance;
 	if(angleAdd > 90)
 	{
 		angleAdd=90;
@@ -309,14 +308,14 @@ uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir)
 	}
 	else if(distance < -10)
 	{
-		if(setAngle <= 0)
+		if(setAngle >= 0)
 		{
-			BackTurn(setAngle+angleAdd,1000);
+			BackTurn(setAngle-angleAdd,1000);
 			usartValue.turnAngleValue=setAngle+angleAdd;
 		}
 		else
 		{
-			BackTurn(setAngle-angleAdd,1000);
+			BackTurn(setAngle+angleAdd,1000);
 			usartValue.turnAngleValue=setAngle-angleAdd;			
 		}
 	}
@@ -325,7 +324,7 @@ uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir)
 		BackTurn(setAngle,1000);
 		usartValue.turnAngleValue=setAngle;
 	}
-	if((distance < 20) && (distance > -20))
+	if((distance < 50) && (distance > -50))
 		return 1;
 	else
 		return 0; 
@@ -446,72 +445,73 @@ void BiggerSquareOne(void)
 	switch(squareFlag)
 	{
 		case 0:
-			if(sY < 2300)
+			if(sY < 2200)
 				straightLine(1,0,600,0);
 			else
 				squareFlag++;
 				break;
 		case 1:
-			if(sX < 100)
-				straightLine(0,1,-2800,0);
+			if(sX < 0)
+				straightLine(0,1,-2850,0);
 			else
 				squareFlag++;
 				break;
 		case 2:
-			if(sY > 2100)
-				straightLine(1,0,-600,1);
+			if(sY > 2200)
+				straightLine(1,0,-650,1);
 			else
 				squareFlag++;
 				break;
 		case 3:
-			if(sX > -600)
+			if(sX > -500)
 				straightLine(0,1,-1600,1);
 			else
 				squareFlag++;
 				break;
 		case 4:
-			if(sY < 2800)
+			if(sY < 2700)
 				straightLine(1,0,1100,0);
 			else
 				squareFlag++;
 				break;
 		case 5:
-			if(sX < 600)
+			if(sX < 500)
 				straightLine(0,1,-3300,0);
 			else
 				squareFlag++;
 				break;
 		case 6:
-			if(sY > 1600)
+			if(sY > 1700)
 				straightLine(1,0,-1100,1);
 			else
 				squareFlag++;
 				break;
 		case 7:
-			if(sX > -1100)
+			if(sX > -1000)
 				straightLine(0,1,-1100,1);
 			else
 				squareFlag++;
 				break;
 		case 8:
-			if(sY < 3300)
+			if(sY < 3200)
 				straightLine(1,0,1600,0);
 			else
 				squareFlag++;
 				break;
 		case 9:
-			if(sX < 1100)
+			if(sX < 1000)
 				straightLine(0,1,-3800,0);
 			else
 				squareFlag++;
 				break;
 		case 10:
-			if(sY > 1100)
+			if(sY > 1200)
 				straightLine(1,0,-1600,1);
 			else
 				squareFlag++;
+				break;
 		case 11:
-			if(sX > -1100)
+			if(sX > -1200)
 				straightLine(0,1,-600,1);
 			else
 				squareFlag=8;
@@ -538,43 +538,43 @@ void BiggerSquareTwo(void)
 	switch(squareFlag)
 	{
 		case 0:
-			if(sY < 2300)
+			if(sY < 2200)
 				straightLine(1,0,-600,0);
 			else
 				squareFlag++;
 				break;
 		case 1:
-			if(sX > -100)
-				straightLine(0,1,-2800,1);
+			if(sX > 0)
+				straightLine(0,1,-2850,1);
 			else
 				squareFlag++;
 				break;
 		case 2:
-			if(sY > 2100)
-				straightLine(1,0,600,1);
+			if(sY > 2200)
+				straightLine(1,0,750,1);
 			else
 				squareFlag++;
 				break;
 		case 3:
-			if(sX < 600)
+			if(sX < 500)
 				straightLine(0,1,-1600,0);
 			else
 				squareFlag++;
 				break;
 		case 4:
-			if(sY < 2800)
+			if(sY < 2700)
 				straightLine(1,0,-1100,0);
 			else
 				squareFlag++;
 				break;
 		case 5:
-			if(sX > -600)
+			if(sX > -500)
 				straightLine(0,1,-3300,1);
 			else
 				squareFlag++;
 				break;
 		case 6:
-			if(sY > 1600)
+			if(sY > 1500)
 				straightLine(1,0,1100,1);
 			else
 				squareFlag++;
@@ -586,25 +586,25 @@ void BiggerSquareTwo(void)
 				squareFlag++;
 				break;
 		case 8:
-			if(sY < 3300)
+			if(sY < 3200)
 				straightLine(1,0,-1600,0);
 			else
 				squareFlag++;
 				break;
 		case 9:
-			if(sX > -1100)
+			if(sX > -1000)
 				straightLine(0,1,-3800,1);
 			else
 				squareFlag++;
 				break;
 		case 10:
-			if(sY > 1100)
+			if(sY > 1200)
 				straightLine(1,0,1600,1);
 			else
 				squareFlag++;
 				break;	
 		case 11:
-			if(sX < 1100)
+			if(sX < 1000)
 				straightLine(0,1,-600,0);
 			else
 				squareFlag=8;
@@ -748,4 +748,95 @@ float Speed_Y(void)
 	tYLast=tY;
 	return speedY;
 }
+
+
+void Walk(uint8_t *getAdcFlag)
+{
+	uint8_t ready=0;
+	float speedx=0;
+	float speedy=0;
+	static uint8_t errFlag=0;
+	static float X_Now=0;
+	static float Y_Now=0;
+	speedx=Speed_X();
+	speedy=Speed_Y();
+	
+	if((speedx < 100) && (speedx > -100) && (speedy < 100) && (speedy > -100))
+	{
+		usartValue.cnt++;
+		if(usartValue.cnt > 100)
+		{
+			errFlag=!errFlag;
+			X_Now=usartValue.xValue;
+			Y_Now=usartValue.yValue;
+			usartValue.cnt=0;
+		}
+	}
+	
+	if(errFlag)
+	{
+		if((X_Now > -900) && (X_Now < 900))
+		{
+			if(Y_Now > 3400)
+			{
+				ready=BackstraightLine(0,1,500-Y_Now,(*getAdcFlag));
+			}
+			else if((Y_Now <= 3400) && (Y_Now > 2200))
+			{
+				ready=BackstraightLine(0,1,-500-Y_Now,(*getAdcFlag));
+			}
+			else if((Y_Now <= 2200) && (Y_Now > 1100))
+			{
+				ready=BackstraightLine(0,1,500-Y_Now,!(*getAdcFlag));
+			}
+			else if(Y_Now <= 1100)
+			{
+				ready=BackstraightLine(0,1,-500-Y_Now,!(*getAdcFlag));
+			}
+		
+		}
+		else if(X_Now <= -900 && X_Now > -1400)
+		{
+			ready=BackstraightLine(1,0,500-X_Now,!(*getAdcFlag));
+		}
+		else if(X_Now >= 900 && X_Now < 1400)
+		{
+			ready=BackstraightLine(1,0,-500-X_Now,(*getAdcFlag));
+		}
+		else if(X_Now <= -1400)
+		{
+			ready=BackstraightLine(1,0,-500-X_Now,!(*getAdcFlag));
+		}
+		else
+		{
+			ready=BackstraightLine(1,0,500-X_Now,(*getAdcFlag));
+		}
+		
+		if(ready)
+		{
+			if(squareFlag >= 8)
+				squareFlag=squareFlag-4;
+			else
+				squareFlag=squareFlag+4;
+			errFlag=!errFlag;
+		}
+		else;
+	}
+	
+	else
+	{
+		if(!(*getAdcFlag))
+		{
+			BiggerSquareOne();
+		}
+		else
+		{
+			BiggerSquareTwo();
+		}
+	}
+
+}
+
+
+
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/

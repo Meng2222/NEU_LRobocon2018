@@ -85,6 +85,8 @@ void SquareTwo(void);
 void RoundTwo(float centerX,float centerY,float r,uint8_t o,float speed);
 float Speed_X(void);
 float Speed_Y(void);
+void Walk(uint8_t *getAdcFlag);
+
 #endif /* ___H */
 
 

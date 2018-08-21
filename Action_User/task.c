@@ -22,6 +22,24 @@
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*PI)
 
+// 宏定义棍子收球电机ID
+#define COLLECT_BALL_ID (8)
+// 宏定义推球电机ID
+#define PUSH_BALL_ID (6)
+// 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
+#define PUSH_POSITION (4500)
+// 宏定义送弹机构收回时电机位置
+#define PUSH_RESET_POSITION (5)
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+// 宏定义发射机构航向电机ID
+#define GUN_YAW_ID (7)
+// 电机旋转一周的脉冲数
+#define COUNT_PER_ROUND (4096.0f)
+// 宏定义每度对应脉冲数
+#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
+// 宏定义航向角减速比
+#define YAW_REDUCTION_RATIO (4.0f)
+
 
 /*
 一个脉冲是4096/(120*Pi)
@@ -65,7 +83,15 @@ typedef struct{
 	float y;
 	float angle;
 }Target;
-Target tar;
+
+typedef union
+{
+    //这个32位整型数是给电机发送的速度（脉冲/s）
+    int32_t Int32 ;
+    //通过串口发送数据每次只能发8位
+    uint8_t Uint8[4];
+
+}num_t;
 
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
@@ -107,7 +133,7 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	Init();
 
-OSTaskSuspend(OS_PRIO_SELF);
+	OSTaskSuspend(OS_PRIO_SELF);
 
 }
 
@@ -115,104 +141,56 @@ OSTaskSuspend(OS_PRIO_SELF);
 int cntTurn = 0, cntSendTime = 0;
 char switchNextModeFlag = 1, adjustFlag = 0, turnFlag = 0;
 float adjustVelocity, baseVelocity;
+
 void WalkTask(void)
 {
 	int cntSendTime;
 	CPU_INT08U os_err;
 	os_err = os_err;
-	float speedx=0;
-	float speedy=0;
-	static uint8_t errFlag=0;
-	static float X_Now=0;
-	static float Y_Now=0;
-	uint8_t ready=0;
+	
+
+
+
+	
+	
 	Angle_PidPara(30,0,600);
-	Distance_PidPara(0.1,0.0008,0);
+	Distance_PidPara(0.09,0,0);
 	squareFlag=0;
-	tar.angle = pos.angle;
+	
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
 		
-		speedx=Speed_X();
-		speedy=Speed_Y();
+		Walk(&adcFlag);
 		
-		if(errFlag)
-		{
-			if((X_Now > -1200) && (X_Now < 1200))
-			{
-				if(Y_Now > 3400)
-				{
-					ready=BackstraightLine(0,1,500-Y_Now,adcFlag);
-				}
-				else if((Y_Now <= 3400) && (Y_Now > 2200))
-				{
-					ready=BackstraightLine(0,1,-500-Y_Now,adcFlag);
-				}
-				else if((Y_Now <= 2200) && (Y_Now > 1100))
-				{
-					ready=BackstraightLine(0,1,500-Y_Now,!adcFlag);
-				}
-				else if(Y_Now <= 1100)
-				{
-					ready=BackstraightLine(0,1,-500-Y_Now,!adcFlag);
-				}
-			}
-			else if(X_Now <= -1200)
-			{
-				ready=BackstraightLine(1,0,-500-X_Now,!adcFlag);
-			}
-			else if(X_Now >= 1200)
-			{
-				ready=BackstraightLine(1,0,500-X_Now,adcFlag);
-			}
-			if(ready)
-			{
-				if(squareFlag >= 8)
-					squareFlag=squareFlag-4;
-				else
-					squareFlag=squareFlag+4;
-				errFlag=!errFlag;
-			}
-			else;
-		}
-		else
-		{
-			if(!adcFlag)
-			{
-				BiggerSquareOne();
-			}
-			else
-			{
-				BiggerSquareTwo();
-			}
-		}
-		if((speedx < 100) && (speedx > -100) && (speedy < 100) && (speedy > -100))
-		{
-			usartValue.cnt++;
-			if(usartValue.cnt > 100)
-			{
-				errFlag=!errFlag;
-				X_Now=usartValue.xValue;
-				Y_Now=usartValue.yValue;
-				usartValue.cnt=0;
-			}
-		}
 
+		//收球电机
+		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
 		
-//		BackstraightLine(0,1,100,0);
+		//航向电机
+		YawAngleCtr(40);
+			
+		// 推球
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+		// 复位
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 		
-		USART_OUT(UART4, " %d\t", (int)adcFlag);
-		USART_OUT(UART4, " %d\t", (int)usartValue.turnAngleValue);
-//		USART_OUT(UART4, "cnt %d\t", (int)usartValue.cnt);
-//		USART_OUT(UART4, "PIDOUT %d\t", (int)usartValue.pidValueOut);
+		SendUint8();
+	
+//		USART_OUT(UART4, " %d\t", (int)usartValue.d);
+//		USART_OUT(UART4, " %d\t", (int)usartValue.turnAngleValue);
+//		USART_OUT(UART4, " %d\t", (int)usartValue.cnt);
+//		USART_OUT(UART4, " %d\t", (int)usartValue.pidValueOut);
 //		USART_OUT(UART4, " %d\t", (int)adcFlag);
-//		USART_OUT(UART4, "angle %d\t", (int)usartValue.angleValue);
+//		USART_OUT(UART4, " %d\t", (int)usartValue.angleValue);
 //		USART_OUT(UART4, " %d\t", (int)usartValue.flagValue);
-		USART_OUT(UART4, " %d\t", (int)usartValue.xValue);
-		USART_OUT(UART4, " %d\r\n", (int)usartValue.yValue);
+//		USART_OUT(UART4, " %d\t", (int)usartValue.xValue);
+//		USART_OUT(UART4, " %d\r\n", (int)usartValue.yValue);
+
+	
+	
 	
 	}
 }
@@ -227,17 +205,27 @@ void Init(void)
 //	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	ElmoInit(CAN2);
+	
+	//右轮电机初始化
 	VelLoopCfg(CAN2, 0x01, 20000, 20000);
-	VelLoopCfg(CAN2, 0x02, 2000, 2000);
+	
+	//左轮电机初始化
+	VelLoopCfg(CAN2, 0x02, 20000, 20000);
+	
+	//收球电机初始化
+	VelLoopCfg(CAN1, 0x08, 50000, 50000);
+	
+	//推球电机初始化
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+	
+	//航向电机初始化
+	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
+	
 	MotorOn(CAN2, 0x01);
 	MotorOn(CAN2, 0x02);
-	#if CAR==4
-	delay_ms(3000);
-	delay_ms(10000);
-	#elif CAR==1
-	delay_ms(3000);
-	CarOne();
-	#endif
+	
+	delay_ms(5000);
+	PosConfig();
 	GetDirection(&adcFlag);
 }
 
@@ -245,11 +233,12 @@ void Init(void)
 //车1定位系统初始化
 extern uint8_t sendFlag;
 uint8_t isOKFlag;
-void CarOne(void)
+
+void PosConfig(void)
 {
 	while(!isOKFlag)
 	{
-		delay_ms(5);
+		delay_ms(1);
 		USART_SendData(USART3,'A');
 		USART_SendData(USART3,'T');
 		USART_SendData(USART3,'\r');
@@ -260,3 +249,37 @@ void CarOne(void)
 	while(!sendFlag);
 	sendFlag=0;
 }
+
+
+
+
+//定义联合体
+num_t u_Num;
+
+void SendUint8(void)
+{
+    u_Num.Int32 = 1000;
+
+    //起始位
+    USART_SendData(USART1, 'A');
+    //通过串口1发数
+    USART_SendData(USART1, u_Num.Uint8[0]);
+    USART_SendData(USART1, u_Num.Uint8[1]);
+    USART_SendData(USART1, u_Num.Uint8[2]);
+    USART_SendData(USART1, u_Num.Uint8[3]);
+    //终止位
+    USART_SendData(USART1, 'J');
+}
+
+// 将角度转换为脉冲
+float YawTransform(float yawAngle)
+{
+	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
+}
+
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+void YawAngleCtr(float yawAngle)
+{
+	PosCrl(CAN1, GUN_YAW_ID, ABSOLUTE_MODE, YawTransform(yawAngle));
+}
+// 同样要配置位置环
