@@ -13,6 +13,7 @@
 #include "stm32f4xx_usart.h"
 #include "math.h"
 #include "adc.h"
+#include "pps.h"
 
 
 extern int isOKFlag;
@@ -157,6 +158,8 @@ void ConfigTask(void)
 	#elif CARNUM == 4
 	delay_s(10);	
 	#endif					//等待10s挂起
+	/*一直等待定位系统初始化完成*/
+	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 
 }
