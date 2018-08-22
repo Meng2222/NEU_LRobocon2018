@@ -427,6 +427,11 @@
               <FilePath>..\Action_User\moveBase.c</FilePath>
             </File>
             <File>
+              <FileName>pps.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\pps.c</FilePath>
+            </File>
+            <File>
               <FileName>adc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Action_User\adc.c</FilePath>
@@ -435,16 +440,6 @@
               <FileName>adc.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\Action_User\adc.h</FilePath>
-            </File>
-            <File>
-              <FileName>pps.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Action_User\pps.c</FilePath>
-            </File>
-            <File>
-              <FileName>pps.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Action_User\pps.h</FilePath>
             </File>
           </Files>
         </Group>

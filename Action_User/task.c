@@ -54,49 +54,47 @@ void ConfigTask(void)
 	TIM_Init(TIM2,999,83,1,3);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	USART1_Init(115200);
+	USART1_Init(921600);
 	USART3_Init(115200);
 	UART4_Init(921600);
-	Adc_Init();
+//	Adc_Init();
+//	ElmoInit(CAN1);
 	ElmoInit(CAN2);
-	VelLoopCfg(CAN1, 8, 50000, 50000);
-	VelLoopCfg(CAN2,1,50000000,50000000);
-	VelLoopCfg(CAN2,2,50000000,50000000);
-	// 配置位置环
-	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
-	// 推球
-	PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-	// 复位
-	PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-	MotorOn(CAN2,1);
-	MotorOn(CAN2,2);
+//	VelLoopCfg(CAN1, 8, 50000, 50000);
+	VelLoopCfg(CAN2,6,10000000,10000000);
+	VelLoopCfg(CAN2,5,10000000,10000000);
+//	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+	//航向电机位置环初始化
+//	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
+//	MotorOn(CAN1,8);
+//	MotorOn(CAN1,6);
+//	MotorOn(CAN1,7);
+	MotorOn(CAN2,6);
+	MotorOn(CAN2,5);
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
 	WaitOpsPrepare();
-	OSTaskSuspend(12);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float xRepair,changeAngle;
-int errFlag=0;
-extern int Cnt,time;
+float xRepair;
 void WalkTask(void)
 {
-	static int flag=0,R=2100,status;
-	static float lastX=-100,dLeft,dRight,lastY=-100;
-	extern float x,y;
-	do
-	{
-		xRepair=dLeft-dRight;
-		//右ADC
-		dRight=Get_Adc_Average(14,20)*0.92;
-		//左ADC
-		dLeft=Get_Adc_Average(15,20)*0.92;	
-	}	
-	while(dLeft>1000&&dRight>1000);
-	if(dRight<=1000)
-		status=0;
-	else if(dLeft<=1000)
-		status=1;
+	static int flag=0,R=600,status,lastTime=0,errFlag=0,count;
+	static float lastX=-100,dLeft,dRight,lastY=-100,changeAngle;
+	extern float x,y,Cnt,time;
+//	do
+//	{
+//		xRepair=dLeft-dRight;
+//		//右ADC
+//		dRight=Get_Adc_Average(14,20)*0.92;
+//		//左ADC
+//		dLeft=Get_Adc_Average(15,20)*0.92;	
+//	}	
+//	while(dLeft>1000&&dRight>1000);
+//	if(dRight<=1000)
+//		status=0;
+//	else if(dLeft<=1000)
+//		status=1;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
@@ -104,41 +102,48 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem,0,&os_err);
-		x=GetX();
-		y=GetY();
-		if(errFlag==1)
-		{	
-			AnglePID(changeAngle,GetAngle());
-			Straight(-1000);
-			if(Get_Time_Flag())
-			{	
-				errFlag=0;
-				if(x<0&&lastX>0&&R>600)
-					R-=450;
-				if(x<0&&lastX>0&&R<800)
-					R+=450;
-			}	
-			time=0;
-		}	
-		else
-		{
-			CirclePID(0,2400,R,1000,status);
-			if(x<0&&lastX>0&&R>600)
-				R-=450;
-			if(x<0&&lastX>0&&R<800)
-				R+=450;
-		}	
-		if(time>=100)flag=1;
-		else flag=0;
-		if(time>20000)time=100;
-		if(flag&&(x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)<20)			
-		{	
-			errFlag=1;
-			changeAngle=GetAngle()+45;
-			Cnt=0;
-		}	
-		lastX=x;
-		lastY=y;	
-		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\r\n",(int)GetAngle(),(int)GetX(),(int)GetY());
+//		x=GetX();
+//		y=GetY();
+//		if(errFlag==1)
+//		{	
+//			AnglePID(changeAngle,GetAngle());
+//			Straight(-1000);
+//			if(Get_Time_Flag())	
+//				errFlag=0;
+//			time=0;
+//		}	
+//		else
+//		{
+//			CirclePID(0,2400,R,1000,status);
+//			if(x<0&&lastX>0&&R>600)
+//				R-=450;
+//			if(x<0&&lastX>0&&R<800)
+//				R+=450;
+//		}	
+//		if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>20)
+//			lastTime=time;
+//		if(time-lastTime>=100)
+//		{	
+//			errFlag=1;
+//			changeAngle=GetAngle()+45;
+//			Cnt=0;
+//		}	
+//		lastX=x;
+//		lastY=y;	
+//		count++;
+//		SendUint8();
+//		YawAngleCtr(90);
+//		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
+//		if(count==150)
+//		// 推球
+//		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+//		else if(count==300)
+//		// 复位
+//		{PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+//			count=0;
+//		}	
+		CirclePID(0,500,500,100,1);
+		USART_OUT(USART1,(uint8_t *)"%d\t%d\t%d\r\n",(int)GetAngle(),(int)GetX(),(int)GetY());
+
 	}
 }

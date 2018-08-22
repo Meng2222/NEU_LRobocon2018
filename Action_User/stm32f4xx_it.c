@@ -135,7 +135,7 @@ void TIM2_IRQHandler(void)
 }
 int Get_Time_Flag(void)
 {
-	if(Cnt>=1000)
+	if(Cnt>=2000)
 	{
 		Cnt=0;
 		return 1;

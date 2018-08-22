@@ -48,7 +48,7 @@ void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
 int Get_Time_Flag(void);
-#define CAR_NUM (4)
+#define NEW (1)
 #ifdef __cplusplus
 }
 #endif

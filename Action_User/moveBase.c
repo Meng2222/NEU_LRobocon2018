@@ -42,8 +42,8 @@
 float Kp=200,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1,Vkl=0,Sumli=0;
 void Straight(float v)
 {
-	VelCrl(CAN2,1,v*4096/(pi*WHEEL_DIAMETER)+Vk);
-	VelCrl(CAN2,2,-v*4096/(pi*WHEEL_DIAMETER)+Vk);
+	VelCrl(CAN2,5,REDUCTION_RATIO*v*8192/(pi*WHEEL_DIAMETER));
+	VelCrl(CAN2,6,Vk*REDUCTION_RATIO);
 }	
 void Spin(float R,float v)
 {
