@@ -1,5 +1,6 @@
 #include "includes.h"
 #include <app_cfg.h>
+<<<<<<< HEAD
                           //圆周率                 3.1415
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
 #define BaseVelocity (0.5 * One_Meter_Per_Second) //基础速度               0.5m/s
@@ -55,6 +56,20 @@ extern struct usartValue_{
 	uint8_t flagValue;
 }usartValue;
 
+=======
+#include "misc.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
+#include "timer.h"
+#include "gpio.h"
+#include "usart.h"
+#include "can.h"
+#include "elmo.h"
+#include "stm32f4xx_it.h"
+#include "stm32f4xx_usart.h"
+#include "pps.h"
+#include "fort.h"
+>>>>>>> master
 /*
 ===============================================================
 						信号量定义
@@ -119,26 +134,44 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
+<<<<<<< HEAD
 	Init();
 
+=======
+	
+	USART3_Init(115200);
+	UART5_Init(921600);
+	TIM_Init(TIM2, 99, 839, 1, 0);
+	/*一直等待定位系统初始化完成*/
+	BEEP_ON;
+	WaitOpsPrepare();
+	
+>>>>>>> master
 	OSTaskSuspend(OS_PRIO_SELF);
 
 }
+<<<<<<< HEAD
 
 //10ms 运行一次；
 int cntTurn = 0, cntSendTime = 0;
 char switchNextModeFlag = 1, adjustFlag = 0, turnFlag = 0;
 float adjustVelocity, baseVelocity;
 
+=======
+extern FortType fort;
+>>>>>>> master
 void WalkTask(void)
 {
 	int cntSendTime;
 	CPU_INT08U os_err;
 	os_err = os_err;
+<<<<<<< HEAD
 	Angle_PidPara(10,0,0);
 	Distance_PidPara(1,0,0);
 	squareFlag=0;
 	uint16_t count=0;
+=======
+>>>>>>> master
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{

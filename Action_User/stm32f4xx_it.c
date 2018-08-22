@@ -39,7 +39,11 @@
 #include "adc.h"
 #include "gpio.h"
 #include "elmo.h"
+<<<<<<< HEAD
 #include "app_cfg.h"
+=======
+#include "fort.h"
+>>>>>>> master
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
@@ -478,7 +482,7 @@ float GetPosY(void)
 
 void UART5_IRQHandler(void)
 {
-
+	uint8_t data;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
@@ -486,8 +490,24 @@ void UART5_IRQHandler(void)
 
 	if (USART_GetITStatus(UART5, USART_IT_RXNE) == SET)
 	{
-
+		data = USART_ReceiveData(UART5);
+		GetValueFromFort(data);
 		USART_ClearITPendingBit(UART5, USART_IT_RXNE);
+	}
+	else
+	{
+		USART_ClearITPendingBit(UART5, USART_IT_PE);
+		USART_ClearITPendingBit(UART5, USART_IT_TXE);
+		USART_ClearITPendingBit(UART5, USART_IT_TC);
+		USART_ClearITPendingBit(UART5, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(UART5, USART_IT_IDLE);
+		USART_ClearITPendingBit(UART5, USART_IT_LBD);
+		USART_ClearITPendingBit(UART5, USART_IT_CTS);
+		USART_ClearITPendingBit(UART5, USART_IT_ERR);
+		USART_ClearITPendingBit(UART5, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(UART5, USART_IT_NE);
+		USART_ClearITPendingBit(UART5, USART_IT_FE);
+		USART_ReceiveData(UART5);
 	}
 	OSIntExit();
 }
