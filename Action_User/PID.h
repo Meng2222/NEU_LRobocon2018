@@ -110,7 +110,7 @@ void PID_Coordinate_Init(void);
 void Init_PID(PID_Value *pid_init);
 void PID_Control(PID_Value *p);
 void GO(PID_Value *p_GO);
-void PID_Control_Competition(PID_Value *pid);
+void PID_Control_Competition(PID_Value *pid,u8 dir);
 void PID_Pre(PID_Value *p);
 
 #endif

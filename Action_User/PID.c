@@ -7,7 +7,7 @@ void Init_PID(PID_Value *pid_init)                                           //P
 	pid_init->ITerm = pid_init->vel;
 }
 
-Line_Value Line_N[12];
+Line_Value Line_N[26];
 Arc_Value Arc_N[12];
 Coordinate_Value Coordinate_N[12];
 void PID_Line_Init(void)
@@ -56,10 +56,10 @@ void PID_Line_Init(void)
 	Line_N[3].line_Angle = 0;
 	Line_N[3].line_Error = 0;
 	
-	Line_N[4].x1 = 1000;
-	Line_N[4].y1 = 1200;
-	Line_N[4].x2 = 1000;
-	Line_N[4].y2 = 3200;
+	Line_N[4].x1 = 1200;
+	Line_N[4].y1 = 1000;
+	Line_N[4].x2 = 1200;
+	Line_N[4].y2 = 3400;
 	Line_N[4].line_kp = 20;
 	Line_N[4].line_A = 0;
 	Line_N[4].line_B = 0;
@@ -67,10 +67,10 @@ void PID_Line_Init(void)
 	Line_N[4].line_Angle = 0;
 	Line_N[4].line_Error = 0;
 	
-	Line_N[5].x1 = 1000;
-	Line_N[5].y1 = 3200;
-	Line_N[5].x2 = -1000;
-	Line_N[5].y2 = 3200;
+	Line_N[5].x1 = 1200;
+	Line_N[5].y1 = 3400;
+	Line_N[5].x2 = -1200;
+	Line_N[5].y2 = 3400;
 	Line_N[5].line_kp = 20;
 	Line_N[5].line_A = 0;
 	Line_N[5].line_B = 0;
@@ -78,10 +78,10 @@ void PID_Line_Init(void)
 	Line_N[5].line_Angle = 0;
 	Line_N[5].line_Error = 0;
 	
-	Line_N[6].x1 = -1000;
-	Line_N[6].y1 = 3200;
-	Line_N[6].x2 = -1000;
-	Line_N[6].y2 = 1200;
+	Line_N[6].x1 = -1200;
+	Line_N[6].y1 = 3400;
+	Line_N[6].x2 = -1200;
+	Line_N[6].y2 = 1000;
 	Line_N[6].line_kp = 20;
 	Line_N[6].line_A = 0;
 	Line_N[6].line_B = 0;
@@ -89,10 +89,10 @@ void PID_Line_Init(void)
 	Line_N[6].line_Angle = 0;
 	Line_N[6].line_Error = 0;
 	
-	Line_N[7].x1 = -1000;
-	Line_N[7].y1 = 1200;
-	Line_N[7].x2 = 1000;
-	Line_N[7].y2 = 1200;
+	Line_N[7].x1 = -1200;
+	Line_N[7].y1 = 1000;
+	Line_N[7].x2 = 1200;
+	Line_N[7].y2 = 1000;
 	Line_N[7].line_kp = 20;
 	Line_N[7].line_A = 0;
 	Line_N[7].line_B = 0;
@@ -100,10 +100,10 @@ void PID_Line_Init(void)
 	Line_N[7].line_Angle = 0;
 	Line_N[7].line_Error = 0;
 	
-	Line_N[8].x1 = 1500;
-	Line_N[8].y1 = 700;
-	Line_N[8].x2 = 1500;
-	Line_N[8].y2 = 3700;
+	Line_N[8].x1 = 1700;
+	Line_N[8].y1 = 500;
+	Line_N[8].x2 = 1700;
+	Line_N[8].y2 = 3900;
 	Line_N[8].line_kp = 20;
 	Line_N[8].line_A = 0;
 	Line_N[8].line_B = 0;
@@ -111,10 +111,10 @@ void PID_Line_Init(void)
 	Line_N[8].line_Angle = 0;
 	Line_N[8].line_Error = 0;
 	
-	Line_N[9].x1 = 1500;
-	Line_N[9].y1 = 3700;
-	Line_N[9].x2 = -1500;
-	Line_N[9].y2 = 3700;
+	Line_N[9].x1 = 1700;
+	Line_N[9].y1 = 3900;
+	Line_N[9].x2 = -1700;
+	Line_N[9].y2 = 3900;
 	Line_N[9].line_kp = 20;
 	Line_N[9].line_A = 0;
 	Line_N[9].line_B = 0;
@@ -122,10 +122,10 @@ void PID_Line_Init(void)
 	Line_N[9].line_Angle = 0;
 	Line_N[9].line_Error = 0;
 	
-	Line_N[10].x1 = -1500;
-	Line_N[10].y1 = 3700;
-	Line_N[10].x2 = -1500;
-	Line_N[10].y2 = 700;
+	Line_N[10].x1 = -1700;
+	Line_N[10].y1 = 3900;
+	Line_N[10].x2 = -1700;
+	Line_N[10].y2 = 500;
 	Line_N[10].line_kp = 20;
 	Line_N[10].line_A = 0;
 	Line_N[10].line_B = 0;
@@ -133,16 +133,173 @@ void PID_Line_Init(void)
 	Line_N[10].line_Angle = 0;
 	Line_N[10].line_Error = 0;
 	
-	Line_N[11].x1 = -1500;
-	Line_N[11].y1 = 700;
-	Line_N[11].x2 = 1500;
-	Line_N[11].y2 = 700;
+	Line_N[11].x1 = -1700;
+	Line_N[11].y1 = 500;
+	Line_N[11].x2 = 1700;
+	Line_N[11].y2 = 500;
 	Line_N[11].line_kp = 20;
 	Line_N[11].line_A = 0;
 	Line_N[11].line_B = 0;
 	Line_N[11].line_C = 0;
 	Line_N[11].line_Angle = 0;
 	Line_N[11].line_Error = 0;
+	
+	Line_N[12].x1 = 1700;
+	Line_N[12].y1 = 500;
+	Line_N[12].x2 = 1700;
+	Line_N[12].y2 = 3900;
+	Line_N[12].line_kp = 20;
+	Line_N[12].line_A = 0;
+	Line_N[12].line_B = 0;
+	Line_N[12].line_C = 0;
+	Line_N[12].line_Angle = 0;
+	Line_N[12].line_Error = 0;
+	
+	
+	
+	
+	Line_N[13].x1 = -700;
+	Line_N[13].y1 = 1500;
+	Line_N[13].x2 = -700;
+	Line_N[13].y2 = 2900;
+	Line_N[13].line_kp = 20;
+	Line_N[13].line_A = 0;
+	Line_N[13].line_B = 0;
+	Line_N[13].line_C = 0;
+	Line_N[13].line_Angle = 0;
+	Line_N[13].line_Error = 0;
+	
+	Line_N[14].x1 = -700;
+	Line_N[14].y1 = 2900;
+	Line_N[14].x2 = 700;
+	Line_N[14].y2 = 2900;
+	Line_N[14].line_kp = 20;
+	Line_N[14].line_A = 0;
+	Line_N[14].line_B = 0;
+	Line_N[14].line_C = 0;
+	Line_N[14].line_Angle = 0;
+	Line_N[14].line_Error = 0;
+	
+	Line_N[15].x1 = 700;
+	Line_N[15].y1 = 2900;
+	Line_N[15].x2 = 700;
+	Line_N[15].y2 = 1500;
+	Line_N[15].line_kp = 20;
+	Line_N[15].line_A = 0;
+	Line_N[15].line_B = 0;
+	Line_N[15].line_C = 0;
+	Line_N[15].line_Angle = 0;
+	Line_N[15].line_Error = 0;
+	
+	Line_N[16].x1 = 700;
+	Line_N[16].y1 = 1500;
+	Line_N[16].x2 = -700;
+	Line_N[16].y2 = 1500;
+	Line_N[16].line_kp = 20;
+	Line_N[16].line_A = 0;
+	Line_N[16].line_B = 0;
+	Line_N[16].line_C = 0;
+	Line_N[16].line_Angle = 0;
+	Line_N[16].line_Error = 0;
+	
+	Line_N[17].x1 = -1200;
+	Line_N[17].y1 = 1000;
+	Line_N[17].x2 = -1200;
+	Line_N[17].y2 = 3400;
+	Line_N[17].line_kp = 20;
+	Line_N[17].line_A = 0;
+	Line_N[17].line_B = 0;
+	Line_N[17].line_C = 0;
+	Line_N[17].line_Angle = 0;
+	Line_N[17].line_Error = 0;
+	
+	Line_N[18].x1 = -1200;
+	Line_N[18].y1 = 3400;
+	Line_N[18].x2 = 1200;
+	Line_N[18].y2 = 3400;
+	Line_N[18].line_kp = 20;
+	Line_N[18].line_A = 0;
+	Line_N[18].line_B = 0;
+	Line_N[18].line_C = 0;
+	Line_N[18].line_Angle = 0;
+	Line_N[18].line_Error = 0;
+	
+	Line_N[19].x1 = 1200;
+	Line_N[19].y1 = 3400;
+	Line_N[19].x2 = 1200;
+	Line_N[19].y2 = 1000;
+	Line_N[19].line_kp = 20;
+	Line_N[19].line_A = 0;
+	Line_N[19].line_B = 0;
+	Line_N[19].line_C = 0;
+	Line_N[19].line_Angle = 0;
+	Line_N[19].line_Error = 0;
+	
+	Line_N[20].x1 = 1200;
+	Line_N[20].y1 = 1000;
+	Line_N[20].x2 = -1200;
+	Line_N[20].y2 = 1000;
+	Line_N[20].line_kp = 20;
+	Line_N[20].line_A = 0;
+	Line_N[20].line_B = 0;
+	Line_N[20].line_C = 0;
+	Line_N[20].line_Angle = 0;
+	Line_N[20].line_Error = 0;
+	
+	Line_N[21].x1 = -1700;
+	Line_N[21].y1 = 500;
+	Line_N[21].x2 = -1700;
+	Line_N[21].y2 = 3900;
+	Line_N[21].line_kp = 20;
+	Line_N[21].line_A = 0;
+	Line_N[21].line_B = 0;
+	Line_N[21].line_C = 0;
+	Line_N[21].line_Angle = 0;
+	Line_N[21].line_Error = 0;
+	
+	Line_N[22].x1 = -1700;
+	Line_N[22].y1 = 3900;
+	Line_N[22].x2 = 1700;
+	Line_N[22].y2 = 3900;
+	Line_N[22].line_kp = 20;
+	Line_N[22].line_A = 0;
+	Line_N[22].line_B = 0;
+	Line_N[22].line_C = 0;
+	Line_N[22].line_Angle = 0;
+	Line_N[22].line_Error = 0;
+	
+	Line_N[23].x1 = 1700;
+	Line_N[23].y1 = 3900;
+	Line_N[23].x2 = 1700;
+	Line_N[23].y2 = 500;
+	Line_N[23].line_kp = 20;
+	Line_N[23].line_A = 0;
+	Line_N[23].line_B = 0;
+	Line_N[23].line_C = 0;
+	Line_N[23].line_Angle = 0;
+	Line_N[23].line_Error = 0;
+	
+	Line_N[24].x1 = 1700;
+	Line_N[24].y1 = 500;
+	Line_N[24].x2 = -1700;
+	Line_N[24].y2 = 500;
+	Line_N[24].line_kp = 20;
+	Line_N[24].line_A = 0;
+	Line_N[24].line_B = 0;
+	Line_N[24].line_C = 0;
+	Line_N[24].line_Angle = 0;
+	Line_N[24].line_Error = 0;
+	
+	Line_N[25].x1 = -1700;
+	Line_N[25].y1 = 500;
+	Line_N[25].x2 = -1700;
+	Line_N[25].y2 = 3900;
+	Line_N[25].line_kp = 20;
+	Line_N[25].line_A = 0;
+	Line_N[25].line_B = 0;
+	Line_N[25].line_C = 0;
+	Line_N[25].line_Angle = 0;
+	Line_N[25].line_Error = 0;
 }
 
 void PID_Arc_Init(void)
@@ -314,12 +471,27 @@ void GO(PID_Value *p_GO)
 	VelCrl(CAN2,2,(int)(((4096/378)*(p_GO->vel))-(4096/378)*(p_GO->V)));
 }
 
-void PID_Control_Competition(PID_Value *pid)
+void PID_Control_Competition(PID_Value *pid,u8 dir)
 {
-	pid->Mode = Line;
-	PID_Control(pid);
-	GO(pid);
-	pid->Line_Num += 1;
-	PID_Pre(pid);
-	if(pid->l->line_Error>500) pid->Line_Num -= 1;
+	if(dir == Right)
+	{
+		pid->Mode = Line;
+		PID_Control(pid);
+		GO(pid);
+		pid->Line_Num += 1;
+		if((pid->Line_Num) == 13) pid->Line_Num = 9;
+		PID_Pre(pid);
+		if((pid->l->line_Error>500) || (pid->l->line_Error<-500)) pid->Line_Num -= 1;
+	}
+	else if(dir == Left)
+	{
+		pid->Mode = Line;
+		pid->Line_Num = 13;
+		PID_Control(pid);
+		GO(pid);
+		pid->Line_Num += 1;
+		if((pid->Line_Num) == 26) pid->Line_Num = 22;
+		PID_Pre(pid);
+		if((pid->l->line_Error>500) || (pid->l->line_Error<-500)) pid->Line_Num -= 1;
+	}	
 }

@@ -110,7 +110,7 @@ void WalkTask(void)
 		static u32 direction = 0;
 		if(direction == 0) direction = (u32)OSMboxPend(adc_msg,0,&os_err);
 		
-		PID_Control_Competition(PID_x);
+		PID_Control_Competition(PID_x,direction);
 		
 		UART4_OUT(PID_x);
 	}
