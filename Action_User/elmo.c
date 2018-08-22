@@ -1221,9 +1221,7 @@ void ReadMotorFailure(CAN_TypeDef* CANx, uint8_t ElmoNum)
 		}
 	}
 }
-/**
-* @brief  控制发射枪电机转速
-*/
+//旧车控制发射枪电机转速
 typedef union
 {
     //这个32位整型数是给电机发送的速度（脉冲/s）
@@ -1250,10 +1248,6 @@ void SendUint8(void)
     //终止位
     USART_SendData(USART1, 'J');
 }
-
-// 发射航向角转换函数 由度转换为脉冲
-// yawAngle为角度，范围180到-180之间，初始位置为0度。
-
 // 将角度转换为脉冲
 float YawTransform(float yawAngle)
 {

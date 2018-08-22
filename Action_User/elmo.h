@@ -334,9 +334,10 @@ void ReadReferenceMode(CAN_TypeDef* CANx, uint8_t ElmoNum);
 */
 void ReadMotorFailure(CAN_TypeDef* CANx, uint8_t ElmoNum);
 void SendUint8(void);
+// 将角度转换为脉冲
 float YawTransform(float yawAngle);
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
 void YawAngleCtr(float yawAngle);
-
 #endif
 
 
