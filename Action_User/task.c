@@ -15,6 +15,7 @@
 #include "adc.h"
 #include "pps.h"
 #include "gun.h"
+#include "fort.h"
 /*
 ===============================================================
 						信号量定义
@@ -103,7 +104,11 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	UART4_Init(921600);
 	USART1_Init(115200);
+	UART5_Init(921600);
+	USART3_Init(115200);
 	Adc_Init();
+	
+	TIM_Init(TIM2, 99, 839, 1, 0);
 	TIM_Init(TIM2, 1000-1, 84-1, 0x01, 0x03); //定时器初始化1ms
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
@@ -119,7 +124,6 @@ void ConfigTask(void)
 	
 	//航向电机配置位置环
 	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
-
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
 	//棍子收球电机
@@ -128,12 +132,16 @@ void ConfigTask(void)
 	MotorOn(CAN1, PUSH_BALL_ID);
 	//航向电机
 	MotorOn(CAN1, GUN_YAW_ID);
-	USART3_Init(115200);
+	
 	delay_ms(2000);
+
 	/*一直等待定位系统初始化完成*/
-//	WaitOpsPrepare();	
+	BEEP_ON;
+	//WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
+extern FortType fort;
+extern num_t u_Num;
 //void WalkTask(void)
 //{	
 //	CPU_INT08U os_err;
@@ -273,7 +281,7 @@ void ConfigTask(void)
 //		}
 //	}
 //}
-extern num_t u_Num;
+
 void WalkTask(void)
 {	
 	CPU_INT08U os_err;
@@ -283,7 +291,7 @@ void WalkTask(void)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
 		//控制发射枪电机转速
-		//SendUint8();
+		ShooterVelCtrl(10);
 		
 		//// 控制电机的转速，脉冲。OK
 		VelCrl(CAN1,COLLECT_BALL_ID,0*4096); 
@@ -291,12 +299,14 @@ void WalkTask(void)
 		//推球电机,配置位置环 OK
 		// 推球
 //		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-//		delay_s(2);
 //		// 复位
 //		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+		
+		//控制航向电机
+		YawPosCtrl(90);
 		delay_s(2);
-		YawAngleCtr(90.0);
+		YawPosCtrl(270);
 		delay_s(2);
-		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t\r\n",(int)GetAngle(),(int)GetX(),(int)GetY());
+		
 	}
 }
