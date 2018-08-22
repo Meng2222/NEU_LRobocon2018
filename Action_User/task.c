@@ -15,6 +15,24 @@
 #include "moveBase.h"
 #include "math.h"
 #define PAI 3.14
+// 宏定义棍子收球电机ID
+#define COLLECT_BALL_ID (8)
+// 宏定义推球电机ID
+#define PUSH_BALL_ID (6)
+// 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
+#define PUSH_POSITION (4500)
+// 宏定义送弹机构收回时电机位置
+#define PUSH_RESET_POSITION (5)
+/// 宏定义发射机构航向电机ID
+#define GUN_YAW_ID (7)
+// 电机旋转一周的脉冲数
+#define COUNT_PER_ROUND (4096.0f)
+// 宏定义每度对应脉冲数
+#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
+// 宏定义航向角减速比
+#define YAW_REDUCTION_RATIO (4.0f)
+
+
 int car=44;
 int Car=1;  
 int Angle=0;     //蓝牙发数的整型转换
@@ -27,7 +45,7 @@ float I_value=0;//圆形
 float KI=-0.12;//圆形
 float rate=0.09;// 正方形  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04,           0.15
    //正方形  提前量：duty=650(1m/s)，   1.5m/s duty为900，
-float KP=300; //Kp给300(1m/s)，，，kp给450（1.5m/s）
+float KP=450; //Kp给300(1m/s)，，，kp给450（1.5m/s）
 float V0=0.5;//车的基础速度(m/s)
 float buff=500;//(最大偏离区域)
 //////////////////////////////////////////////////////
@@ -91,6 +109,16 @@ float meters(float V1)//米每秒转化成脉冲每秒
 	Va=4096*V1/(PAI*0.12);
 	return Va;
 } 
+// 将角度转换为脉冲
+float YawTransform(float yawAngle)
+{
+	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
+}
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+void YawAngleCtr(float yawAngle)
+{
+	PosCrl(CAN1, GUN_YAW_ID,ABSOLUTE_MODE, YawTransform(yawAngle));
+}
 
   	   typedef struct{
 	float x;
@@ -135,7 +163,7 @@ pos_t action;
 	int Last_y=0;
 	int R_switch=0;
 	int r_switch=0;
-
+    int push=0;//推球机构的运行周期控制
 /*
 ==================================================================================
 */
@@ -165,6 +193,30 @@ void App_Task()
    ===============================================================
    */
 static int opsflag=0;
+typedef union
+{
+    //这个32位整型数是给电机发送的速度（脉冲/s）
+    int32_t Int32 ;
+    //通过串口发送数据每次只能发8位
+    uint8_t Uint8[4];
+
+}num_t;
+//定义联合体
+num_t u_Num;
+void SendUint8(void)
+{
+    u_Num.Int32 = 1000;
+
+    //起始位
+    USART_SendData(USART1, 'A');
+    //通过串口1发数
+    USART_SendData(USART1, u_Num.Uint8[0]);
+    USART_SendData(USART1, u_Num.Uint8[1]);
+    USART_SendData(USART1, u_Num.Uint8[2]);
+    USART_SendData(USART1, u_Num.Uint8[3]);
+    //终止位
+    USART_SendData(USART1, 'J');
+}
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
@@ -172,11 +224,12 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
 	TIM_Init(TIM2, 999, 839, 0x00, 0x00);
-	//CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	Adc_Init();
 	//驱动器初始化
 	ElmoInit( CAN2);
+	ElmoInit( CAN1);
 	//速度环和位置环初始化
 	//右轮
 	VelLoopCfg(CAN2, 1, 50000, 10000);
@@ -184,27 +237,42 @@ void ConfigTask(void)
 	//左轮
 	VelLoopCfg(CAN2, 2, 50000, 10000);
 	//PosLoopCfg(CAN2, 2, 100, 50000,10000);
+	// 配置速度环
+    VelLoopCfg(CAN1, 8, 50000, 50000);
+    // 控制电机的转速，脉冲。
+    VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
+	// 配置位置环
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+   
+	//航向电机   
+//   PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
+
+	
+	
 	//电机使能
 	MotorOn(CAN2, 01);
 	MotorOn(CAN2, 02);
+	//MotorOn(CAN1, 07);
+	MotorOn(CAN1, 06);
+	MotorOn(CAN1, 8);
 	//定位系统串口初始化
 	USART3_Init(115200);
+	//航向电机串口初始化
+	USART1_Init(115200);
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
 	WaitOpsPrepare();
-	 //蓝牙串口
+	 //蓝牙调试串口
 	 UART4_Init(921600); 
+	 //给电机发数
+	 SendUint8();
+
 //     if(Car==4)
 	 delay_s(10);
-	 
-//	 if(Car==1)
-//	 {
-//	 driveGyro();
-//	 while(!opsflag)
-//	 delay_s(5);
+    
 
-//	 }
-	 //ADC给出出发命令
+
+
 	 while(ADC_judge()==0);
 	 if(ADC_judge()==1)//左边被挡住
 		 sn=1;
@@ -214,6 +282,8 @@ void ConfigTask(void)
 
 
 }
+
+
 
 int mission=1;
 
@@ -355,103 +425,113 @@ void WalkTask(void)
 {	  
 	if(record==50)
 	  {
-		  if(accident_check()==0)
-		    lets_go=1;
-		  else lets_go=0;
-		    last_angle=action.angle;
-            last_x=action.x;
-            last_y=action.y;
-		    record=0;
-		  Last_angle=(int)last_angle;
-		  Last_x=(int)last_x;
-		  Last_y=(int)last_y;
-		  USART_OUT( UART4, (uint8_t*)"%d ", Last_angle);
-		  USART_OUT( UART4, (uint8_t*)"%d ", Last_x);
-		  USART_OUT( UART4, (uint8_t*)"%d ", Last_y);
-		  USART_OUT(UART4,(uint8_t*)"\r\n");
+		  push++;
+//		  if(accident_check()==0)
+//		    lets_go=1;
+//		  else lets_go=0;
+//		    last_angle=action.angle;
+//            last_x=action.x;
+//            last_y=action.y;
+//		    record=0;
+//		  Last_angle=(int)last_angle;
+//		  Last_x=(int)last_x;
+//		  Last_y=(int)last_y;
+//		  USART_OUT( UART4, (uint8_t*)"%d ", Last_angle);
+//		  USART_OUT( UART4, (uint8_t*)"%d ", Last_x);
+//		  USART_OUT( UART4, (uint8_t*)"%d ", Last_y);
+//		  USART_OUT(UART4,(uint8_t*)"\r\n");
 	  }//
-  if(lets_go==1)
-  {
-	  if(action.y>0&&last_y<0&&action.x>-2400)
-	  {
-		R_switch=1;  
-	    if(R_switch!=r_switch)  
-  { 
-	   if(add_flag==-1)
-	   Ra=Ra-200;
-	   if(add_flag==1)
-	   Ra=Ra+200;
-      
-	 
-	  if(Ra<=800)	  
-	   {
-		   choose++;
-		   if(choose%2==1)//正方形和圆形的切换
-		   {
-			   square_flag=2;
-			   add_flag=0;
-			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
-		   }
-			   if(choose%2==0)
-		   {
-			   add_flag=1;
-			   square_flag=0;
-			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
-			   choose=0;
-		   }
-	   }
-	   if(Ra>=2000)
-	   {
-	     choose++;
-		   if(choose%2==1)
-		   {
-			   square_flag=2;    //1为小正方形，2为大正方形
-			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
-			   add_flag=0;
-		   }
-		   if(choose%2==0)
-		   {
-			  add_flag=-1;
-			  square_flag=0;
-			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
-			  choose=0;
-		   }
-	   }
-   }  r_switch=R_switch;
-	  }	  else R_switch=0;
-	 r_switch =R_switch;
-	  if(square_flag==0)
-	  {
-		  if((fabs(action.y)<2050&&fabs(action.y)>1950&&action.x>-2350&&action.x<2450)||(action.x>-4450&&action.x<-4350&&fabs(action.y)<50))//最大的圈会冲一下
-	  {
-	   VelCrl(CAN2, 01,18000);
-	   VelCrl(CAN2, 02,-18000); 
-	  }
-	  else  loop(-2400,0,Ra,Ra/1000,sn);//逆时针转为1,顺时针为-1
-      }
-	  if(square_flag==1)
-	square(1200,-2400,0,1,1,0);//走到半径最小值开始走边长1200的正方形，（边长，x，y顺逆）
-	  if(square_flag==2)
-	square(3600,-2400,0,1,1.5,500);//走到半径最大开始走边长4000的正方形	  
-	  X=(int)action.x;
-	  Y=(int)action.y;
-      Angle=(int)action.angle;	
-     int rr=(int)Ra;
-	  
-	  USART_OUT( UART4, (uint8_t*)"%d ", rr);
-	  USART_OUT( UART4, (uint8_t*)"%d ", X);
-	  USART_OUT( UART4, (uint8_t*)"%d ", Y);
-	  USART_OUT( UART4, (uint8_t*)"%d ", Angle);
-	  USART_OUT( UART4, (uint8_t*)"%d ", square_flag);
-	 
-      USART_OUT( UART4, (uint8_t*)"%d ", record);
-	  
-	  USART_OUT(UART4,(uint8_t*)"\r\n");
-	  
-	  //撞墙判断程序
-	  record++;
+    if(lets_go==1)
+    {
+//	  if(action.y>0&&last_y<0&&action.x>-2400)
+//	  {
+//		R_switch=1;  
+//	    if(R_switch!=r_switch)  
+//  { 
+//	   if(add_flag==-1)
+//	   Ra=Ra-200;
+//	   if(add_flag==1)
+//	   Ra=Ra+200;
+//      
+//	 
+//	  if(Ra<=800)	  
+//	   {
+//		   choose++;
+//		   if(choose%2==1)//正方形和圆形的切换
+//		   {
+//			   square_flag=2;
+//			   add_flag=0;
+//			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
+//		   }
+//			   if(choose%2==0)
+//		   {
+//			   add_flag=1;
+//			   square_flag=0;
+//			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
+//			   choose=0;
+//		   }
+//	   }
+//	   if(Ra>=2000)
+//	   {
+//	     choose++;
+//		   if(choose%2==1)
+//		   {
+//			   square_flag=2;    //1为小正方形，2为大正方形
+//			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
+//			   add_flag=0;
+//		   }
+//		   if(choose%2==0)
+//		   {
+//			  add_flag=-1;
+//			  square_flag=0;
+//			    USART_OUT( UART4, (uint8_t*)"%d ", choose);
+//			  choose=0;
+//		   }
+//	   }
+//   }  r_switch=R_switch;
+//	  }	  else R_switch=0;
+//	 r_switch =R_switch;
+//	  if(square_flag==0)
+//	  {
+//		  if((fabs(action.y)<2050&&fabs(action.y)>1950&&action.x>-2350&&action.x<2450)||(action.x>-4450&&action.x<-4350&&fabs(action.y)<50))//最大的圈会冲一下
+//	  {
+//	   VelCrl(CAN2, 01,18000);
+//	   VelCrl(CAN2, 02,-18000); 
+//	  }
+//	  else  loop(-2400,0,Ra,Ra/1000,sn);//逆时针转为1,顺时针为-1
+//      }
+//	  if(square_flag==1)
+//	square(1200,-2400,0,1,1,0);//走到半径最小值开始走边长1200的正方形，（边长，x，y顺逆）
+//	  if(square_flag==2)
+//	square(3600,-2400,0,1,2,800);//走到半径最大开始走边长4000的正方形	  
+//	  X=(int)action.x;
+//	  Y=(int)action.y;
+//      Angle=(int)action.angle;	
+//     int rr=(int)Ra;
+//	  
+//	  USART_OUT( UART4, (uint8_t*)"%d ", rr);
+//	  USART_OUT( UART4, (uint8_t*)"%d ", X);
+//	  USART_OUT( UART4, (uint8_t*)"%d ", Y);
+//	  USART_OUT( UART4, (uint8_t*)"%d ", Angle);
+//	  USART_OUT( UART4, (uint8_t*)"%d ", square_flag);
+//	 
+//      USART_OUT( UART4, (uint8_t*)"%d ", record);
+//	  
+//	  USART_OUT(UART4,(uint8_t*)"\r\n");
+//	  
+//	  //撞墙判断程序
+//	  record++;
+    YawAngleCtr(90.0f);
+	// 推球
+	if(push/2==1)
+    PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+	if(push/2==0)
+    // 复位   
+	PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+	
 
-
+	if(push==10000)
+		push=0;
     }//accident_check=0无故障运行
 }//sn!=0//启动
 	
@@ -781,7 +861,7 @@ if((action.x<square_corex-0.5*length+duty)&&change==2)
 {//x=corex-0.5*lenth
 	Aa=-1;
 	Bb=0;
-	Cc=square_corey-0.5*length;
+	Cc=square_corex-0.5*length;
 	Nn=-1;
     change=3;
 }
@@ -1084,8 +1164,8 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 	I_value=Ierr*KI;
 	if(V_loop<0.8)
 		V_loop=0.8;//速度不小于1米每秒
-	if(V_loop>=1.0)
-		V_loop=1.0;
+	if(V_loop>=1.5)
+		V_loop=1.5;
 	if(SN==1)//逆时针
 	{
 		if(action.y>corey)
