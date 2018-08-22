@@ -10,6 +10,28 @@
 //ELMO驱动器发送ID基址
 #define SDO_RESPONSE_COB_ID_BASE 0x280
 
+// 宏定义推球电机ID
+#define PUSH_BALL_ID (6)
+// 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
+#define PUSH_POSITION (4500)
+// 宏定义送弹机构收回时电机位置
+#define PUSH_RESET_POSITION (5)
+
+
+// 宏定义棍子收球电机ID
+#define COLLECT_BALL_ID (8)
+
+
+// 宏定义发射机构航向电机ID
+#define GUN_YAW_ID (7)
+// 电机旋转一周的脉冲数
+#define COUNT_PER_ROUND (4096.0f)
+// 宏定义每度对应脉冲数
+#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
+// 宏定义航向角减速比
+#define YAW_REDUCTION_RATIO (4.0f)
+
+
 /******************驱动器工作模式************************/
 #define TORQUE_CONTROL_MODE   (1)
 #define SPEED_CONTROL_MODE    (2)
@@ -311,6 +333,9 @@ void ReadReferenceMode(CAN_TypeDef* CANx, uint8_t ElmoNum);
  * @note：接收标识符为：0x0000464D
 */
 void ReadMotorFailure(CAN_TypeDef* CANx, uint8_t ElmoNum);
+void SendUint8(void);
+float YawTransform(float yawAngle);
+void YawAngleCtr(float yawAngle);
 
 #endif
 

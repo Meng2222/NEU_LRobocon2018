@@ -61,13 +61,20 @@ void App_Task()
    初始化任务
    ===============================================================
    */
+//电机相关初始化
 void Motor_Init(void)
 {
 	ElmoInit(CAN2);
 	VelLoopCfg(CAN2,1,20000,20000);
 	VelLoopCfg(CAN2,2,20000,20000);
-	MotorOn(CAN2,1);
+	VelLoopCfg(CAN1,8,50000,50000);	// 配置棍子收球电机速度环
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);// 配置推球电机位置环
+	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);// 配置航向电机位置环
+	MotorOn(CAN2,1);   //两个差速电机使能
 	MotorOn(CAN2,2);
+	MotorOn(CAN1,8);   //棍子收球电机使能
+	MotorOn(CAN1,6);   //推球电机使能
+	MotorOn(CAN1,7);   //航向电机使能
 }
 void ConfigTask(void)
 {
@@ -135,106 +142,112 @@ void uPlace()
 		u2=-90;
 	lastErr = err;
 }
+
 void WalkTask(void)
 {
-	float buff1,buff2,pulse,distance1,distance2,rState,startState=0;
-	float lastX,lastY,errState=0,errCount,buffstate,buffR;
-	int switchState=0;
+//	float buff1,buff2,pulse,distance1,distance2,rState,startState=0;
+//	float lastX,lastY,errState=0,errCount,buffstate,buffR;
+//	int switchState=0;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		distance1=Get_Adc_Average(14,10)*(4400/4096);			//设置ADC1通道14,15，平均值获取次数为10
-		distance2=Get_Adc_Average(15,10)*(4400/4096);	
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)nowAngle);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetX());
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetY());
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)R);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)distance1);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)distance2);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)u2);
-		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)u1);
-		switch(switchState)
-		{
-		 case 0:
-				if(distance2<=100)
-				{
-					motorState=0;
-					switchState=1;
-				}
-			    else if(distance1<=100)
-				{
-					motorState=1;
-					switchState=1;
-				}
-		 break;
-		 case 1:
-			 if(nowAngle>95||nowAngle<85)
-			  startState=1;
-			if(startState==1&&fabs(lastX-GetX())<2&&fabs(lastY-GetY())<2)
-			{
-				errCount++;
-				if(errCount>=60)
-				{
-					errState=1;
-					errCount=0;
-				}
-			}
-			lastX=(int)GetX();
-			lastY=(int)GetY();
-			if(R>=2000)
-				rState=0;
-			if(R<=500)
-				rState=1;
-			if(rState==0)
-			{
-				if(nowAngle>=170&&nowAngle<=180&&GetX()<=10&&GetX()>=2)
-					R-=250;
-			}
-			if(rState==1)
-			{
-				if(nowAngle>=170&&nowAngle<=180&&GetX()<=10&&GetX()>=2)
-					R+=250;
-			}
-			uPlace();
-			uAng();
-		   if(errState==0)
-		   {
-			   pulse=4096*speed/(WHEEL_DIAMETER*PI);
-			   buff1=(1+0.5*WHEEL_TREAD/R)*pulse+u1;//左轮       u+右， u-左，
-			   buff2=(1-0.5*WHEEL_TREAD/R)*pulse-u1;//右轮
-			   VelCrl(CAN2,1,buff2);
-			   VelCrl(CAN2,2,-buff1);
-		   }
-		   if(errState>=1)
-		   {
-			   VelCrl(CAN2,1,-13000);
-			   VelCrl(CAN2,2,13000);
-			   errState++;
-			   buffR=R;
-			   if(errState>=100)
-			   {
-				   errState=0;
-				   buffstate=1;
-				   if(R<=1400)
-					 R+=900;
-				   else
-					 R-=900;	   
-			   }
-		   }
-		   if(buffstate>=1)
-		  {
-			   buffstate++;
-			   if(buffstate>=180)
-			   {
-				   buffstate=0;
-				   R=buffR;
-			   }
-		   } 
-      break;		  
-	 }
+		SendUint8();    //发射枪电机转速
+        VelCrl(CAN1,COLLECT_BALL_ID,60*4096); // 控制棍子收球电机的转速，脉冲。
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);      // 推球电机推球
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION); // 推球电机复位
+		YawAngleCtr(90);//发射航向角控制
+//		distance1=Get_Adc_Average(14,10)*(4400/4096);			//设置ADC1通道14,15，平均值获取次数为10
+//		distance2=Get_Adc_Average(15,10)*(4400/4096);	
+//		USART_OUT(UART4,(uint8_t*)"%d\t",(int)nowAngle);
+//		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetX());
+//		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetY());
+//		USART_OUT(UART4,(uint8_t*)"%d\t",(int)R);
+//		USART_OUT(UART4,(uint8_t*)"%d\t",(int)distance1);
+//		USART_OUT(UART4,(uint8_t*)"%d\t",(int)distance2);
+//		USART_OUT(UART4,(uint8_t*)"%d\t",(int)u2);
+//		USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)u1);
+//		switch(switchState)
+//		{
+//		 case 0:
+//				if(distance2<=100)
+//				{
+//					motorState=0;
+//					switchState=1;
+//				}
+//			    else if(distance1<=100)
+//				{
+//					motorState=1;
+//					switchState=1;
+//				}
+//		 break;
+//		 case 1:
+//			 if(nowAngle>95||nowAngle<85)
+//			  startState=1;
+//			if(startState==1&&fabs(lastX-GetX())<2&&fabs(lastY-GetY())<2)
+//			{
+//				errCount++;
+//				if(errCount>=60)
+//				{
+//					errState=1;
+//					errCount=0;
+//				}
+//			}
+//			lastX=(int)GetX();
+//			lastY=(int)GetY();
+//			if(R>=2000)
+//				rState=0;
+//			if(R<=500)
+//				rState=1;
+//			if(rState==0)
+//			{
+//				if(nowAngle>=170&&nowAngle<=180&&GetX()<=10&&GetX()>=2)
+//					R-=250;
+//			}
+//			if(rState==1)
+//			{
+//				if(nowAngle>=170&&nowAngle<=180&&GetX()<=10&&GetX()>=2)
+//					R+=250;
+//			}
+//			uPlace();
+//			uAng();
+//		   if(errState==0)
+//		   {
+//			   pulse=4096*speed/(WHEEL_DIAMETER*PI);
+//			   buff1=(1+0.5*WHEEL_TREAD/R)*pulse+u1;//左轮       u+右， u-左，
+//			   buff2=(1-0.5*WHEEL_TREAD/R)*pulse-u1;//右轮
+//			   VelCrl(CAN2,1,buff2);
+//			   VelCrl(CAN2,2,-buff1);
+//		   }
+//		   if(errState>=1)
+//		   {
+//			   VelCrl(CAN2,1,-13000);
+//			   VelCrl(CAN2,2,13000);
+//			   errState++;
+//			   buffR=R;
+//			   if(errState>=100)
+//			   {
+//				   errState=0;
+//				   buffstate=1;
+//				   if(R<=1400)
+//					 R+=900;
+//				   else
+//					 R-=900;	   
+//			   }
+//		   }
+//		   if(buffstate>=1)
+//		  {
+//			   buffstate++;
+//			   if(buffstate>=180)
+//			   {
+//				   buffstate=0;
+//				   R=buffR;
+//			   }
+//		   } 
+//       break;		  
+//	 }
    }		
 }
 
