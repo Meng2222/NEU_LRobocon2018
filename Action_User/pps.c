@@ -104,7 +104,7 @@ void USART3_IRQHandler(void)
 						//=posture.value[2];
 						positionf.X=posture.value[3];
 						positionf.Y=posture.value[4];
-						//=posture.value[5];
+						positionf.w=posture.value[5];
 					}
 					count=0;
 				break;

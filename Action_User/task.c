@@ -13,6 +13,7 @@
 #include "stm32f4xx_usart.h"
 #include "adc.h"
 #include "pps.h"
+#include "fort.h"
 #include "MRKSteven.h"
 
 extern float v1_record,v2_record;
@@ -47,6 +48,13 @@ extern int square_break;
 //
 //===================================================================================================================================================
 //===================================================================================================================================================
+
+/*
+===============================================================
+						信号量定义
+===============================================================
+*/
+
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
 
@@ -86,26 +94,25 @@ void ConfigTask(void)        //初始化
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
+	
+//	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
 
-	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	
-	VelLoopCfg(CAN2,1, 5000, 5000);				//驱动器速度环初始化
-	VelLoopCfg(CAN2,2, 5000, 5000);
-	
-	ElmoInit(CAN2);								//驱动器初始化
-	MotorOn(CAN2,1);							//电机使能（通电）
-	MotorOn(CAN2,2);
+//	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+//	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+//	
+//	VelLoopCfg(CAN2,1, 5000, 5000);				//驱动器速度环初始化
+//	VelLoopCfg(CAN2,2, 5000, 5000);
+//	
+//	ElmoInit(CAN2);								//驱动器初始化
+//	MotorOn(CAN2,1);							//电机使能（通电）
+//	MotorOn(CAN2,2);
 	
 	//TIM4_Pwm_Init (9999,83);//pwm初始化（10ms）
 	TIM_Init(TIM2, 999, 83, 0X01, 0X03);//TIM2 1ms中断
-
 	
 	UART4_Init(921600);
 	
-//	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//CAN1通信（将CAN1时钟赋给CAN2）
-	
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//CAN1通信（将CAN1时钟赋给CAN2）
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);//CAN2通信
 	
 	//Elmo驱动器初始化
@@ -114,7 +121,7 @@ void ConfigTask(void)        //初始化
 	//驱动器速度环初始化
 	VelLoopCfg(CAN2,1,40960000,40960000);
 	VelLoopCfg(CAN2,2,40960000,40960000);
-
+	
 //	//驱动器位置环初始化
 //	PosLoopCfg(CAN2,1,2048000,2048000,1024);
 //	PosLoopCfg(CAN2,2,2048000,2048000,1024);
@@ -123,13 +130,28 @@ void ConfigTask(void)        //初始化
 	MotorOn(CAN2, 1);
 	MotorOn(CAN2, 2);
 	
+	//Adc初始化
 	Adc_Init();
 	
-	USART3_Init(115200);
-	
-	delay_ms(2000);
-	//一直等待定位系统初始化完成
-	WaitOpsPrepare();
+		UART5_Init(921600);	
+		TIM_Init(TIM2, 99, 839, 1, 0);
+		/*一直等待定位系统初始化完成*/
+		BEEP_ON;
+		USART3_Init(115200);
+		delay_ms(2000);
+		//一直等待定位系统初始化完成
+		WaitOpsPrepare();
+		
+		
+		
+		// 宏定义棍子收球电机ID
+		#define COLLECT_BALL_ID (8)
+		// 配置速度环
+		VelLoopCfg(CAN1, 8, 50000, 50000); 
+		MotorOn(CAN1, 8);
+		// 控制电机的转速，脉冲。
+		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
+	   
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
@@ -170,6 +192,8 @@ void ConfigTask(void)        //初始化
 
 //===================================================================================================================================================
 //===================================================================================================================================================
+extern FortType fort;
+
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
@@ -194,8 +218,7 @@ void WalkTask(void)
 		if(Mode==0)//测试状态
 	    {
 			USART_OUT(UART4,(uint8_t*)"%s %s %s %s\r\n","T","E","S","T");//mode0
-			VelCrl(CAN2,1,256);//右轮
-			VelCrl(CAN2,2,256);//左轮
+			Angle_Lock5_plus(angle);
 		}
 		
 		if(Mode==1)                       //Mode1 直行（r=0）或圆周运动 前进/后退
@@ -248,7 +271,7 @@ void WalkTask(void)
 					else if(left==1)	                     //左
 					{
 					{Square_Sweep_Left1(2200 , square_edg);}
-					USART_OUT(UART4,(uint8_t*)"%d  ",(int)square_edg);	
+					USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","e","d","g",":",(int)square_edg);	
 					}
 			    }
 		    }

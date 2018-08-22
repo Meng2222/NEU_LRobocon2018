@@ -38,13 +38,19 @@
 #include "can.h"
 #include "gpio.h"
 #include "elmo.h"
+#include "fort.h"
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-uint8_t Msg[8];
-uint8_t len=4;
-uint32_t i;
+uint8_t Msg1[8];
+uint8_t len1=4;
+uint32_t i1;
+
+uint8_t Msg2[8];
+uint8_t len2=4;
+uint32_t i2;
+
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -52,7 +58,8 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	CAN_RxMsg(CAN1 , &i , Msg , &len);
+	
+	CAN_RxMsg(CAN1 , &i1 , Msg1 , &len1);
 
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
@@ -81,7 +88,7 @@ void CAN2_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	
-	CAN_RxMsg(CAN2 , &i , Msg , &len);
+	CAN_RxMsg(CAN2 , &i2 , Msg2 , &len2);
 	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
@@ -487,7 +494,7 @@ void USART3_IRQHandler(void)//更新频率200Hz
 
 void UART5_IRQHandler(void)
 {
-
+	uint8_t data;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
@@ -495,8 +502,24 @@ void UART5_IRQHandler(void)
 
 	if (USART_GetITStatus(UART5, USART_IT_RXNE) == SET)
 	{
-
+		data = USART_ReceiveData(UART5);
+		GetValueFromFort(data);
 		USART_ClearITPendingBit(UART5, USART_IT_RXNE);
+	}
+	else
+	{
+		USART_ClearITPendingBit(UART5, USART_IT_PE);
+		USART_ClearITPendingBit(UART5, USART_IT_TXE);
+		USART_ClearITPendingBit(UART5, USART_IT_TC);
+		USART_ClearITPendingBit(UART5, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(UART5, USART_IT_IDLE);
+		USART_ClearITPendingBit(UART5, USART_IT_LBD);
+		USART_ClearITPendingBit(UART5, USART_IT_CTS);
+		USART_ClearITPendingBit(UART5, USART_IT_ERR);
+		USART_ClearITPendingBit(UART5, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(UART5, USART_IT_NE);
+		USART_ClearITPendingBit(UART5, USART_IT_FE);
+		USART_ReceiveData(UART5);
 	}
 	OSIntExit();
 }

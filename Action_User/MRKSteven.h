@@ -68,7 +68,7 @@ typedef struct CCircle
 //====================================================================================			
 #define switch_distance  500 //【Mode3】直线闭环校正开始距离（mm）
 //角度闭环参量
-#define angle            0.f
+#define angle            180.f
 //直线闭环参量
 #define line_angle       60.f
 #define line_xintercept  0.f
@@ -107,4 +107,5 @@ void Square_Movement (void);
 void Move_Basic(void);
 void square_edg_jump(void);
 void Collision_Processing(void);
+void Angle_Lock5_plus(float angle_target);
 #endif

@@ -38,6 +38,7 @@ typedef struct Place
 	float Angle;
     //	float SpeedX;
     //	float SpeedY;
+	float w;
 	}Place;
 
 

@@ -57,6 +57,8 @@ void Position_Record(void)
 	USART_OUT(UART4,(uint8_t*)"%d  ",(int)positionf.Y);
 	USART_OUT(UART4,(uint8_t*)"%s%s","A",":");
 	USART_OUT(UART4,(uint8_t*)"%d  ",(int)positionf.Angle);
+	
+	USART_OUT(UART4,(uint8_t*)"%s%s%d  ","w",":",(int)positionf.w);
 	}
 //====================================================================================
 //                                  基础运动
@@ -103,6 +105,21 @@ void Angle_Lock4(float angle_target)//锁定角度方案4【成功】———�
 	//记录v1、v2
 	v1_record=v1-Kp_A*CangleLock.m_angle_Dvalue;
 	v2_record=-v1-Kp_A*CangleLock.m_angle_Dvalue;
+}
+//====================================================================================
+//                                角度自旋闭环（方案）
+//====================================================================================
+void Angle_Lock5_plus(float angle_target)//锁定角度方案4【成功】——————最终采纳方案4
+{
+	//作差
+	if(angle_target<-180){angle_target=360+angle_target;}
+	if(angle_target>180){angle_target=angle_target-360;}
+	CangleLock.m_angle_Dvalue=positioni.Angle-angle_target;
+	//差值讨论
+	if(CangleLock.m_angle_Dvalue>180){CangleLock.m_angle_Dvalue=CangleLock.m_angle_Dvalue-360;}
+	if(CangleLock.m_angle_Dvalue<-180){CangleLock.m_angle_Dvalue=CangleLock.m_angle_Dvalue+360;}
+	//运行
+	Move(-100*CangleLock.m_angle_Dvalue,-100*CangleLock.m_angle_Dvalue);
 }
 //====================================================================================
 //                                正方形运动（方案）
@@ -164,11 +181,11 @@ if(lineangle<0)
 	if(ClineLock.m_line_distance<=switch_distance&&ClineLock.m_line_distance>=-switch_distance){Angle_Lock4(lineangle-Kp_l*ClineLock.m_line_distance);}
 }
 
-USART_OUT(UART4,(uint8_t*)"%d  ",(int)(90*ClineLock.m_line_distance/switch_distance));
-USART_OUT(UART4,(uint8_t*)"%d  ",(int)ClineLock.m_line_distance);	
-USART_OUT(UART4,(uint8_t*)"%d  ",(int)lineangle);		
-USART_OUT(UART4,(uint8_t*)"%d  ",(int)(pi*(lineangle+90)/180));		
-USART_OUT(UART4,(uint8_t*)"%d  ",(int)ClineLock.m_line_slope);		
+//USART_OUT(UART4,(uint8_t*)"%d  ",(int)(90*ClineLock.m_line_distance/switch_distance));
+//USART_OUT(UART4,(uint8_t*)"%d  ",(int)ClineLock.m_line_distance);	
+//USART_OUT(UART4,(uint8_t*)"%d  ",(int)lineangle);		
+//USART_OUT(UART4,(uint8_t*)"%d  ",(int)(pi*(lineangle+90)/180));		
+//USART_OUT(UART4,(uint8_t*)"%d  ",(int)ClineLock.m_line_slope);		
 }
 
 //====================================================================================
@@ -422,13 +439,14 @@ void Adc_Check(void)
 //====================================================================================
 //                                 死亡重启
 //====================================================================================
-int t_col=0;
+
 int square_break=0;
 float v_calculate;
 float v_real;
-	
-int t_back=0;       //倒退计时
-int t_times=0;      //碰撞计次
+
+int t_col=0;	     //碰撞计时
+int t_back=0;        //倒退计时
+int t_times=0;       //碰撞计次
 int t_times_return=0;//计次倒计
 	
 void Check_Error(void)
@@ -438,29 +456,48 @@ void Check_Error(void)
 	
 void square_edg_jump(void)
 {
-	if(t_back<=100)
+	if(t_back<=135)
 	{
-	if(v1_record>=0){Move(-10865,10865);}
+	Move(-10865,10865);
 	//if(v1_record<=0){Move(10865*2,-10865*2);}
 	}
-	if(t_back>100)
+	if(t_back>135)
 	{
 		if(t_times<3)
 		{
-			square_break=0;
 			t_times++;
+			square_break=0;
 			if(sweep_mode==0&&square_edg>=780){square_edg-=280;}
 			if(sweep_mode==1&&square_edg<=1620){square_edg+=280;}
 			if(square_edg<=500){sweep_mode=1;square_edg+=280;}
 			if(square_edg>=1900){sweep_mode=0;square_edg-=280;}
 			t_back=0;
-			t_col=0;
 		}
 		if(t_times>=3)
+		{
+         if(t_back<235)////////////////////////////////////////////////////////可能会变（再改）
+		{
+			if(right==1)
+			{
+			if(Cho==0){Angle_Lock5_plus(90);}
+			if(Cho==1){Angle_Lock5_plus(180);}
+			if(Cho==2){Angle_Lock5_plus(-90);}
+			if(Cho==3){Angle_Lock5_plus(0);}
+			}
+			else if(left==1)
+			{
+			if(Cho==0){Angle_Lock5_plus(-90);}
+			if(Cho==1){Angle_Lock5_plus(180);}
+			if(Cho==2){Angle_Lock5_plus(90);}
+			if(Cho==3){Angle_Lock5_plus(0);}
+			}
+		}
+		if(t_back>=235)
 		{
 			square_break=0;
 			t_times=0;
 			t_back=0;
+			//原地自旋
 			if(right==1)
 			{
 				left=1;
@@ -468,7 +505,7 @@ void square_edg_jump(void)
 				if(Cho==1){Cho=3;}
 				if(Cho==3){Cho=1;}
 			}
-			if(left==1) 
+			else if(left==1) 
 			{
 				left=0;
 				right=1;
@@ -477,26 +514,32 @@ void square_edg_jump(void)
 			}
 			t_col=0;
 		}
+	    }
 	}
 	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s  ","E","R","R","O","R");//发送数据
 }
-	
+
 void Collision_Processing(void)
 {
-	USART_OUT(UART4,(uint8_t*)"%d  ",t_times);//发送数据
-	USART_OUT(UART4,(uint8_t*)"%d  ",x_p10);//发送数据
-	USART_OUT(UART4,(uint8_t*)"%d  ",y_p10);//发送数据
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%d  ","t","i","m","s",":",t_times);//发送数据
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","x","1","0",":",(int)x_p10);//发送数据
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","y","1","0",":",(int)y_p10);//发送数据
+	
 	
 //	v_calculate=(v1_record-v2_record)/(2*10865);
-	v_real=0.1*sqrt((positionf.X-x_now)*(positionf.X-x_now)+(positionf.Y-y_now)*(positionf.Y-y_now));//(m/s)
+	v_real=((sqrt((positionf.X-x_p10)*(positionf.X-x_p10)+(positionf.Y-y_p10)*(positionf.Y-y_p10)))/(10.f));//(m/s)
 	
-	USART_OUT(UART4,(uint8_t*)"%d  ",(int)(v_real*1000));//发送数据
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s%s%d  ","v","_","r","e","a","l",":",(int)(v_real*1000));//发送数据
 	
-    if(v_real>0.1){t_col=0;t_back=0;}
-	if(v_real<0.1){t_col++;}
-	if(t_col<200){t_times_return++;}                             //判断可能不充分
-	if(t_times_return>=5000&&t_times>0){t_times_return=0;t_times--;}
-	if(t_col>=200){square_break=1;}
-	if(square_break==1){t_times_return=0;t_back++;square_edg_jump();}
+    if(v_real>0.3){t_col=0;}
+	if(v_real<=0.3){t_col++;}
+	if(t_col<150&&square_break==0){t_times_return++;}                             //判断可能不充分
+	if(t_times_return>=1500&&t_times>0){t_times_return=0;t_times--;}
+	if(t_col>=150){square_break=1;}
+	if(square_break==1){t_times_return=0;t_col=0;t_back++;square_edg_jump();}
+	
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%d  ","s","q","b","r",":",square_break);//发送数据
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","b","a","c",":",t_back);//发送数据
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","t","t","r",":",t_times_return);
 }
 
