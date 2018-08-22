@@ -12,6 +12,7 @@
 #include "stm32f4xx_usart.h"
 #include "stm32f4xx_adc.h"
 #include "pps.h"
+#include "fort.h"
 /*
 ===============================================================
 						信号量定义
@@ -154,14 +155,18 @@ void ConfigTask(void)
 	MotorOn(CAN1,8);
     #endif
 	USART3_Init(115200);
+	UART5_Init(921600);
+	TIM_Init(TIM2, 99, 839, 1, 0);
 	/*一直等待定位系统初始化完成*/
 	delay_ms(2000);
+	BEEP_ON;
 	WaitOpsPrepare();
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 static int Right_cr1;
 static int Left_cr2;
+extern FortType fort;
 void WalkTask(void)
 {   void Anglepid();
 	void SendUint8();
