@@ -40,10 +40,10 @@ void CAN_Config(CAN_TypeDef *CANx,
 				uint16_t CAN_RxPin,
 				uint16_t CAN_TxPin)
 {
-	GPIO_InitTypeDef GPIO_InitStructure;
-	CAN_InitTypeDef CAN_InitStructure;
-	CAN_FilterInitTypeDef CAN_FilterInitStructure;
-	NVIC_InitTypeDef NVIC_InitStructure;
+	GPIO_InitTypeDef GPIO_InitStructure = {0};
+	CAN_InitTypeDef CAN_InitStructure= {0};
+	CAN_FilterInitTypeDef CAN_FilterInitStructure= {0};
+	NVIC_InitTypeDef NVIC_InitStructure= {0};
 	uint8_t CAN_RxSource = 0;
 	uint8_t CAN_TxSource = 0;
 	uint8_t GPIO_AF_CANx = 0;

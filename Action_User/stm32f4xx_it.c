@@ -41,8 +41,8 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-//uint8_t CAN1Buffer[8]= {0};
-//uint8_t CAN2Buffer[8]= {0};
+uint8_t CAN1Buffer[8]= {0};
+uint8_t CAN2Buffer[8]= {0};
 char pposokflag = 0;
 char isOKFlag = 0;
 void CAN1_RX0_IRQHandler(void)
@@ -53,7 +53,7 @@ void CAN1_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	
-	//MY_CAN_RxMsg(CAN1,CAN1Buffer,8);
+	MY_CAN_RxMsg(CAN1,CAN1Buffer,8);
 	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
@@ -82,7 +82,7 @@ void CAN2_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	
-	//MY_CAN_RxMsg(CAN2,CAN2Buffer,8);
+	MY_CAN_RxMsg(CAN2,CAN2Buffer,8);
 	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
