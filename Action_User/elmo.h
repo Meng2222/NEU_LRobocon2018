@@ -29,7 +29,7 @@
 * @author ACTION
 */
 void ElmoInit(CAN_TypeDef* CANx);
-
+void ElmoInit_0(CAN_TypeDef* CANx);
 /**
 * @brief  电机使能（通电）
 * @param  CANx：所使用的CAN通道编号

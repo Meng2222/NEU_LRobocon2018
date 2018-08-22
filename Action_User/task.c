@@ -108,6 +108,8 @@ void ConfigTask(void)        //初始化
 //	MotorOn(CAN2,2);
 	
 	//TIM4_Pwm_Init (9999,83);//pwm初始化（10ms）
+	
+	
 	TIM_Init(TIM2, 999, 83, 0X01, 0X03);//TIM2 1ms中断
 	
 	UART4_Init(921600);
@@ -115,12 +117,28 @@ void ConfigTask(void)        //初始化
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//CAN1通信（将CAN1时钟赋给CAN2）
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);//CAN2通信
 	
+	if(veh==0)
+	{
+	USART1_Init(921600);
+	//驱动器速度环初始化
+	VelLoopCfg(CAN2,5,40960000,40960000);
+	VelLoopCfg(CAN2,6,40960000,40960000);
 	//Elmo驱动器初始化
-	ElmoInit(CAN2);
-	
+	ElmoInit_0(CAN2);
+    }
+	if(veh==1)
+	{
+	UART4_Init(921600);
 	//驱动器速度环初始化
 	VelLoopCfg(CAN2,1,40960000,40960000);
 	VelLoopCfg(CAN2,2,40960000,40960000);
+	//Elmo驱动器初始化
+	ElmoInit(CAN2);
+	}
+	
+	
+	
+
 	
 //	//驱动器位置环初始化
 //	PosLoopCfg(CAN2,1,2048000,2048000,1024);

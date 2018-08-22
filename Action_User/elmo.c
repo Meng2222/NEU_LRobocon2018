@@ -15,7 +15,12 @@ void ElmoInit(CAN_TypeDef* CANx)
 	uint32_t data[1][2]={0x00000001,00000000};
 	CAN_TxMsg(CANx,ELMO_BROADCAST_ID,(uint8_t*)&data[0],8);
 }
-
+void ElmoInit_0(CAN_TypeDef* CANx)
+{
+	uint32_t data[1][2]={0x00000001,00000000};
+	CAN_TxMsg(CANx,5,(uint8_t*)&data[0],8);
+	CAN_TxMsg(CANx,6,(uint8_t*)&data[0],8);
+}
 /**
 * @brief  电机使能（通电）
 * @param  CANx：所使用的CAN通道编号
