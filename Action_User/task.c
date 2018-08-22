@@ -21,7 +21,8 @@ float errSum=0,lasterror=0;
 double Output,Dis_Output;
 float Kp,Ki,Kd,Kp2,Ki2,Kd2;
 float ratio1,ratio2;
-int flag=1;
+int flag=1,anti_flag=1;
+int adcflag=0;
 
 void Distance_PID(float a,float b,float c,int dir);
 void driveGyro(void);
@@ -48,10 +49,10 @@ void Circle_Angle_PID(float x,float y,float r,float vel,float orient);
 //}
 
 
-void walk_circle(float x,float y,float r,float vel)
+void walk_circle(float vel)
 {
-		ratio1=(r+WHEEL_TREAD/2)/r;
-		ratio2=(r-WHEEL_TREAD/2)/r;
+//		ratio1=(r+WHEEL_TREAD/2)/r;
+//		ratio2=(r-WHEEL_TREAD/2)/r;
 		VelCrl(CAN2,1,vel*Pulse2mm-Output/2);		//右轮
 		VelCrl(CAN2,2,-vel*Pulse2mm-Output/2);		//左轮
 }
@@ -64,11 +65,11 @@ void walk_stragiht(float speed)					//走直线，给定速度
 }
 
 
-void PID_Set(float a,float b,float c,float dir)
-{
-	Distance_PID(a,b,c,dir);	
-	Angle_PID(a,b,c,dir);	
-}	
+//void PID_Set(float a,float b,float c,float dir)
+//{
+//	Distance_PID(a,b,c,dir);	
+//	Angle_PID(a,b,c,dir);	
+//}	
 
 void Bias(void)
 {
@@ -76,6 +77,12 @@ void Bias(void)
 	{error-=360;}
 	else if(error<=-180)
 	{error+=360;}
+}
+void Circle_PID_set(float x,float y,float r,float vel,float orient)
+{
+	
+	Circle_Dis_PID(x,y,r,vel,orient);
+	Circle_Angle_PID(x,y,r,vel,orient);
 }
 
 // 
@@ -131,9 +138,15 @@ void ConfigTask(void)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	
+	ElmoInit(CAN1);							//电机使能（通电）
 	ElmoInit(CAN2);							//电机使能（通电）
+	
+	VelLoopCfg(CAN1, 8, 50000, 50000);			// 控制电机的转速，脉冲。
 	VelLoopCfg(CAN2,1, 500000, 500000);				//驱动器速度环初始化
 	VelLoopCfg(CAN2,2, 500000, 500000);				//驱动器初始化
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+
+	MotorOn(CAN1,8);								
 	MotorOn(CAN2,1);								
 	MotorOn(CAN2,2);
 
@@ -148,8 +161,11 @@ void WalkTask(void)
 
 	CPU_INT08U os_err;
 	os_err = os_err;
-	int state=1;
-	static float dec_value=0;
+	int state=0,stateflag=1,direction=1;
+	float leftlaser=0,rightlaser=0,LastGetx=0,LastGety=0;
+
+	int cnt=0;
+	float dec_value=0;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
@@ -157,119 +173,25 @@ void WalkTask(void)
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetX());
 		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetY());
-		USART_OUT(UART4,(uint8_t*)"Input:%d\tOut:%d\tDis_Out:%d\r\n",(int)Input,(int)Output,(int)Dis_Output);
-		SetTuning(500,0,0);									//对应0.07的是380
-		Dis_Pidtuning(0.075,0.2*0.01,0);						//闭环方形，0.07，与速度成反比		
-		Circle_Dis_PID(500,500,500,1000,1);
-		Circle_Angle_PID(500,500,500,1000,1);
-		walk_circle(500,500,500,1000);
-		switch(state)
-		{
-			case 1 :
+		USART_OUT(UART4,(uint8_t*)"cnt:%d\t adcflag:%d\t",(int)cnt,(int)adcflag);
+		USART_OUT(UART4,(uint8_t*)"Out:%d\tDis_Out:%d\r\n",(int)Output,(int)Dis_Output);
+//		SetTuning(380,0,0);									
+//		Dis_Pidtuning(0.07,0.2*0.01,0);							
+//		Circle_Dis_PID(0,2400,1500,1000,1);					//闭环圆形，0.07，与速度成反比	
+//		Circle_Angle_PID(0,2400,1500,1000,1);				//对应0.07的是380
+//		walk_circle(1000);
 
-				break;
-			
-		}
-			
-/*
-		控制机器人走过整个赛区
-
-		SetTuning(420,0,0);					//PID参数
-		Dis_Pidtuning(0.07,0,0);	
-		switch(state)
-		{		
-			case 1:
-				PID_Set(1.0f,0.0f,1800.0f-dec_value,1);			//x=0,Y轴正方向，速度1m/s
-				walk_stragiht(Whirl_Vel);
-				if(GetY()>=3300-dec_value*2)
-				{
-					state++;
-				}	break;
-			case 2:
-				PID_Set(0.0f,1.0f,-3600.0f+dec_value*2,1);		//y=3600,X轴正方向，速度1m/s
-				walk_stragiht(Whirl_Vel);
-				if(GetX()>=1500-dec_value)
-				{
-					state++;
-				}	break;
-			case 3:
-				PID_Set(1.0f,0.0f,-1800.0f+dec_value,-1);		//x=+2000,Y轴负方向，速度1m/s
-				walk_stragiht(Whirl_Vel);
-				if(GetY()<=500)
-				{
-					state++;
-				}	break;
-			case 4:
-				PID_Set(0.0f,1.0f,0.0f,-1);						//y=0,X轴负方向，速度1m/s
-				walk_stragiht(Whirl_Vel);
-				if(GetX()<=-1500+dec_value)
-				{
-					state=1;
-					if(flag==1)
-					{
-						dec_value+=200;
-						if(dec_value >= 1400)
-						{
-							dec_value=1400;
-							flag=0;
-						}
-					}
-
-					if(flag == 0)
-					{
-						dec_value-=200;
-						if(dec_value<=0)
-						{
-							dec_value=0;
-							flag=1;
-						}
-					}
-				}	break;
-			default:break;
-				
-		}
-						
-*/
-				
-
-//		SetTuning(380,0,0);					//PID参数
-//		Dis_Pidtuning(0.07,0,0);								
-//		switch(state)
-//		{
-//			case 1:
-//				PID_Set(1.0f,0.0f,0.0f,1);		//x=0,Y轴正方向，速度1m/s
-//				walk_stragiht(Whirl_Vel);
-//				if(GetY()>=1430)
-//				{
-//					state++;
-//				}	break;
-//			case 2:
-//				PID_Set(0.0f,1.0f,-2000.0f,1);		//y=+2000,X轴正方向，速度1m/s
-//				walk_stragiht(Whirl_Vel);
-//				if(GetX()>=1430)
-//				{
-//					state++;
-//				}	break;
-//			case 3:
-//				PID_Set(1.0f,0.0f,-2000.0f,-1);		//x=+2000,Y轴负方向，速度1m/s
-//				walk_stragiht(Whirl_Vel);
-//				if(GetY()<=580)
-//				{
-//					state++;
-//				}	break;
-//			case 4:
-//				PID_Set(0.0f,1.0f,0.0f,-1);		//y=0,X轴负方向，速度1m/s
-//				walk_stragiht(Whirl_Vel);
-//				if(GetX()<=610)
-//				{
-//					state=1;
-//				}	break;
-//			default:break;
-//				
-//		}
+		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);			// 推球
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);	// 复位
 
 	}
 }
+
+
+
+
+
 
 
 void Angle_PID(float a,float b,float c,int dir)				//PID控制角度偏差【方形】
@@ -372,7 +294,7 @@ void Distance_PID(float a,float b,float c,int dir)				//PID控制角度偏差
 
 
 
-void Circle_Dis_PID(float x,float y,float r,float vel,float orient)
+void Circle_Dis_PID(float x,float y,float r,float vel,float orient)			//转圈距离PID
 {
 	static float Dis_lasterr,Dis_errSum=0,Dis_error=0;
 	float dDis_Err;
@@ -395,15 +317,10 @@ void Circle_Dis_PID(float x,float y,float r,float vel,float orient)
 		Dis_Output=Kp2*Dis_error-15+Kd2*dDis_Err;
 	else
 		Dis_Output=Kp2*Dis_error+Ki2*Dis_errSum+Kd2*dDis_Err;
-//	Dis_Output=Kp2*Dis_error+Ki2*Dis_errSum+Kd2*dDis_Err;
-//	if(Dis_Output>90)
-//		Dis_Output=90;
-//	else if(Dis_Output<-90)
-//		Dis_Output=-90;
 	Dis_lasterr=Dis_error;
 }
 
-void Circle_Angle_PID(float x,float y,float r,float vel,float orient)
+void Circle_Angle_PID(float x,float y,float r,float vel,float orient)		//转圈角度PID
 {
 	Input=GetAngle()+90;		//转化为直角坐标系
 	if(Input>=180)
@@ -455,19 +372,167 @@ void SetTuning(float kp,float ki,float kd)
 	Kd=kd;
 }
 
+/*
+平稳走方形，误差小于5%
+SetTuning(380,0,0);					//PID参数
+Dis_Pidtuning(0.07,0,0);								
+switch(state)
+{
+	case 1:
+		PID_Set(1.0f,0.0f,0.0f,1);		//x=0,Y轴正方向，速度1m/s
+		walk_stragiht(Whirl_Vel);
+		if(GetY()>=1430)
+		{
+			state++;
+		}	break;
+	case 2:
+		PID_Set(0.0f,1.0f,-2000.0f,1);		//y=+2000,X轴正方向，速度1m/s
+		walk_stragiht(Whirl_Vel);
+		if(GetX()>=1430)
+		{
+			state++;
+		}	break;
+	case 3:
+		PID_Set(1.0f,0.0f,-2000.0f,-1);		//x=+2000,Y轴负方向，速度1m/s
+		walk_stragiht(Whirl_Vel);
+		if(GetY()<=580)
+		{
+			state++;
+		}	break;
+	case 4:
+		PID_Set(0.0f,1.0f,0.0f,-1);		//y=0,X轴负方向，速度1m/s
+		walk_stragiht(Whirl_Vel);
+		if(GetX()<=610)
+		{
+			state=1;
+		}	break;
+	default:break;
+		
+}
+*/
 
-//float Pos_PID(float Pos_Kp,float Pos_Ki,float Pos_Kd,float Set_Pos,float Tar_Pos)
-//{
-//	 static float Bias,Pos_Output,Pos_errSum=0,Last_Bias=0;
-//	 if(Tar_Pos-Set_Pos<200) 
-//	 Last_Bias=0;
-//	 Bias=Set_Pos-Tar_Pos;                                 
-//	 Pos_errSum+=Bias;	 
-//	 float dPos_err=Bias-Last_Bias;	
-//	 Pos_Output=Pos_Kp*Bias+Pos_Ki*Pos_errSum+Pos_Kd*dPos_err;       
-//	 Last_Bias=Bias;                                      
-//	 return Pos_Output;   	
-//}
+
+
+
+/*
+1.能够走遍省赛场地的大部分区域，角落可以暂时不考虑
+2.从出发区出发
+3.学会将ADC采集到的数值转换为激光传感器测得的距离，车初始化完成以后不马上出发，等待挡住左侧激光测距或者右侧激光测距后才出发。
+4.如果触发左侧激光，则从左侧出发，顺时针绕场；如果触发右侧激光，则从右侧触发，逆时针绕场
+5.注意处理走行过程中的特殊情况，比如撞到场地上、撞到对方机器人上、在某个位置卡住等
+
+	SetTuning(380,0,0);									
+	Dis_Pidtuning(0.07,0.2*0.01,0);	
+	if(adcflag == 0)
+	{
+		rightlaser= (float)Get_Adc_Average(14,10)*4400.f/4096.f;
+		leftlaser=(float)Get_Adc_Average(15,10)*4400.f/4096.f;
+		if(leftlaser<=200)
+		{
+			adcflag=1;
+			state=1;
+			direction=1;
+		}
+		else if(rightlaser<=200)	
+		{
+			adcflag=1;
+			state=1;
+			direction=-1;			
+		}
+	}
+	
+	if(adcflag == 1)
+	{
+		cnt++;
+		if(cnt >= 100&&cnt <=250)
+		{
+			if(fabs(LastGetx-GetX())<=100||fabs(LastGety-GetY())<=100)
+			{
+				VelCrl(CAN2,1,-500*COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi));		//倒退					
+				VelCrl(CAN2,2,500*COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi));
+				state=0;
+			}
+		}
+		if(cnt > 250)
+		{
+			cnt=0;
+			LastGetx=GetX();
+			LastGety=GetY();
+			state=1;
+		}
+
+	}
+	
+	switch(state)
+	{
+		case 1 :
+			Circle_PID_set(0,2400,2000-dec_value,Whirl_Vel,direction);
+			walk_circle(Whirl_Vel);
+			if(direction==1)
+			{
+				if(GetAngle() >=90 &&GetAngle() <=96)
+				{
+					if(flag == 1)
+					{
+						state=1;
+						dec_value+=400;
+						if(dec_value>=2000)
+						{
+							dec_value=2000;
+							flag=0;
+						}
+					}
+					if(flag == 0)
+					{
+						state=1;
+						dec_value-=400;
+						if(dec_value<=0)
+						{
+							dec_value=0;
+							flag=1;
+						}
+					}
+				}
+			}
+			else if(direction == -1)
+			{
+				if(GetAngle() >=-96 &&GetAngle() <=-90)
+				{
+					if(flag == 1)
+					{
+						state=1;
+						dec_value+=400;
+						if(dec_value>=2000)
+						{
+							dec_value=2000;
+							flag=0;
+						}
+					}
+					else if(flag == 0)
+					{
+						state=1;
+						dec_value-=400;
+						if(dec_value<=0)
+						{
+							dec_value=0;
+							flag=1;
+						}
+					}
+				}
+			}
+			break;
+		case 2:
+			break;
+		default:
+			break;
+		
+	}
+*/
+
+
+
+
+
 
 
 /******************************************************************

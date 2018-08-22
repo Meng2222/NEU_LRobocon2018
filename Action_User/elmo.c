@@ -65,6 +65,58 @@ void MotorOn(CAN_TypeDef* CANx, uint8_t ElmoNum)
 		}
 	}
 }
+/*
+
+控制发射枪电机转速，使用USART1 PA9/PA10
+
+给电机发送数据一共发送6个字节，第一个字节为 'A' (的ASCII码65)，
+接下来的四个字节代表一个 int32_t型的数据 ，但是由于串口发送只能按照一个字节一个字节发送，
+使用公用体拆分，然后再逐字节发送。最后再发送 'J' 作为终止位 示例
+*/
+typedef union
+{
+    //这个32位整型数是给电机发送的速度（脉冲/s）
+    int32_t Int32 ;
+    //通过串口发送数据每次只能发8位
+    uint8_t Uint8[4];
+
+}num_t;
+
+//定义联合体
+num_t u_Num;
+
+void SendUint8(void)
+{
+    u_Num.Int32 = 1000;
+
+    //起始位
+    USART_SendData(USART1, 'A');
+    //通过串口1发数
+    USART_SendData(USART1, u_Num.Uint8[0]);
+    USART_SendData(USART1, u_Num.Uint8[1]);
+    USART_SendData(USART1, u_Num.Uint8[2]);
+    USART_SendData(USART1, u_Num.Uint8[3]);
+    //终止位
+    USART_SendData(USART1, 'J');
+}
+/*航向电机*/
+
+// 将角度转换为脉冲
+float YawTransform(float yawAngle)
+{
+	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
+}
+
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+//void YawAngleCtr(float yawAngle)
+//{
+//	PosCrl(CAN1, GUN_YAW_ID, POS_ABS, YawTransform(yawAngle));
+//}
+//// 同样要配置位置环
+
+
+
+
 
 /**
 * @brief  电机失能（断电）

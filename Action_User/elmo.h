@@ -10,6 +10,30 @@
 //ELMO驱动器发送ID基址
 #define SDO_RESPONSE_COB_ID_BASE 0x280
 
+/* 棍子收球电机，推球电机，航向电机定义  */
+
+// 宏定义棍子收球电机ID
+#define COLLECT_BALL_ID (8)
+// 宏定义推球电机ID
+#define PUSH_BALL_ID (6)
+// 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
+#define PUSH_POSITION (4500)
+// 宏定义送弹机构收回时电机位置
+#define PUSH_RESET_POSITION (5)
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+// 宏定义发射机构航向电机ID
+#define GUN_YAW_ID (7)
+// 电机旋转一周的脉冲数
+#define COUNT_PER_ROUND (4096.0f)
+// 宏定义每度对应脉冲数
+#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
+// 宏定义航向角减速比
+#define YAW_REDUCTION_RATIO (4.0f)
+// 发射航向角转换函数 由度转换为脉冲
+// yawAngle为角度，范围180到-180之间，初始位置为0度。
+
+
+
 /******************驱动器工作模式************************/
 #define TORQUE_CONTROL_MODE   (1)
 #define SPEED_CONTROL_MODE    (2)
@@ -38,6 +62,8 @@ void ElmoInit(CAN_TypeDef* CANx);
 * @note ELMO驱动器默认初始状态为电机失能，使用电机时需要对其进行使能
 *       部分驱动器参数需要在电机失能状态下才可以配置
 */
+
+void SendUint8(void);
 void MotorOn(CAN_TypeDef* CANx, uint8_t ElmoNum);
 
 /**
