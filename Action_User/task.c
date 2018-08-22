@@ -12,6 +12,7 @@
 #include "stm32f4xx_usart.h"
 #include "pps.h"
 #include "void.h"
+#include "fort.h"
 /*
 ===============================================================
 						信号量定义
@@ -69,11 +70,15 @@ void ConfigTask(void)
 	MotorOn(CAN2,2);
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
+	UART5_Init(921600);
+	TIM_Init(TIM2, 99, 839, 1, 0);
+	/*一直等待定位系统初始化完成*/
+	BEEP_ON;
 	WaitOpsPrepare();
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-
+extern FortType fort;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
