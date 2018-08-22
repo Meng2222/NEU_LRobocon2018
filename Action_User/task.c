@@ -14,7 +14,7 @@
 #include "math.h"
 #include "adc.h"
 #include "pps.h"
-
+#include "fort.h"
 
 float Input,error,Setpoint;
 float errSum=0,lasterror=0;
@@ -87,6 +87,7 @@ void Circle_PID_set(float x,float y,float r,float vel,float orient)
 
 // 
 
+
 /*
 ===============================================================
 						信号量定义
@@ -130,14 +131,17 @@ void ConfigTask(void)
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	Adc_Init();
-	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
-
+//	TIM_Init(TIM2,1000-1,84-1,1,3);	//产生10ms中断，抢占优先级为1，响应优先级为3
+	TIM_Init(TIM2, 99, 839, 1, 0);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	
+	UART5_Init(921600);
+
+	/*一直等待定位系统初始化完成*/
+	BEEP_ON;
 	ElmoInit(CAN1);							//电机使能（通电）
 	ElmoInit(CAN2);							//电机使能（通电）
 	
@@ -155,7 +159,7 @@ void ConfigTask(void)
 	OSTaskSuspend(OS_PRIO_SELF);
 
 }
-
+extern FortType fort;
 void WalkTask(void)
 {
 
