@@ -11,6 +11,7 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "pps.h"
+#include "fort.h"
 /*
 ===============================================================
 						信号量定义
@@ -54,18 +55,20 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	
 	USART3_Init(115200);
+	UART5_Init(921600);
+	TIM_Init(TIM2, 99, 839, 1, 0);
 	/*一直等待定位系统初始化完成*/
+	BEEP_ON;
 	WaitOpsPrepare();
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-
+extern FortType fort;
 void WalkTask(void)
 {
 
 	CPU_INT08U os_err;
 	os_err = os_err;
-
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
