@@ -220,7 +220,7 @@ int AdcFlag(void)
 		{
 			AdcFLAG=1;  ////逆时针
 		}
-		USART_OUT(UART4,(uint8_t*)"%d	%d	%d\n",adc_num1,adc_num2,AdcFLAG);	
+	//	USART_OUT(UART4,(uint8_t*)"%d	%d	%d\n",adc_num1,adc_num2,AdcFLAG);	 /////////ADC  test///////////
 		return AdcFLAG;
 }
 extern int errFlag;
@@ -278,5 +278,5 @@ void errdeal(void)
 			}			
 		Lastx=(int)GetX();
 		Lasty=(int)GetY();
-		//	USART_OUT(UART4,(uint8_t*)"%d\n",errtime);
+		//	USART_OUT(UART4,(uint8_t*)"%d\n",errtime);          /////////errtime  test////////////
 }
