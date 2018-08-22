@@ -61,6 +61,7 @@ void ConfigTask(void)
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	USART3_Init(115200);
 	UART4_Init(921600);
+	UART5_Init(921600);
 	TIM_Init(TIM2,10*1000-1,83,0x01,0x03);
 	Adc_Init();
 	ElmoInit(CAN2);//驱动初始化
@@ -70,12 +71,9 @@ void ConfigTask(void)
 	MotorOn(CAN2,2);
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
-	UART5_Init(921600);
-	TIM_Init(TIM2, 99, 839, 1, 0);
-	/*一直等待定位系统初始化完成*/
-	BEEP_ON;
+//	//TIM_Init(TIM2, 99, 839, 1, 0);
+//	BEEP_ON;
 	WaitOpsPrepare();
-	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 extern FortType fort;
@@ -84,13 +82,16 @@ void WalkTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
+	int r,adc;
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		Walkline(0,2200,Radius(),AdcFlag(),0.7);   ////setx  sety  r  方向  速度
+		r=Radius();
+		adc=AdcFlag();
+		Walkline(0,2000,r,adc,0.7);   ////setx  sety  r  方向  速度
 		errdeal();
-//////////////////发数测试////////////////////////////		
-// 	USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius());
+//////////////////发数测试////////////////////////////
+ //	USART_OUT(UART4,(uint8_t*) "%d	%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius(),(int)GetAngle());
            //////////////////////////test/////////////////////////////
 	}
 }

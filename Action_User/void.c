@@ -197,19 +197,33 @@ void Walkline( int setx,int sety, int r,int direction , float v )
 //	USART_OUT(UART4,(uint8_t*) "diff:%d	distance:%d	%d	%d\r\n",(int)(diff),(int)(distance),(int)(GetXpos()),(int)(GetYpos()));   ///////////////////////////////////test//////////////////////////
 	vright=(int)(exchange(v)+diff);
 	vleft=(int)(-exchange(v)+diff);
+	if(direction==0)
+	{
+		vright=0;
+		vleft=0;
+	}
 		VelCrl(CAN2,0x01,vright);
 		VelCrl(CAN2,0x02,vleft);
 }
 
 void Walkback(float v)
 {
-	VelCrl(CAN2,0x01,-exchange(v)+2000);
-	VelCrl(CAN2,0x02,exchange(v)+2000);
+	VelCrl(CAN2,0x01,-exchange(v));
+	VelCrl(CAN2,0x02,exchange(v));
 }
-
+void Walkaway(float v)
+{
+	VelCrl(CAN2,0x01,exchange(v)-2000);
+	VelCrl(CAN2,0x02,-exchange(v)-2000);	
+}
+void Walkahead(float v)
+{
+	VelCrl(CAN2,0x01,exchange(v));
+	VelCrl(CAN2,0x02,-exchange(v));
+}
 int AdcFlag(void)
 {
-		int adc_num1,adc_num2,AdcFLAG;
+		static int adc_num1,adc_num2,AdcFLAG=0;
 		adc_num1=Get_Adc_Average(15,30);	///左轮
 		adc_num2=Get_Adc_Average(14,30);  ///右轮
 		if(adc_num1>20&&adc_num1<600&&AdcFLAG==0)
@@ -226,20 +240,20 @@ int AdcFlag(void)
 extern int errFlag;
 int Radius(void)
 {
-		float LastAngle;
-		int r=2000;    ////初始半径
-		if(errFlag)
-		{
-			if(r>700)
-			{
-				r-=200;
-			}
-			if(r<=700)
-			{
-				r+=200;
-			}
-		}
-		if(GetAngle()>0&&LastAngle<0)
+		static int LastX=0;
+		static int r=2000;    ////初始半径
+//		if(errFlag)
+//		{
+//			if(r>700)
+//			{
+//				r-=200;
+//			}
+//			if(r<=700)
+//			{
+//				r+=200;
+//			}
+//		}
+		if((int)GetX()>0&&LastX<0)
 		{
 			if(r>=700)
 			{
@@ -250,13 +264,14 @@ int Radius(void)
 				r+=100;
 			}
 		}
-		LastAngle=GetAngle();
+	//	USART_OUT(UART4,(uint8_t*)"%d	%d	%d\n",LastX,(int)GetX(),r);            ///////test//////
+		LastX=(int)GetX();
 		return(r);
 }
 int errFlag;
 void errdeal(void)
 {
-		int Lastx,Lasty,errtime;
+		static int Lastx=0,Lasty=0,errtime=0;
 		errFlag=0;
 		if((Lastx==(int)GetX())&&(Lasty==(int)GetY())&&AdcFlag()!=0)
 		{
@@ -266,17 +281,27 @@ void errdeal(void)
 		{
 			errtime=0;
 		}
-			if(errtime>100)   
+			if(errtime>3)   
 			{
-				for(int i=0;i<2000;i++)
+				for(int i=0;i<3000;i++)
 				{
 					Walkback(0.7);
 					i++;
 				}
+				for(int i=0;i<3000;i++)
+				{
+					Walkaway(0.7);
+					i++;
+				}
+				for(int i=0;i<3000;i++)
+				{
+					Walkahead(0.7);
+					i++;
+				}				
 				errtime=0;
 				errFlag=1;
 			}			
 		Lastx=(int)GetX();
 		Lasty=(int)GetY();
-		//	USART_OUT(UART4,(uint8_t*)"%d\n",errtime);          /////////errtime  test////////////
+			USART_OUT(UART4,(uint8_t*)"%d %d %d\n",Lastx,Lasty,errtime);          /////////errtime  test////////////
 }

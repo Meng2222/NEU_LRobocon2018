@@ -23,6 +23,8 @@ struct PID
 	float d;
 };
 void Walkback(float v);
+void Walkaway(float v);
+void Walkahead(float v);
 int AdcFlag(void);
 int Radius(void);
 //³µ1×¨ÓÃ
