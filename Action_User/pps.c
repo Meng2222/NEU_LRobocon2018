@@ -20,7 +20,8 @@
 #include  <ucos_ii.h>
 #include "timer.h"
 #include "pps.h"
-
+#include "moveBase.h"
+#include <math.h>
 /*告诉定位系统准备开始积分*/
 static uint8_t ppsTalkOk = 0;
 /*定位系统准备完毕开始发数*/
@@ -99,11 +100,12 @@ void USART3_IRQHandler(void)
 						SetWZ(posture.value[5]);
 
 						/*定义的全局结构体变量可以在这里赋值*/
+						xya.compare_angle=posture.value[0];
 						xya.angle=posture.value[0]+90;
 						xya.x_v=-posture.value[1];
 						xya.y_v=-posture.value[2];
-						xya.x=-posture.value[3];
-						xya.y=-posture.value[4];
+						xya.x=-posture.value[3]+OPS_TO_BACK_WHEEL*sin(xya.compare_angle/180*Pi);
+						xya.y=-posture.value[4]+OPS_TO_BACK_WHEEL*(1-cos(xya.compare_angle/180*Pi));
 						xya.angle_v=posture.value[5];
 						if(xya.angle>180)
 							xya.angle-=360;

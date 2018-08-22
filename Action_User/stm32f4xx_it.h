@@ -56,7 +56,7 @@ typedef struct
 	float x_v;
 	float y_v;
 	float angle_v;
-	
+	float compare_angle;
 }pos_t;
 #ifdef __cplusplus
 }

@@ -1793,6 +1793,7 @@ u16 Get_Adc(u8 ch)
   
 	ADC_SoftwareStartConv(ADC1);		//使能指定的ADC1的软件转换启动功能	
 	 
+
 	while(!ADC_GetFlagStatus(ADC1, ADC_FLAG_EOC ));//等待转换结束
 
 	return ADC_GetConversionValue(ADC1);	//返回最近一次ADC1规则组的转换结果
