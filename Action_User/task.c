@@ -12,6 +12,7 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "pps.h"
+<<<<<<< HEAD
 #include "moveBase.h"
 #include "math.h"
 #define PAI 3.14
@@ -74,6 +75,9 @@ isOKFlag=0;
 
 
 
+=======
+#include "fort.h"
+>>>>>>> master
 /*
 ===============================================================
 						信号量定义
@@ -257,10 +261,17 @@ void ConfigTask(void)
 	MotorOn(CAN1, 8);
 	//定位系统串口初始化
 	USART3_Init(115200);
+<<<<<<< HEAD
 	//航向电机串口初始化
 	USART1_Init(115200);
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
+=======
+	UART5_Init(921600);
+	TIM_Init(TIM2, 99, 839, 1, 0);
+	/*一直等待定位系统初始化完成*/
+	BEEP_ON;
+>>>>>>> master
 	WaitOpsPrepare();
 	 //蓝牙调试串口
 	 UART4_Init(921600); 
@@ -282,11 +293,15 @@ void ConfigTask(void)
 
 
 }
+<<<<<<< HEAD
 
 
 
 int mission=1;
 
+=======
+extern FortType fort;
+>>>>>>> master
 void WalkTask(void)
 {
 	extern float Uk_1,Uk_2;
