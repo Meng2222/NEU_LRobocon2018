@@ -21,7 +21,9 @@
 #include "pid.h"
 #include "stm32f4xx_it.h"
 #include "usart.h"
-
+#include <math.h>
+#include "elmo.h"
+#include "trans.h"
 /* Includes ------------------------------------------------------------------*/
 
 
@@ -102,7 +104,8 @@ void RoundTwo(float centerX,float centerY,float r,uint8_t o,float speed);
 float Speed_X(void);
 float Speed_Y(void);
 void Walk(uint8_t *getAdcFlag);
-
+void Turn2(float setAngle1,float tSpeed);
+void straightLine2(float A1,float B1,float C1,uint8_t dir);
 #endif /* ___H */
 
 

@@ -96,7 +96,7 @@ void GetDirection(uint8_t *getFlag)
 			break;
 		}
 		else;
-		USART_OUT(UART4, " Laser Ready\r\n");
+		USART_OUT(UART4, "Laser Ready\r\n");
 	}
 }
 

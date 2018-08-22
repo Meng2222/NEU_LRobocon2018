@@ -24,6 +24,19 @@
 #define  __APP_CFG_H__
 #include <os_cpu.h>
 #include <stdint.h>
+#include "misc.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
+#include "timer.h"
+#include "gpio.h"
+#include "usart.h"
+#include "can.h"
+#include "adc.h"
+#include "elmo.h"
+#include "moveBase.h"
+#include "stm32f4xx_it.h"
+#include "stm32f4xx_usart.h"
+#include "moveBase.h"  
 
 /*
 *********************************************************************************************************

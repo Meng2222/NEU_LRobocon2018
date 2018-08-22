@@ -13,8 +13,7 @@
 /* Includes -------------------------------------------------------------------------------------------*/
 
 #include "moveBase.h"
-#include <math.h>
-#include "elmo.h"
+
 
 /* Private typedef ------------------------------------------------------------------------------------*/
 /* Private define -------------------------------------------------------------------------------------*/
@@ -36,6 +35,16 @@ struct usartValue_{
 	uint8_t flagValue;
 }usartValue;
 
+extern struct trans{
+float oldPosX;
+float oldPosY;
+float newPosX;
+float newPosY;
+float t_angle;
+}transform;
+
+extern float outMax2;
+extern float outMin2;
 /**
   * @brief  开环走直线
   * @note	
@@ -342,6 +351,8 @@ uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir)
 
 void straightLine(float A1,float B1,float C1,uint8_t dir)
 {
+	outMax2=90;
+	outMin2=90;
 	float setAngle=0;
 	float getAngle=GetAngle();
 	float getX=GetPosX();
@@ -672,6 +683,8 @@ void SquareTwo(void)
   */
 void RoundTwo(float centerX,float centerY,float r,uint8_t o,float speed)
 {
+	outMax2=90;
+	outMin2=90;
 	float rX=GetPosX();
 	float rY=GetPosY();
 	float d=sqrt(((rX-centerX)*(rX-centerX))+((rY-centerY)*(rY-centerY)));
@@ -837,6 +850,114 @@ void Walk(uint8_t *getAdcFlag)
 
 }
 
+/**
+  * @brief  新底盘角度闭环
+  * @note	
+  * @param 
+  * @retval None
+  */
+void Turn2(float setAngle1,float tSpeed)
+{
+	float t2X=transform.newPosX;
+	float t2Y=transform.newPosY;
+	int32_t pulseNum=0;
+	int32_t bPulseNum=(tSpeed*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(PI*WHEEL_DIAMETER);
+	float getAngle=0;
+	float speed=0;
+	getAngle=GetAngle();
+	
+	usartValue.xValue=transform.newPosX;
+	usartValue.yValue=transform.newPosY;
+	usartValue.angleValue=getAngle;
+	
+	speed=AnglePid(setAngle1,getAngle);
+	usartValue.pidValueOut=speed;
+	
+	pulseNum=-(speed*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(PI*TURN_AROUND_WHEEL_DIAMETER );
+	
+	VelCrl(CAN2, 0x06,pulseNum);
+	VelCrl(CAN2, 0x05,bPulseNum);
+	
+}
+
+/**
+  * @brief  新底盘直线闭环
+  * @note	
+  * @param A1
+  * @param B1
+  * @param C1
+  * @param dir:为0 往上或右走
+  * @retval None
+  */
+void straightLine2(float A1,float B1,float C1,uint8_t dir)
+{
+	float setAngle=0;
+	float getAngle=GetAngle();
+	float getX=GetPosX();
+	float getY=GetPosY();
+	float distance=((A1*getX)+(B1*getY)+C1)/sqrt(A1*A1+B1*B1);
+	float rearWheelSpeed=0;
+	float angleAdd=0;
+	outMax2=300;
+	outMin2=-300;
+	if(DistancePid(distance,0) < 0)
+		rearWheelSpeed=-DistancePid(distance,0);
+	else
+		rearWheelSpeed=DistancePid(distance,0);
+	
+	angleAdd=0.5*DistancePid(distance,0);
+	if(angleAdd > 90)
+		angleAdd=90;
+	else if(angleAdd < -90)
+		angleAdd=-90;
+	
+	usartValue.d=distance;
+	usartValue.xValue=getX;
+	usartValue.yValue=getY;
+	usartValue.angleValue=getAngle;
+	usartValue.turnAngleValue=setAngle+angleAdd;
+	
+	if((B1 > -0.005) && (B1 < 0.005))
+	{
+		if(!dir)
+		{
+			setAngle=0;
+			Turn2(setAngle+angleAdd,200+rearWheelSpeed);
+		}
+		else
+		{
+			if(A1 > 0)
+			{
+				setAngle=-180;
+				Turn2(setAngle-angleAdd,200+rearWheelSpeed);
+			}
+			else
+			{
+				setAngle=180;
+				Turn2(setAngle+angleAdd,200+rearWheelSpeed);
+			}
+		}
+	}
+	else
+	{
+		if(!dir)
+		{
+			setAngle=(atan(-A1/B1)*180/PI)-90;
+			Turn2(setAngle-angleAdd,200+rearWheelSpeed);
+		}
+		else
+		{
+			setAngle=(atan(-A1/B1)*180/PI)+90;
+			Turn2(setAngle+angleAdd,200+rearWheelSpeed);
+		}
+		
+	}
+	
+	
 
 
+	
+	
+	
+}
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/

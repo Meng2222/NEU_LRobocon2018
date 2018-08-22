@@ -1,18 +1,6 @@
 #include "includes.h"
 #include <app_cfg.h>
-#include "misc.h"
-#include "stm32f4xx_gpio.h"
-#include "stm32f4xx_rcc.h"
-#include "timer.h"
-#include "gpio.h"
-#include "usart.h"
-#include "can.h"
-#include "adc.h"
-#include "elmo.h"
-#include "moveBase.h"
-#include "stm32f4xx_it.h"
-#include "stm32f4xx_usart.h"
-#include "moveBase.h"                            //圆周率                 3.1415
+                          //圆周率                 3.1415
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
 #define BaseVelocity (0.5 * One_Meter_Per_Second) //基础速度               0.5m/s
 //#define CarOne 1                                  //一号车编号             1
@@ -137,7 +125,7 @@ void ConfigTask(void)
 
 }
 
-//5ms 运行一次；
+//10ms 运行一次；
 int cntTurn = 0, cntSendTime = 0;
 char switchNextModeFlag = 1, adjustFlag = 0, turnFlag = 0;
 float adjustVelocity, baseVelocity;
@@ -147,38 +135,42 @@ void WalkTask(void)
 	int cntSendTime;
 	CPU_INT08U os_err;
 	os_err = os_err;
-	
-
-
-
-	
-	
-	Angle_PidPara(30,0,600);
-	Distance_PidPara(0.09,0,0);
+	Angle_PidPara(10,0,0);
+	Distance_PidPara(1,0,0);
 	squareFlag=0;
-	
+	uint16_t count=0;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
+		count++;
+//		Walk(&adcFlag);
 		
-		Walk(&adcFlag);
 		
 
+		straightLine2(1,1,-200,0);
+
 		//收球电机
-		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
-		
-		//航向电机
-		YawAngleCtr(40);
-			
-		// 推球
-		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-		// 复位
-		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-		
-		SendUint8();
-	
+//		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
+//		
+//		//航向电机
+//		YawAngleCtr(40);
+//		
+//		if(count == 300)
+//		{
+//			// 推球	
+//			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+//		}
+//		else if(count >600)
+//		{
+//			// 复位
+//			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+//			count=0;
+//		}
+
+//		SendUint8();
+//	
 //		USART_OUT(UART4, " %d\t", (int)usartValue.d);
 //		USART_OUT(UART4, " %d\t", (int)usartValue.turnAngleValue);
 //		USART_OUT(UART4, " %d\t", (int)usartValue.cnt);
@@ -188,6 +180,11 @@ void WalkTask(void)
 //		USART_OUT(UART4, " %d\t", (int)usartValue.flagValue);
 //		USART_OUT(UART4, " %d\t", (int)usartValue.xValue);
 //		USART_OUT(UART4, " %d\r\n", (int)usartValue.yValue);
+		USART_OUT(USART1, " %d\t", (int)usartValue.d);
+		USART_OUT(USART1, " %d\t", (int)usartValue.turnAngleValue);
+		USART_OUT(USART1, " %d\t", (int)usartValue.angleValue);
+		USART_OUT(USART1, " %d\t", (int)usartValue.xValue);
+		USART_OUT(USART1, " %d\r\n", (int)usartValue.yValue);
 
 	
 	
@@ -200,33 +197,45 @@ void Init(void)
 {
 	TIM_Init(TIM2, 999, 84, 0x01, 0x03);
 	USART3_Init(115200);
+	USART1_Init(921600);
 	UART4_Init(921600);
 	Adc_Init();
-//	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	ElmoInit(CAN2);
 	
-	//右轮电机初始化
-	VelLoopCfg(CAN2, 0x01, 20000, 20000);
-	
-	//左轮电机初始化
-	VelLoopCfg(CAN2, 0x02, 20000, 20000);
-	
+//	//右轮电机初始化
+//	VelLoopCfg(CAN2, 0x01, 20000, 20000);
+//	
+//	//左轮电机初始化
+//	VelLoopCfg(CAN2, 0x02, 20000, 20000);
+//	
 	//收球电机初始化
-	VelLoopCfg(CAN1, 0x08, 50000, 50000);
+//	VelLoopCfg(CAN1, 0x08, 50000, 50000);
+//	
+//	//推球电机初始化
+//	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+//	
+//	//航向电机初始化
+//	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
 	
-	//推球电机初始化
-	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+	//新底盘后轮电机初始化
+	VelLoopCfg(CAN2, 0x05, 10000000, 10000000);
 	
-	//航向电机初始化
-	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
-	
-	MotorOn(CAN2, 0x01);
-	MotorOn(CAN2, 0x02);
+	//新底盘前轮电机初始化
+	VelLoopCfg(CAN2, 0x06, 10000000, 10000000);
+//	MotorOn(CAN2, 0x01);
+//	MotorOn(CAN2, 0x02);
+//	MotorOn(CAN1, 0x08);
+//	MotorOn(CAN1, PUSH_BALL_ID);
+//	MotorOn(CAN1, GUN_YAW_ID);
+
+	MotorOn(CAN2, 0x05);
+	MotorOn(CAN2, 0x06);
 	
 	delay_ms(5000);
 	PosConfig();
-	GetDirection(&adcFlag);
+//	GetDirection(&adcFlag);
 }
 
 
