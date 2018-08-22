@@ -93,6 +93,10 @@ typedef struct PID
 	float X_Speed;
 	float Y_Speed;
 	float V;
+	float V_Set;
+	int Line_Num;
+	int Arc_Num;
+	int Coordinate_Num;
 	Line_Value *l;
 	Arc_Value *r;
 	Coordinate_Value *c;
@@ -100,9 +104,13 @@ typedef struct PID
 }PID_Value;
 
 void PID_Init(PID_Value *PID_a);
+void PID_Line_Init(void);
+void PID_Arc_Init(void);
+void PID_Coordinate_Init(void);
 void Init_PID(PID_Value *pid_init);
 void PID_Control(PID_Value *p);
 void GO(PID_Value *p_GO);
 void PID_Control_Competition(PID_Value *pid);
+void PID_Pre(PID_Value *p);
 
 #endif

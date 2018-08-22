@@ -342,6 +342,13 @@ void UART4_OUT(PID_Value *pid_out)
 {
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->l->line_Angle);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->l->line_Angle);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->l->line_Error);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+	
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(15,10));
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(14,10));
 	USART_SendData(UART4,'\r');

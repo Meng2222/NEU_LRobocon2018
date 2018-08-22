@@ -44,10 +44,12 @@ void App_Task(void)
                           初始化任务
 ===============================================================
 */
-PID_Value *PID_x;
+PID_Value *PID_x = NULL;
+PID_Value PID_A;
 float *error = 0;
 void ConfigTask(void)
 {
+	PID_x = &PID_A;
 	int ADC_Left = 0;
 	int ADC_Right = 0;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
@@ -108,7 +110,7 @@ void WalkTask(void)
 		static u32 direction = 0;
 		if(direction == 0) direction = (u32)OSMboxPend(adc_msg,0,&os_err);
 		
-//		PID_Control_Competition(PID_x);
+		PID_Control_Competition(PID_x);
 		
 		UART4_OUT(PID_x);
 	}
