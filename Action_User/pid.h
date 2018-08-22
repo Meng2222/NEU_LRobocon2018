@@ -34,6 +34,7 @@ float PID_Compentate(float err,PId_t* PId_tTYPE);
 void Angle_PID(float vel,float value);
 float Dis_PID(float error);
 void WalkRoundPID(Round_t* PID_RndTYPE);
+void WalkWholeRound(void);
 //typedef struct {
 //	float x;
 //	float y;
