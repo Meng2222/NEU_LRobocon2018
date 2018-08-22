@@ -23,6 +23,8 @@
 #include "stdint.h"
 #include "elmo.h"
 #include "usart.h"
+#include "can.h"
+#include "stm32f4xx_gpio.h"
 
 
 /* Exported types ------------------------------------------------------------*/
@@ -42,52 +44,55 @@
   */
 
 //#define 
+
 //电机旋转一周的脉冲数
-#define COUNTS_PER_ROUND (4096)
+#define COUNTS_PER_ROUND (4096.0f)
 //轮子直径（单位：mm）
-#define WHEEL_DIAMETER (106.8f)
+#define WHEEL_DIAMETER (120.0f)
 //调试小车车长（单位：mm）
-#define MOVEBASE_LENGTH (500.0f)
+#define MOVEBASE_LENGTH (492.0f)
 //调试小车车宽(单位：mm)
-#define MOVEBASE_WIDTH (403.0f)
+#define MOVEBASE_WIDTH (490.0f)
 //轮子宽度（单位：mm）
-#define WHEEL_WIDTH (46.0f)
+#define WHEEL_WIDTH (40.0f)
 //两个轮子中心距离（单位：mm）
-#define WHEEL_TREAD (355.4f)
-
-//后轮电机的CAN ID号
-#define BACK_WHEEL_ID             5
-//前轮转向电机的CAN ID号
-#define TURN_AROUND_WHEEL_ID      6
-
-//新三轮底盘  前轮转向电机到后轮两轮轴中心间距
-#define TURN_AROUND_WHEEL_TO_BACK_WHEEL                               (286.f)
-
-//定位系统到后轮两轮轴中心间距
-#define OPS_TO_BACK_WHEEL                                             (116.5f)
-//前轮后轮都是3508转一周脉冲都为8192
-#define NEW_CAR_COUNTS_PER_ROUND                                      (8192)
-//转向轮子直径
-#define TURN_AROUND_WHEEL_DIAMETER                                    (50.8f)
-//3508电机减速比，相当于给出去的脉冲要多乘上减速比
-#define REDUCTION_RATIO                                               (19.2f)
+#define WHEEL_TREAD (434.0f)
 //圆周率
 #define PI (3.14f)
 //定义转弯方向
+typedef enum {RIGHT,LEFT}direction;
+
+/**
+  * @}
+  */
+
 
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
-/**WheelSpeed 让后轮转动
-*  speed 为轮子转动速度(单位mm/s)
-*/
-void MainWheelSpeed(float speed);
 /**
- * [TurnWheelSpeed函数让转向轮以一定的速度转动]
- * @param speed [为专项轮转动的速度(单位mm/s)]
+ * [MoveBaseInit移动系统电机初始化]
  */
-void TurnWheelSpeed(float speed);
+void MoveBaseInit(void);
+
+/**GoStraight 让小车走直线
+*  speed 为小车走直线的速度(单位mm/s);
+*/
+void GoStraight(float speed);
+
+/**MakeCircle 让小车转圈
+*  speed 为小车中心线速度(单位mm/s);
+*  radius 为小车中心转弯半径(mm)
+*  direction 为小车转动的方向,其值可以为RIGHT,LEFT
+*/
+void MakeCircle(float speed, float radius, direction drt);
+
+/**WheelSpeed 让单个轮子转动
+*  speed 为轮子转动速度(单位mm/s);
+*  ElmoNum 为所选轮子编号
+*/
+void WheelSpeed(float speed, uint8_t ElmoNum);
 
 
 

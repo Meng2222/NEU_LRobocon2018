@@ -15,6 +15,7 @@
 #include "Pos.h"
 #include "pps.h"
 #include "adc.h"
+#include "othermoto.h"
 
 #define X1 100
 #define X2 200
@@ -37,22 +38,22 @@ point nowPoint;
 
 static struct
 {
-    float mainwheel;
-    float turnwheel;
-}wheelspeed={500, 0};
+    float left;
+    float right;
+}wheelspeed={0, 0};
 
 static enum {clockwise, anticlockwise} Dir2TurnAround = clockwise; 
 
-static linewithdir line1 = {0, 1, 0, forward};
-static linewithdir line2 = {1, 0, 0, forward};
-static linewithdir line3 = {0, 1, 0, backward};
-static linewithdir line4 = {0, 1, 0, backward};
+static linewithdir line1 = {0, -1, 0, forward};
+static linewithdir line2 = {-1, 0, 0, forward};
+static linewithdir line3 = {0, -1, 0, backward};
+static linewithdir line4 = {-1, 0, 0, backward};
 
-static const linewithdir corss1 = {1, -1, 2400, forward};
-static const linewithdir corss2 = {1, 1, -2400, forward};
+static const linewithdir corss1 = {1, 1, -2400, forward};
+static const linewithdir corss2 = {-1, 1, -2400, forward};
 
 #define CCX 0
-#define CCY 500
+#define CCY 2400
 static point circlecentre;//{2400, 0}
 static reldir circledir = right;
 static float circleradius = 700;
@@ -112,17 +113,11 @@ void ConfigTask(void)
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     TIM_Init(TIM2, 999, 83, 0x00, 0x00);
-    CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
-    CAN_Config(CAN2, 500, GPIOB, GPIO_Pin_5, GPIO_Pin_6);
-    VelLoopCfg(CAN2, BACK_WHEEL_ID, 10000000, 10000000);
-    VelLoopCfg(CAN2, TURN_AROUND_WHEEL_ID, 10000000, 10000000);
-	ElmoInit(CAN2);
     Adc_Init();
-    USART3_Init(115200);
     UART4_Init(921600);
-	/*一直等待定位系统初始化完成*/
-    delay_s(2);
-	WaitOpsPrepare();
+    MoveBaseInit();
+    OtherMotoInit();
+    ppsInit();
     OSTaskSuspend(ERR_CHECK_PRIO);
     errCheckOn_Flag = 0;
 	OSTaskSuspend(OS_PRIO_SELF);
@@ -253,13 +248,13 @@ void ChangeRoad(void)
     if(circleradius >= 2000 && roadsignal == circle)
     {
         roadsignal = fang;
-        length = circleradius;
+        length = 2000;
         setFangArea(length);
     }
-    if(length <= 800 && roadsignal == fang)
+    if(length <= 700 && roadsignal == fang)
     {
         roadsignal = circle;
-        circleradius = length;
+        circleradius = 700;
     }
     if(roadsignal == fang)
     {
@@ -276,6 +271,10 @@ void ChangeRoad(void)
             {
                 Target = line2;
             }
+            else
+            {
+                Target = Target;
+            }
         }
         else if(dir2corss1 == right)
         {
@@ -287,6 +286,14 @@ void ChangeRoad(void)
             {
                 Target = line4;
             }
+            else
+            {
+                Target = Target;
+            }
+        }
+        else
+        {
+            Target = Target;
         }
     }
 }
@@ -298,52 +305,52 @@ void WalkTask(void)
     float uout1 = 0, uout2 = 0;
     linewithdir line2centre;
     PidA.KP = 20; //20
-    PidA.KI = 0; //0.01
-    PidA.KD = 10; //20
+    PidA.KI = 0.01; //0.01
+    PidA.KD = 20; //20
     PidA.GetVar = GetA;
     PidA.ExOut = 0;
     PidB.KP = 10; //10
-    PidB.KI = 0; //0.0001
-    PidB.KD = 10; //20
+    PidB.KI = 0.01; //0.0001
+    PidB.KD = 20; //20
     PidB.GetVar = GetA;
     PidB.ExOut = 0;
     circlecentre = setPointXY(CCX, CCY);
-    MotorOn(CAN2, BACK_WHEEL_ID);
-    MotorOn(CAN2, TURN_AROUND_WHEEL_ID);
+    MotorOn(CAN2, 1);
+    MotorOn(CAN2, 2);
     PIDCtrlInit1();
     PIDCtrlInit2();
-//    _Bool ADCFlag = 1;
-//    while(ADCFlag)
-//    {
-//        static _Bool leftFlag = 0, rightFlag = 0;
-//        if(GETADCLEFT < THRESHOLD4ADC)
-//        {
-//            leftFlag = 1;
-//        }
-//        if(GETADCRIGHT < THRESHOLD4ADC)
-//        {
-//            rightFlag = 1;
-//        }
-//        if(GETADCLEFT > THRESHOLD4ADC && leftFlag)
-//        {
-//            Dir2TurnAround = clockwise;
-//            ADCFlag = 0;
-//        }
-//        if(GETADCRIGHT >THRESHOLD4ADC && rightFlag)
-//        {
-//            Dir2TurnAround = anticlockwise;
-//            ADCFlag = 0;
-//        }
-//    }
-    Dir2TurnAround = clockwise;
-    USART_OUT(UART4, (uint8_t *)"x   y   a   cr   fl\r\n");
+    USART_OUT(UART4, (uint8_t *)"x   y   a   cr   fl   ta   tb   tc   tdir\r\n");
+    _Bool ADCFlag = 1;
+    while(ADCFlag)
+    {
+        static _Bool leftFlag = 0, rightFlag = 0;
+        if(GETADCLEFT < THRESHOLD4ADC)
+        {
+            leftFlag = 1;
+        }
+        if(GETADCRIGHT < THRESHOLD4ADC)
+        {
+            rightFlag = 1;
+        }
+        if(GETADCLEFT > THRESHOLD4ADC && leftFlag)
+        {
+            Dir2TurnAround = clockwise;
+            ADCFlag = 0;
+        }
+        if(GETADCRIGHT >THRESHOLD4ADC && rightFlag)
+        {
+            Dir2TurnAround = anticlockwise;
+            ADCFlag = 0;
+        }
+    }
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+        SendBall2Launcher();
         nowPoint = GetNowPoint();
         SetDir2TurnAround();
-        //ChangeRoad();
+        ChangeRoad();
         if(roadsignal == circle)
         {
             line2centre = DirlinePoint2Point(circlecentre, nowPoint);
@@ -365,7 +372,8 @@ void WalkTask(void)
         }
         uout1 = PIDCtrl1(PidA);
         uout2 = PIDCtrl2(PidB);
-        wheelspeed.turnwheel = -1 * (uout1 + uout2);
+        wheelspeed.left = 1000 - uout1 - uout2;
+        wheelspeed.right = 1000 + uout1 + uout2;
 //        if(__fabs(500 + uout2 + uout1) > 1500 || __fabs(500 - uout2 - uout1) > 1500)
 //        {
 //            uout1 = 0;
@@ -379,8 +387,8 @@ void WalkTask(void)
 //                USART_OUT(UART4, (uint8_t *)"overspeed!   \r\n");
 //            }
 //        }
-        MainWheelSpeed(wheelspeed.mainwheel);
-        TurnWheelSpeed(wheelspeed.turnwheel);
+        WheelSpeed(wheelspeed.right, 1);
+        WheelSpeed(wheelspeed.left, 2);
         if(!errCheckOn_Flag)
         {
             errCheckOn_Flag = 1;
@@ -390,7 +398,11 @@ void WalkTask(void)
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.y);
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) GetA());
         USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) circleradius);
-        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) length);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) length);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Target.a);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Target.b);
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Target.c);
+        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) Target.linedir);
 	}
 }
 
@@ -450,10 +462,10 @@ void ErrSolve(void)
         while(counter--)
         {
             OSSemPend(PeriodSem, 0, &os_err);
-            MainWheelSpeed(-1 * wheelspeed.mainwheel);
-            TurnWheelSpeed(-1 * wheelspeed.turnwheel);
+            WheelSpeed(-1 * wheelspeed.right, 1);
+            WheelSpeed(-1 * wheelspeed.left, 2);
         }
-        ChangeDirSignal();
+//        ChangeDirSignal();
         OSSemSet(PeriodSem, 0, &os_err);
         OSSemSet(PeriodSem2, 0, &os_err);
         OSTaskResume(Walk_TASK_PRIO);

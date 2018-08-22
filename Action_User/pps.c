@@ -35,6 +35,13 @@ static uint8_t ppsTalkOk = 0;
 static uint8_t ppsReady = 0;
 static PosSend_t posture={0};
 
+void ppsInit(void)
+{
+    USART3_Init(115200);
+    delay_s(2);
+    /*一直等待定位系统初始化完成*/
+    WaitOpsPrepare();
+}
 
 void USART3_IRQHandler(void)
 {

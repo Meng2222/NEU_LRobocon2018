@@ -27,17 +27,50 @@
   * @param  
   * @retval None
   */
-void MainWheelSpeed(float speed)
+
+void MoveBaseInit(void)
 {
-    int32_t frequency = 0;
-    frequency = (int32_t)((NEW_CAR_COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER) * REDUCTION_RATIO);
-    VelCrl(CAN2, BACK_WHEEL_ID, frequency);
+    CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
+    CAN_Config(CAN2, 500, GPIOB, GPIO_Pin_5, GPIO_Pin_6);
+    VelLoopCfg(CAN2, 1, 10000000, 10000000);
+    VelLoopCfg(CAN2, 2, 10000000, 10000000);
+    ElmoInit(CAN2);
+    MotorOn(CAN2, 1);
+    MotorOn(CAN2, 2);
 }
 
-void TurnWheelSpeed(float speed)
+void GoStraight(float speed)
+{
+    WheelSpeed(speed, 1);
+    WheelSpeed(speed, 2);
+}    
+
+void MakeCircle(float speed, float radius, direction drt)
+{
+    if(drt == RIGHT)
+    {
+        WheelSpeed(((speed / radius) * (radius - (WHEEL_TREAD / 2))), 1);
+        WheelSpeed(((speed / radius) * (radius + (WHEEL_TREAD / 2))), 2);
+    }
+    else
+    {
+        WheelSpeed(-1 * ((speed / radius) * (radius - (WHEEL_TREAD / 2))), 1);
+        WheelSpeed(-1 * ((speed / radius) * (radius + (WHEEL_TREAD / 2))), 2);
+    }
+}
+
+void WheelSpeed(float speed, uint8_t ElmoNum)
 {
     int32_t frequency = 0;
-    frequency = (int32_t)((NEW_CAR_COUNTS_PER_ROUND * speed) / (PI * TURN_AROUND_WHEEL_DIAMETER) * REDUCTION_RATIO);
-    VelCrl(CAN2, TURN_AROUND_WHEEL_ID, frequency);
+    frequency = (int32_t)((COUNTS_PER_ROUND * speed)/(PI * WHEEL_DIAMETER));
+    if(ElmoNum == 1)
+    {
+        //VelCrl(CAN2, ElmoNum, frequency);
+    }
+    else if(ElmoNum == 2)
+    {
+        //VelCrl(CAN2, ElmoNum, -1 * frequency);
+    }
 }
+
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/

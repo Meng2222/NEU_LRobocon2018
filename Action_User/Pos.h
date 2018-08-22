@@ -2,7 +2,6 @@
 #define POS_H
 
 #include "math.h"
-#include "moveBase.h"
 
 //位置,成员为x,y,角度
 typedef struct
@@ -32,8 +31,8 @@ typedef struct
 //直线方向枚举类型,可以为前或后
 typedef enum
 {
-    forward,
-    backward,
+    forward = 1,
+    backward = 0,
 }dir;
 
 //直线解析式,成员aX+bY+c=0的三个参数

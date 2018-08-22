@@ -10,7 +10,7 @@ float GetX(void)
 
 float GetY(void)
 {
-    return PosGet_t.posY + OPS_TO_BACK_WHEEL;
+    return PosGet_t.posY;
 }
 
 float GetA(void)

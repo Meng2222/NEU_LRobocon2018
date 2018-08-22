@@ -7,6 +7,11 @@
 /*接受几个来自定位系统的uint8_t数据*/ /* 6 * 4byte = 24*/
 #define GET_PPS_DATA_NUM       24
 
+/**
+ * [ppsInit定位系统初始化]
+ */
+void ppsInit(void);
+
 void USART3_IRQHandler(void);
 
 void TalkOpsToGetReady(void);
