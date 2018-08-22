@@ -352,8 +352,17 @@ int patrolline(float x,float y,int V)//输入要去的点的坐标
     else arrive_flag=0;
 	return arrive_flag;
 }
-
-
+float w_to_paulse(float w)//角速度转化脉冲rad/s
+{
+	float w_value;
+	w_value=w*(8192* REDUCTION_RATIO/(PAI*TURN_AROUND_WHEEL_DIAMETER ))*TURN_AROUND_WHEEL_TO_BACK_WHEEL ;
+	return w_value;
+}
+float new_meters_paulse(float new_meters)//新车的速度m/s转化脉冲
+{	
+	float new_meters_value=8192* REDUCTION_RATIO/(PAI*WHEEL_DIAMETER )*new_meters*1000;
+	return new_meters_value;
+}
 
 
 

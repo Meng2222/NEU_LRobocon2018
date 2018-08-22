@@ -107,7 +107,10 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN);//顺时针�
 void square(float length,float square_corex,float square_corey,int square_sn,float Vsq,float duty);//闭环正方形
 int ADC_judge();//ADC判断朝哪个方向
 int accident_check();//检测障碍
+float w_to_paulse(float w);//角速度转化脉冲rad/s(新车)
+float new_meters_paulse(float new_meters);//新车的速度m/s转化脉冲（新车）
 float meters(float V1)//米每秒转化成脉冲每秒
+
 {
 	float Va;
 	Va=4096*V1/(PAI*0.12);
@@ -228,42 +231,48 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
 	TIM_Init(TIM2, 999, 839, 0x00, 0x00);
-	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	Adc_Init();
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	//Adc_Init();
 	//驱动器初始化
+	//ElmoInit( CAN2);
 	ElmoInit( CAN2);
-	ElmoInit( CAN1);
 	//速度环和位置环初始化
 	//右轮
-	VelLoopCfg(CAN2, 1, 50000, 10000);
+	//VelLoopCfg(CAN2, 1, 50000, 10000);
+	//后轮
+	VelLoopCfg(CAN2, 5, 10000000, 1000000);
 	//PosLoopCfg(CAN2, 1, 100, 100,0);
 	//左轮
-	VelLoopCfg(CAN2, 2, 50000, 10000);
+	//VelLoopCfg(CAN2, 2, 50000, 10000);
+	//前轮
+	VelLoopCfg(CAN2, 6, 10000000, 1000000);
 	//PosLoopCfg(CAN2, 2, 100, 50000,10000);
 	// 配置速度环
-    VelLoopCfg(CAN1, 8, 50000, 50000);
+   // VelLoopCfg(CAN1, 8, 50000, 50000);
     // 控制电机的转速，脉冲。
-    VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
+    //VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
 	// 配置位置环
-    PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+    //PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
    
 	//航向电机   
-//   PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
+   //PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
 
 	
 	
 	//电机使能
-	MotorOn(CAN2, 01);
-	MotorOn(CAN2, 02);
-	//MotorOn(CAN1, 07);
-	MotorOn(CAN1, 06);
-	MotorOn(CAN1, 8);
+//	MotorOn(CAN2, 01);旧车
+//	MotorOn(CAN2, 02);旧车
+	//	MotorOn(CAN1, 07);炮台机构
+	//	MotorOn(CAN1, 06);炮台机构
+	//	MotorOn(CAN1, 8);炮台机构
+	MotorOn(CAN2, 05);//新车
+	MotorOn(CAN2, 06);//新车
 	//定位系统串口初始化
 	USART3_Init(115200);
 <<<<<<< HEAD
 	//航向电机串口初始化
-	USART1_Init(115200);
+	//USART1_Init(115200);
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
 =======
@@ -273,22 +282,22 @@ void ConfigTask(void)
 	BEEP_ON;
 >>>>>>> master
 	WaitOpsPrepare();
-	 //蓝牙调试串口
-	 UART4_Init(921600); 
+	 //蓝牙调试串口  旧车4，新车1
+	 USART1_Init(921600); 
 	 //给电机发数
-	 SendUint8();
+	 // SendUint8();
 
 //     if(Car==4)
-	 delay_s(10);
+	// delay_s(10);
     
 
 
 
-	 while(ADC_judge()==0);
-	 if(ADC_judge()==1)//左边被挡住
-		 sn=1;
-	  if(ADC_judge()==-1)//右边被挡住
-		 sn=-1;
+//	 while(ADC_judge()==0);
+//	 if(ADC_judge()==1)//左边被挡住
+//		 sn=1;
+//	  if(ADC_judge()==-1)//右边被挡住
+//		 sn=-1;
 	 OSTaskSuspend(OS_PRIO_SELF);
 
 
@@ -436,7 +445,7 @@ void WalkTask(void)
   
   if(car==44)
 {
-	  if( sn!=0)
+	  if( sn==0)
 {	  
 	if(record==50)
 	  {
@@ -519,34 +528,36 @@ void WalkTask(void)
 //	square(1200,-2400,0,1,1,0);//走到半径最小值开始走边长1200的正方形，（边长，x，y顺逆）
 //	  if(square_flag==2)
 //	square(3600,-2400,0,1,2,800);//走到半径最大开始走边长4000的正方形	  
-//	  X=(int)action.x;
-//	  Y=(int)action.y;
-//      Angle=(int)action.angle;	
+	  X=(int)action.x;
+	  Y=(int)action.y;
+      Angle=(int)action.angle;	
 //     int rr=(int)Ra;
 //	  
 //	  USART_OUT( UART4, (uint8_t*)"%d ", rr);
-//	  USART_OUT( UART4, (uint8_t*)"%d ", X);
-//	  USART_OUT( UART4, (uint8_t*)"%d ", Y);
-//	  USART_OUT( UART4, (uint8_t*)"%d ", Angle);
+	  USART_OUT( USART1, (uint8_t*)"%d ", X);
+	  USART_OUT( USART1, (uint8_t*)"%d ", Y);
+	  USART_OUT( USART1, (uint8_t*)"%d ", Angle);
 //	  USART_OUT( UART4, (uint8_t*)"%d ", square_flag);
 //	 
 //      USART_OUT( UART4, (uint8_t*)"%d ", record);
 //	  
-//	  USART_OUT(UART4,(uint8_t*)"\r\n");
+	  USART_OUT(USART1,(uint8_t*)"\r\n");
 //	  
 //	  //撞墙判断程序
 //	  record++;
-    YawAngleCtr(90.0f);
-	// 推球
-	if(push/2==1)
-    PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-	if(push/2==0)
-    // 复位   
-	PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-	
+//    YawAngleCtr(90.0f); 													旧车炮台系统
+//	// 推球
+//	if(push/2==1)                                                           车炮台系统
+//    PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);				车炮台系统
+//	if(push/2==0)															车炮台系统
+//    // 复位   															车炮台系统
+//	PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);			车炮台系统
+//	if(push==10000)															车炮台系统
+//		push=0;	
 
-	if(push==10000)
-		push=0;
+	   VelCrl(CAN2, 05,new_meters_paulse(1));//驱动轮V
+	   VelCrl(CAN2, 06,w_to_paulse(2));//转向轮W
+
     }//accident_check=0无故障运行
 }//sn!=0//启动
 	
@@ -1389,7 +1400,9 @@ void USART3_IRQHandler(void)
 												action.y=-posture.value[3];
 												action.x=posture.value[4];//y
 						//						=posture.value[5];
-					}
+						action.x=action.x+OPS_TO_BACK_WHEEL*(cos(action.angle*PAI/180.0)-1);
+                        action.y=action.y-OPS_TO_BACK_WHEEL *sin(action.angle*PAI/180.0);						
+					} 
 					count=0;
 				break;
 
