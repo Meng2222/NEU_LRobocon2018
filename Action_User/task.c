@@ -19,7 +19,7 @@ extern float v1_record,v2_record;
 extern float v1,v2;               //两轮速度（2左 || 1右）
 
 extern Place positionf;           //浮点 positionf (X、Y、Angle)
-       Place positioni;           //整型 positioni (X、Y、Angle)
+extern Place positioni;           //整型 positioni (X、Y、Angle)
 extern CAngle CangleLock;
 extern CLine ClineLock;
 extern CSquare CsquareLock;
@@ -38,6 +38,7 @@ extern float y_p20;
 
 extern int square_edg;
 extern int left,right;
+extern int square_break;
 
 //===================================================================================================================================================
 //===================================================================================================================================================
@@ -232,12 +233,12 @@ void WalkTask(void)
 //				Check_Error();
 
 //				//如果被卡住
-//				if()
-//				{
-//				Collision_Processing();
-//				}
+
+				Collision_Processing();
+
 //				  //死亡旋转
 //				//如果没有被卡住
+				if(square_break==0)
 				{
 					if(right==1)                             //右
 					{

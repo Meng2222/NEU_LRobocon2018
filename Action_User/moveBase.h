@@ -54,10 +54,8 @@
 //两个轮子中心距离（单位：mm）
 #define WHEEL_TREAD (434.0f)
 
-<<<<<<< HEAD
 #define Pi 3.1415926
 
-=======
 //后轮电机的CAN ID号
 #define BACK_WHEEL_ID             5
 //前轮转向电机的CAN ID号
@@ -75,7 +73,6 @@
 //3508电机减速比，相当于给出去的脉冲要多乘上减速比
 #define REDUCTION_RATIO                                               (19.2f)
 //
->>>>>>> master
 /**
   * @}
   */

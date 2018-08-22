@@ -42,15 +42,13 @@ typedef struct CCircle
 	float m_angle_target;   //机器人最终行进角度
 	}CCircle;
 
-
-
 //====================================================================================   
 // _   _   _   _   _   _   _   _   _                _   _   _   _   _   _   _   _   _ 
 //| |_| |_| |_| |_| |_| |_| |_| |_| |_【参数选择】_| |_| |_| |_| |_| |_| |_| |_| |_| |
 //
 //====================================================================================	
 #define v           1      //【Mode1】【Mode2】【Mode3】【Mode4】【Mode5】车身速度（m/s）
-#define Mode        4      // 0调试状态（目前设置为静止）
+#define Mode        6      // 0调试状态（目前设置为静止）
 				           // 1直行（r=0）||圆周运动 前进/后退; 
                            // 2直行（r=0）||多边形运动（此时r为多边形边长）（带自动校正）
                            // 3直线闭环
@@ -72,16 +70,16 @@ typedef struct CCircle
 //角度闭环参量
 #define angle            0.f
 //直线闭环参量
-#define line_angle       60
-#define line_xintercept  0
-#define line_yintercept  1000
+#define line_angle       60.f
+#define line_xintercept  0.f
+#define line_yintercept  1000.f
 //square闭环参量
 #define	square_middle    2000
 #define square_halfedges 1000
 //circle闭环参量
 #define radius           1.5f      //半径
-#define	center_x         0.f   //圆心坐标
-#define center_y         2000.f   //圆心坐标
+#define	center_x         0.f       //圆心坐标
+#define center_y         2000.f    //圆心坐标
 
 #define direction  0       //【Mode1】：方向（0为前进，1为后退）
                            //【Mode5】：顺时针/逆时针走圆（0为逆时针，1为顺时针）		
@@ -107,4 +105,6 @@ void Position_Record(void);
 void Adc_Check(void);
 void Square_Movement (void);
 void Move_Basic(void);
+void square_edg_jump(void);
+void Collision_Processing(void);
 #endif
