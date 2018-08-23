@@ -10,6 +10,7 @@
 #include "math.h"
 #include "movebase.h"
 #include "pps.h"
+#include "fort.h"
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
 struct position
 {
@@ -304,4 +305,48 @@ void errdeal(void)
 		Lastx=(int)GetX();
 		Lasty=(int)GetY();
 			USART_OUT(UART4,(uint8_t*)"%d %d %d\n",Lastx,Lasty,errtime);          /////////errtime  test////////////
+}
+
+void PushBall(int T)
+{
+	static int t=0;
+	t++;
+	if(t==T)
+	{
+		// 推球
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+	}
+	if(t==2*T)
+	{
+		// 复位
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+		t=0;
+	}
+		USART_OUT(UART4,(uint8_t*)"%d\n",t); 
+}
+
+int Adcangle(void)
+{
+	static int angle=0,direction=1;
+  /////如果两个adc返回值在一定范围 继续寻找//////
+	if((int)ReadLaserAValue()==(int)ReadLaserBValue())
+	{
+		if(angle>=345)
+		{
+			direction=1;
+		}
+		else if(angle<=2)
+		{
+			direction=2;
+		}
+		if(direction==1)
+		{
+			angle--;
+		}
+		else if(direction==2)
+		{
+			angle++;
+		}
+	}
+	return angle;
 }

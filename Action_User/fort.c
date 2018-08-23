@@ -126,6 +126,22 @@ void GetValueFromFort(uint8_t data)
 		bufferInit();
 	}
 }
+float ReadYawPos(void)
+{
+	return fort.yawPosReceive;
+}
+float ReadShooterVel(void)
+{
+	return fort.shooterVelReceive;
+}
+float ReadLaserAValue(void)
+{
+	return fort.laserAValueReceive;
+}
+float ReadLaserBValue(void)
+{
+	return fort.laserBValueReceive ;
+}
 
 
 

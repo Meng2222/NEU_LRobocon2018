@@ -32,6 +32,8 @@ int isSendOK(void);
 void SetOKFlagZero(void);
 void driveGyro(void);
 void errdeal(void);
+void PushBall(int T);
+int Adcangle(void);
 #define Left '1'
 #define Right '2'
 #endif

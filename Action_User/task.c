@@ -55,25 +55,37 @@ void ConfigTask(void)
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	
-	USART3_Init(115200);
-	//	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//can1初始化
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
+	//USART3_Init(115200);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//can1初始化
+	//RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	UART5_Init(921600);
-	TIM_Init(TIM2,10*1000-1,83,0x01,0x03);
+	TIM_Init(TIM2,1000-1,83,0x01,0x03);  /////中断位*10  主周期10ms
 	Adc_Init();
+	ElmoInit(CAN1);//驱动初始化
 	ElmoInit(CAN2);//驱动初始化
 	VelLoopCfg(CAN2,1,2000,2000);//速度环初始化
 	VelLoopCfg(CAN2,2,2000,2000);
 	MotorOn(CAN2,1);//电机初始化
 	MotorOn(CAN2,2);
+	//TIM_Init(TIM2, 99, 839, 1, 0);
+	BEEP_ON;
+	///*棍子收球电机*///
+	// 配置速度环
+	VelLoopCfg(CAN1, 8, 50000, 50000);
+	/////*推球电机*/////
+	// 配置位置环
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+	MotorOn(CAN1,COLLECT_BALL_ID);//电机初始化
+	MotorOn(CAN1,PUSH_BALL_ID);
+	USART_OUT(UART4,(uint8_t*)"test1\r\n");
+	USART_OUT(UART4,(uint8_t*)"test2\r\n");
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
-//	//TIM_Init(TIM2, 99, 839, 1, 0);
-//	BEEP_ON;
 	WaitOpsPrepare();
+		USART_OUT(UART4,(uint8_t*)"test3\r\n");
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 extern FortType fort;
@@ -81,17 +93,22 @@ void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-	OSSemSet(PeriodSem, 0, &os_err);
 	int r,adc;
+	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		r=Radius();
-		adc=AdcFlag();
-		Walkline(0,2000,r,adc,0.7);   ////setx  sety  r  方向  速度
-		errdeal();
+		YawPosCtrl(Adcangle());    /////航向电机
+		ShooterVelCtrl(1); /////发射枪转速
+		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);   	// 控制电机的转速，脉冲。
+		PushBall(200);    ////推球 周期
+//		r=Radius();
+//		adc=AdcFlag();
+//	Walkline(0,2000,r,adc,0.7);   ////setx  sety  r  方向  速度
+//	errdeal();
 //////////////////发数测试////////////////////////////
  //	USART_OUT(UART4,(uint8_t*) "%d	%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius(),(int)GetAngle());
+		USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(ReadYawPos()),(int)ReadLaserAValue(),(int)ReadLaserBValue());
            //////////////////////////test/////////////////////////////
 	}
 }
