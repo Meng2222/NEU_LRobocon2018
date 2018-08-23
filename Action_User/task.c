@@ -319,37 +319,43 @@ void WalkTask(void)
     MotorOn(CAN2, 2);
     PIDCtrlInit1();
     PIDCtrlInit2();
-    USART_OUT(UART4, (uint8_t *)"x   y   a   cr   fl   ta   tb   tc   tdir\r\n");
-    _Bool ADCFlag = 1;
-    while(ADCFlag)
-    {
-        static _Bool leftFlag = 0, rightFlag = 0;
-        if(GETADCLEFT < THRESHOLD4ADC)
-        {
-            leftFlag = 1;
-        }
-        if(GETADCRIGHT < THRESHOLD4ADC)
-        {
-            rightFlag = 1;
-        }
-        if(GETADCLEFT > THRESHOLD4ADC && leftFlag)
-        {
-            Dir2TurnAround = clockwise;
-            ADCFlag = 0;
-        }
-        if(GETADCRIGHT >THRESHOLD4ADC && rightFlag)
-        {
-            Dir2TurnAround = anticlockwise;
-            ADCFlag = 0;
-        }
-    }
+//    USART_OUT(UART4, (uint8_t *)"x   y   a   cr   fl   ta   tb   tc   tdir\r\n");
+    USART_OUT(UART4, (uint8_t *)"laserA laserB\r\n");
+//    _Bool ADCFlag = 1;
+//    while(ADCFlag)
+//    {
+//        static _Bool leftFlag = 0, rightFlag = 0;
+//        if(GETADCLEFT < THRESHOLD4ADC)
+//        {
+//            leftFlag = 1;
+//        }
+//        if(GETADCRIGHT < THRESHOLD4ADC)
+//        {
+//            rightFlag = 1;
+//        }
+//        if(GETADCLEFT > THRESHOLD4ADC && leftFlag)
+//        {
+//            Dir2TurnAround = clockwise;
+//            ADCFlag = 0;
+//        }
+//        if(GETADCRIGHT >THRESHOLD4ADC && rightFlag)
+//        {
+//            Dir2TurnAround = anticlockwise;
+//            ADCFlag = 0;
+//        }
+//    }
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
         SendBall2Launcher();
+        LauncherYAWCtrl(90);
+        LauncherWheelSpeedCtrl(50);
+//        CollecterWheelSpeedCtrl(40);
         nowPoint = GetNowPoint();
         SetDir2TurnAround();
+        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) GetLaserA());
+        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) GetLaserB());
         ChangeRoad();
         if(roadsignal == circle)
         {
@@ -394,15 +400,15 @@ void WalkTask(void)
             errCheckOn_Flag = 1;
             //OSTaskResume(ERR_CHECK_PRIO);
         }
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.x);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.y);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) GetA());
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) circleradius);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) length);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Target.a);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Target.b);
-        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Target.c);
-        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) Target.linedir);
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.x);
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.y);
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) GetA());
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) circleradius);
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) length);
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Target.a);
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Target.b);
+//        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) Target.c);
+//        USART_OUT(UART4, (uint8_t *)"%d   \r\n", (int32_t) Target.linedir);
 	}
 }
 
