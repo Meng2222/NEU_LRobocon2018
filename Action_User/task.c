@@ -13,6 +13,7 @@
 #include "stm32f4xx_adc.h"
 #include "pps.h"
 #include "fort.h"
+#include "moveBase.h"
 /*
 ===============================================================
 						信号量定义
@@ -29,16 +30,8 @@ OS_EVENT *PeriodSem;
 // 宏定义送弹机构收回时电机位置
 #define PUSH_RESET_POSITION (5)
 
-#define GUN_YAW_ID (7)
-// 电机旋转一周的脉冲数
-#define COUNT_PER_ROUND (4096.0f)
-// 宏定义每度对应脉冲数
-#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
-// 宏定义航向角减速比
-#define YAW_REDUCTION_RATIO (4.0f)
-// 发射航向角转换函数 由度转换为脉冲
-// yawAngle为角度，范围180到-180之间，初始位置为0度。
-#define car 2
+
+float add_angle=90;
 int push_balltime=0;
 float last_error;
 float new_error;
@@ -51,8 +44,10 @@ static int if_go=0;
 int t=0;
 int last_angle=90;
 int new_angle;
-int kpa=1000;
-int kpd=500;
+int kpa1=10000;
+int kpd1=800;
+int kpa=150;
+int kpd=6;
 int kdd=2;
 int aord;
 int if_add=1;
@@ -62,7 +57,7 @@ static float Aout=0;
 static float Dout=0;
 float Left_d;
 float Right_d;
-float Add_V;
+float Add_V=0;
 float tangent_angle;
 float add_or_dec=-1;
 float R=2000;
@@ -76,7 +71,7 @@ int if_back=0;
 int last_back=0;
 int i=0;
 int q=0;
-int LIGHT_D;
+float LIGHT_D;
 int up_down;
 float turn_cril;
 void App_Task()
@@ -107,7 +102,6 @@ void App_Task()
 
 void ConfigTask(void)
 {
-	
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
@@ -115,7 +109,7 @@ void ConfigTask(void)
 	USART1_Init(921600);
 	USART3_Init(115200);
 	UART4_Init(921600);
-	
+	UART5_Init(921600);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	
@@ -127,36 +121,27 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2,2,50000,50000);
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
-	#else
-	VelLoopCfg(CAN2,5,10000000,10000000);
-	VelLoopCfg(CAN2,6,10000000,10000000);
-	MotorOn(CAN2,5);
-	MotorOn(CAN2,6);
-	#endif
-	
-	#if car ==1
 	Adc_Init();
 	
 	//棍子收球电机//
 	// 配置速度环
     VelLoopCfg(CAN1, 8, 50000, 50000);
     		
-	//推球电机//
+	
 	
 	// 推球装置配置位置环
     PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
    	
-	//航向电机配置位置环//
-	PosLoopCfg(CAN1, ABSOLUTE_MODE, 50000,50000,20000);
-
-
     MotorOn(CAN1,6);
-	MotorOn(CAN1,7);
+	
 	MotorOn(CAN1,8);
-    #endif
-	USART3_Init(115200);
-	UART5_Init(921600);
-	TIM_Init(TIM2, 99, 839, 1, 0);
+	#else
+	VelLoopCfg(CAN2,5,10000000,10000000);
+	VelLoopCfg(CAN2,6,10000000,10000000);
+	MotorOn(CAN2,5);
+	MotorOn(CAN2,6);
+	#endif
+		
 	/*一直等待定位系统初始化完成*/
 	delay_ms(2000);
 	BEEP_ON;
@@ -181,29 +166,38 @@ void WalkTask(void)
 	int LEFT_ADC;
 	int xv;
 	int yv;
+	int head_cril=-turn_cril;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{		
 		OSSemPend(PeriodSem,  0, &os_err);
-	#if car==1	
+		
+		x=(int)xya.x;
+		y=(int)xya.y;
+		xv=xya.x_v;
+		yv=xya.y_v;
+		angle=(int)xya.angle;
+	 #if car==1	
 		push_balltime++;
-		// 控制电机的转速，脉冲//
+		 //控制电机的转速，脉冲//
         VelCrl(CAN1,8,60*4096); 
 		//控制发射枪电机转速//
-	    SendUint8();
+	    ShooterVelCtrl(50);
 		
 		//航向电机//	
-	    YawAngleCtr(-90);
+	    YawPosCtrl(add_angle);
 		
-		if(push_balltime==300)
+		if(push_balltime==200)
 		{ // 推球
+			add_angle+=50;
 	      PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-		}else if(push_balltime==600)
-		{// 复位
-	    PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+		}else if(push_balltime==400)
+		{// 复位//
+	        add_angle-=50;
+			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 		}
-		push_balltime%=600;
-      Right_d=Get_Adc_Average(14,10);
+		push_balltime%=400;
+        Right_d=Get_Adc_Average(14,10);
 		Left_d=Get_Adc_Average(15,10);
 		if(leftorright)
 		{if(Right_d<50)
@@ -219,17 +213,15 @@ void WalkTask(void)
 				if_go=-1;
 		    }
 	    }
-#endif
-		x=(int)xya.x;
-		y=(int)xya.y;
-		xv=xya.x_v;
-		yv=xya.y_v;
-		
-		RIGHT_ADC=Right_d;
-		LEFT_ADC=Left_d;
-		angle=(int)xya.angle;
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)fort.yawPosReceive,(int)fort.shooterVelReceive,(int)fort.laserAValueReceive,(int)fort.laserBValueReceive);
 		Add_V=sqrt(pow(xya.x_v,2)+pow(xya.y_v,2));
-		USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\r\n",x,y,angle);		
+   #elif car!=1
+    	USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)Dout,(int)Aout,(int)turn_cril);
+   #endif		
+		
+		
+	
+				
 		//USART_OUT(USART1,(uint8_t*)"x_v=%d",xv);
         //USART_OUT(USART1,(uint8_t*)"y_v=%d\r\n",yv);			
 		go(car_v);
@@ -241,77 +233,77 @@ void go(float v)
 	
      
 	 void Light(float,float,float,int);
-    // void Round(float ,float ,float ,float ,float );
+     void Round(float ,float ,float ,float ,float );
    	 float V=v;	 
 	 int right;
 	 int left;
 	  
 
    #if car==1
-	//if(if_go!=0)	
-	//{
-	//	Round(0,2000,R,V,if_go);
-	//	q++;
-	//}
-	//if(q>=100)
-	//{ if(Add_V>150)
-	// {		
-	//	if_back=0;
-	//	//if(compare_number==5)
-	//	//compare_number=10;
-	//	if_add=1;
-	//	
-	// }
-	// else 
-	// {	
-	//	
-	//	//compare_number=10;
-	//	 if_back=1;		 
-	//	 if_add=0;
-	//	for(i=0;i<=1200;i++)
-	//	{   
-	//		VelCrl(CAN2,1,-10000);
-	//		VelCrl(CAN2,2,10000);
-	//		time_number=0;
-	//	}
-	//	
-	//	if(if_go==1)
-	//	{for(i=0;i<=200;i++)
-	//	{   
-	//		VelCrl(CAN2,1,-5000);
-	//		VelCrl(CAN2,2,-5000);
-	//		time_number=0;
-	//	}
-	//	}
-	//	if(if_go==-1)
-	//	{for(i=0;i<=200;i++)
-	//	{   
-	//		VelCrl(CAN2,1,5000);
-	//		VelCrl(CAN2,2,5000);
-	//		time_number=0;
-	//	}
-	//	}
-	//	right_cril=0;
-	//	left_cril=0;	
-	//	q=0;
-	// }
-	// 
-	//}
-	//q%=100;
-
-	//if(if_back>last_back)
-	//{  
-	//	if_go=-if_go;
-	//	
-	//	if(R>=1900)
-	//	add_or_dec=-1;
-	//	if(R<=800)	
-	//	add_or_dec=1;
-	//	R=add_or_dec*249+R;
-	//	
-	//}
-	//last_back=if_back;
-	//   
+	if(if_go!=0)	
+	{
+		Round(0,2000,R,V,if_go);
+		q++;
+	}
+	if(q>=100)
+	{ if(Add_V>150)
+	 {		
+		if_back=0;
+		//if(compare_number==5)
+		//compare_number=10;
+		if_add=1;
+		
+	 }
+	 else 
+	 {	
+		
+		//compare_number=10;
+		 if_back=1;		 
+		 if_add=0;
+		for(i=0;i<=1200;i++)
+		{   
+			VelCrl(CAN2,1,-10000);
+			VelCrl(CAN2,2,10000);
+			time_number=0;
+		}
+		
+		if(if_go==1)
+		{for(i=0;i<=200;i++)
+		{   
+			VelCrl(CAN2,1,-5000);
+			VelCrl(CAN2,2,-5000);
+			time_number=0;
+		}
+		}
+		if(if_go==-1)
+		{for(i=0;i<=200;i++)
+		{   
+			VelCrl(CAN2,1,5000);
+			VelCrl(CAN2,2,5000);
+			time_number=0;
+		}
+		}
+		right_cril=0;
+		left_cril=0;	
+		q=0;
+	 }
+	 
+	}
+	
+    q%=100;
+	if(if_back>last_back)
+	{  
+		if_go=-if_go;
+		
+		if(R>=1900)
+		add_or_dec=-1;
+		if(R<=800)	
+		add_or_dec=1;
+		R=add_or_dec*249+R;
+		
+	}
+	last_back=if_back;
+	   
 	 right_cril=Right_cr1+Dout+Aout;
 	 left_cril=Left_cr2+Dout+Aout;
 	 VelCrl(CAN2,1,right_cril);
@@ -323,10 +315,10 @@ void go(float v)
 	 USART_OUT(USART1,(uint8_t*)"if_go=%d\t",if_go);
 	 Aout=0;
 	 Dout=0;
-	#elif car==2 
-	//Light(1,0,-500,1);
+	#else 
+	 Light(1,0,500,1);
 	 turn_cril=Dout+Aout;
-	 VelCrl(CAN2,5,83443);
+	 VelCrl(CAN2,5,200000);
 	 VelCrl(CAN2,6,-turn_cril);
 	 #endif
 	
@@ -339,6 +331,12 @@ void pid_angle(float angle,int second_driection)
 {
     float nowerror_angle;
 	int set;
+	int set_kp;
+	#if car==1
+	set_kp=kpa;
+	#else 
+	set_kp=kpa1;
+	#endif
 	if(second_driection==1)
 	{if(xya.angle>-180&&xya.angle<angle-180)		
 		nowerror_angle=angle-xya.angle-360;
@@ -361,7 +359,7 @@ void pid_angle(float angle,int second_driection)
 	
 	
 		 
-	Aout=kpa*nowerror_angle;	
+	Aout=set_kp*nowerror_angle;	
 	int n=Aout;
 	set=angle;
 	//USART_OUT(UART4,(uint8_t*)"s=%d\t",s);
@@ -576,63 +574,13 @@ void Round(float x,float y,float r,float v,float round)
 }
 
 
-typedef union
-{
-    //这个32位整型数是给电机发送的速度（脉冲/s）
-    int32_t Int32 ;
-    //通过串口发送数据每次只能发8位
-    uint8_t Uint8[4];
-
-}num_t;
-
-//定义联合体
-num_t u_Num;
-
-void SendUint8(void)
-{
-    u_Num.Int32 = 1000;
-
-    //起始位
-    USART_SendData(USART1, 'A');
-    //通过串口1发数
-    USART_SendData(USART1, u_Num.Uint8[0]);
-    USART_SendData(USART1, u_Num.Uint8[1]);
-    USART_SendData(USART1, u_Num.Uint8[2]);
-    USART_SendData(USART1, u_Num.Uint8[3]);
-    //终止位
-    USART_SendData(USART1, 'J');
-}
-//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
-// 宏定义发射机构航向电机ID
-#define GUN_YAW_ID (7)
-// 电机旋转一周的脉冲数
-#define COUNT_PER_ROUND (4096.0f)
-// 宏定义每度对应脉冲数
-#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
-// 宏定义航向角减速比
-#define YAW_REDUCTION_RATIO (4.0f)
-// 发射航向角转换函数 由度转换为脉冲
-// yawAngle为角度，范围180到-180之间，初始位置为0度。
-
-// 将角度转换为脉冲
-float YawTransform(float yawAngle)
-{
-	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
-}
-
-//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
-void YawAngleCtr(float yawAngle)
-{
-	PosCrl(CAN1, GUN_YAW_ID, RELATIVE_MODE, YawTransform(yawAngle));
-}
-// 同样要配置位置环
 
 
 void Light(float a,float b,float c,int n)
 {  
 	void pid_angle(float,int);
 	void pid_xy2(float ,int );
-    LIGHT_D=fabs(a*xya.x+b+xya.y+c)/(sqrt(pow(a,2)+pow(b,2)));
+    LIGHT_D=fabs(a*xya.x+b*xya.y+c)/(sqrt(pow(a,2)+pow(b,2)));
 	//float light=a*xya.x+xya.y*b+c;
 	
     
@@ -641,12 +589,11 @@ void Light(float a,float b,float c,int n)
 	int f;
 		
     //d=fabs(light)/sqrt((a*a)+(b*b));
-	if((a*xya.x+xya.y*b+c)>0)
+	if((a*xya.x+xya.y*b+c)>=0)
 	    up_down=1;
 	else if((a*xya.x+xya.y*b+c)<0)
 		up_down=-1;
-	else if ((a*xya.x+xya.y*b+c)==0)
-	    up_down=0;
+	
 	
 	if(b!=0)
 	{ if(n==1)
@@ -722,22 +669,22 @@ void Light(float a,float b,float c,int n)
 	USART_OUT(UART4,(uint8_t*)"set_R=%d\t",set_R);
 	USART_OUT(UART4,(uint8_t*)"if_in=%d\t",if_in);
 	pid_angle(set_angle,n);
-	pid_xy2(d,f);
+	pid_xy2(LIGHT_D,f);
 	t=0;
 	if_in=0;
     if_add=1;
 }
-void pid_xy2(float D,int n)
+void pid_xy2(float D,int f)
 {
 	int  nowerror_d;
 	
   #if car!=1
-	if(n==1)
+	if(f==1)
 	{if(up_down==1)
 	  {
 		  nowerror_d=-D;			  
 	  }else nowerror_d=D;
-	}else if(n==-1)
+	}else if(f==-1)
     {
 		if(up_down==1)
 	  {
@@ -748,7 +695,7 @@ void pid_xy2(float D,int n)
 
 	
 		
-	Dout=kpd*nowerror_d;//+kdd*(new_error-last_error);	
+	Dout=kpd1*nowerror_d;//+kdd*(new_error-last_error);	
 	
  // USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
 //	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
