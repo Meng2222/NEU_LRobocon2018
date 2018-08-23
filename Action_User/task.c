@@ -30,7 +30,8 @@ OS_EVENT *PeriodSem;
 // 宏定义送弹机构收回时电机位置
 #define PUSH_RESET_POSITION (5)
 
-
+float Back_maichong;
+float Head_maichong;
 float add_angle=90;
 int push_balltime=0;
 float last_error;
@@ -45,9 +46,9 @@ int t=0;
 int last_angle=90;
 int new_angle;
 int kpa1=10000;
-int kpd1=800;
-int kpa=150;
-int kpd=6;
+int kpd1=400;
+int kpa=15000;//旧车1m/s圆弧闭环为150//
+int kpd=600;//旧车1m/s圆弧闭环为6//
 int kdd=2;
 int aord;
 int if_add=1;
@@ -216,7 +217,7 @@ void WalkTask(void)
 		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)fort.yawPosReceive,(int)fort.shooterVelReceive,(int)fort.laserAValueReceive,(int)fort.laserBValueReceive);
 		Add_V=sqrt(pow(xya.x_v,2)+pow(xya.y_v,2));
    #elif car!=1
-    	USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)Dout,(int)Aout,(int)turn_cril);
+    	USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)Dout,(int)Aout,(int)turn_cril,(int)LIGHT_D,(int)new_error);
    #endif		
 		
 		
@@ -230,8 +231,8 @@ void WalkTask(void)
 }
 void go(float v)
 { 
-	
-     
+	float Turn_v_to_headmaichong(float,float);
+     float Turn_v_to_backmaichong(float);
 	 void Light(float,float,float,int);
      void Round(float ,float ,float ,float ,float );
    	 float V=v;	 
@@ -316,10 +317,10 @@ void go(float v)
 	 Aout=0;
 	 Dout=0;
 	#else 
-	 Light(1,0,500,1);
-	 turn_cril=Dout+Aout;
-	 VelCrl(CAN2,5,200000);
-	 VelCrl(CAN2,6,-turn_cril);
+	 Round(500,0,400,V,-1);
+	 turn_cril=-Dout-Aout;
+	 VelCrl(CAN2,5,Turn_v_to_backmaichong(v));
+	 VelCrl(CAN2,6,Turn_v_to_headmaichong(v,400)+turn_cril);
 	 #endif
 	
 
@@ -624,11 +625,11 @@ void Light(float a,float b,float c,int n)
 		 if(n==1)
 		   	
 			{	
-				f=-1;
+				f=1;
 				set_angle=90;
 			}
 			else 
-			{   f=1;
+			{   f=-1;
 				set_angle=-90;
 		        
 				t=1;
@@ -641,12 +642,12 @@ void Light(float a,float b,float c,int n)
 	if(a==0)
 	{
 		if(n==1)
-		{  f=1;
+		{  f=-1;
 			set_angle=0;
 		
 		}
         else 
-		{   f=-1;
+		{   f=1;
 			set_angle=-180;
             			
 		}
@@ -678,7 +679,7 @@ void pid_xy2(float D,int f)
 {
 	int  nowerror_d;
 	
-  #if car!=1
+  
 	if(f==1)
 	{if(up_down==1)
 	  {
@@ -691,7 +692,7 @@ void pid_xy2(float D,int f)
 		  nowerror_d=D;			  
 	  }else nowerror_d=-D; 
 	}
-	#endif
+	
 
 	
 		
@@ -700,3 +701,13 @@ void pid_xy2(float D,int f)
  // USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
 //	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
 }
+//将速度转化为后轮的脉冲数//
+float Turn_v_to_backmaichong(float v)
+{
+	return(v/(Pi*WHEEL_DIAMETER)*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO);
+}
+//将圆弧闭环时将速度转化为前轮的脉冲数//
+float Turn_v_to_headmaichong(float v,float r)
+{
+	return(v/r*TURN_AROUND_WHEEL_TO_BACK_WHEEL/(Pi*TURN_AROUND_WHEEL_DIAMETER)*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO);
+}	
