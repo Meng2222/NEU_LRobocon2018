@@ -126,6 +126,37 @@ void GetValueFromFort(uint8_t data)
 		bufferInit();
 	}
 }
-
-
-
+void ReadShooterVel(void)
+{
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%d%s","Y","a","w","P",":",(int)fort.shooterVelReceive,".");
+	while(fort.shooterVelReceive-1>=0)
+	{fort.shooterVelReceive--;}
+	fort.shooterVelReceive*=10000;
+	USART_OUT(UART4,(uint8_t*)"%d  ",(int)fort.shooterVelReceive);	
+}
+void ReadYawPos(void)
+{
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%d%s","Y","a","w","P",":",(int)fort.yawPosReceive,".");
+	while(fort.yawPosReceive-1>=0)
+	{fort.yawPosReceive--;}
+	fort.yawPosReceive*=10000;
+	USART_OUT(UART4,(uint8_t*)"%d  ",(int)fort.yawPosReceive);		
+}
+void ReadLaserAValue(void)
+{
+	fort.laserAValueReceive=2.4973*fort.laserAValueReceive+40;
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%d%s","A","a","d","c",":",(int)fort.laserAValueReceive,".");
+	while(fort.laserAValueReceive-1>=0)
+	{fort.laserAValueReceive--;}
+	fort.laserAValueReceive*=10000;
+	USART_OUT(UART4,(uint8_t*)"%d  ",(int)fort.laserAValueReceive);	
+}
+void ReadLaserBValue(void)
+{
+	fort.laserBValueReceive=2.4973*fort.laserBValueReceive+360;
+	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%d%s","B","a","d","c",":",(int)fort.laserBValueReceive,".");
+	while(fort.laserBValueReceive-1>=0)
+	{fort.laserBValueReceive--;}
+	fort.laserBValueReceive*=10000;
+	USART_OUT(UART4,(uint8_t*)"%d  ",(int)fort.laserBValueReceive);
+}

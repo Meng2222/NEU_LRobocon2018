@@ -41,6 +41,33 @@ extern int square_edg;
 extern int left,right;
 extern int square_break;
 
+// 发射航向角转换函数 由度转换为脉冲
+// yawAngle为角度，范围180到-180之间，初始位置为0度。
+
+
+static int opsflag=0;
+typedef union
+{
+    //这个32位整型数是给电机发送的速度（脉冲/s）
+    int32_t Int32 ;
+    //通过串口发送数据每次只能发8位
+    uint8_t Uint8[4];
+}num_t;
+//定义联合体
+num_t u_Num;
+void SendUint8(void)
+{
+    u_Num.Int32 = 1000;
+    //起始位
+    USART_SendData(USART1, 'A');
+    //通过串口1发数
+    USART_SendData(USART1, u_Num.Uint8[0]);
+    USART_SendData(USART1, u_Num.Uint8[1]);
+    USART_SendData(USART1, u_Num.Uint8[2]);
+    USART_SendData(USART1, u_Num.Uint8[3]);
+    //终止位
+    USART_SendData(USART1, 'J');
+}
 //===================================================================================================================================================
 //===================================================================================================================================================
 // 
@@ -109,67 +136,64 @@ void ConfigTask(void)        //初始化
 	
 	//TIM4_Pwm_Init (9999,83);//pwm初始化（10ms）
 	
-	
-	TIM_Init(TIM2, 999, 83, 0X01, 0X03);//TIM2 1ms中断
-	
-	UART4_Init(921600);
-	
+	TIM_Init(TIM2, 999, 83, 0X01, 0X03);//TIM2 1ms中断	
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//CAN1通信（将CAN1时钟赋给CAN2）
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);//CAN2通信
 	
 	if(veh==0)
 	{
-	USART1_Init(921600);
-	//驱动器速度环初始化
-	VelLoopCfg(CAN2,5,40960000,40960000);
-	VelLoopCfg(CAN2,6,40960000,40960000);
-	//Elmo驱动器初始化
-	ElmoInit_0(CAN2);
+		USART1_Init(921600);
+		//驱动器速度环初始化
+		VelLoopCfg(CAN2,5,40960000,40960000);
+		VelLoopCfg(CAN2,6,40960000,40960000);
+		//Elmo驱动器初始化
+		ElmoInit_0(CAN2);
+//		ElmoInit_0(CAN1);//////////////////////////////////////////////////
+			//电机使能（通电）
+		MotorOn(CAN2, 5);
+		MotorOn(CAN2, 6);
     }
 	if(veh==1)
 	{
-	UART4_Init(921600);
-	//驱动器速度环初始化
-	VelLoopCfg(CAN2,1,40960000,40960000);
-	VelLoopCfg(CAN2,2,40960000,40960000);
-	//Elmo驱动器初始化
-	ElmoInit(CAN2);
-	}
-	
-	
-	
-
-	
-//	//驱动器位置环初始化
-//	PosLoopCfg(CAN2,1,2048000,2048000,1024);
-//	PosLoopCfg(CAN2,2,2048000,2048000,1024);
-	
-	//电机使能（通电）
-	MotorOn(CAN2, 1);
-	MotorOn(CAN2, 2);
-	
-	//Adc初始化
-	Adc_Init();
-	
+		UART4_Init(921600);
+		//驱动器速度环初始化
+		VelLoopCfg(CAN2,1,40960000,40960000);
+		VelLoopCfg(CAN2,2,40960000,40960000);
+		//Elmo驱动器初始化
+		ElmoInit(CAN1);	
+		ElmoInit(CAN2);	
+		//电机使能（通电）
+		MotorOn(CAN2, 1);
+		MotorOn(CAN2, 2);
+			//Adc初始化
+		Adc_Init();
+			
 		UART5_Init(921600);	
-		TIM_Init(TIM2, 99, 839, 1, 0);
-		/*一直等待定位系统初始化完成*/
-		BEEP_ON;
-		USART3_Init(115200);
-		delay_ms(2000);
-		//一直等待定位系统初始化完成
-		WaitOpsPrepare();
-		
-		
-		
-		// 宏定义棍子收球电机ID
-		#define COLLECT_BALL_ID (8)
+
+		/*棍子收球机*/		
 		// 配置速度环
 		VelLoopCfg(CAN1, 8, 50000, 50000); 
-		MotorOn(CAN1, 8);
-		// 控制电机的转速，脉冲。
-		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
-	   
+		
+		/*推球电机*/
+		// 配置位置环
+		PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+		
+		/*航向电机*/
+		// 配置位置环
+//		PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000); 
+		 
+		MotorOn(CAN1,6);  
+//	MotorOn(CAN1,7); 
+		MotorOn(CAN1,8);
+	}
+
+	TIM_Init(TIM2, 99, 839, 1, 0);
+	/*一直等待定位系统初始化完成*/
+	BEEP_ON;
+	USART3_Init(115200);
+	delay_ms(2000);
+	//一直等待定位系统初始化完成
+	WaitOpsPrepare();
 	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
@@ -203,6 +227,7 @@ void ConfigTask(void)        //初始化
 	//          |            //
 	///////////////////////////
 	
+	
 //===================================================================================================================================================
 //===================================================================================================================================================
  
@@ -210,6 +235,8 @@ void ConfigTask(void)        //初始化
 
 //===================================================================================================================================================
 //===================================================================================================================================================
+extern FortType fort;
+int t_push=0;
 extern FortType fort;
 
 void WalkTask(void)
@@ -220,23 +247,65 @@ void WalkTask(void)
 	OSSemPend(PeriodSem, 0, &os_err);
 	while (1)
 	{
+		    if(veh==1)
+			{	
 			G_Adc_A4=Get_Adc_Average(14,10);
 			G_Adc_A5=Get_Adc_Average(15,10);
-			
+			}
 			///////////////////////////////////
 			OSSemPend(PeriodSem, 0, &os_err);//
-			///////////////////////////////////	
+			///////////////////////////////////
 			
 			Coordinate_Reverse();//坐标反转（一定要放在while开始，OSSemPend后一行）	
 			Position_Record();   //坐标记录、实时位置发送
-			
+
+			if(veh==1)
+			{
+				/*棍子收球机*/
+				// 控制电机的转速，脉冲。
+				VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
+				
+				//控制发射枪电机转速// 
+				ShooterVelCtrl(66);
+
+				/*推球电机*/
+				t_push++;
+				if(t_push==300)
+				{
+					// 推球
+					PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+				}
+				else if(t_push==600)
+				{
+					// 复位
+					PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+					t_push=0;
+				}
+
+				ReadShooterVel();
+				ReadYawPos();
+				ReadLaserAValue();
+				ReadLaserBValue();
+				
 			v1=(int)10865*v;
 			v2=(int)10865*v;
+			}
+			if(veh==0)
+			{
+			v1=(NEW_CAR_COUNTS_PER_ROUND*1000*v*REDUCTION_RATIO)/(pi*WHEEL_DIAMETER);//后轮
+//			if(r!=0){v2=(v*TURN_AROUND_WHEEL_TO_BACK_WHEEL*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(r*pi*TURN_AROUND_WHEEL_DIAMETER);}//前轮
+//			if(r==0){v2=0;}
+			v2=0;
+			}	
 		
 		if(Mode==0)//测试状态
 	    {
 			USART_OUT(UART4,(uint8_t*)"%s %s %s %s\r\n","T","E","S","T");//mode0
-			Angle_Lock5_plus(angle);
+			if(veh==0)
+			{
+			USART_OUT(USART1,(uint8_t*)"%s %s %s %s\r\n","T","E","S","T");//mode0
+			Move_0(v1,v2);
+			}
 		}
 		
 		if(Mode==1)                       //Mode1 直行（r=0）或圆周运动 前进/后退
@@ -244,11 +313,12 @@ void WalkTask(void)
 		
 		if(Mode==2)                       //Mode2 直行（r=0）||多边形运动（带自动校正）（r为多边形边长；angle为多边形邻边角度） 
 		{
-			USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d\r\n","M","o","d","e",2);//mode2
+			USART_OUT(USART1,(uint8_t*)"%s%s%s%s%d\r\n","M","o","d","e",2);//mode2
 			if(r==0) //直行or正方形（附自动校正）
 			{Angle_Lock4(CangleLock.m_angle_Target);}
 			if(r!=0)//正方形//4车
 			{Square_Movement();}
+
 		}
 		
 		if(Mode==3)//蛇皮走位（直线闭环）
@@ -295,7 +365,8 @@ void WalkTask(void)
 		    }
 			USART_OUT(UART4,(uint8_t*)"\r\n");	//换行（独列）
 		}
-		
+		if(veh==1){USART_OUT(UART4,(uint8_t*)"\r\n");}	//换行（独列）
+		if(veh==0){USART_OUT(USART1,(uint8_t*)"\r\n");}
 //		OSSemPend(PeriodSem, 0, &os_err);
 	}
 

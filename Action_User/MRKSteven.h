@@ -47,8 +47,10 @@ typedef struct CCircle
 //| |_| |_| |_| |_| |_| |_| |_| |_| |_【参数选择】_| |_| |_| |_| |_| |_| |_| |_| |_| |
 //
 //====================================================================================	
-#define v           1      //【Mode1】【Mode2】【Mode3】【Mode4】【Mode5】车身速度（m/s）
-#define Mode        6      // 0调试状态（目前设置为静止）
+#define veh 1
+	
+#define v           0.5      //【Mode1】【Mode2】【Mode3】【Mode4】【Mode5】车身速度（m/s）
+#define Mode        0      // 0调试状态（目前设置为静止）
 				           // 1直行（r=0）||圆周运动 前进/后退; 
                            // 2直行（r=0）||多边形运动（此时r为多边形边长）（带自动校正）
                            // 3直线闭环
@@ -65,19 +67,27 @@ typedef struct CCircle
 #define Ki_l        0      //【I】直线闭环————||
 #define Kd_l        0      //【D】直线闭环————||
 
+#define Kp_A0        4251   //【P】角度闭环————|| 300的Kp_A可能导致角度积分错误
+#define Ki_A0        0      //【I】角度闭环————|| 
+#define Kd_A0        0      //【D】角度闭环————|| 
+                            //
+#define Kp_l0        0.03   //【D】直线闭环————||  0.09（Kp_l=90度/p_a(1000)）——————（Mode3直线用90ok）
+#define Ki_l0        0      //【I】直线闭环————||
+#define Kd_l0        0      //【D】直线闭环————||
+
 //====================================================================================			
 #define switch_distance  500 //【Mode3】直线闭环校正开始距离（mm）
 //角度闭环参量
 #define angle            180.f
 //直线闭环参量
-#define line_angle       60.f
+#define line_angle       150.f
 #define line_xintercept  0.f
 #define line_yintercept  1000.f
 //square闭环参量
 #define	square_middle    2000
 #define square_halfedges 1000
 //circle闭环参量
-#define radius           1.5f      //半径
+#define radius           1.f      //半径
 #define	center_x         0.f       //圆心坐标
 #define center_y         2000.f    //圆心坐标
 
@@ -85,16 +95,54 @@ typedef struct CCircle
                            //【Mode5】：顺时针/逆时针走圆（0为逆时针，1为顺时针）		
 						   
 						   
-#define r          2.f     //【Mode1】【Mode2】半径 || 边长（m）
+#define r          0     //【Mode1】【Mode2】半径 || 边长（m）
                            //【Mode1】：车身旋转半径（填入0则直行）（r>0逆时针运动；r<0顺时针运动）
                            //【Mode2】：正方形边长（r=0为直行）
+						   
+//====================================================================================						   
+						   
+// 宏定义棍子收球电机ID
+
+#define COLLECT_BALL_ID (8)
+
+// 宏定义推球电机ID
+
+#define PUSH_BALL_ID (6)
+
+// 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
+
+#define PUSH_POSITION (4500)
+
+// 宏定义送弹机构收回时电机位置
+
+#define PUSH_RESET_POSITION (5)
+
+// 宏定义发射机构航向电机ID
+
+#define GUN_YAW_ID (7)
+
+// 电机旋转一周的脉冲数
+
+#define COUNT_PER_ROUND (4096.0f)
+
+// 宏定义每度对应脉冲数
+
+#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
+
+// 宏定义航向角减速比
+
+#define YAW_REDUCTION_RATIO (4.0f)
 
 //正方形闭环：1m/s: Kp_A=200 p_a=500 Kp_l=0.03 （距离Kp过小导致机器人无法快速回到直线）
 
 //====================================================================================
+float YawTransform(float yawAngle);
+void YawAngleCtr(float yawAngle);
+
 void Coordinate_Reverse(void); 
 void Angle_Lock4(float angle_target);
 void Move(int V1,int V2);
+void Move_0(float V01,float V02);
 void Line_Lock4(float lineangle, float yintercept, float xintercept);
 void Circle_Lock1(void);
 void Square_Lock1(int squaremiddle , int squareHalfedges);

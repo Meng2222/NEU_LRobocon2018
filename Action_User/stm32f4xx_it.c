@@ -107,6 +107,7 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
+
 void TIM2_IRQHandler(void)//定时器中断
 {
 #define PERIOD_COUNTER 10
@@ -197,10 +198,8 @@ void TIM4_IRQHandler(void)
 	}
 	OSIntExit();
 }
-
 void UART4_IRQHandler(void)
 {
-
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
@@ -499,7 +498,7 @@ void UART5_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	
 	if (USART_GetITStatus(UART5, USART_IT_RXNE) == SET)
 	{
 		data = USART_ReceiveData(UART5);

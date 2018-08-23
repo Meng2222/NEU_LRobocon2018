@@ -2,6 +2,7 @@
 #define FORT__H
 
 #include "stdint.h"
+#include "usart.h"
 
 typedef union
 {	
@@ -16,7 +17,7 @@ typedef struct
 	usartData_t usartReceiveData;
 	float yawPosReceive ;
 	float shooterVelReceive;
-	 float laserAValueReceive ;
+	float laserAValueReceive ;
 	float laserBValueReceive ; 
 }FortType;
 
@@ -29,7 +30,6 @@ void ReadLaserBValue(void);
 void GetValueFromFort(uint8_t data);
 
 extern FortType fort;
-
 #endif
 
 

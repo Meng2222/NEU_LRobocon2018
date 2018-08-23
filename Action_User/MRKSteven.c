@@ -3,29 +3,113 @@
 #include "elmo.h"
 #include "math.h"
 #include "usart.h"
+#include "stm32f4xx_it.h"
+#include "moveBase.h"
+#include "fort.h"
+
 void Move(int V1,int V2)//运动函数
 {
 VelCrl(CAN2,1,V1);//右轮
 VelCrl(CAN2,2,V2);//左轮
 }
+void Move_0(float V01,float V02)
+{
+VelCrl(CAN2,5,V01);//右轮
+VelCrl(CAN2,6,V02);//左轮
+}
 extern Place positionf;
        Place positioni;
 float v1,v2;               //两轮速度（2左 || 1右）
 float v1_record=0,v2_record=0;
+
 //====================================================================================
-//                             （坐标翻转）
+//                                航向电机
+//====================================================================================
+// 将角度转换为脉冲
+float YawTransform(float yawAngle)
+{
+return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
+}
+
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+void YawAngleCtr(float yawAngle)
+{
+PosCrl(CAN1, GUN_YAW_ID, RELATIVE_MODE, YawTransform(yawAngle));
+} 
+
+//====================================================================================
+//                              航向电机Lock
+//====================================================================================
+
+float Yaw_angle=0;
+int t_angle;
+int Yaw_lock=0;
+
+void Target_Angle(void)//开环计算目标角度
+{
+
+}
+void Yaw_Scanning (void)//对目标范围进行扫描/锁定
+{
+	
+}
+void Target_Position_Lock(void)//计算目标实际位置
+{
+
+}
+void Target_Relative_Angle_Lock(void)//计算目标相对角度（随车移动而改变）
+{
+	
+}
+void Yaw_Lock(void)//驱动电机锁定角度拟合后目标（车坐标to炮台坐标）
+{
+
+}
+void Target_Distance(void)//激光计算目标距离
+{
+	
+}
+
+/*航向电机*/		
+//	if(fort.laserAValueReceive-fort.laserBValueReceive>=-50&&fort.laserAValueReceive-fort.laserBValueReceive<=50)
+//	{Yaw_lock=1;}
+//	else{Yaw_lock=0;}
+//	
+//	if(Yaw_lock==1)
+//	{YawPosCtrl(Yaw_angle);}
+//	if(Yaw_lock==0)
+//	{
+//	t_angle++;
+//	if(t_angle<=720){Yaw_angle+=0.5;}
+//	if(t_angle>720&&t_angle<=1440){Yaw_angle-=0.5;}
+//	if(t_angle>1440){t_angle=0;Yaw_angle=0;}
+//	YawPosCtrl(Yaw_angle);
+//====================================================================================
+//                              （坐标翻转）
 //====================================================================================
 void Coordinate_Reverse(void)          //坐标反转函数
 {
-positioni.X=-(int)positionf.X;
-positioni.Y=-(int)positionf.Y;//新定位系统要再加280
-positioni.Angle=(int)positionf.Angle;
+if(veh==1)
+{
+	positioni.X=-(int)positionf.X;
+	positioni.Y=-(int)positionf.Y;
+	positioni.Angle=(int)positionf.Angle;
+		
+	positionf.Y=-positionf.Y;
+	positionf.X=-positionf.X;
+}
+if(veh==0)
+{
+	positionf.X=-positionf.X+OPS_TO_BACK_WHEEL*sin(positionf.Angle*pi/180);
+	positionf.Y=-positionf.Y+OPS_TO_BACK_WHEEL-OPS_TO_BACK_WHEEL*cos(positionf.Angle*pi/180);
 	
-positionf.Y=-positionf.Y;
-positionf.X=-positionf.X;
+	positioni.X=(int)positionf.X;
+	positioni.Y=(int)positionf.Y;
+	positioni.Angle=(int)positionf.Angle;
+}
 }
 //====================================================================================
-//                                 位置记录/发送实时位置
+//                           位置记录/发送实时位置
 //====================================================================================
 	float x_now;
     float x_p10=0;
@@ -51,6 +135,8 @@ void Position_Record(void)
 	y_p10=y_now;
 	y_now=positionf.Y;
 	
+	if(veh==1)
+	{
 	USART_OUT(UART4,(uint8_t*)"%s%s","X",":");
 	USART_OUT(UART4,(uint8_t*)"%d  ",(int)positionf.X);
 	USART_OUT(UART4,(uint8_t*)"%s%s","Y",":");
@@ -59,6 +145,16 @@ void Position_Record(void)
 	USART_OUT(UART4,(uint8_t*)"%d  ",(int)positionf.Angle);
 	
 	USART_OUT(UART4,(uint8_t*)"%s%s%d  ","w",":",(int)positionf.w);
+	}
+	if(veh==0)
+	{
+	USART_OUT(USART1,(uint8_t*)"%s%s","X",":");
+	USART_OUT(USART1,(uint8_t*)"%d  ",(int)positionf.X);
+	USART_OUT(USART1,(uint8_t*)"%s%s","Y",":");
+	USART_OUT(USART1,(uint8_t*)"%d  ",(int)positionf.Y);
+	USART_OUT(USART1,(uint8_t*)"%s%s","A",":");
+	USART_OUT(USART1,(uint8_t*)"%d  ",(int)positionf.Angle);
+	}
 	}
 //====================================================================================
 //                                  基础运动
@@ -90,8 +186,6 @@ void Move_Basic(void)
 CAngle CangleLock={angle};
 void Angle_Lock4(float angle_target)//锁定角度方案4【成功】——————最终采纳方案4
 {
-	v1=(int)10865*v;
-	v2=(int)10865*v;
 	//作差
 	if(angle_target<-180){angle_target=360+angle_target;}
 	if(angle_target>180){angle_target=angle_target-360;}
@@ -100,11 +194,13 @@ void Angle_Lock4(float angle_target)//锁定角度方案4【成功】———�
 	if(CangleLock.m_angle_Dvalue>180){CangleLock.m_angle_Dvalue=CangleLock.m_angle_Dvalue-360;}
 	if(CangleLock.m_angle_Dvalue<-180){CangleLock.m_angle_Dvalue=CangleLock.m_angle_Dvalue+360;}
 	//运行
-	Move(v1-Kp_A*CangleLock.m_angle_Dvalue,-v2-Kp_A*CangleLock.m_angle_Dvalue);
-
-	//记录v1、v2
-	v1_record=v1-Kp_A*CangleLock.m_angle_Dvalue;
-	v2_record=-v1-Kp_A*CangleLock.m_angle_Dvalue;
+	if(veh==1){Move(v1-Kp_A*CangleLock.m_angle_Dvalue,-v2-Kp_A*CangleLock.m_angle_Dvalue);}
+    if(veh==0){Move_0(v1,Kp_A0*CangleLock.m_angle_Dvalue);}
+	
+	USART_OUT(USART1,(uint8_t*)"%d  ",(int)CangleLock.m_angle_Dvalue);
+//	//记录v1、v2
+//	v1_record=v1-Kp_A*CangleLock.m_angle_Dvalue;
+//	v2_record=-v1+Kp_A*CangleLock.m_angle_Dvalue;
 }
 //====================================================================================
 //                                角度自旋闭环（方案）
@@ -172,13 +268,21 @@ if(lineangle>=0)
 {
 	if(ClineLock.m_line_distance>switch_distance){Angle_Lock4(lineangle+90);}
 	if(ClineLock.m_line_distance<-switch_distance){Angle_Lock4(lineangle-90);}
-	if(ClineLock.m_line_distance<=switch_distance&&ClineLock.m_line_distance>=-switch_distance){Angle_Lock4(lineangle+Kp_l*ClineLock.m_line_distance);}
+	if(ClineLock.m_line_distance<=switch_distance&&ClineLock.m_line_distance>=-switch_distance)
+    {
+    if(veh==1){Angle_Lock4(lineangle+Kp_l*ClineLock.m_line_distance);}
+	if(veh==0){Angle_Lock4(lineangle+Kp_l0*ClineLock.m_line_distance);}
+    }
 }
 if(lineangle<0)
 {
 	if(ClineLock.m_line_distance>switch_distance){Angle_Lock4(lineangle-90);}
 	if(ClineLock.m_line_distance<-switch_distance){Angle_Lock4(lineangle+90);}
-	if(ClineLock.m_line_distance<=switch_distance&&ClineLock.m_line_distance>=-switch_distance){Angle_Lock4(lineangle-Kp_l*ClineLock.m_line_distance);}
+	if(ClineLock.m_line_distance<=switch_distance&&ClineLock.m_line_distance>=-switch_distance)
+    {
+    if(veh==1){Angle_Lock4(lineangle-Kp_l*ClineLock.m_line_distance);}
+	if(veh==0){Angle_Lock4(lineangle-Kp_l0*ClineLock.m_line_distance);}
+    }
 }
 
 //USART_OUT(UART4,(uint8_t*)"%d  ",(int)(90*ClineLock.m_line_distance/switch_distance));
@@ -278,9 +382,9 @@ if(direction==0)//逆时针
 if(direction==1)//顺时针
 {}
 	
-USART_OUT(UART4,(uint8_t*)"%d  ",CcircleLock.m_distance_tpcenter);
-USART_OUT(UART4,(uint8_t*)"%d  ",(int)CcircleLock.m_angle_tpcenter);
-USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)CcircleLock.m_angle_target);	
+//USART_OUT(UART4,(uint8_t*)"%d  ",CcircleLock.m_distance_tpcenter);
+//USART_OUT(UART4,(uint8_t*)"%d  ",(int)CcircleLock.m_angle_tpcenter);
+//USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)CcircleLock.m_angle_target);	
 }
 
 
