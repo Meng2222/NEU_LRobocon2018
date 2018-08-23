@@ -13,6 +13,7 @@
 #include "stm32f4xx_usart.h"
 #include "pps.h"
 #include "stm32f4xx_adc.h"
+#include "fort.h"
 
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi
 #define aa 1
@@ -86,8 +87,8 @@ void ConfigTask(void)
 	USART1_Init(921600);
 	//串口3接收定位系统返回的信息
 	USART3_Init(115200);
-	//17che连接主控板和电脑，使电脑读到定位系统给主控板发回的信息
-//	UART4_Init(921600);
+	UART4_Init(921600);
+	UART5_Init(921600);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	//驱动器初始化
@@ -105,6 +106,7 @@ void ConfigTask(void)
 //	MotorOn(CAN1,7);
 	delay_s(2);
 	/*一直等待定位系统初始化完成*/
+	BEEP_ON;
 	WaitOpsPrepare();
 //	while(!startflag)
 //	{
@@ -144,6 +146,7 @@ void YawAngleCtr(float yawAngle);
 void open_Round(float speed1,float round); 
 
 int timCnt=0,pushCnt;
+extern FortType fort;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
