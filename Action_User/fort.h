@@ -20,6 +20,7 @@ typedef struct
 	float laserBValueReceive ; 
 }FortType;
 
+
 void YawPosCtrl(float ang);
 void ShooterVelCtrl(float rps);
 void ReadShooterVel(void);

@@ -12,7 +12,7 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "pps.h"
-<<<<<<< HEAD
+#include "fort.h"
 #include "moveBase.h"
 #include "math.h"
 #define PAI 3.14
@@ -32,9 +32,14 @@
 #define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
 // 宏定义航向角减速比
 #define YAW_REDUCTION_RATIO (4.0f)
+//宏定义炮台发射轮直径 64
+#define YAW_diameter  (64.0f) 
+//炮台正对角度
+#define YAW_initangle (170)
 
+float Yangle=0;
 
-int car=44;
+int car=3;
 int Car=1;  
 int Angle=0;     //蓝牙发数的整型转换
 int X=0;         //蓝牙发数的整型转换
@@ -50,7 +55,11 @@ float KP=450; //Kp给300(1m/s)，，，kp给450（1.5m/s）
 float V0=0.5;//车的基础速度(m/s)
 float buff=500;//(最大偏离区域)
 //////////////////////////////////////////////////////
-	//x=-400
+//炮台参数
+float k=2.4;//发射电机射击转速补偿参数（aim函数里面和d-to_value函数都有使用用）
+//////////////////////////////////////////////////////
+	
+	
 	float Aa=-1;
 	float Bb=0;
 	float Cc=-400;
@@ -75,9 +84,9 @@ isOKFlag=0;
 
 
 
-=======
-#include "fort.h"
->>>>>>> master
+
+
+
 /*
 ===============================================================
 						信号量定义
@@ -109,8 +118,10 @@ int ADC_judge();//ADC判断朝哪个方向
 int accident_check();//检测障碍
 float w_to_paulse(float w);//角速度转化脉冲rad/s(新车)
 float new_meters_paulse(float new_meters);//新车的速度m/s转化脉冲（新车）
+float laser_to_value(float laser);//激光值转换成距离
+float d_to_yawvalue(float distancE);//离目标的距离转换成出射脉冲
+float aim(float aim_x,float aim_y);//指哪打哪 aimx,aimy为目标
 float meters(float V1)//米每秒转化成脉冲每秒
-
 {
 	float Va;
 	Va=4096*V1/(PAI*0.12);
@@ -126,11 +137,28 @@ void YawAngleCtr(float yawAngle)
 {
 	PosCrl(CAN1, GUN_YAW_ID,ABSOLUTE_MODE, YawTransform(yawAngle));
 }
+/**
+* @brief 发射电机转速控制
+* @param  rps:发射电机速度，单位转每秒
+* @retval none
+* @attention none
+*/
+void ShooterVelCtrl(float rps);
+/**
+* @brief 炮台航向控制
+* @param  ang:转台航向角度，范围为0~360度
+* @retval none
+* @attention none
+*/
+void YawPosCtrl(float ang);
+ extern FortType fort;
 
-  	   typedef struct{
+typedef struct{
 	float x;
 	float y;
 	float angle;
+    float x_speed;
+	float y_speed;	   
 	}pos_t;
 pos_t action;
 
@@ -152,7 +180,6 @@ pos_t action;
 	float last_y=0;
 	float last_angle=0;
 	//后退的程序变量
-
 	int back_flag=0;
 	int mark_flag=0;
 	float back_angel=0;//被卡住的时刻的角度
@@ -170,6 +197,9 @@ pos_t action;
 	int Last_y=0;
 	int R_switch=0;
 	int r_switch=0;
+	float fire_v=0;
+	float T_meters=0;//得出目标距离毫米
+	int push_cnt=0;//推球机构时间计数
     int push=0;//推球机构的运行周期控制
 /*
 ==================================================================================
@@ -199,99 +229,52 @@ void App_Task()
    初始化任务
    ===============================================================
    */
-static int opsflag=0;
-typedef union
-{
-    //这个32位整型数是给电机发送的速度（脉冲/s）
-    int32_t Int32 ;
-    //通过串口发送数据每次只能发8位
-    uint8_t Uint8[4];
 
-}num_t;
-//定义联合体
-num_t u_Num;
-void SendUint8(void)
-{
-    u_Num.Int32 = 1000;
-
-    //起始位
-    USART_SendData(USART1, 'A');
-    //通过串口1发数
-    USART_SendData(USART1, u_Num.Uint8[0]);
-    USART_SendData(USART1, u_Num.Uint8[1]);
-    USART_SendData(USART1, u_Num.Uint8[2]);
-    USART_SendData(USART1, u_Num.Uint8[3]);
-    //终止位
-    USART_SendData(USART1, 'J');
-}
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-
 	TIM_Init(TIM2, 999, 839, 0x00, 0x00);
-	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
-	//Adc_Init();
+	
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+    UART4_Init(921600); //蓝牙调试串口  旧车4，新车1
+	USART3_Init(115200);
+	UART5_Init(921600);//航向电机串口
+	Adc_Init();
 	//驱动器初始化
-	//ElmoInit( CAN2);
+	ElmoInit( CAN1);
 	ElmoInit( CAN2);
 	//速度环和位置环初始化
 	//右轮
-	//VelLoopCfg(CAN2, 1, 50000, 10000);
-	//后轮
-	VelLoopCfg(CAN2, 5, 10000000, 1000000);
+	VelLoopCfg(CAN2, 1, 50000, 10000);
 	//PosLoopCfg(CAN2, 1, 100, 100,0);
 	//左轮
-	//VelLoopCfg(CAN2, 2, 50000, 10000);
-	//前轮
-	VelLoopCfg(CAN2, 6, 10000000, 1000000);
+	VelLoopCfg(CAN2, 2, 50000, 10000);
 	//PosLoopCfg(CAN2, 2, 100, 50000,10000);
 	// 配置速度环
-   // VelLoopCfg(CAN1, 8, 50000, 50000);
-    // 控制电机的转速，脉冲。
-    //VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
-	// 配置位置环
-    //PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
-   
-	//航向电机   
-   //PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
 
+	// 配置位置环
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 1000000,1000000,20000);
+    VelLoopCfg(CAN1, COLLECT_BALL_ID, 50000, 50000);
 	
 	
 	//电机使能
-//	MotorOn(CAN2, 01);旧车
-//	MotorOn(CAN2, 02);旧车
-	//	MotorOn(CAN1, 07);炮台机构
-	//	MotorOn(CAN1, 06);炮台机构
-	//	MotorOn(CAN1, 8);炮台机构
-	MotorOn(CAN2, 05);//新车
-	MotorOn(CAN2, 06);//新车
+	MotorOn(CAN2, 01);
+	MotorOn(CAN2, 02);
+		MotorOn(CAN1, 6);   //炮台机构
+		MotorOn(CAN1, 8);    //炮台机构
+// 控制电机的转速，脉冲。
+    VelCrl(CAN1,COLLECT_BALL_ID,50*4096); 
+	//MotorOn(CAN2, 05);//新车
+	//MotorOn(CAN2, 06);//新车
 	//定位系统串口初始化
-	USART3_Init(115200);
-<<<<<<< HEAD
-	//航向电机串口初始化
-	//USART1_Init(115200);
+
 	/*一直等待定位系统初始化完成*/
-	delay_s(2);
-=======
-	UART5_Init(921600);
-	TIM_Init(TIM2, 99, 839, 1, 0);
-	/*一直等待定位系统初始化完成*/
-	BEEP_ON;
->>>>>>> master
+    delay_s(2);
 	WaitOpsPrepare();
-	 //蓝牙调试串口  旧车4，新车1
-	 USART1_Init(921600); 
-	 //给电机发数
-	 // SendUint8();
-
-//     if(Car==4)
-	// delay_s(10);
-    
-
-
+//	BEEP_ON;
 
 //	 while(ADC_judge()==0);
 //	 if(ADC_judge()==1)//左边被挡住
@@ -300,17 +283,16 @@ void ConfigTask(void)
 //		 sn=-1;
 	 OSTaskSuspend(OS_PRIO_SELF);
 
-
 }
-<<<<<<< HEAD
+
 
 
 
 int mission=1;
 
-=======
-extern FortType fort;
->>>>>>> master
+
+
+
 void WalkTask(void)
 {
 	extern float Uk_1,Uk_2;
@@ -330,8 +312,6 @@ void WalkTask(void)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
-
-		
 
 	
  
@@ -534,36 +514,52 @@ void WalkTask(void)
 //     int rr=(int)Ra;
 //	  
 //	  USART_OUT( UART4, (uint8_t*)"%d ", rr);
-	  USART_OUT( USART1, (uint8_t*)"%d ", X);
-	  USART_OUT( USART1, (uint8_t*)"%d ", Y);
-	  USART_OUT( USART1, (uint8_t*)"%d ", Angle);
+	  USART_OUT( UART4, (uint8_t*)"%d ", X);
+	  USART_OUT( UART4, (uint8_t*)"%d ", Y);
+	  USART_OUT( UART4, (uint8_t*)"%d ", Angle);
 //	  USART_OUT( UART4, (uint8_t*)"%d ", square_flag);
 //	 
-//      USART_OUT( UART4, (uint8_t*)"%d ", record);
-//	  
-	  USART_OUT(USART1,(uint8_t*)"\r\n");
-//	  
-//	  //撞墙判断程序
-//	  record++;
-//    YawAngleCtr(90.0f); 													旧车炮台系统
-//	// 推球
-//	if(push/2==1)                                                           车炮台系统
-//    PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);				车炮台系统
-//	if(push/2==0)															车炮台系统
-//    // 复位   															车炮台系统
-//	PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);			车炮台系统
-//	if(push==10000)															车炮台系统
-//		push=0;	
-
-	   VelCrl(CAN2, 05,new_meters_paulse(1));//驱动轮V
-	   VelCrl(CAN2, 06,w_to_paulse(2));//转向轮W
-
+//      USART_OUT( UART4, (uint8_t*)"%d ", record)
+    record++;
     }//accident_check=0无故障运行
 }//sn!=0//启动
 	
 
   }//car=44	
 	
+if(car==3)
+{
+//    YawPosCtrl(YAW_initangle);	//旧车炮台系统,航向角
+//	
+//	T_meters=laser_to_value(fort.laserAValueReceive);	//得出距离
+//	
+//	fire_v= d_to_yawvalue(T_meters);					//得出出球速度
+//	
+//	ShooterVelCtrl(fire_v);   	//开火
+
+ 
+        loop(-2400,0,2000,1.5,1);//闭环转圆
+    
+//if(ADC_judge()==1)//有东西挡住推球
+
+		
+//	if(ADC_judge()!=1)//没东西挡住复位
+
+		
+        if((action.y>-2400-action.x)&&(action.y<action.x+2400))
+	    aim(-8,2273);
+		if((action.y>-action.x-2400)&&(action.y>action.x+2400))
+		aim(-4947,2257);
+		if((action.y<-action.x-2400)&&(action.y>action.x+2400))
+		aim(-4937,-2271);
+		if((action.y<action.x+2400)&&(action.y<-action.x-2400))
+		aim(-3,-2200);	
+	    USART_OUT( UART4, (uint8_t*)"\r\n");
+	
+}
+
+
+
 	}//while
 }//task
 
@@ -571,8 +567,20 @@ int cnt_flag=0;
 float last_amount=0;
 float last_P0=0;
 float last_cycle_num=0;
+float laser_to_value(float laser)
+{
+	float laser_meters=laser*2.5112-118.28;
+	return laser_meters;
+}
+float d_to_yawvalue(float distancE)
+{
 
-
+	float shootv;
+	float shootvalue=0;
+	shootv=sqrt(2*9.8*(distancE)*(distancE)*0.001/(1.732*distancE-H));
+	shootvalue=k*shootv/(PAI*YAW_diameter*0.001);
+	return shootvalue;
+}
 void accident_turn(int turn_dire)//单轮转90度,-1为（逆时针），1为顺时针
 {
 float turn_Setvalue=0;
@@ -809,6 +817,7 @@ int ADC_judge()
 //		start_flag=-1;
 	if(Analog_L<500)
 		start_flag=1;
+	else start_flag=0;
 	int Analog_l=0;
 		Analog_l=(int)Analog_L;
 	int Analog_r=0;
@@ -938,7 +947,7 @@ float round_gen(float vp,float BUff)//未完成
 
 
 
-float a_gen(float a,float b,int n)//输出给定直线的方向角
+float a_gen(float a,float b,int n)//输出给定直线的方向角  ax+by+c=0,y=(-a/b)*x+c0;k=-a/b=(action.y-y)/(action.x-x)----a=action.y-y,  ,b=-(action.x-x)
 {
 	float ANGLE=0;//直线给定角度
 	if(n==1)
@@ -1323,6 +1332,101 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 
 
 
+float aim(float aim_x,float aim_y)//实验版只要距离就行aimx,aimy
+{
+	float aim_angle=0;//射击的角度
+	
+	float Vhe=0;//合速度
+	
+	float s=0;//车与目标的距离
+	
+	float V_move=0;//车行进的速度
+ 
+	float pratical_angle=0;//实际转化成航向电机的发射角度
+	
+	float pratical_value=0;//实际转化成发射电机的转速
+	typedef struct{
+	float angle;
+	float V;//射击的速度
+	}aim;
+aim shoot;
+	
+	
+	float target_angle=0;//目标的角度
+	
+	float fuzhu_angle=0;//射击方向与目标方向的夹角
+	
+	float target_n=0;//射击角的朝向
+
+	float deta_angle=0;//目标方向与车方向的夹角
+	
+	float car_angle=0;//由于车和炮台一起转动，所以要保持炮台锁定一个点，要去掉车移动的角度
+	float V_buff=0;//和速度有关
+	if(aim_y>0)//象限区别
+		target_n=1;
+	if(aim_y<0)
+		target_n=-1;
+	
+	//计算
+	car_angle=action.angle;
+	target_angle=a_gen(action.y-aim_y,aim_x-action.x,target_n);//输出给定直线的方向角
+	deta_angle=target_angle-action.angle;
+	V_move=sqrt(pow(action.x_speed*0.001,2)+pow(action.y_speed*0.001,2));
+	s=sqrt(pow(action.x-aim_x,2)+pow(action.y-aim_y,2));
+	Vhe=sqrt(2*9.8*(s)*(s)*0.001/(1.732*s-H));
+	shoot.V=sqrt(pow(V_move,2)+0.25*Vhe*Vhe-V_move*Vhe*cos(deta_angle*PAI/180.0f))*2;
+	fuzhu_angle=asin(V_move/shoot.V*sin(deta_angle/180.0*PAI))*180/PAI;
+	shoot.angle=target_angle-fuzhu_angle;
+
+	pratical_value=3.0 *shoot.V/(PAI*YAW_diameter*0.001);
+	//瞄准
+	
+	pratical_angle=(YAW_initangle+shoot.angle-action.angle);
+	if(pratical_angle>342)
+		pratical_angle=pratical_angle-342;
+	if(pratical_angle<0)
+		pratical_angle=pratical_angle+342;
+	V_buff=V_move*2;
+	
+	if(pratical_angle>170)
+	pratical_angle=pratical_angle+30000/s;
+	  YawPosCtrl(pratical_angle);	//旧车炮台系统,航向角
+	 ShooterVelCtrl(pratical_value);   	//开火
+	if(fabs(action.x+2400)<400||fabs(action.y-0)<400)//
+	{
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+		
+	}
+		else PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+	 
+	  int shootv=(int)shoot.V;
+	 
+	  int target_Angle=(int)target_angle;
+	  int shoot_v=(int)shoot.V;
+	  int fuzhu_Angle=(int)fuzhu_angle;
+	  int S=(int)s;
+	  int v_move=(int)V_move;
+	int x_speed=(int)action.x_speed;
+	int y_speed=(int)action.y_speed;
+	int Angle=(int)action.angle;
+//	  USART_OUT( UART4, (uint8_t*)"fire");
+//	  USART_OUT( UART4, (uint8_t*)"%d ", target_Angle);
+//   	  USART_OUT( UART4, (uint8_t*)"%d ", S);
+//      USART_OUT( UART4, (uint8_t*)"%d ", shootv);
+//	  
+//	  USART_OUT( UART4, (uint8_t*)"%d ", x_speed);
+//	  USART_OUT( UART4, (uint8_t*)"%d ", y_speed);
+//	  USART_OUT( UART4, (uint8_t*)"%d ", v_move);
+//	  USART_OUT( UART4, (uint8_t*)"\r\n");
+//	  USART_OUT( UART4, (uint8_t*)"%d ", fuzhu_Angle);
+	  
+}
+
+
+
+
+
+
 void USART3_IRQHandler(void)
 {
 		static uint8_t ch;
@@ -1399,6 +1503,8 @@ void USART3_IRQHandler(void)
 						//						action.y=posture.value[2];
 												action.y=-posture.value[3];
 												action.x=posture.value[4];//y
+												action.x_speed=posture.value[2];
+												action.y_speed=-posture.value[1];
 						//						=posture.value[5];
 						action.x=action.x+OPS_TO_BACK_WHEEL*(cos(action.angle*PAI/180.0)-1);
                         action.y=action.y-OPS_TO_BACK_WHEEL *sin(action.angle*PAI/180.0);						

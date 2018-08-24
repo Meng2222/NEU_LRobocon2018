@@ -20,7 +20,6 @@
 #include "string.h"
 #include "timer.h"
 
-
 //对应的收发串口
 #define USARTX UART5
 
@@ -125,7 +124,10 @@ void GetValueFromFort(uint8_t data)
 		}
 		bufferInit();
 	}
+
+
 }
 
+//
 
 
