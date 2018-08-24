@@ -41,23 +41,60 @@ PosCrl(CAN1, GUN_YAW_ID, RELATIVE_MODE, YawTransform(yawAngle));
 //                              航向电机Lock
 //====================================================================================
 
+float O_Yaw_angle_veh;
+float O_Yaw_angle_fort;//(扫描)
+
+float C_Yaw_angle;
 float Yaw_angle=0;
 int t_angle;
 int Yaw_lock=0;
+float target_x;
+float target_y;
 
-void Target_Angle(void)//开环计算目标角度
+void Target_Angle_Calculate(void)//计算目标对车角度（分立）
 {
-
+	O_Yaw_angle_veh=180*(atan((positionf.Y-target_y)/(positionf.X-target_x)))/pi;
+	if(target_y-positioni.Y>0&&target_x-positioni.X<0){O_Yaw_angle_veh=O_Yaw_angle_veh+180;}
+	if(target_y-positioni.Y<0&&target_x-positioni.X<0){O_Yaw_angle_veh=O_Yaw_angle_veh-180;}
 }
-void Yaw_Scanning (void)//对目标范围进行扫描/锁定
+
+void Target_Angle(void)//开环计算目标角度(相对车)————四区域
 {
+	//（-2200，200）、（2200，200）、（2200，4200）、（-2200，4200）_____(未考虑车的起始坐标————默认为（0，0），实际y轴坐标大于0)
+	//未考虑车顺、逆时针扫荡（目前为顺时针扫荡的炮台锁定实验）
+	if(positionf.Y<positionf.X+2400&&positionf.Y<-positionf.X+2400)
+	{
+	target_x=-2200;target_y=200;
+	Target_Angle_Calculate();
+	}
+	if(positionf.X>positionf.Y-2400&&positionf.Y>-positionf.X+2400)
+	{
+	target_x=2200;target_y=200;
+	Target_Angle_Calculate();
+	}
+	if(positionf.Y>positionf.X+2400&&positionf.Y>-positionf.X+2400)
+	{
+	target_x=2200;target_y=4200;
+	Target_Angle_Calculate();
+	}
+	if(positionf.Y>positionf.X+2400&&positionf.Y<-positionf.X+2400)
+	{
+	target_x=-2200;target_y=4200;
+	Target_Angle_Calculate();
+	}
 	
+	O_Yaw_angle_veh-=90;
+	if(O_Yaw_angle_veh<-180){O_Yaw_angle_veh+=360;}
+	//目标对车在车坐标系下的角度
 }
-void Target_Position_Lock(void)//计算目标实际位置
+void Target_Relative_Angle_Lock(void)//计算目标相对炮台角度（炮台旋角与车坐标系进行拟合）（随车移动而改变）
 {
+//拟合车对地角度与炮台对车角度（约170度）
 
+//	O_Yaw_angle_fort=-(O_Yaw_angle_veh+100);
+//	if(O_Yaw_angle_fort<0){O_Yaw_angle_fort+=360;}
 }
-void Target_Relative_Angle_Lock(void)//计算目标相对角度（随车移动而改变）
+void Yaw_Scanning (void)//炮台激光对目标范围进行扫描/锁定
 {
 	
 }
@@ -69,13 +106,19 @@ void Target_Distance(void)//激光计算目标距离
 {
 	
 }
+void Target_Position_Lock(void)//计算目标实际位置（不必要）
+{
+
+}
+
+
 
 /*航向电机*/		
 //	if(fort.laserAValueReceive-fort.laserBValueReceive>=-50&&fort.laserAValueReceive-fort.laserBValueReceive<=50)
 //	{Yaw_lock=1;}
-//	else{Yaw_lock=0;}
+//	else{Yaw_lock=0;}    
 //	
-//	if(Yaw_lock==1)
+//	if(Yaw_lock==1)  
 //	{YawPosCtrl(Yaw_angle);}
 //	if(Yaw_lock==0)
 //	{
@@ -215,7 +258,9 @@ void Angle_Lock5_plus(float angle_target)//锁定角度方案4【成功】——
 	if(CangleLock.m_angle_Dvalue>180){CangleLock.m_angle_Dvalue=CangleLock.m_angle_Dvalue-360;}
 	if(CangleLock.m_angle_Dvalue<-180){CangleLock.m_angle_Dvalue=CangleLock.m_angle_Dvalue+360;}
 	//运行
-	Move(-100*CangleLock.m_angle_Dvalue,-100*CangleLock.m_angle_Dvalue);
+	
+	if(veh==1){Move(-100*CangleLock.m_angle_Dvalue,-100*CangleLock.m_angle_Dvalue);}
+	if(veh==0){Move_0(0,285.3*CangleLock.m_angle_Dvalue);}
 }
 //====================================================================================
 //                                正方形运动（方案）
@@ -562,7 +607,8 @@ void square_edg_jump(void)
 {
 	if(t_back<=135)
 	{
-	Move(-10865,10865);
+	if(veh==1){Move(-10865,10865);}//倒车
+	if(veh==0){Move_0(-21741,0);}//倒车
 	//if(v1_record<=0){Move(10865*2,-10865*2);}
 	}
 	if(t_back>135)
