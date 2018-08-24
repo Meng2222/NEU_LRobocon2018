@@ -244,7 +244,7 @@ void line( float a ,float b ,float c , int direction , float v )
 
 
 /**
-* @brief  求画设定圆时当前坐标设定角
+* @brief  求画设定圆时当前坐标设定角(入圆后）
 * @param  x,y 设定圆的圆心
 * @param  DIRECTION: 顺逆时针
 * @author ACTION
@@ -310,6 +310,17 @@ float GetRoundSetAngle(float X,float Y,int DIRECTION)
 	return SurroundSetAngle;
 }
 
+float GetSpotAngle(float X,float Y)
+{
+	float SpotAngle=0,x=0,y=0;
+	x=GetXpos();
+	y=GetYpos();
+	if(X>x)
+		SpotAngle=atan((Y-y)/(X-x))*180/pi;
+	else
+		SpotAngle=atan((Y-y)/(X-x))*180/pi+180;
+	return SpotAngle;
+}
 /**
 * @brief  画设定圆
 * @param  X,Y 设定圆坐标
@@ -319,7 +330,7 @@ float GetRoundSetAngle(float X,float Y,int DIRECTION)
 * @author ACTION
 * @note direction:1顺,-1逆			V:单位m/s
 */
-#define InternalDeviation 0
+#define InternalDeviation 5
 void surround(float X,float Y,float R,float V,int DIRECTION)
 {
 	float Ang=0,x=0,y=0,distance=0,SurroundAngle=0,SurroundK=0,d=0;
@@ -327,6 +338,7 @@ void surround(float X,float Y,float R,float V,int DIRECTION)
 	Ang=GetAngle();
 	x=GetXpos();
 	y=GetYpos();
+	R=0.9*R;
 	if(X-x<=0.01&X-x>=0)
 		x-=0.001;
 	if(X-x>=-0.01&X-x<=0)
@@ -341,11 +353,11 @@ void surround(float X,float Y,float R,float V,int DIRECTION)
 		else if(DirPID<-70)
 			DirPID=-70;
 		if(DIRECTION==1)
-			SurroundSetAngle=GetRoundSetAngle(X,Y,DIRECTION)-DirPID;
+			SurroundSetAngle=GetRoundSetAngle(X,Y,DIRECTION)-DirPID-InternalDeviation;
 		else
-			SurroundSetAngle=GetRoundSetAngle(X,Y,DIRECTION)+DirPID;
+			SurroundSetAngle=GetRoundSetAngle(X,Y,DIRECTION)+DirPID+InternalDeviation;
 	
-		Diff=AnglePID(Ang,SurroundSetAngle);
+		Diff=AnglePID(Ang,SurroundSetAngle);//+WHEEL_TREAD*V/(2*R)
 		if(DIRECTION==1)
 		{
 			VelCrl(CAN2,0x01,exchange(V)+Diff);
@@ -353,27 +365,19 @@ void surround(float X,float Y,float R,float V,int DIRECTION)
 		}
 		else
 		{
-			VelCrl(CAN2,0x01,exchange(V)-Diff);
-			VelCrl(CAN2,0x02,-exchange(V)-Diff);
+			VelCrl(CAN2,0x01,exchange(V)+Diff);
+			VelCrl(CAN2,0x02,-exchange(V)+Diff);
 		}
 	}
 	else if(distance>200)
 	{
-			SurroundAngle=atan((Y-y)/(X-x))*180/pi+DIRECTION*(asin(R/d)*180/pi-InternalDeviation);
+			SurroundAngle=GetSpotAngle(X,Y)+DIRECTION*(asin(R/d)*180/pi-InternalDeviation);
 			SurroundK=tan(SurroundAngle*pi/180);
-			if(X-x>=0)
+			if(Y-y>=0)
 				line(-SurroundK,1,SurroundK*x-y,1,V);
 			else
 				line(-SurroundK,1,SurroundK*x-y,-1,V);
-//		else
-//		{
-//			SurroundAngle=atan((Y-y)/(X-x))*180/pi+DIRECTION*(asin(R/d)*180/pi-InternalDeviation);
-//			SurroundK=tan(SurroundAngle*pi/180);
-//			if(X-x>=0)
-//				line(-SurroundK,1,SurroundK*x-y,-1,V);
-//			else
-//				line(-SurroundK,1,SurroundK*x-y,1,V);
-//		}
+
 	}
 	else
 	{
@@ -385,8 +389,8 @@ void surround(float X,float Y,float R,float V,int DIRECTION)
 		else
 			line(0,1,-y-MOVEBASE_LENGTH,-1,V);
 	}
-	USART_OUT(UART4, "%d	%d	",(int)(x),(int)(y));
-	USART_OUT(UART4, "%d	%d	%d	%d\r\n",(int)(SurroundSetAngle),(int)(SurroundAngle),(int)(Ang),(int)(distance));
+	USART_OUT(UART4, "%d	%d	%d	",(int)(x),(int)(y),(int)(GetSpotAngle(X,Y)));
+	USART_OUT(UART4, "%d	%d	%d	%d\r\n",(int)(SurroundSetAngle),(int)(SurroundK),(int)(Ang),(int)(distance));
 }
 
 

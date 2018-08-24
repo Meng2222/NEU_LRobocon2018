@@ -136,7 +136,7 @@ void WalkTask(void)
 //		}
 ////		line(0,1,-1800,1,V);
 //		angle=GetAngle();
-		surround(2000,1000,500,0.5,1);
+		surround(1000,1000,500,0.5,-1);
 	}
 }
 

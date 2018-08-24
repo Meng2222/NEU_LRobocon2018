@@ -1,6 +1,6 @@
 #ifndef __STATUS_H__
 #define __STATUS_H__
-#define Car 4
+#define Car 1
 #define pi 3.1415
 
 void straight(float v);
@@ -11,6 +11,7 @@ int AngleChange(void);
 float DirectionPID( float distance );
 void line( float a ,float b ,float c , int direction , float v );
 float GetRoundSetAngle(float X,float Y,int DIRECTION);
+float GetSpotAngle(float X,float Y);
 void surround(float X,float Y,float R,float V,int DIRECTION);
 
 void BubbleSort(float *a,int number);
