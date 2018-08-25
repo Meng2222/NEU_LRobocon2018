@@ -29,10 +29,13 @@ OS_EVENT *PeriodSem;
 #define PUSH_POSITION (4500)
 // 宏定义送弹机构收回时电机位置
 #define PUSH_RESET_POSITION (5)
-
+float ADC_A;
+float ADC_B;
+int if_turnto90;
+float if_addorreduce_angle=1;
 float Back_maichong;
 float Head_maichong;
-float add_angle=90;
+float add_angle=0;
 int push_balltime=0;
 float last_error;
 float new_error;
@@ -41,19 +44,19 @@ static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 static float set_angle=0;
 int iSOKFlag=0;
-static int if_go=0;
+static int if_go=0;//-1为顺时针//1为逆时针//
 int t=0;
 int last_angle=90;
 int new_angle;
 int kpa1=10000;
-int kpd1=400;
-int kpa=15000;//旧车1m/s圆弧闭环为150//
-int kpd=600;//旧车1m/s圆弧闭环为6//
+int kpd1=400;//
+int kpa=150;//旧车1m/s圆弧闭环为150//新车/15000
+int kpd=6;//旧车1m/s圆弧闭环为6//新车400
 int kdd=2;
 int aord;
 int if_add=1;
 int if_compare=1;
-static float d=1900;
+static float d;
 static float Aout=0;
 static float Dout=0;
 float Left_d;
@@ -61,12 +64,12 @@ float Right_d;
 float Add_V=0;
 float tangent_angle;
 float add_or_dec=-1;
-float R=2000;
+float R=2300;
 float right_cril;
 float left_cril;
 int time_number=0;
 int leftorright=1;
-float car_v=1000;
+float car_v=500;
 int compare_number=80;
 int if_back=0;
 int last_back=0;
@@ -75,6 +78,7 @@ int q=0;
 float LIGHT_D;
 int up_down;
 float turn_cril;
+int if_compere_angle=0;
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -114,6 +118,7 @@ void ConfigTask(void)
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	
+
 	ElmoInit(CAN2);
 	
 	#if car ==1
@@ -127,14 +132,11 @@ void ConfigTask(void)
 	//棍子收球电机//
 	// 配置速度环
     VelLoopCfg(CAN1, 8, 50000, 50000);
-    		
-	
-	
+   	
 	// 推球装置配置位置环
     PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
    	
-    MotorOn(CAN1,6);
-	
+    MotorOn(CAN1,6);	
 	MotorOn(CAN1,8);
 	#else
 	VelLoopCfg(CAN2,5,10000000,10000000);
@@ -147,7 +149,7 @@ void ConfigTask(void)
 	delay_ms(2000);
 	BEEP_ON;
 	WaitOpsPrepare();
-	
+	YawPosCtrl(260);	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 static int Right_cr1;
@@ -172,7 +174,8 @@ void WalkTask(void)
 	while (1)
 	{		
 		OSSemPend(PeriodSem,  0, &os_err);
-		
+		ADC_A=fort.laserAValueReceive*2.5112+38.72;
+		ADC_B=fort.laserBValueReceive*2.4267+358.54;
 		x=(int)xya.x;
 		y=(int)xya.y;
 		xv=xya.x_v;
@@ -185,22 +188,21 @@ void WalkTask(void)
 		//控制发射枪电机转速//
 	    ShooterVelCtrl(50);
 		
-		//航向电机//	
-	    YawPosCtrl(add_angle);
 		
-		if(push_balltime==200)
-		{ // 推球
-			add_angle+=50;
+		
+		if(push_balltime==100)
+ 		{ // 推球
+		
 	      PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-		}else if(push_balltime==400)
+		}else if(push_balltime==100)
 		{// 复位//
-	        add_angle-=50;
+	       
 			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 		}
-		push_balltime%=400;
+		push_balltime%=200;
         Right_d=Get_Adc_Average(14,10);
 		Left_d=Get_Adc_Average(15,10);
-		if(leftorright)
+		if(leftorright)		
 		{if(Right_d<50)
 			{ 
 				leftorright=0;
@@ -214,14 +216,13 @@ void WalkTask(void)
 				if_go=-1;
 		    }
 	    }
-		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)fort.yawPosReceive,(int)fort.shooterVelReceive,(int)fort.laserAValueReceive,(int)fort.laserBValueReceive);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)fort.yawPosReceive,(int)fort.shooterVelReceive,(int)ADC_A,(int)ADC_B);
 		Add_V=sqrt(pow(xya.x_v,2)+pow(xya.y_v,2));
    #elif car!=1
     	USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)Dout,(int)Aout,(int)turn_cril,(int)LIGHT_D,(int)new_error);
+		Add_V=sqrt(pow(xya.x_v,2)+pow(xya.y_v,2));
    #endif		
 		
-		
-	
 				
 		//USART_OUT(USART1,(uint8_t*)"x_v=%d",xv);
         //USART_OUT(USART1,(uint8_t*)"y_v=%d\r\n",yv);			
@@ -231,56 +232,162 @@ void WalkTask(void)
 }
 void go(float v)
 { 
-	float Turn_v_to_headmaichong(float,float);
+	 float Turn_v_to_headmaichong(float,float);
      float Turn_v_to_backmaichong(float);
 	 void Light(float,float,float,int);
      void Round(float ,float ,float ,float ,float );
    	 float V=v;	 
 	 int right;
 	 int left;
-	  
-
-   #if car==1
+	 int car_angle=set_angle;
+     int get_paotai_angle=fort.yawPosReceive;
+	 float send_angle;
+   
 	if(if_go!=0)	
-	{
-		Round(0,2000,R,V,if_go);
-		q++;
-	}
+	{ 
+		
+		
+		//航向电机//
+		if(!if_compere_angle)
+		{	
+		if(car_angle==45||car_angle==135||car_angle==-45||car_angle==-135)
+		{
+			if_turnto90=1;
+			if_compere_angle=1;
+		}else
+        {	
+			if_turnto90=0;
+		}
+	    }		
+        if(if_turnto90)
+		{ 
+			send_angle=170;
+			 YawPosCtrl(send_angle);
+			 if(get_paotai_angle==170)
+			 {    if_compere_angle=0;
+				 if_turnto90=0;
+				 if_addorreduce_angle=-if_go;
+			 }
+			
+		}else
+		{		
+		    if(ADC_A<3000||ADC_B<3000)			
+			{
+				if(ADC_A-ADC_B>800)
+				{
+					if_addorreduce_angle=1;	
+                    send_angle=	fort.yawPosReceive+if_addorreduce_angle*7;
+                    if(send_angle>=260)
+                      send_angle=260;
+                    if(send_angle<=80)	
+                      send_angle=80;						
+					YawPosCtrl(send_angle);
+				}else if( ADC_B-ADC_A>800)
+				{
+					if_addorreduce_angle=-1;	
+                    send_angle=fort.yawPosReceive+if_addorreduce_angle*7;	
+                    if(send_angle>=260)
+                      send_angle=260;
+                    if(send_angle<=80)	
+                      send_angle=80;					
+					YawPosCtrl(fort.yawPosReceive+if_addorreduce_angle*7);
+				}else 	if(fabs(ADC_A-ADC_B)<100)	
+				{
+					if(fabs(ADC_A-ADC_B)<=20)
+					{
+						send_angle=fort.yawPosReceive;
+					if(send_angle>=260)
+                      send_angle=260;
+                    if(send_angle<=80)	
+                      send_angle=80;
+						
+					YawPosCtrl(fort.yawPosReceive);
+					}else 
+					{
+					if(ADC_A-ADC_B>0)
+					if_addorreduce_angle=-1;	
+					else	
+					if_addorreduce_angle=1;		
+					send_angle=fort.yawPosReceive+if_addorreduce_angle*2;
+					if(send_angle>=260)
+                      send_angle=260;
+                    if(send_angle<=80)	
+                      send_angle=80;
+					YawPosCtrl(send_angle);	
+					}
+				}
+			}
+			else
+			{	
+				
+				 if(fort.yawPosReceive>=342)
+					if_addorreduce_angle=-1;
+				 else if(fort.yawPosReceive<=0)
+					if_addorreduce_angle=1;
+				 
+				 send_angle=fort.yawPosReceive+if_addorreduce_angle*7;
+					if(send_angle>=260)
+                      send_angle=260;
+                    if(send_angle<=80)	
+                      send_angle=80;
+					YawPosCtrl(send_angle);	
+			
+				YawPosCtrl(send_angle);
+			}
+	   }
+		
+		Round(0,2300,R,V,if_go);
+		q++;       
+   }
+	
 	if(q>=100)
 	{ if(Add_V>150)
 	 {		
-		if_back=0;
-		//if(compare_number==5)
-		//compare_number=10;
+		if_back=0;		
 		if_add=1;
 		
 	 }
 	 else 
 	 {	
 		
-		//compare_number=10;
+		
 		 if_back=1;		 
 		 if_add=0;
-		for(i=0;i<=1200;i++)
+		for(i=0;i<=1500;i++)
 		{   
+			#if car==1
 			VelCrl(CAN2,1,-10000);
 			VelCrl(CAN2,2,10000);
+			#else
+			VelCrl(CAN2,6,0);
+			VelCrl(CAN2,5,-300000);			
+			#endif
 			time_number=0;
 		}
 		
 		if(if_go==1)
-		{for(i=0;i<=200;i++)
-		{   
+		{for(i=0;i<=500;i++)
+		 {  
+			#if car==1
 			VelCrl(CAN2,1,-5000);
 			VelCrl(CAN2,2,-5000);
+			#else
+			VelCrl(CAN2,5,-100000);
+			VelCrl(CAN2,6,100000);			
+			#endif
 			time_number=0;
-		}
+		 }
 		}
 		if(if_go==-1)
-		{for(i=0;i<=200;i++)
+		{for(i=0;i<=500;i++)
 		{   
+			#if car==1
 			VelCrl(CAN2,1,5000);
 			VelCrl(CAN2,2,5000);
+			#else
+			VelCrl(CAN2,5,-100000);
+			VelCrl(CAN2,6,-100000);			
+			#endif
 			time_number=0;
 		}
 		}
@@ -300,27 +407,31 @@ void go(float v)
 		add_or_dec=-1;
 		if(R<=800)	
 		add_or_dec=1;
-		R=add_or_dec*249+R;
+		R=add_or_dec*300+R;
+		if(R>=2300)
+			R=2300;
+		if(R<=600)
+			R=600;
 		
 	}
 	last_back=if_back;
-	   
-	 right_cril=Right_cr1+Dout+Aout;
-	 left_cril=Left_cr2+Dout+Aout;
-	 VelCrl(CAN2,1,right_cril);
-	 VelCrl(CAN2,2, left_cril);
+	 #if car==1
+	right_cril=Right_cr1+Dout+Aout;
+	left_cril=Left_cr2+Dout+Aout;
+	VelCrl(CAN2,1,right_cril);
+	VelCrl(	CAN2,2, left_cril);
 	  right=right_cril;
-	 left=left_cril;	USART_OUT(USART1,(uint8_t*)"Right=%d\t",right);	   
+	 left=left_cril;
+   	 USART_OUT(USART1,(uint8_t*)"Right=%d\t",right);	   
 	 USART_OUT(USART1,(uint8_t*)"Left=%d\t",left);
 	 USART_OUT(USART1,(uint8_t*)"time_number=%d\t",time_number);
 	 USART_OUT(USART1,(uint8_t*)"if_go=%d\t",if_go);
 	 Aout=0;
 	 Dout=0;
-	#else 
-	 Round(500,0,400,V,-1);
+	 #elif  car==2 	 
 	 turn_cril=-Dout-Aout;
 	 VelCrl(CAN2,5,Turn_v_to_backmaichong(v));
-	 VelCrl(CAN2,6,Turn_v_to_headmaichong(v,400)+turn_cril);
+	 VelCrl(CAN2,6,Turn_v_to_headmaichong(v,R)+turn_cril);
 	 #endif
 	
 
@@ -536,10 +647,14 @@ void get_angle(float a,float b,int n,int round)
 	if(cril_flag>lastcril_flag)
 	{
 		R=add_or_dec*249+R;
+		if(R>=2300)
+			R=2300;
+		if(R<=600)
+			R=600;
 		
-		if(R>=1900)
+		if(R>=2300)
 		add_or_dec=-1;
-        if(R<=800)	
+        if(R<=600)	
 		add_or_dec=1;
 	}
 	
@@ -711,3 +826,9 @@ float Turn_v_to_headmaichong(float v,float r)
 {
 	return(v/r*TURN_AROUND_WHEEL_TO_BACK_WHEEL/(Pi*TURN_AROUND_WHEEL_DIAMETER)*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO);
 }	
+float get_roll_v()
+{ 
+	float s=(ADC_A+ADC_B)/2;
+	return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/(Pi*WHEEL_DIAMETER)*COUNTS_PER_ROUND);
+	
+}
