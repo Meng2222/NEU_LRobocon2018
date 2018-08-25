@@ -15,6 +15,26 @@
 #include "pps.h"
 
 #define PI   3.1415926
+// 宏定义棍子收球电机ID
+#define COLLECT_BALL_ID (8)
+// 宏定义推球电机ID
+#define PUSH_BALL_ID (6)
+// 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
+#define PUSH_POSITION (4500)
+// 宏定义送弹机构收回时电机位置
+#define PUSH_RESET_POSITION (5)
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+// 宏定义发射机构航向电机ID
+#define GUN_YAW_ID (7)
+// 电机旋转一周的脉冲数
+#define COUNT_PER_ROUND (4096.0f)
+// 宏定义每度对应脉冲数
+#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
+// 宏定义航向角减速比
+#define YAW_REDUCTION_RATIO (4.0f)
+
+
+
 /*
 ===============================================================
 						信号量定义
@@ -52,7 +72,7 @@ void App_Task()
    初始化任务
    ===============================================================
    */
-float chenhao = 0;
+
 void  Walk_Straight(float speed1,float speed2)
 {
 	VelCrl(CAN2,1,speed1*10.87f);
@@ -81,7 +101,7 @@ float Angle_Pid(float err)
 //		Uk=6000;
 //	else if(Uk<=-6000)
 //		Uk=-6000;
-//	chenhao = Uk;
+
 //	USART_OUT(UART4,(uint8_t*) "%d\t",(int)chenhao);
 //		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetAngle());
 	return Uk;
@@ -237,13 +257,13 @@ void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)
 			ang1=Angle_change(angle2,90,0);
 			if(d>radius)
 			{
-				chenhao = -err+ang2+(ang1-GetAngle());
+			
 				output=Angle_Pid(-err+ang2+(ang1-GetAngle()));
 			  Walk_Virer(speed_f+output,speed_s-output);
 			}
 			else if(d<radius)
 			{
-				chenhao = -err+ang2+(ang1-GetAngle());
+			
 				output=Angle_Pid(-err+ang2+(ang1-GetAngle()));
 				Walk_Virer(speed_f+output,speed_s-output);
 			}
@@ -274,6 +294,48 @@ void Virer_PID_Out(float x0,float y0,float radius,float speed,int Direction)
 //	USART_OUT(UART4,(uint8_t*) "%d\t",(int)GetX());
 //	USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)GetY());
 }	
+
+typedef union
+{
+    //这个32位整型数是给电机发送的速度（脉冲/s）
+    int32_t Int32 ;
+    //通过串口发送数据每次只能发8位
+    uint8_t Uint8[4];
+
+}num_t;
+
+//定义联合体
+num_t u_Num;
+
+void SendUint8(void)
+{
+    u_Num.Int32 = 1000;
+
+    //起始位
+    USART_SendData(USART1, 'A');
+    //通过串口1发数
+    USART_SendData(USART1, u_Num.Uint8[0]);
+    USART_SendData(USART1, u_Num.Uint8[1]);
+    USART_SendData(USART1, u_Num.Uint8[2]);
+    USART_SendData(USART1, u_Num.Uint8[3]);
+    //终止位
+    USART_SendData(USART1, 'J');
+}
+//// 发射航向角转换函数 由度转换为脉冲
+//// yawAngle为角度，范围180到-180之间，初始位置为0度。
+
+//// 将角度转换为脉冲
+//float YawTransform(float yawAngle)
+//{
+//	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
+//}
+
+////发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+//void YawAngleCtr(float yawAngle)
+//{
+//	PosCrl(CAN1, GUN_YAW_ID, POS_ABS, YawTransform(yawAngle));
+//}
+//// 同样要配置位置环
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
@@ -288,6 +350,11 @@ void ConfigTask(void)
 	ElmoInit(CAN2);
 	VelLoopCfg(CAN2,1,0,0);
 	VelLoopCfg(CAN2,2,0,0);
+	// 配置速度环
+	VelLoopCfg(CAN1, 8, 50000, 50000);
+	// 配置位置环
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
 	delay_s(2);
@@ -301,7 +368,7 @@ void ConfigTask(void)
 void WalkTask(void)
 {
 	int cnt=0,LV=0,Arm=0;
-	int dir=0,counter=0,counter_v=0,flg=0,flag=0,jg_flg=0,count=0,tr_cnt=0,dir_v=0;
+	int dir=0,counter=0,flg=0,flag=0,jg_flg=0,count=0,tr_cnt=0,dir_v=0;
 	float pid_out,dis_R,dis_L,X_last=10000,Y_last=10000;
 	CPU_INT08U os_err;
 	os_err = os_err;
@@ -310,119 +377,104 @@ void WalkTask(void)
 	{
 		
 		OSSemPend(PeriodSem, 0, &os_err);
-		dis_R=(4400.f/4096.f)*(float)Get_Adc_Average(14,10);
-		dis_L=(4400.f/4096.f)*(float)Get_Adc_Average(15,10);
-		count++;
-		if(count>=100&&dir!=0)
-		{
-			count=0;
-			if(fabs(X_last-GetX())<=100&&fabs(Y_last-GetY())<=100)
-			{
-				dir_v=dir;
-				dir=3;
-			}
-			
-			X_last=GetX();
-			Y_last=GetY();
-			
-		}
-		USART_OUT(UART4,(uint8_t*) "%d\t",(int)dis_R);
-		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)dis_L);
-		if(jg_flg==0)
-		{
-			
-			if(dis_R<=50)
-			{
-				dir=1;
-				jg_flg=1;
-			}
-			else if(dis_L<=50)
-			{
-				dir=2;
-				jg_flg=1;
-			}
-		}
-		
-		switch(dir)
-		{
-			case 1:
-				Virer_PID_Out(0,2200,2000-counter*400,v,0);
-				if(GetAngle()<=-150&&GetAngle()>=-170)
-				{
-					flag=1;
-				}
-				if(GetAngle()<=-80&&GetAngle()>=-110&&GetX()>=-50&&GetX()<=50&&flag==1)
-						{
-							flag=0;
-							if(counter>=3)
-								flg=1;
-							else if(counter==0)
-								flg=0;
-							if(flg==0)
-								counter++;
-							else if(flg==1)
-								counter--;		
-						}	
-				break;
-			case 2:
-				Virer_PID_Out(0,2200,2000-counter*400,v,1);
-				if(GetAngle()>=150&&GetAngle()<=170)
-				{
-					flag=1;
-				}
-				if(GetAngle()>=80&&GetAngle()<=110&&GetX()>=-50&&GetX()<=50&&flag==1)
-						{
-							flag=0;
-							if(counter>=3)
-								flg=1;
-							else if(counter==0)
-								flg=0;
-							if(flg==0)
-								counter++;
-							else if(flg==1)
-								counter--;		
-						}	
-				break;	
-			case 3:
-				tr_cnt++;
-//				counter_v=counter;
-				if(tr_cnt<=100)
-				{
-					Walk_Straight(-1000,-1000);
-				}
-				else
-				{
-					tr_cnt=0;
-					if(counter==3)
-						counter--;
-					else
-						counter++;
-					dir=dir_v;
-//					dir=4;
-				}
-				break;
-//			case 4:
-//				counter=2;
-//				tr_cnt++;
-//				if(tr_cnt<=150)
+//		dis_R=(4400.f/4096.f)*(float)Get_Adc_Average(14,10);
+//		dis_L=(4400.f/4096.f)*(float)Get_Adc_Average(15,10);
+//		count++;
+//		if(count>=100&&dir!=0)
+//		{
+//			count=0;
+//			if(fabs(X_last-GetX())<=100&&fabs(Y_last-GetY())<=100)
+//			{
+//				dir_v=dir;
+//				dir=3;
+//			}
+//			
+//			X_last=GetX();
+//			Y_last=GetY();
+//			
+//		}
+//		USART_OUT(UART4,(uint8_t*) "%d\t",(int)dis_R);
+//		USART_OUT(UART4,(uint8_t*) "%d\r\n",(int)dis_L);
+//		if(jg_flg==0)
+//		{
+//			
+//			if(dis_R<=50)
+//			{
+//				dir=1;
+//				jg_flg=1;
+//			}
+//			else if(dis_L<=50)
+//			{
+//				dir=2;
+//				jg_flg=1;
+//			}
+//		}
+//		
+//		switch(dir)
+//		{
+//			case 1:
+//				Virer_PID_Out(0,2200,2000-counter*400,v,0);
+//				if(GetAngle()<=-150&&GetAngle()>=-170)
 //				{
-//					if(dir_v==1)
-//						Virer_PID_Out(0,2200,2000-counter*400,v,0);
-//					else if(dir_v==2)
-//						Virer_PID_Out(0,2200,2000-counter*400,v,1);
+//					flag=1;
+//				}
+//				if(GetAngle()<=-80&&GetAngle()>=-110&&GetX()>=-50&&GetX()<=50&&flag==1)
+//						{
+//							flag=0;
+//							if(counter>=3)
+//								flg=1;
+//							else if(counter==0)
+//								flg=0;
+//							if(flg==0)
+//								counter++;
+//							else if(flg==1)
+//								counter--;		
+//						}	
+//				break;
+//			case 2:
+//				Virer_PID_Out(0,2200,2000-counter*400,v,1);
+//				if(GetAngle()>=150&&GetAngle()<=170)
+//				{
+//					flag=1;
+//				}
+//				if(GetAngle()>=80&&GetAngle()<=110&&GetX()>=-50&&GetX()<=50&&flag==1)
+//						{
+//							flag=0;
+//							if(counter>=3)
+//								flg=1;
+//							else if(counter==0)
+//								flg=0;
+//							if(flg==0)
+//								counter++;
+//							else if(flg==1)
+//								counter--;		
+//						}	
+//				break;	
+//			case 3:
+//				tr_cnt++;
+//				if(tr_cnt<=100)
+//				{
+//					Walk_Straight(-1000,-1000);
 //				}
 //				else
 //				{
 //					tr_cnt=0;
+//					if(counter==3)
+//						counter--;
+//					else
+//						counter++;
 //					dir=dir_v;
-//					counter=counter_v;
 //				}
-//				break;
-//				
-				
-		}
+//				break;		
+//		}
 
-
+SendUint8();
+// 控制电机的转速，脉冲。
+VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
+// 推球
+PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+// 复位
+PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 
 
 
