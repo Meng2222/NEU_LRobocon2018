@@ -21,6 +21,8 @@
 // 宏定义送弹机构收回时电机位置
 #define PUSH_RESET_POSITION (5)
 //发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+
+
 // 宏定义发射机构航向电机ID
 #define GUN_YAW_ID (7)
 // 电机旋转一周的脉冲数
@@ -63,7 +65,24 @@ void ElmoInit(CAN_TypeDef* CANx);
 *       部分驱动器参数需要在电机失能状态下才可以配置
 */
 
-void SendUint8(void);
+
+
+
+
+
+void SendUint8(float sendmotor_vel);
+
+
+
+
+
+
+
+
+
+
+
+
 void MotorOn(CAN_TypeDef* CANx, uint8_t ElmoNum);
 
 /**

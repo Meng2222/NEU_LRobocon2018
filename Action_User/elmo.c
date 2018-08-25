@@ -85,9 +85,9 @@ typedef union
 //定义联合体
 num_t u_Num;
 
-void SendUint8(void)
+void SendUint8(float sendmotor_vel)
 {
-    u_Num.Int32 = 1000;
+    u_Num.Int32 = sendmotor_vel;
 
     //起始位
     USART_SendData(USART1, 'A');
@@ -108,10 +108,10 @@ float YawTransform(float yawAngle)
 }
 
 //发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
-//void YawAngleCtr(float yawAngle)
-//{
-//	PosCrl(CAN1, GUN_YAW_ID, POS_ABS, YawTransform(yawAngle));
-//}
+void YawAngleCtr(float yawAngle)
+{
+	PosCrl(CAN1, GUN_YAW_ID, ABSOLUTE_MODE, YawTransform(yawAngle));
+}
 //// 同样要配置位置环
 
 

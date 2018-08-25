@@ -135,22 +135,27 @@ void ConfigTask(void)
 	TIM_Init(TIM2, 99, 839, 1, 0);
 	USART3_Init(115200);
 	UART4_Init(921600);
-	
-    RCC_APB1PeriphClockCmd(RCC_APB1Periph_CAN1, ENABLE);
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	USART1_Init(921600);			//USART1，蓝牙收发数据
 	UART5_Init(921600);
+	
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+
 
 	/*一直等待定位系统初始化完成*/
 	BEEP_ON;
-	ElmoInit(CAN1);							//电机使能（通电）
-	ElmoInit(CAN2);							//电机使能（通电）
+	ElmoInit(CAN1);										//电机使能（通电）
+	ElmoInit(CAN2);										//电机使能（通电）
 	
-	VelLoopCfg(CAN1, 8, 50000, 50000);			// 控制电机的转速，脉冲。
-	VelLoopCfg(CAN2,1, 500000, 500000);				//驱动器速度环初始化
-	VelLoopCfg(CAN2,2, 500000, 500000);				//驱动器初始化
-	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+//	VelLoopCfg(CAN1,6,10000000,10000000);				// 控制新底盘转向电机
+	VelLoopCfg(CAN1,8,50000,50000);						//棍子收球电机	
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);	//配置位置环，推球电机PUSH_BALL_ID是6
+	VelLoopCfg(CAN2,1, 500000, 500000);					//驱动器速度环初始化
+	VelLoopCfg(CAN2,2, 500000, 500000);					//驱动器初始化
 
-	MotorOn(CAN1,8);								
+
+	MotorOn(CAN1,6);
+	MotorOn(CAN1,8);	
 	MotorOn(CAN2,1);								
 	MotorOn(CAN2,2);
 
@@ -167,6 +172,7 @@ void WalkTask(void)
 	os_err = os_err;
 	int state=0,stateflag=1,direction=1;
 	float leftlaser=0,rightlaser=0,LastGetx=0,LastGety=0;
+	int push_ball_delay=0;
 
 	int cnt=0;
 	float dec_value=0;
@@ -174,25 +180,25 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle());
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetX());
-		USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetY());
-		USART_OUT(UART4,(uint8_t*)"cnt:%d\t adcflag:%d\t",(int)cnt,(int)adcflag);
-		USART_OUT(UART4,(uint8_t*)"Out:%d\tDis_Out:%d\r\n",(int)Output,(int)Dis_Output);
-//		SetTuning(380,0,0);									
-//		Dis_Pidtuning(0.07,0.2*0.01,0);							
-//		Circle_Dis_PID(0,2400,1500,1000,1);					//闭环圆形，0.07，与速度成反比	
-//		Circle_Angle_PID(0,2400,1500,1000,1);				//对应0.07的是380
-//		walk_circle(1000);
+		push_ball_delay++;
+		USART_OUT(USART1,(uint8_t*)"%d\t",(int)GetAngle());
+		USART_OUT(USART1,(uint8_t*)"%d\t",(int)GetX());
+		USART_OUT(USART1,(uint8_t*)"%d\t",(int)GetY());
+		USART_OUT(USART1,(uint8_t*)"cnt:%d\t adcflag:%d\t",(int)cnt,(int)adcflag);
+		USART_OUT(USART1,(uint8_t*)"Out:%d\tDis_Out:%d\r\n",(int)Output,(int)Dis_Output);
 
-		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
+
+		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 							// 棍子收球
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);			// 推球
-		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);	// 复位
-
+		ShooterVelCtrl(0);				//发射电机转速控制
+		YawPosCtrl(0);					//炮台航向控制
+		if(push_ball_delay>100)
+		{
+			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);	// 复位
+			push_ball_delay=0;
+		}
 	}
 }
-
-
 
 
 
@@ -375,6 +381,21 @@ void SetTuning(float kp,float ki,float kd)
 	Ki=ki;
 	Kd=kd;
 }
+/*旧小车蓝牙串口UART4，及给定坐标，半径画圆
+USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetAngle());
+USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetX());
+USART_OUT(UART4,(uint8_t*)"%d\t",(int)GetY());
+USART_OUT(UART4,(uint8_t*)"cnt:%d\t adcflag:%d\t",(int)cnt,(int)adcflag);
+USART_OUT(UART4,(uint8_t*)"Out:%d\tDis_Out:%d\r\n",(int)Output,(int)Dis_Output);
+SetTuning(380,0,0);									
+Dis_Pidtuning(0.07,0.2*0.01,0);							
+Circle_Dis_PID(0,2400,1500,1000,1);					//闭环圆形，0.07，与速度成反比	
+Circle_Angle_PID(0,2400,1500,1000,1);				//对应0.07的是380
+walk_circle(1000);
+
+
+*/
+
 
 /*
 平稳走方形，误差小于5%
