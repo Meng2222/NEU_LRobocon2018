@@ -13,6 +13,7 @@
 #include "moveBase.h"
 #include "math.h"
 #include "pps.h"
+<<<<<<< HEAD
 
 #define PI   3.1415926
 // 宏定义棍子收球电机ID
@@ -35,6 +36,9 @@
 
 
 
+=======
+#include "fort.h"
+>>>>>>> master
 /*
 ===============================================================
 						信号量定义
@@ -342,6 +346,7 @@ void ConfigTask(void)
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	USART3_Init(115200);
+<<<<<<< HEAD
 	UART4_Init(921600);
 	TIM_Init(TIM2,999,83,1,0);
 	Adc_Init();
@@ -360,11 +365,16 @@ void ConfigTask(void)
 	delay_s(2);
 
 
+=======
+	UART5_Init(921600);
+	TIM_Init(TIM2, 99, 839, 1, 0);
+>>>>>>> master
 	/*一直等待定位系统初始化完成*/
+	BEEP_ON;
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-
+extern FortType fort;
 void WalkTask(void)
 {
 	int cnt=0,LV=0,Arm=0;
