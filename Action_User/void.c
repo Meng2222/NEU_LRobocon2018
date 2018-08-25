@@ -238,42 +238,36 @@ int AdcFlag(void)
 	//	USART_OUT(UART4,(uint8_t*)"%d	%d	%d\n",adc_num1,adc_num2,AdcFLAG);	 /////////ADC  test///////////
 		return AdcFLAG;
 }
-extern int errFlag;
 int Radius(void)
 {
 		static int LastX=0;
-		static int r=2000;    ////初始半径
-//		if(errFlag)
-//		{
-//			if(r>700)
-//			{
-//				r-=200;
-//			}
-//			if(r<=700)
-//			{
-//				r+=200;
-//			}
-//		}
+		static int r=2000;   ////初始半径
+		static int Rflag=0;
+		if(r>700)
+		{
+			Rflag=0;
+		}
+		else if (r<=700)
+		{
+			Rflag=1;
+		}
 		if((int)GetX()>0&&LastX<0)
 		{
-			if(r>=700)
+			if(Rflag==0)
 			{
-				r-=100;
+				r-=200;
 			}
-			if(r<700)
+			else if(Rflag==1)
 			{
-				r+=100;
+				r+=200;
 			}
 		}
-	//	USART_OUT(UART4,(uint8_t*)"%d	%d	%d\n",LastX,(int)GetX(),r);            ///////test//////
 		LastX=(int)GetX();
 		return(r);
 }
-int errFlag;
 void errdeal(void)
 {
 		static int Lastx=0,Lasty=0,errtime=0;
-		errFlag=0;
 		if((Lastx==(int)GetX())&&(Lasty==(int)GetY())&&AdcFlag()!=0)
 		{
 			errtime++;
@@ -284,27 +278,26 @@ void errdeal(void)
 		}
 			if(errtime>3)   
 			{
-				for(int i=0;i<3000;i++)
+				for(int i=0;i<2000;i++)
 				{
 					Walkback(0.7);
 					i++;
 				}
-				for(int i=0;i<3000;i++)
+				for(int i=0;i<2000;i++)
 				{
 					Walkaway(0.7);
 					i++;
 				}
-				for(int i=0;i<3000;i++)
-				{
-					Walkahead(0.7);
-					i++;
-				}				
+//				for(int i=0;i<2000;i++)
+//				{
+//					Walkahead(0.7);
+//					i++;
+//				}				
 				errtime=0;
-				errFlag=1;
 			}			
 		Lastx=(int)GetX();
 		Lasty=(int)GetY();
-			USART_OUT(UART4,(uint8_t*)"%d %d %d\n",Lastx,Lasty,errtime);          /////////errtime  test////////////
+//			USART_OUT(UART4,(uint8_t*)"%d %d %d\n",Lastx,Lasty,errtime);          /////////errtime  test////////////
 }
 
 void PushBall(int T)

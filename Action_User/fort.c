@@ -140,7 +140,7 @@ float ReadLaserAValue(void)
 }
 float ReadLaserBValue(void)
 {
-	return fort.laserBValueReceive ;
+	return fort.laserBValueReceive;
 }
 
 

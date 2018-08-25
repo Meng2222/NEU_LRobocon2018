@@ -80,12 +80,9 @@ void ConfigTask(void)
 	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
 	MotorOn(CAN1,COLLECT_BALL_ID);//电机初始化
 	MotorOn(CAN1,PUSH_BALL_ID);
-	USART_OUT(UART4,(uint8_t*)"test1\r\n");
-	USART_OUT(UART4,(uint8_t*)"test2\r\n");
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
 	WaitOpsPrepare();
-		USART_OUT(UART4,(uint8_t*)"test3\r\n");
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 extern FortType fort;
@@ -98,17 +95,21 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		YawPosCtrl(Adcangle());    /////航向电机
-		ShooterVelCtrl(1); /////发射枪转速
-		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);   	// 控制电机的转速，脉冲。
-		PushBall(200);    ////推球 周期
-//		r=Radius();
-//		adc=AdcFlag();
-//	Walkline(0,2000,r,adc,0.7);   ////setx  sety  r  方向  速度
-//	errdeal();
+//		YawPosCtrl(Adcangle());    /////航向电机
+		YawPosCtrl(90);    /////航向电机
+		ShooterVelCtrl(40); /////发射枪转速
+		VelCrl(CAN1,COLLECT_BALL_ID,50*4096);   	// 控制电机的转速，脉冲。
+		r=Radius();
+		adc=AdcFlag();
+		Walkline(0,2000,r,1,1.0);   ////setx  sety  r  方向  速度
+		if((GetAngle()>=80&&GetAngle()<=85)||(GetAngle()>=-5&&GetAngle()<=5)||(GetAngle()>=-90&&GetAngle()<=-85)||(GetAngle()>=-170&&GetAngle()<=-175))
+		{
+			PushBall(200);    ////推球 周期
+		}
+		errdeal();
 //////////////////发数测试////////////////////////////
  //	USART_OUT(UART4,(uint8_t*) "%d	%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius(),(int)GetAngle());
-		USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(ReadYawPos()),(int)ReadLaserAValue(),(int)ReadLaserBValue());
+//		USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(ReadYawPos()),(int)ReadLaserAValue(),(int)ReadLaserBValue());
            //////////////////////////test/////////////////////////////
 	}
 }
