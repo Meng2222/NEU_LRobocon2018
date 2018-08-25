@@ -29,6 +29,7 @@ OS_EVENT *PeriodSem;
 #define PUSH_POSITION (4500)
 // 宏定义送弹机构收回时电机位置
 #define PUSH_RESET_POSITION (5)
+float body_angle;
 float ADC_A;
 float ADC_B;
 int if_turnto90;
@@ -69,7 +70,7 @@ float right_cril;
 float left_cril;
 int time_number=0;
 int leftorright=1;
-float car_v=500;
+float car_v=1000;
 int compare_number=80;
 int if_back=0;
 int last_back=0;
@@ -78,7 +79,7 @@ int q=0;
 float LIGHT_D;
 int up_down;
 float turn_cril;
-int if_compere_angle=0;
+int change_compere_angle;
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -232,6 +233,7 @@ void WalkTask(void)
 }
 void go(float v)
 { 
+	 void get_sendangle(void);
 	 float Turn_v_to_headmaichong(float,float);
      float Turn_v_to_backmaichong(float);
 	 void Light(float,float,float,int);
@@ -248,93 +250,7 @@ void go(float v)
 		
 		
 		//航向电机//
-		if(!if_compere_angle)
-		{	
-		if(car_angle==45||car_angle==135||car_angle==-45||car_angle==-135)
-		{
-			if_turnto90=1;
-			if_compere_angle=1;
-		}else
-        {	
-			if_turnto90=0;
-		}
-	    }		
-        if(if_turnto90)
-		{ 
-			send_angle=170;
-			 YawPosCtrl(send_angle);
-			 if(get_paotai_angle==170)
-			 {    if_compere_angle=0;
-				 if_turnto90=0;
-				 if_addorreduce_angle=-if_go;
-			 }
-			
-		}else
-		{		
-		    if(ADC_A<3000||ADC_B<3000)			
-			{
-				if(ADC_A-ADC_B>800)
-				{
-					if_addorreduce_angle=1;	
-                    send_angle=	fort.yawPosReceive+if_addorreduce_angle*7;
-                    if(send_angle>=260)
-                      send_angle=260;
-                    if(send_angle<=80)	
-                      send_angle=80;						
-					YawPosCtrl(send_angle);
-				}else if( ADC_B-ADC_A>800)
-				{
-					if_addorreduce_angle=-1;	
-                    send_angle=fort.yawPosReceive+if_addorreduce_angle*7;	
-                    if(send_angle>=260)
-                      send_angle=260;
-                    if(send_angle<=80)	
-                      send_angle=80;					
-					YawPosCtrl(fort.yawPosReceive+if_addorreduce_angle*7);
-				}else 	if(fabs(ADC_A-ADC_B)<100)	
-				{
-					if(fabs(ADC_A-ADC_B)<=20)
-					{
-						send_angle=fort.yawPosReceive;
-					if(send_angle>=260)
-                      send_angle=260;
-                    if(send_angle<=80)	
-                      send_angle=80;
-						
-					YawPosCtrl(fort.yawPosReceive);
-					}else 
-					{
-					if(ADC_A-ADC_B>0)
-					if_addorreduce_angle=-1;	
-					else	
-					if_addorreduce_angle=1;		
-					send_angle=fort.yawPosReceive+if_addorreduce_angle*2;
-					if(send_angle>=260)
-                      send_angle=260;
-                    if(send_angle<=80)	
-                      send_angle=80;
-					YawPosCtrl(send_angle);	
-					}
-				}
-			}
-			else
-			{	
-				
-				 if(fort.yawPosReceive>=342)
-					if_addorreduce_angle=-1;
-				 else if(fort.yawPosReceive<=0)
-					if_addorreduce_angle=1;
-				 
-				 send_angle=fort.yawPosReceive+if_addorreduce_angle*7;
-					if(send_angle>=260)
-                      send_angle=260;
-                    if(send_angle<=80)	
-                      send_angle=80;
-					YawPosCtrl(send_angle);	
-			
-				YawPosCtrl(send_angle);
-			}
-	   }
+		get_sendangle();
 		
 		Round(0,2300,R,V,if_go);
 		q++;       
@@ -660,6 +576,7 @@ void get_angle(float a,float b,int n,int round)
 	
 	lastcril_flag=cril_flag;
   }
+    change_compere_angle=(int)set_angle;
     set_R=R;
 	USART_OUT(UART4,(uint8_t*)"set_R=%d\t",set_R);
 	USART_OUT(UART4,(uint8_t*)"if_in=%d\t",if_in);
@@ -826,9 +743,176 @@ float Turn_v_to_headmaichong(float v,float r)
 {
 	return(v/r*TURN_AROUND_WHEEL_TO_BACK_WHEEL/(Pi*TURN_AROUND_WHEEL_DIAMETER)*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO);
 }	
+//得到炮台转轮速度//
 float get_roll_v()
 { 
 	float s=(ADC_A+ADC_B)/2;
 	return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/(Pi*WHEEL_DIAMETER)*COUNTS_PER_ROUND);
 	
+}
+
+void get_sendangle(void)
+{   void get_angle2(float a,float b,int n,int round);
+	float point_x;
+	float point_y;
+    float sendsend_angle;
+	float getget_angle;	
+	if(if_go==-1)
+	{	if(change_compere_angle<=-80&&change_compere_angle>=-170)
+		{
+			point_x=-2400;
+			point_y=-13;
+			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
+			getget_angle=90+body_angle;
+			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
+			YawPosCtrl(80-body_angle+xya.compare_angle);
+			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
+			YawPosCtrl(440-body_angle+xya.compare_angle);
+		}else if((change_compere_angle<=180&&change_compere_angle>=100)||(change_compere_angle>=-180&&change_compere_angle<=-170))
+		{
+			point_x=-2400;
+			point_y=4787;
+			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
+			getget_angle=90+body_angle;
+			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
+			YawPosCtrl(80-body_angle+xya.compare_angle);
+			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
+			YawPosCtrl(440-body_angle+xya.compare_angle);
+		}else if(change_compere_angle<=100&&change_compere_angle>=10)
+		{
+			point_x=2400;
+			point_y=4787;			
+			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
+			getget_angle=90+body_angle;
+			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
+			YawPosCtrl(80-body_angle+xya.compare_angle);			
+			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198 )
+				YawPosCtrl(280-body_angle+xya.compare_angle);
+		}else if(change_compere_angle<=10&&change_compere_angle>=-80)
+		{
+			point_x=2400;
+			point_y=-13;
+			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
+			getget_angle=-270+body_angle;
+			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
+			YawPosCtrl(440-body_angle+xya.compare_angle);			
+			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198 )
+				YawPosCtrl(80-body_angle+xya.compare_angle);
+		}
+	}else 
+	{
+		if((change_compere_angle<=-100&&change_compere_angle>=-180)||(change_compere_angle>=170&&change_compere_angle<=180))
+		{
+			point_x=-2400;
+			point_y=0;
+			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
+			getget_angle=90+body_angle;
+			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
+			YawPosCtrl(80-body_angle+xya.compare_angle);
+			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
+			YawPosCtrl(440-body_angle+xya.compare_angle);
+		}else if(change_compere_angle<=170&&change_compere_angle>=80)
+		{
+			point_x=-2400;
+			point_y=4800;
+			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
+			getget_angle=90+body_angle;
+			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
+			YawPosCtrl(80-body_angle+xya.compare_angle);
+			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
+			YawPosCtrl(440-body_angle+xya.compare_angle);
+		}else if(change_compere_angle<=80&&change_compere_angle>=-10)
+		{
+			point_x=2400;
+			point_y=4800;			
+			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
+			getget_angle=90+body_angle;
+			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
+			YawPosCtrl(80-body_angle+xya.compare_angle);			
+			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198 )
+				YawPosCtrl(280-body_angle+xya.compare_angle);
+		}else if(change_compere_angle<=-10&&change_compere_angle>=-100)
+		{
+			point_x=2400;
+			point_y=0;
+			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
+			getget_angle=-270+body_angle;
+			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
+			YawPosCtrl(440-body_angle+xya.compare_angle);			
+			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198 )
+				YawPosCtrl(80-body_angle+xya.compare_angle);
+		}
+	}
+}
+void get_angle2(float a,float b,int n,int round)
+{ 	
+	if(b!=0)
+	{ if(n==1)
+		{ if(-a/b>0)
+		  {   
+			  body_angle=atan2(-a/b,1)/3.14159*180;
+		  }
+		  else if(-a/b<0)
+		  {    
+			  body_angle=atan2(a/b,-1)/3.14159*180;
+		  }
+		}else
+		{
+			if(-a/b>0)
+			{
+		    body_angle=atan2(a/b,-1)/3.14159*180;
+				
+			}
+		  else if(-a/b<0)
+		  {   
+			 body_angle=atan2(-a/b,1)/3.14159*180;
+		  }
+		}
+	}
+	else if(b==0)
+	{
+		if(round==-1)
+		{   if(n==1)
+		   	{
+				
+				body_angle=90;
+			}
+			else 
+			{
+				body_angle=-90;
+		       
+				
+			}
+		}
+        else 
+		{   
+			if(n==1)
+		   {
+			
+				body_angle=90;
+			  
+			}
+			
+			else 
+			{
+				body_angle=-90;
+		      
+			}       			
+		}
+	} 
+     
+	if(a==0)
+	{
+		if(n==1)
+		{  
+			body_angle=0;
+		
+		}
+        else 
+		{   
+			body_angle=-180;
+            			
+		}
+		
+	}
 }
