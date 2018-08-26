@@ -1,5 +1,7 @@
 #include "Pos.h"
 
+#define LENGTH_OF_LOCATOR_2_BACK 65
+
 Pos PosGet_t;
 speed speed_t;
 
@@ -10,7 +12,7 @@ float GetX(void)
 
 float GetY(void)
 {
-    return PosGet_t.posY;
+    return PosGet_t.posY + LENGTH_OF_LOCATOR_2_BACK;
 }
 
 float GetA(void)
@@ -272,6 +274,14 @@ point RelPos(const point thispoint, const point thatpoint)
     point temppoint;
     temppoint = setPointXY(thatpoint.x - thispoint.x, thatpoint.y - thispoint.y);
     return temppoint;
+}
+
+//返回相对于thispoint位置为relpoint的点的绝对位置
+point StrPos(const point thispoint, const point relpoint)
+{
+    point thatpoint;
+    thatpoint = setPointXY(thispoint.x + relpoint.x, thispoint.y + relpoint.y);
+    return thatpoint;
 }
 
 //返回有向直线thisline的thisdir侧的垂直于其的方向

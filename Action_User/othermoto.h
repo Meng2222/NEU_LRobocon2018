@@ -2,6 +2,7 @@
 #define OTHERMOTO_H
 
 #include "includes.h"
+#include "Pos.h"
 /**
  * 该文件中有关航向轮和发射电机的相关函数包装自fort.h
  */
@@ -11,22 +12,10 @@
 #define GUN_YAW_ID (7)
 #define COLLECT_BALL_ID (8)
 
-// 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
-#define PUSH_POSITION (4500)
-// 宏定义送弹机构收回时电机位置
-#define PUSH_RESET_POSITION (5)
+//储藏区中心到边上的距离
+#define LENGTH_TO_THE_SIDE (200)
 
-#define LAUNCHER_SPEED_DEFINE (0)
-#define COLLECTER_SPEED_DEFINE (0)
-
-//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
-// 宏定义发射机构航向电机ID
-// 电机旋转一周的脉冲数
-#define COUNT_PER_ROUND (4096.0f)
-// 宏定义每度对应脉冲数
-#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
-// 宏定义航向角减速比
-#define YAW_REDUCTION_RATIO (4.0f)
+#define LENGTH_BETWEEN_LASER (95)
 
 /**
  * [OthermotoInit 除移动系统外其他电机的初始化]
@@ -64,4 +53,31 @@ float GetLauncherSpeed(void);
 float GetLauncherAngle(void);
 float GetLaserA(void);
 float GetLaserB(void);
+
+/**
+ * [GetPosToLauncher 返回对应储藏区相对于发射器的相对位置]
+ * @param  storageInAirPoint [对应储藏区,其值可以是storageInAirPointlb, storageInAirPointlf, storageInAirPointrb, storageInAirPointrf]
+ * @return                   [相对位置]
+ */
+point GetPosToLauncher(const point storageInAirPoint);
+
+/**
+ * [SuitableStoragePos 返回最近的储藏区]
+ * @return  [如题]
+ */
+point SuitableStoragePos(void);
+
+/**
+ * [SuitableSpeed2Launch 返回适合投球的发射轮转速]
+ * @param  distance [与储藏区的距离]
+ * @return          [适合发射的发射轮转速]
+ */
+int32_t SuitableSpeed2Launch(float distance);
+
+/**
+ * [Delta4Laser 判断激光瞄准是否在误差范围内]
+ * @return  [在范围内返回1,反之返回0]
+ */
+_Bool Delta4Laser(void);
+    
 #endif

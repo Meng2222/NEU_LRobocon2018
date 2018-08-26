@@ -104,16 +104,20 @@ void CAN2_RX0_IRQHandler(void)
 
 extern OS_EVENT *PeriodSem;
 extern OS_EVENT *PeriodSem2;
+extern OS_EVENT *PeriodSem3;
 
 void TIM2_IRQHandler(void)
 {
 #define PERIOD_COUNTER 10
 #define PERIOD_COUNTER2 100
+#define PERIOD_COUNTER3 10
 
 	//用来计数10次，产生10ms的定时器
 	static uint8_t periodCounter = PERIOD_COUNTER;
 	//用来计数100次，产生0.1s的定时器
 	static uint16_t periodCounter2 = PERIOD_COUNTER2;
+	//用来计数100次，产生0.1s的定时器
+	static uint16_t periodCounter3 = PERIOD_COUNTER3;
 
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
@@ -136,6 +140,13 @@ void TIM2_IRQHandler(void)
 		{
 			OSSemPost(PeriodSem2);
 			periodCounter2 = PERIOD_COUNTER2;
+		}
+		//实现10ms 发送1次信号量
+		periodCounter3--;
+		if (periodCounter3 == 0)
+		{
+			OSSemPost(PeriodSem3);
+			periodCounter3 = PERIOD_COUNTER3;
 		}
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
 	}

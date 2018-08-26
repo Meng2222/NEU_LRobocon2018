@@ -90,6 +90,9 @@ linewithdir DirlinePoint2Point(const point thispoint, const point thatpoint);
 //返回thatpoint相对于thispoint的相对位置
 point RelPos(const point thispoint, const point thatpoint);
 
+//返回相对于thispoint位置为relpoint的点的绝对位置
+point StrPos(const point thispoint, const point relpoint);
+
 //返回有向直线thisline的thisdir侧的垂直于其的方向
 float VDirForLine(const linewithdir thisline, reldir thisdir);
 

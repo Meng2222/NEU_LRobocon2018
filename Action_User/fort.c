@@ -19,10 +19,15 @@
 #include "stm32f4xx_usart.h"
 #include "string.h"
 #include "timer.h"
+#include "Pos.h"
 
 
 //对应的收发串口
 #define USARTX UART5
+#define FRONT_ANGLE_4_LAUNCHER 170
+#define K_OF_LASER 2.4973f
+#define B_OF_LASERA 40
+#define B_OF_LASERB 360
 
 
 typedef union
@@ -158,16 +163,16 @@ float ReadYawPos(void)
 }
 float ReadLaserAValue(void)
 {
-	return 2.4973f * fort.laserAValueReceive;
+	return K_OF_LASER * fort.laserAValueReceive + B_OF_LASERA;
 }
 float ReadLaserBValue(void)
 {
-	return 2.4973f * fort.laserBValueReceive;
+	return K_OF_LASER * fort.laserBValueReceive + B_OF_LASERB;
 }
 
 float Launcher2CarCCS(float angle)
 {
-    angle = 170 - angle;
+    angle = FRONT_ANGLE_4_LAUNCHER - angle + GetA();
     if(angle >= 180)
     {
         angle -= 360;
@@ -181,7 +186,7 @@ float Launcher2CarCCS(float angle)
 
 float Car2LauncherCCS(float angle)
 {
-    angle = 170 - angle;
+    angle = FRONT_ANGLE_4_LAUNCHER - angle + GetA();
     if(angle >= 360)
     {
         angle -= 360;

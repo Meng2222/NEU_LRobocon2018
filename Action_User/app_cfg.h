@@ -41,6 +41,7 @@ static 	void  ConfigTask(void);
 static 	void  WalkTask(void);
 static 	void  ErrCheck(void);
 static  void  ErrSolve(void);
+static  void  LaunchTheBall(void);
 
 /*
 *********************************************************************************************************
@@ -50,9 +51,10 @@ static  void  ErrSolve(void);
 
 #define  APP_TASK_START_PRIO						10u
 #define  Config_TASK_START_PRIO						11u
-#define  Walk_TASK_PRIO								14u
-#define  ERR_CHECK_PRIO								13u
-#define  ERR_SOLVE_PRIO								12u
+#define  Walk_TASK_PRIO								15u
+#define  ERR_CHECK_PRIO								14u
+#define  ERR_SOLVE_PRIO								13u
+#define  LAUNCH_THE_BALL_PRIO						12u
 
 
 
@@ -68,6 +70,7 @@ static  void  ErrSolve(void);
 #define  Walk_TASK_STK_SIZE							512u
 #define  ERR_CHECK_STK_SIZE							256u
 #define  ERR_SOLVE_STK_SIZE							256u
+#define  LAUNCH_THE_BALL_STK_SIZE					256u
 
 /*
 *********************************************************************************************************
@@ -80,6 +83,7 @@ static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 static OS_STK ErrCheckStk[ERR_CHECK_STK_SIZE];
 static OS_STK ErrSolveStk[ERR_SOLVE_STK_SIZE];
+static OS_STK LaunchTheBallStk[LAUNCH_THE_BALL_STK_SIZE];
 
 /*
 *********************************************************************************************************
