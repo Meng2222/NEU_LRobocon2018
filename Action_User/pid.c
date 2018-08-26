@@ -2,8 +2,8 @@
 
 static float outMax=800;
 static float outMin=-800;
-float outMax2=0;
-float outMin2=0;
+float outMax2=90;
+float outMin2=-90;
 static struct PIDPara_{
 	float aKp;
 	float aKi;

@@ -81,7 +81,7 @@ void YawAngleCtr(float yawAngle);
 */
 #define  APP_TASK_START_STK_SIZE					256u
 #define  Config_TASK_START_STK_SIZE					256u
-#define  Walk_TASK_STK_SIZE							2048u
+#define  Walk_TASK_STK_SIZE							4096u
 
 /*
 *********************************************************************************************************

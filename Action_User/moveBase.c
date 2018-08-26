@@ -24,24 +24,22 @@
 
 /*****************定义的一些全局变量用于串口返回值****************************/
 
-struct usartValue_{
+float newPosX;
+float newPosY;
+
+extern struct usartValue_{
 	uint32_t cnt;//用于检测是否数据丢失
 	float xValue;//串口输出x坐标
 	float yValue;//串口输出y坐标
 	float angleValue;//串口输出角度值
 	float pidValueOut;//PID输出
-	float d;//距离
+	float d;
 	float turnAngleValue;//
 	uint8_t flagValue;
+	float shootangle;
 }usartValue;
 
-extern struct trans{
-float oldPosX;
-float oldPosY;
-float newPosX;
-float newPosY;
-float t_angle;
-}transform;
+
 
 extern float outMax2;
 extern float outMin2;
@@ -255,7 +253,7 @@ uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir)
 	float getX=GetPosX();
 	float getY=GetPosY();
 	float distance=((A2*getX)+(B2*getY)+C2)/sqrt(A2*A2+B2*B2);
-	float angleAdd=0.09*distance;
+	float angleAdd=0.1*distance;
 	if(angleAdd > 90)
 	{
 		angleAdd=90;
@@ -333,7 +331,7 @@ uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir)
 		BackTurn(setAngle,1000);
 		usartValue.turnAngleValue=setAngle;
 	}
-	if((distance < 50) && (distance > -50))
+	if((distance < 100) && (distance > -100))
 		return 1;
 	else
 		return 0; 
@@ -351,8 +349,6 @@ uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir)
 
 void straightLine(float A1,float B1,float C1,uint8_t dir)
 {
-	outMax2=90;
-	outMin2=90;
 	float setAngle=0;
 	float getAngle=GetAngle();
 	float getX=GetPosX();
@@ -504,14 +500,14 @@ void BiggerSquareOne(void)
 				squareFlag++;
 				break;
 		case 8:
-			if(sY < 3200)
+			if(sY < 3350)
 				straightLine(1,0,1600,0);
 			else
 				squareFlag++;
 				break;
 		case 9:
 			if(sX < 1000)
-				straightLine(0,1,-3800,0);
+				straightLine(0,1,-4000,0);
 			else
 				squareFlag++;
 				break;
@@ -522,7 +518,7 @@ void BiggerSquareOne(void)
 				squareFlag++;
 				break;
 		case 11:
-			if(sX > -1200)
+			if(sX > -1000)
 				straightLine(0,1,-600,1);
 			else
 				squareFlag=8;
@@ -562,7 +558,7 @@ void BiggerSquareTwo(void)
 				break;
 		case 2:
 			if(sY > 2200)
-				straightLine(1,0,750,1);
+				straightLine(1,0,650,1);
 			else
 				squareFlag++;
 				break;
@@ -597,19 +593,19 @@ void BiggerSquareTwo(void)
 				squareFlag++;
 				break;
 		case 8:
-			if(sY < 3200)
+			if(sY < 3350)
 				straightLine(1,0,-1600,0);
 			else
 				squareFlag++;
 				break;
 		case 9:
 			if(sX > -1000)
-				straightLine(0,1,-3800,1);
+				straightLine(0,1,-4000,1);
 			else
 				squareFlag++;
 				break;
 		case 10:
-			if(sY > 1200)
+			if(sY > 1000)
 				straightLine(1,0,1600,1);
 			else
 				squareFlag++;
@@ -684,7 +680,7 @@ void SquareTwo(void)
 void RoundTwo(float centerX,float centerY,float r,uint8_t o,float speed)
 {
 	outMax2=90;
-	outMin2=90;
+	outMin2=-90;
 	float rX=GetPosX();
 	float rY=GetPosY();
 	float d=sqrt(((rX-centerX)*(rX-centerX))+((rY-centerY)*(rY-centerY)));
@@ -774,10 +770,10 @@ void Walk(uint8_t *getAdcFlag)
 	speedx=Speed_X();
 	speedy=Speed_Y();
 	
-	if((speedx < 100) && (speedx > -100) && (speedy < 100) && (speedy > -100))
+	if((speedx < 50) && (speedx > -50) && (speedy < 50) && (speedy > -50))
 	{
 		usartValue.cnt++;
-		if(usartValue.cnt > 100)
+		if(usartValue.cnt >= 100)
 		{
 			errFlag=!errFlag;
 			X_Now=usartValue.xValue;
@@ -850,6 +846,25 @@ void Walk(uint8_t *getAdcFlag)
 
 }
 
+void WorkTwo(uint8_t *flag)
+{
+	static uint16_t roundCnt=0;
+	static float r2=600;
+	if(r2 < 2100)
+	{
+		if(roundCnt < 500+r2)
+			roundCnt++;
+		else
+		{
+			r2+=300;
+			roundCnt=0;
+		}
+	}
+	else
+		r2=2000;
+	RoundTwo(0,2300,r2,*flag,1000);
+}
+
 /**
   * @brief  新底盘角度闭环
   * @note	
@@ -858,16 +873,11 @@ void Walk(uint8_t *getAdcFlag)
   */
 void Turn2(float setAngle1,float tSpeed)
 {
-	float t2X=transform.newPosX;
-	float t2Y=transform.newPosY;
 	int32_t pulseNum=0;
 	int32_t bPulseNum=(tSpeed*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(PI*WHEEL_DIAMETER);
-	float getAngle=0;
+	float getAngle=GetAngle();
 	float speed=0;
-	getAngle=GetAngle();
 	
-	usartValue.xValue=transform.newPosX;
-	usartValue.yValue=transform.newPosY;
 	usartValue.angleValue=getAngle;
 	
 	speed=AnglePid(setAngle1,getAngle);
@@ -893,8 +903,11 @@ void straightLine2(float A1,float B1,float C1,uint8_t dir)
 {
 	float setAngle=0;
 	float getAngle=GetAngle();
-	float getX=GetPosX();
-	float getY=GetPosY();
+	
+	//坐标变换函数
+	Transformation();
+	float getX=newPosX;
+	float getY=newPosY;
 	float distance=((A1*getX)+(B1*getY)+C1)/sqrt(A1*A1+B1*B1);
 	float rearWheelSpeed=0;
 	float angleAdd=0;
@@ -951,13 +964,102 @@ void straightLine2(float A1,float B1,float C1,uint8_t dir)
 			Turn2(setAngle+angleAdd,200+rearWheelSpeed);
 		}
 		
+	}	
+}
+
+/**
+  * @brief  新底盘圆形闭环
+  * @note	
+  * @param centerX:
+  * @param centerY
+  * @param r
+  * @param o:为0 顺时针转
+  * @param speed ：后轮速度
+  * @retval None
+  */
+void Round2(float centerX,float centerY,float r,uint8_t o,float speed)
+{
+	//坐标变换函数
+	Transformation();
+	float r2X=newPosX;
+	float r2Y=newPosY;
+	float d=sqrt(((r2X-centerX)*(r2X-centerX))+((r2Y-centerY)*(r2Y-centerY)));
+	float angleK=(atan((r2Y-centerY)/(r2X-centerX))*180/PI);
+	float angleErr=0.18*(d-r);
+	float angleSet=0;
+	if(angleErr > 90)
+		angleErr=90;
+	else if(angleErr < -90)
+		angleErr=-90;
+	if(centerX == r2X)
+	{
+		if(o == 0)
+		{
+			if(r2Y > centerY)
+				angleSet=angleErr-90;
+			else
+				angleSet=90-angleErr;
+		}
+		else if(o == 1)
+		{
+			if(r2Y > centerY)
+				angleSet=90+angleErr;
+			else
+				angleSet=angleErr-90;
+		}
 	}
+	else if(centerX > r2X)
+	{
+		if(o == 0)
+			angleSet=-angleErr+angleK;
+		else if(o == 1)
+			angleSet=angleErr+angleK-180;
+	}
+	else
+	{
+		if(o == 0)
+			angleSet=-angleErr+angleK+180;
+		else if(o == 1)
+			angleSet=angleErr+angleK;
+	}
+	Turn2(angleSet,400);
 	
-	
-
-
-	
-	
+	usartValue.turnAngleValue=angleSet;
+	usartValue.d=d-r;
+	usartValue.xValue=r2X;
+	usartValue.yValue=r2Y;
 	
 }
+
+//开环
+void Round3(void)
+{
+	float r2X=newPosX;
+	float r2Y=newPosY;
+	usartValue.xValue=r2X;
+	usartValue.yValue=r2Y;
+	
+	int32_t backPulseNum=(400*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(PI*WHEEL_DIAMETER);
+	int32_t frontPulseNum=(((400*TURN_AROUND_WHEEL_TO_BACK_WHEEL)/400)*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(PI*TURN_AROUND_WHEEL_DIAMETER );
+	VelCrl(CAN2, 0x06,frontPulseNum);
+	VelCrl(CAN2, 0x05,backPulseNum);
+
+}
+
+
+//坐标转换
+void Transformation(void)
+{
+	float oldPosX;
+	float oldPosY;
+	float t_angle;
+	t_angle=GetAngle();
+	oldPosX=GetPosX();
+	oldPosY=GetPosY();
+	
+	newPosX=oldPosX+(OPS_TO_BACK_WHEEL*sin(t_angle*PI/180));
+	newPosY=oldPosY+OPS_TO_BACK_WHEEL-(OPS_TO_BACK_WHEEL*cos(t_angle*PI/180));
+
+}
+
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/

@@ -43,10 +43,6 @@
 /** @defgroup 
   * @{
   */
-  
-
-
-
 
 #define PI (3.141593)
 #define TURN_RIGHT 0
@@ -108,12 +104,9 @@ void RoundTwo(float centerX,float centerY,float r,uint8_t o,float speed);
 float Speed_X(void);
 float Speed_Y(void);
 void Walk(uint8_t *getAdcFlag);
-void WorkTwo(uint8_t *flag);
 void Turn2(float setAngle1,float tSpeed);
 void straightLine2(float A1,float B1,float C1,uint8_t dir);
 void Round2(float centerX,float centerY,float r,uint8_t o,float speed);
-void Round3(void);
-void Transformation(void);
 #endif /* ___H */
 
 

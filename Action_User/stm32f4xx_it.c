@@ -39,11 +39,8 @@
 #include "adc.h"
 #include "gpio.h"
 #include "elmo.h"
-<<<<<<< HEAD
 #include "app_cfg.h"
-=======
 #include "fort.h"
->>>>>>> master
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
@@ -479,7 +476,6 @@ float GetPosY(void)
 }
 
 
-
 void UART5_IRQHandler(void)
 {
 	uint8_t data;
@@ -493,7 +489,8 @@ void UART5_IRQHandler(void)
 		data = USART_ReceiveData(UART5);
 		GetValueFromFort(data);
 		USART_ClearITPendingBit(UART5, USART_IT_RXNE);
-	}
+		
+		}
 	else
 	{
 		USART_ClearITPendingBit(UART5, USART_IT_PE);

@@ -1,6 +1,16 @@
 #include "includes.h"
 #include <app_cfg.h>
-<<<<<<< HEAD
+#include "misc.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
+#include "timer.h"
+#include "gpio.h"
+#include "usart.h"
+#include "can.h"
+#include "elmo.h"
+#include "stm32f4xx_it.h"
+#include "stm32f4xx_usart.h"
+#include "fort.h"
                           //圆周率                 3.1415
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
 #define BaseVelocity (0.5 * One_Meter_Per_Second) //基础速度               0.5m/s
@@ -43,9 +53,9 @@ void vel_radious(float vel,float radious)
 	VelCrl(CAN2,2,-ratio2*vel*Pulse2mm);
 }
 
-static uint8_t adcFlag=0;
+uint8_t adcFlag=0;
 extern uint8_t squareFlag;
-extern struct usartValue_{
+struct usartValue_{
 	uint32_t cnt;//用于检测是否数据丢失
 	float xValue;//串口输出x坐标
 	float yValue;//串口输出y坐标
@@ -54,22 +64,10 @@ extern struct usartValue_{
 	float d;
 	float turnAngleValue;//
 	uint8_t flagValue;
+	float shootangle;
 }usartValue;
 
-=======
-#include "misc.h"
-#include "stm32f4xx_gpio.h"
-#include "stm32f4xx_rcc.h"
-#include "timer.h"
-#include "gpio.h"
-#include "usart.h"
-#include "can.h"
-#include "elmo.h"
-#include "stm32f4xx_it.h"
-#include "stm32f4xx_usart.h"
-#include "pps.h"
-#include "fort.h"
->>>>>>> master
+
 /*
 ===============================================================
 						信号量定义
@@ -96,6 +94,7 @@ typedef union
 
 }num_t;
 
+extern char buffer[20];
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 
@@ -134,55 +133,82 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-<<<<<<< HEAD
 	Init();
-
-=======
-	
-	USART3_Init(115200);
-	UART5_Init(921600);
-	TIM_Init(TIM2, 99, 839, 1, 0);
-	/*一直等待定位系统初始化完成*/
-	BEEP_ON;
-	WaitOpsPrepare();
-	
->>>>>>> master
 	OSTaskSuspend(OS_PRIO_SELF);
 
 }
-<<<<<<< HEAD
 
 //10ms 运行一次；
 int cntTurn = 0, cntSendTime = 0;
 char switchNextModeFlag = 1, adjustFlag = 0, turnFlag = 0;
 float adjustVelocity, baseVelocity;
 
-=======
+//炮台发回的值
 extern FortType fort;
->>>>>>> master
+
 void WalkTask(void)
 {
 	int cntSendTime;
 	CPU_INT08U os_err;
 	os_err = os_err;
-<<<<<<< HEAD
-	Angle_PidPara(10,0,0);
-	Distance_PidPara(1,0,0);
+	
+//	//新底盘
+//	Angle_PidPara(20,0,0);
+//	Distance_PidPara(1,0,0); 
+	
+	//旧底盘
+	Angle_PidPara(25,0,300);
+	Distance_PidPara(0.09,0,0); 
 	squareFlag=0;
-	uint16_t count=0;
-=======
->>>>>>> master
+	
+	float laserAValue=0;
+	float laserBValue=0;
+	uint16_t cnt=0;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 
+		
 		OSSemPend(PeriodSem, 0, &os_err);
-		count++;
-//		Walk(&adcFlag);
 		
-		
+		laserAValue=GetLaserAValueReceive();
+		laserBValue=GetLaserAValueReceive();
+//		
+//		//发射摩擦轮转速
+//		ShooterVelCtrl(50);
+//		
+		//走位
+		Walk(&adcFlag);
+		Shoot(adcFlag); 
+//		WorkTwo(&adcFlag);
+//		RoundTwo(0,2350,2000,0,1000);
+////
+////		
 
-		straightLine2(1,1,-200,0);
+		
+//		cnt++;
+//		if(cnt == 50)
+//		{
+//			// 推球	
+//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+//		}
+//		else if(cnt > 100)
+//		{
+//			// 复位
+//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+//			cnt=0;
+//		}
+		//新底盘闭环转弯
+//		Turn2(-135,250);
+		
+		//新底盘开环圆
+//		Round3();
+		
+		//新底盘闭环圆
+//		Round2(500,1000,400,0,250);
+
+		//新底盘闭环直线
+//		straightLine2(1,-1,-400,0);
 
 		//收球电机
 //		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
@@ -190,37 +216,29 @@ void WalkTask(void)
 //		//航向电机
 //		YawAngleCtr(40);
 //		
-//		if(count == 300)
-//		{
-//			// 推球	
-//			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-//		}
-//		else if(count >600)
-//		{
-//			// 复位
-//			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-//			count=0;
-//		}
-
 //		SendUint8();
 //	
-//		USART_OUT(UART4, " %d\t", (int)usartValue.d);
+		USART_OUT(UART4, " %d\t", (int)usartValue.flagValue);
 //		USART_OUT(UART4, " %d\t", (int)usartValue.turnAngleValue);
-//		USART_OUT(UART4, " %d\t", (int)usartValue.cnt);
+		USART_OUT(UART4, " %d\t", (int)fort.shooterVelReceive);
 //		USART_OUT(UART4, " %d\t", (int)usartValue.pidValueOut);
 //		USART_OUT(UART4, " %d\t", (int)adcFlag);
 //		USART_OUT(UART4, " %d\t", (int)usartValue.angleValue);
-//		USART_OUT(UART4, " %d\t", (int)usartValue.flagValue);
-//		USART_OUT(UART4, " %d\t", (int)usartValue.xValue);
-//		USART_OUT(UART4, " %d\r\n", (int)usartValue.yValue);
-		USART_OUT(USART1, " %d\t", (int)usartValue.d);
-		USART_OUT(USART1, " %d\t", (int)usartValue.turnAngleValue);
-		USART_OUT(USART1, " %d\t", (int)usartValue.angleValue);
-		USART_OUT(USART1, " %d\t", (int)usartValue.xValue);
-		USART_OUT(USART1, " %d\r\n", (int)usartValue.yValue);
+		USART_OUT(UART4, " %d\t", (int)usartValue.shootangle);
+//		USART_OUT(UART4, " %d\t", (int)fort.yawPosReceive);
+//		USART_OUT(UART4, " %d\t", (int)fort.shooterVelReceive);
+		USART_OUT(UART4, " %d\t", (int)usartValue.xValue);
+		USART_OUT(UART4, " %d\r\n", (int)usartValue.yValue);
 
-	
-	
+//		USART_OUT(UART4, " %d\t", (int)laserAValue);
+//		USART_OUT(UART4, " %d\r\n", (int)laserBValue);
+//		USART_OUT(USART1, " %d\t", (int)usartValue.d);
+//		USART_OUT(USART1, " %d\t", (int)usartValue.turnAngleValue);
+//		USART_OUT(USART1, " %d\t", (int)usartValue.angleValue);
+//		USART_OUT(USART1, " %d\t", (int)usartValue.xValue);
+//		USART_OUT(USART1, " %d\r\n", (int)usartValue.yValue);
+
+
 	
 	}
 }
@@ -232,43 +250,49 @@ void Init(void)
 	USART3_Init(115200);
 	USART1_Init(921600);
 	UART4_Init(921600);
+	USART3_Init(115200);
+	UART5_Init(921600);
 	Adc_Init();
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	ElmoInit(CAN2);
 	
-//	//右轮电机初始化
-//	VelLoopCfg(CAN2, 0x01, 20000, 20000);
-//	
-//	//左轮电机初始化
-//	VelLoopCfg(CAN2, 0x02, 20000, 20000);
-//	
+	//右轮电机初始化
+	VelLoopCfg(CAN2, 0x01, 20000, 20000);
+	
+	//左轮电机初始化
+	VelLoopCfg(CAN2, 0x02, 20000, 20000);
+	
 	//收球电机初始化
-//	VelLoopCfg(CAN1, 0x08, 50000, 50000);
+	VelLoopCfg(CAN1, 0x08, 50000, 500000);
 //	
-//	//推球电机初始化
-//	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
-//	
+	//推球电机初始化
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,20000);
+////	
 //	//航向电机初始化
 //	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
 	
 	//新底盘后轮电机初始化
-	VelLoopCfg(CAN2, 0x05, 10000000, 10000000);
-	
-	//新底盘前轮电机初始化
-	VelLoopCfg(CAN2, 0x06, 10000000, 10000000);
-//	MotorOn(CAN2, 0x01);
-//	MotorOn(CAN2, 0x02);
-//	MotorOn(CAN1, 0x08);
-//	MotorOn(CAN1, PUSH_BALL_ID);
+//	VelLoopCfg(CAN2, 0x05, 10000000, 10000000);
+//	
+//	//新底盘前轮电机初始化
+//	VelLoopCfg(CAN2, 0x06, 10000000, 10000000);
+	MotorOn(CAN2, 0x01);
+	MotorOn(CAN2, 0x02);
+	MotorOn(CAN1, 0x08);
+	MotorOn(CAN1, PUSH_BALL_ID);
 //	MotorOn(CAN1, GUN_YAW_ID);
 
-	MotorOn(CAN2, 0x05);
-	MotorOn(CAN2, 0x06);
+//	MotorOn(CAN2, 0x05);
+//	MotorOn(CAN2, 0x06);
 	
 	delay_ms(5000);
 	PosConfig();
-//	GetDirection(&adcFlag);
+//	
+	//收球电机
+	VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
+	
+	GetDirection(&adcFlag);
 }
 
 

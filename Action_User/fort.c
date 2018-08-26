@@ -19,7 +19,11 @@
 #include "stm32f4xx_usart.h"
 #include "string.h"
 #include "timer.h"
-
+#include "stm32f4xx_it.h"
+#include "math.h"
+#include "elmo.h"
+#include "usart.h"
+#include "moveBase.h"
 
 //对应的收发串口
 #define USARTX UART5
@@ -31,6 +35,18 @@ FortType fort;
 
 int bufferI = 0;
 char buffer[20] = {0};
+extern struct usartValue_{
+	uint32_t cnt;//用于检测是否数据丢失
+	float xValue;//串口输出x坐标
+	float yValue;//串口输出y坐标
+	float angleValue;//串口输出角度值
+	float pidValueOut;//PID输出
+	float d;
+	float turnAngleValue;//
+	uint8_t flagValue;
+	float shootangle;
+}usartValue;
+
 /**
 * @brief 炮台航向控制
 * @param  ang:转台航向角度，范围为0~360度
@@ -58,6 +74,7 @@ void YawPosCtrl(float ang)
 * @retval none
 * @attention none
 */
+
 void ShooterVelCtrl(float rps)
 {
 		fort.usartTransmitData.dataFloat = rps;
@@ -128,4 +145,129 @@ void GetValueFromFort(uint8_t data)
 }
 
 
+int  GetLaserAValueReceive(void)
+{
+	return fort.laserAValueReceive;
+}
 
+
+int  GetLaserBValueReceive(void)
+{
+	return fort.laserBValueReceive;
+}
+
+
+extern uint8_t squareFlag;
+void Shoot(uint8_t flg)
+{
+	static float bucketPosX[4]={BUCKET_ONE_X,BUCKET_TWO_X,BUCKET_THR_X,BUCKET_FOR_X};
+	static float bucketPosY[4]={BUCKET_ONE_Y,BUCKET_TWO_Y,BUCKET_THR_Y,BUCKET_FOR_Y};	
+	static uint8_t shootFlag=0;
+	static uint8_t shootCnt=0;
+	float shootX=GetPosX();
+	float shootY=GetPosY();
+	float getAngle=GetAngle();
+	float shootDistance=0;
+	float shootSpeed=0;
+	float shootAngle=0;
+	float shootTurnAngle=0;
+
+	if(flg == 0)
+	{
+		if((shootX < 0 && shootX > -1400 && shootY < 2300 && shootY > 1000) || (shootX < 1400  && shootY < 1000))
+		{
+			shootFlag=0;
+			
+		}
+		else if((shootX < 0 && shootX > -1400 && shootY > 2300 && shootY < 3600) || (shootX < -1400  && shootY > 1000))
+		{
+			shootFlag=1;
+		}
+		else if((shootX > 0 && shootX < 1400 && shootY > 2300 && shootY < 3600) || (shootX > -1400  && shootY > 3600))
+		{
+			shootFlag=2;
+		}
+		else if((shootX > 0 && shootX < 1400 && shootY < 2300 && shootY > 1000) || (shootX > 1400  && shootY > 1000))
+		{
+			shootFlag=3;
+		}	
+	}
+	if(flg == 1)
+	{
+		if((shootX < 0 && shootX > -1400 && shootY < 2300 && shootY > 1000) || (shootX < -1400  && shootY > 1000))
+		{
+			shootFlag=0;
+			
+		}
+		else if((shootX < 0 && shootX > -1400 && shootY > 2300 && shootY < 3600) || (shootX < 1400  && shootY > 3600))
+		{
+			shootFlag=1;
+		}
+		else if((shootX > 0 && shootX < 1400 && shootY > 2300 && shootY < 3600) || (shootX > 1400  && shootY > 1000))
+		{
+			shootFlag=2;
+		}
+		else if((shootX > 0 && shootX < 1400 && shootY < 2300 && shootY > 1000) || (shootX > -1400  && shootY < 1000))
+		{
+			shootFlag=3;
+		}	
+	}
+	
+	if(shootFlag == 2 || shootFlag == 3)
+	{
+		shootAngle=263-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
+		shootTurnAngle=getAngle+shootAngle;
+		if(shootTurnAngle > 350 && shootTurnAngle <= 360)
+		{
+			shootTurnAngle=350;
+		}
+		else if(shootTurnAngle > 360)
+		{
+			shootTurnAngle=shootTurnAngle-360;
+		}
+		else if(shootTurnAngle < 0 && shootTurnAngle >= -10)
+		{
+			shootTurnAngle=0;
+		}
+	}
+	else if(shootFlag == 0 || shootFlag == 1)
+	{
+		shootAngle=83-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
+		shootTurnAngle=getAngle+shootAngle;
+		if(shootTurnAngle > 350 && shootTurnAngle <= 360)
+		{
+			shootTurnAngle=350;
+		}
+		else if(shootTurnAngle < -10)
+		{
+			shootTurnAngle=shootTurnAngle+360;
+		}
+		else if(shootTurnAngle < 0 && shootTurnAngle >= -10)
+		{
+			shootTurnAngle=0;
+		}
+	}
+	YawPosCtrl(shootTurnAngle);
+	
+	usartValue.shootangle=shootTurnAngle;
+	usartValue.flagValue=shootFlag;
+	
+	shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
+	if(shootDistance < 3000 && shootDistance > 1300)
+	{
+		shootSpeed=(SHOOOT_KP*shootDistance)+29;
+		ShooterVelCtrl(shootSpeed);
+		shootCnt++;
+		if(shootCnt == 40)
+		{
+			// 推球	
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+		}
+		else if(shootCnt > 80)
+		{
+			// 复位
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			shootCnt=0;
+		}
+	}
+}
