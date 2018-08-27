@@ -145,9 +145,11 @@ void ConfigTask(void)
 	/*一直等待定位系统初始化完成*/
 	BEEP_ON;
 	ElmoInit(CAN1);										//电机使能（通电）
-	ElmoInit(CAN2);										//电机使能（通电）
+	ElmoInit(CAN2);		//电机使能（通电）
 	
-//	VelLoopCfg(CAN1,6,10000000,10000000);				// 控制新底盘转向电机
+	
+	VelLoopCfg(CAN1,5,10000000,10000000);				//驱动后轮
+	VelLoopCfg(CAN1,6,10000000,10000000);				// 控制新底盘转向电机
 	VelLoopCfg(CAN1,8,50000,50000);						//棍子收球电机	
 	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);	//配置位置环，推球电机PUSH_BALL_ID是6
 	VelLoopCfg(CAN2,1, 500000, 500000);					//驱动器速度环初始化
@@ -187,7 +189,11 @@ void WalkTask(void)
 		USART_OUT(USART1,(uint8_t*)"cnt:%d\t adcflag:%d\t",(int)cnt,(int)adcflag);
 		USART_OUT(USART1,(uint8_t*)"Out:%d\tDis_Out:%d\r\n",(int)Output,(int)Dis_Output);
 
-
+		SetTuning(380,0,0);									
+		Dis_Pidtuning(0.14,0.2*0.01,0);							
+		Circle_Dis_PID(0,2400,1500,500,1);					//闭环圆形，0.07，与速度成反比	
+		Circle_Angle_PID(0,2400,1500,500,1);				//对应0.07的是380
+		walk_circle(500);
 		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 							// 棍子收球
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);			// 推球
 		ShooterVelCtrl(0);				//发射电机转速控制
