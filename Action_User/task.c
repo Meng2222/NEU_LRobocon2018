@@ -77,7 +77,7 @@ void ConfigTask(void)
 	VelLoopCfg(CAN1, 8, 50000, 50000);
 	/////*推球电机*/////
 	// 配置位置环
-	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 2000000,2000000,2000000);
 	MotorOn(CAN1,COLLECT_BALL_ID);//电机初始化
 	MotorOn(CAN1,PUSH_BALL_ID);
 	/*一直等待定位系统初始化完成*/
@@ -95,17 +95,17 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		YawPosCtrl(190);    /////航向电机
 		VelCrl(CAN1,COLLECT_BALL_ID,50*4096);   	// 控制电机的转速，脉冲。
 		r=Radius();
 		adc=AdcFlag();
-	//	Walkline(0,2200,2000,1,0.5);   ////setx  sety  r  方向  速度
+//		YawPosCtrl(210);    /////航向电机
+		Walkline(0,2500,2100,1,1.0);   ////setx  sety  r  方向  速度
 		ShootBall();
 //	PushBall(100);
 //	errdeal();
 //////////////////发数测试////////////////////////////
 //	USART_OUT(UART4,(uint8_t*) "%d	%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius(),(int)GetAngle());
-//	USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(ReadYawPos()),(int)ReadLaserAValue(),(int)ReadLaserBValue());
+//	USART_OUT(UART4,(uint8_t*) "%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue());
            //////////////////////////test/////////////////////////////
 	}
 }

@@ -11,6 +11,7 @@
 #include "movebase.h"
 #include "pps.h"
 #include "fort.h"
+#define mode 2
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
 struct position
 {
@@ -231,7 +232,7 @@ int AdcFlag(void)
 		{
 			AdcFLAG=2;  ////顺时针
 		}
-		else if(adc_num2>40&&adc_num2<600&&AdcFLAG==0)
+		else if(adc_num2>20&&adc_num2<600&&AdcFLAG==0)
 		{
 			AdcFLAG=1;  ////逆时针
 		}
@@ -302,39 +303,134 @@ void errdeal(void)
 
 void PushBall(int T)
 {
-	static int t=0;
-	t++;
-	if(t==T)
+	for(int t=0;t<1000;t++)
 	{
 		// 推球
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
 	}
-	if(t==2*T)
+	for(int t=0;t<1000;t++)
 	{
 		// 复位
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-		t=0;
 	}
 //		USART_OUT(UART4,(uint8_t*)"%d\n",t); 
 }
 int  Distopow(float distance)
 {
 	int power;
-	power=0.0153*distance+34.046;
+//	power=0.0153*distance+34.046;
+		power=40.0/3102.505*distance+35.7+5;
 	return power;
 }
 
+void PushBall2(int T)
+{
+	static int t;
+	t++;
+	if(t==T)
+	{
+		// 推球
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);		
+	}
+	if(t==2*T)
+	{
+		// 复位
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);		
+		t=0;
+	}
+}
 void ShootBall(void)
 {
-	int power,distance;
-  /////如果一个adc的返回值在一定范围内 继续寻找//////
-	if((int)ReadLaserAValue()<=1500&&(int)ReadLaserBValue()<=1500)
-	{
-		distance=(ReadLaserAValue()+ReadLaserBValue())/2;
+		int power,distance;
+		distance=ReadLaserAValue();
 		power=Distopow(distance);
 		ShooterVelCtrl(power);     /////发射枪转速
-		PushBall(100);
+//	YawPosCtrl(220);    /////航向电机
+	#if mode==1
+		YawPosCtrl(Adcangle());    /////航向电机
+		if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()>=700)
+		{
+			PushBall2(80);
+		}
+	#elif mode==2
+		YawPosCtrl(Adcangle2());    /////航向电机
+		if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()<=700)
+		{
+			PushBall2(80);
+		}
+	#endif
+		USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue(),power);
+}
+int Adcangle(void)
+{
+	static int angle=220,direction=1;
+	if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()>=700)
+	{
+		//PushBall2(100);
 	}
-	USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue(),power);
+	if((int)ReadLaserAValue()>=700&&(int)ReadLaserBValue()>=700)
+	{
+		if(angle>=340)
+		{
+			direction=1;
+		}
+		if(angle<=160)
+		{
+			direction=2;
+		}	
+		if(direction==1)
+		{
+		angle--;
+		}
+		if(direction==2)
+		{
+		angle++;
+		}
+	}
+	if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()<=700)
+	{
+		angle++;
+	}
+	if((int)ReadLaserAValue()>=700&&(int)ReadLaserBValue()<=700)
+	{
+		angle++;
+	}
+	return(angle);
 }
 
+int Adcangle2(void)
+{
+	static int angle=220,direction=1;
+	if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()<=700)
+	{
+		//PushBall2(100);
+	}
+	if((int)ReadLaserAValue()>=700&&(int)ReadLaserBValue()>=700)
+	{
+		if(angle>=340)
+		{
+			direction=1;
+		}
+		if(angle<=160)
+		{
+			direction=2;
+		}	
+		if(direction==1)
+		{
+		angle--;
+		}
+		if(direction==2)
+		{
+		angle++;
+		}		
+	}
+	if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()>=700)
+	{
+		angle--;
+	}
+	if((int)ReadLaserAValue()>=700&&(int)ReadLaserBValue()<=700)
+	{
+		angle++;
+	}	
+	return angle;
+}
