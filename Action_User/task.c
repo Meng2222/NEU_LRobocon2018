@@ -8,7 +8,6 @@
 #include "usart.h"
 #include "can.h"
 #include "elmo.h"
-#include "movebase.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "math.h"
@@ -88,6 +87,7 @@ void Circle_PID_set(float x,float y,float r,float vel,float orient)
 // 
 
 
+#include "pps.h"
 /*
 ===============================================================
 						信号量定义
@@ -125,7 +125,6 @@ void App_Task()
    ===============================================================
    */
 void ConfigTask(void)
-	
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
@@ -163,8 +162,12 @@ void ConfigTask(void)
 
 	delay_s(2);
 	WaitOpsPrepare();
+	
+	USART3_Init(115200);
+	/*一直等待定位系统初始化完成*/
+	WaitOpsPrepare();
+	
 	OSTaskSuspend(OS_PRIO_SELF);
-
 }
 extern FortType fort;
 void WalkTask(void)
@@ -178,6 +181,7 @@ void WalkTask(void)
 
 	int cnt=0;
 	float dec_value=0;
+
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
@@ -646,3 +650,5 @@ while(1)内
 //			default:break;
 //		}
 
+	}
+}

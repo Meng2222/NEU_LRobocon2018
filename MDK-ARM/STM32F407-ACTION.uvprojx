@@ -10,6 +10,7 @@
       <TargetName>ACTION</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
+      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F407VETx</Device>
@@ -173,7 +174,7 @@
             <RunIndependent>0</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4099</DriverSelection>
+            <DriverSelection>4096</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
           <Flash2>BIN\UL2CM3.DLL</Flash2>
@@ -461,16 +462,6 @@
               <FileName>pps.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Action_User\pps.c</FilePath>
-            </File>
-            <File>
-              <FileName>adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Action_User\adc.c</FilePath>
-            </File>
-            <File>
-              <FileName>fort.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Action_User\fort.c</FilePath>
             </File>
           </Files>
         </Group>
