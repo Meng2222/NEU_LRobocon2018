@@ -33,7 +33,8 @@ void SetOKFlagZero(void);
 void driveGyro(void);
 void errdeal(void);
 void PushBall(int T);
-int Adcangle(void);
+void ShootBall(void);
+int  Distopow(float distance);
 #define Left '1'
 #define Right '2'
 #endif

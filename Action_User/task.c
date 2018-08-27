@@ -95,21 +95,17 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-//		YawPosCtrl(Adcangle());    /////航向电机
-		YawPosCtrl(90);    /////航向电机
-		ShooterVelCtrl(40); /////发射枪转速
+		YawPosCtrl(190);    /////航向电机
 		VelCrl(CAN1,COLLECT_BALL_ID,50*4096);   	// 控制电机的转速，脉冲。
 		r=Radius();
 		adc=AdcFlag();
-		Walkline(0,2000,r,1,1.0);   ////setx  sety  r  方向  速度
-		if((GetAngle()>=80&&GetAngle()<=85)||(GetAngle()>=-5&&GetAngle()<=5)||(GetAngle()>=-90&&GetAngle()<=-85)||(GetAngle()>=-170&&GetAngle()<=-175))
-		{
-			PushBall(200);    ////推球 周期
-		}
-		errdeal();
+	//	Walkline(0,2200,2000,1,0.5);   ////setx  sety  r  方向  速度
+		ShootBall();
+//	PushBall(100);
+//	errdeal();
 //////////////////发数测试////////////////////////////
- //	USART_OUT(UART4,(uint8_t*) "%d	%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius(),(int)GetAngle());
-//		USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(ReadYawPos()),(int)ReadLaserAValue(),(int)ReadLaserBValue());
+//	USART_OUT(UART4,(uint8_t*) "%d	%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius(),(int)GetAngle());
+//	USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)(ReadYawPos()),(int)ReadLaserAValue(),(int)ReadLaserBValue());
            //////////////////////////test/////////////////////////////
 	}
 }

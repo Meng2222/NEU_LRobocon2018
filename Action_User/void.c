@@ -243,11 +243,11 @@ int Radius(void)
 		static int LastX=0;
 		static int r=2000;   ////初始半径
 		static int Rflag=0;
-		if(r>700)
+		if(r>=2000)
 		{
 			Rflag=0;
 		}
-		else if (r<=700)
+		else if (r<=800)
 		{
 			Rflag=1;
 		}
@@ -315,31 +315,26 @@ void PushBall(int T)
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 		t=0;
 	}
-		USART_OUT(UART4,(uint8_t*)"%d\n",t); 
+//		USART_OUT(UART4,(uint8_t*)"%d\n",t); 
+}
+int  Distopow(float distance)
+{
+	int power;
+	power=0.0153*distance+34.046;
+	return power;
 }
 
-int Adcangle(void)
+void ShootBall(void)
 {
-	static int angle=0,direction=1;
-  /////如果两个adc返回值在一定范围 继续寻找//////
-	if((int)ReadLaserAValue()==(int)ReadLaserBValue())
+	int power,distance;
+  /////如果一个adc的返回值在一定范围内 继续寻找//////
+	if((int)ReadLaserAValue()<=1500&&(int)ReadLaserBValue()<=1500)
 	{
-		if(angle>=345)
-		{
-			direction=1;
-		}
-		else if(angle<=2)
-		{
-			direction=2;
-		}
-		if(direction==1)
-		{
-			angle--;
-		}
-		else if(direction==2)
-		{
-			angle++;
-		}
+		distance=(ReadLaserAValue()+ReadLaserBValue())/2;
+		power=Distopow(distance);
+		ShooterVelCtrl(power);     /////发射枪转速
+		PushBall(100);
 	}
-	return angle;
+	USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue(),power);
 }
+
