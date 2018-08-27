@@ -6,7 +6,7 @@
 #include "adc.h"
 #include "moveBase.h"
 
-#define SPEED_OF_CAR 1000
+#define SPEED_OF_CAR 2000
 
 /**
  * [RoboWalkInit 机器人行走初始化]

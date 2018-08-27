@@ -120,13 +120,17 @@ void WalkTask(void)
         nowPoint = GetNowPoint();
         centre = setPointXY(0, 2400);
         relPoint = RelPos(centre, nowPoint);
-        delta = (int32_t)(relPoint.a + (45 * ((2400 - circleradius) / 1400))) % 90;
+        delta = (int32_t)(relPoint.a + 30 + (45 * ((circleradius - 800) / 800))) % 90;
+//        delta = (int32_t)(relPoint.a + 45) % 90;
         if(delta == 0)
         {
             OSSemPost(LaunchSem);
         }
         storagePos = GetPosToLauncher(SuitableStoragePos());
         LauncherYAWCtrl(storagePos.a);
+//        LauncherYAWCtrl(0);
+//        LauncherWheelSpeedCtrl(60);
+//        SendBall2Launcher();
         ChangeRoad();
         uout1 = PIDCtrl1(PidA);
         uout2 = PIDCtrl2(PidB);
@@ -150,7 +154,8 @@ void ErrCheck(void)
 {
     CPU_INT08U os_err;
     os_err = os_err;
-    point lastpoint = {0, 0, 0, 0};
+    point lastpoint;
+    lastpoint = setPointXY(0, 0);
     uint8_t counter = 0;
     OSSemSet(PeriodSem2, 0, &os_err);
     while (1)
@@ -206,19 +211,19 @@ void LaunchTheBall(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
     uint8_t counter = 100;
-    uint8_t counter2 = 50;
+    uint8_t counter2 = 100;
     OSSemSet(LaunchSem, 0, &os_err);
 	while (1)
 	{
         OSSemPend(LaunchSem, 0, &os_err);
         OSTaskSuspend(Walk_TASK_PRIO);
         OSTaskSuspend(ERR_CHECK_PRIO);
-        nowPoint = GetNowPoint();
-        counter2 = 50;
+        counter2 = 100;
         OSSemSet(PeriodSem3, 0, &os_err);
         while(counter2--)
         {
             OSSemPend(PeriodSem3, 0, &os_err);
+            nowPoint = GetNowPoint();
             WheelSpeed(0, 1);
             WheelSpeed(0, 2); 
             storagePos = GetPosToLauncher(SuitableStoragePos());
@@ -229,6 +234,9 @@ void LaunchTheBall(void)
         while(counter--)
         {
             OSSemPend(PeriodSem3, 0, &os_err);
+            nowPoint = GetNowPoint();
+            WheelSpeed(0, 1);
+            WheelSpeed(0, 2);
             storagePos = GetPosToLauncher(SuitableStoragePos());
             LauncherYAWCtrl(storagePos.a);
 //            LauncherYAWCtrl(0);

@@ -43,14 +43,14 @@ void RoboWalkInit(void)
     extern PIDCtrlStructure PidB;	
     MoveBaseInit();
     Adc_Init();
-    PidA.KP = 20; //20
-    PidA.KI= 0.01; //0.01
-    PidA.KD = 20; //20
+    PidA.KP = 40; //20
+    PidA.KI= 0.02; //0.01
+    PidA.KD = 40; //20
     PidA.GetVar = GetA;
     PidA.ExOut = 0;
-    PidB.KP = 10; //10
-    PidB.KI= 0.001; //0.0001
-    PidB.KD = 20; //20
+    PidB.KP = 20; //10
+    PidB.KI= 0.002; //0.0001
+    PidB.KD = 40; //20
     PidB.GetVar = GetA;
     PidB.ExOut = 0;
     circlecentre = setPointXY(CCX, CCY);
@@ -199,14 +199,19 @@ void ChangeRoad(void)
         }
     }
     lasta = relPoint.a;
-    if(circleradius >= 1700 && roadsignal == circle)
+    if(circleradius > 1800 && roadsignal == circle)
     {
-        roadsignal = fang;
-        length = 1700;
+//        roadsignal = fang;
+        while(1)
+        {
+            WheelSpeed(0, 1);
+            WheelSpeed(0, 2);
+        }
+        length = 1800;
         circleradius = 0;
         setFangArea(length);
     }
-    if(length <= 1000 && roadsignal == fang)
+    if(length < 800 && roadsignal == fang)
     {
         roadsignal = circle;
         circleradius = 800;

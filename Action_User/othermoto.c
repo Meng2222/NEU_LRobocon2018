@@ -26,9 +26,9 @@
 //发射器到定位器的距离
 #define RPOS4LAUNCHER (95)
 //推球次数
-#define TIMES_4_PUSH_BALL (30)
+#define TIMES_4_PUSH_BALL (50)
 //复位次数
-#define TIMES_4_RESET (30)
+#define TIMES_4_RESET (50)
 //激光器最大误差
 #define MAX_ERR_4_LASER (15)
 
@@ -61,7 +61,7 @@ void OtherMotoInit(void)
     UART5_Init(921600);
     CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
     VelLoopCfg(CAN1, COLLECT_BALL_ID, 50000, 50000);
-    PosLoopCfg(CAN1, PUSH_BALL_ID, 500000,500000,200000);
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 500000,500000,500000);
     ElmoInit(CAN1);
     MotorOn(CAN1, COLLECT_BALL_ID);
     MotorOn(CAN1, PUSH_BALL_ID);
@@ -75,7 +75,7 @@ void LauncherWheelSpeedCtrl(int32_t speed)
     ShooterVelCtrl(speed);
 }
 
-void CollecterWheelSpeedCtrl(int32_t speed)
+void CollecterWheelSpeedCtrl(float speed)
 {
     VelCrl(CAN1, COLLECT_BALL_ID, speed * COUNT_PER_ROUND);
 }
@@ -170,10 +170,11 @@ point SuitableStoragePos(void)
  * @param  distance [与储藏区的距离]
  * @return          [适合发射的发射轮转速]
  */
-int32_t SuitableSpeed2Launch(float distance)
+float SuitableSpeed2Launch(float distance)
 {
-    int32_t speed = 0;
-    speed = (uint8_t)(0.0153f * distance + 34.046f);
+    float speed = 0;
+    speed = 0.0153f * distance + 34.046f;
+//    speed = 0.0129f * distance + 35.070f;
     return speed;
 }
 

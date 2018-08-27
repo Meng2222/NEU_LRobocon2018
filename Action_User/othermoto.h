@@ -32,7 +32,7 @@ void LauncherWheelSpeedCtrl(int32_t speed);
  * [CollecterWheelSpeedCtrl用来控制收球机构的电机转速]
  * @param speed [该参数是收球机构电机转速(转/秒)范围0~60]
  */
-void CollecterWheelSpeedCtrl(int32_t speed);
+void CollecterWheelSpeedCtrl(float speed);
 
 /**
  * [SendBall2Launcher用来推球]
@@ -72,7 +72,7 @@ point SuitableStoragePos(void);
  * @param  distance [与储藏区的距离]
  * @return          [适合发射的发射轮转速]
  */
-int32_t SuitableSpeed2Launch(float distance);
+float SuitableSpeed2Launch(float distance);
 
 /**
  * [Delta4Laser 判断激光瞄准是否在误差范围内]

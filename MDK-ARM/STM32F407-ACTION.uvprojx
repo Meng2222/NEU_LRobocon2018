@@ -446,6 +446,21 @@
               <FileType>1</FileType>
               <FilePath>..\Action_User\adc.c</FilePath>
             </File>
+            <File>
+              <FileName>fort.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\fort.c</FilePath>
+            </File>
+            <File>
+              <FileName>othermoto.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\othermoto.c</FilePath>
+            </File>
+            <File>
+              <FileName>RoboWalk.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\RoboWalk.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
