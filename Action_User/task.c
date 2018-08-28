@@ -29,6 +29,7 @@ OS_EVENT *PeriodSem;
 #define PUSH_POSITION (4500)
 // 宏定义送弹机构收回时电机位置
 #define PUSH_RESET_POSITION (5)
+int diagonal;
 float body_angle;
 float ADC_A;
 float ADC_B;
@@ -40,6 +41,7 @@ float add_angle=0;
 int push_balltime=0;
 float last_error;
 float new_error;
+float s;
 pos_t xya;
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
@@ -64,8 +66,8 @@ float Left_d;
 float Right_d;
 float Add_V=0;
 float tangent_angle;
-float add_or_dec=-1;
-float R=2300;
+float add_or_dec=1;
+float R=1500;//投球为1500//
 float right_cril;
 float left_cril;
 int time_number=0;
@@ -118,8 +120,6 @@ void ConfigTask(void)
 	UART5_Init(921600);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	
-
 	ElmoInit(CAN2);
 	
 	#if car ==1
@@ -129,13 +129,13 @@ void ConfigTask(void)
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
 	Adc_Init();
-	
+	YawPosCtrl(170);
 	//棍子收球电机//
 	// 配置速度环
     VelLoopCfg(CAN1, 8, 50000, 50000);
    	
 	// 推球装置配置位置环
-    PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 1000000,1000000,300000);
    	
     MotorOn(CAN1,6);	
 	MotorOn(CAN1,8);
@@ -150,17 +150,19 @@ void ConfigTask(void)
 	delay_ms(2000);
 	BEEP_ON;
 	WaitOpsPrepare();
-	YawPosCtrl(260);	
+	YawPosCtrl(170);	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 static int Right_cr1;
 static int Left_cr2;
 extern FortType fort;
 void WalkTask(void)
-{   void Anglepid();
+{   void pull_ball();
+	void Anglepid();
 	void SendUint8();
     void go(float);
 	void YawAngleCtr(float);
+	float get_roll_v();
 	CPU_INT08U os_err;
 	os_err = os_err;
     int x;
@@ -170,6 +172,7 @@ void WalkTask(void)
 	int LEFT_ADC;
 	int xv;
 	int yv;
+	float get_d=(ADC_A+ADC_B)/2;
 	int head_cril=-turn_cril;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
@@ -182,25 +185,11 @@ void WalkTask(void)
 		xv=xya.x_v;
 		yv=xya.y_v;
 		angle=(int)xya.angle;
-	 #if car==1	
-		push_balltime++;
+	    #if car==1	
+		pull_ball();
 		 //控制电机的转速，脉冲//
-        VelCrl(CAN1,8,60*4096); 
-		//控制发射枪电机转速//
-	    ShooterVelCtrl(50);
-		
-		
-		
-		if(push_balltime==100)
- 		{ // 推球
-		
-	      PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-		}else if(push_balltime==100)
-		{// 复位//
-	       
-			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-		}
-		push_balltime%=200;
+        VelCrl(CAN1,8,80*4096); 
+		//控制发射枪电机转速//	
         Right_d=Get_Adc_Average(14,10);
 		Left_d=Get_Adc_Average(15,10);
 		if(leftorright)		
@@ -210,21 +199,20 @@ void WalkTask(void)
 				//1为逆时针//
 				if_go=1;
 			}
-		if(Left_d<50)
+		 if(Left_d<50)
 		    {   
 				leftorright=0;
 				//-1为顺时针//
 				if_go=-1;
 		    }
 	    }
-		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)fort.yawPosReceive,(int)fort.shooterVelReceive,(int)ADC_A,(int)ADC_B);
+		USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)xya.angle_v,(int)fort.yawPosReceive,(int)fort.shooterVelReceive,(int)ADC_A,(int)ADC_B,(int)get_roll_v());
 		Add_V=sqrt(pow(xya.x_v,2)+pow(xya.y_v,2));
    #elif car!=1
     	USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)Dout,(int)Aout,(int)turn_cril,(int)LIGHT_D,(int)new_error);
 		Add_V=sqrt(pow(xya.x_v,2)+pow(xya.y_v,2));
    #endif		
 		
-				
 		//USART_OUT(USART1,(uint8_t*)"x_v=%d",xv);
         //USART_OUT(USART1,(uint8_t*)"y_v=%d\r\n",yv);			
 		go(car_v);
@@ -232,7 +220,9 @@ void WalkTask(void)
 	}
 }
 void go(float v)
-{ 
+{   
+	 float get_roll_v();
+	 void pull_ball(void);
 	 void get_sendangle(void);
 	 float Turn_v_to_headmaichong(float,float);
      float Turn_v_to_backmaichong(float);
@@ -244,15 +234,13 @@ void go(float v)
 	 int car_angle=set_angle;
      int get_paotai_angle=fort.yawPosReceive;
 	 float send_angle;
-   
 	if(if_go!=0)	
 	{ 
 		
-		
+	    ShooterVelCtrl(get_roll_v());		
 		//航向电机//
-		get_sendangle();
-		
-		Round(0,2300,R,V,if_go);
+		get_sendangle();		
+		Round(0,2350,R,V,if_go);
 		q++;       
    }
 	
@@ -265,48 +253,46 @@ void go(float v)
 	 }
 	 else 
 	 {	
-		
-		
 		 if_back=1;		 
 		 if_add=0;
-		for(i=0;i<=1500;i++)
-		{   
-			#if car==1
-			VelCrl(CAN2,1,-10000);
-			VelCrl(CAN2,2,10000);
-			#else
-			VelCrl(CAN2,6,0);
-			VelCrl(CAN2,5,-300000);			
-			#endif
-			time_number=0;
-		}
-		
-		if(if_go==1)
-		{for(i=0;i<=500;i++)
-		 {  
-			#if car==1
-			VelCrl(CAN2,1,-5000);
-			VelCrl(CAN2,2,-5000);
-			#else
-			VelCrl(CAN2,5,-100000);
-			VelCrl(CAN2,6,100000);			
-			#endif
-			time_number=0;
-		 }
-		}
-		if(if_go==-1)
-		{for(i=0;i<=500;i++)
-		{   
-			#if car==1
-			VelCrl(CAN2,1,5000);
-			VelCrl(CAN2,2,5000);
-			#else
-			VelCrl(CAN2,5,-100000);
-			VelCrl(CAN2,6,-100000);			
-			#endif
-			time_number=0;
-		}
-		}
+//		for(i=0;i<=1500;i++)
+//		{   
+//			#if car==1
+//			VelCrl(CAN2,1,-10000);
+//			VelCrl(CAN2,2,10000);
+//			#else
+//			VelCrl(CAN2,6,0);
+//			VelCrl(CAN2,5,-300000);			
+//			#endif
+//			time_number=0;
+//		}
+//		
+//		if(if_go==1)
+//		{for(i=0;i<=500;i++)
+//		 {  
+//			#if car==1
+//			VelCrl(CAN2,1,-5000);
+//			VelCrl(CAN2,2,-5000);
+//			#else
+//			VelCrl(CAN2,5,-100000);
+//			VelCrl(CAN2,6,100000);			
+//			#endif
+//			time_number=0;
+//		 }
+//		}
+//		if(if_go==-1)
+//		{for(i=0;i<=500;i++)
+//		{   
+//			#if car==1
+//			VelCrl(CAN2,1,5000);
+//			VelCrl(CAN2,2,5000);
+//			#else
+//			VelCrl(CAN2,5,-100000);
+//			VelCrl(CAN2,6,-100000);			
+//			#endif
+//			time_number=0;
+//		}
+//		}
 		right_cril=0;
 		left_cril=0;	
 		q=0;
@@ -319,23 +305,23 @@ void go(float v)
 	{  
 		if_go=-if_go;
 		
-		if(R>=1900)
-		add_or_dec=-1;
-		if(R<=800)	
-		add_or_dec=1;
-		R=add_or_dec*300+R;
-		if(R>=2300)
-			R=2300;
-		if(R<=600)
-			R=600;
+//		if(R>=2300)
+//		add_or_dec=-1;
+//		if(R<=800)	
+//		add_or_dec=1;
+//		R=add_or_dec*300+R;
+//		if(R>=2300)
+//			R=2300;
+//		if(R<=700)
+//			R=700;
 		
 	}
 	last_back=if_back;
 	 #if car==1
 	right_cril=Right_cr1+Dout+Aout;
 	left_cril=Left_cr2+Dout+Aout;
-	VelCrl(CAN2,1,right_cril);
-	VelCrl(	CAN2,2, left_cril);
+    VelCrl(CAN2,1,right_cril);
+	VelCrl(CAN2,2, left_cril);
 	  right=right_cril;
 	 left=left_cril;
    	 USART_OUT(USART1,(uint8_t*)"Right=%d\t",right);	   
@@ -562,16 +548,16 @@ void get_angle(float a,float b,int n,int round)
     }
 	if(cril_flag>lastcril_flag)
 	{
-		R=add_or_dec*249+R;
-		if(R>=2300)
-			R=2300;
-		if(R<=600)
-			R=600;
-		
-		if(R>=2300)
-		add_or_dec=-1;
-        if(R<=600)	
-		add_or_dec=1;
+//		R=add_or_dec*300+R;
+//		if(R>=2300)
+//			R=2300;
+//		if(R<=700)
+//			R=700;
+//		
+//		if(R>=2000)
+//		add_or_dec=-1;
+//        if(R<=700)	
+//		add_or_dec=1;
 	}
 	
 	lastcril_flag=cril_flag;
@@ -744,104 +730,154 @@ float Turn_v_to_headmaichong(float v,float r)
 	return(v/r*TURN_AROUND_WHEEL_TO_BACK_WHEEL/(Pi*TURN_AROUND_WHEEL_DIAMETER)*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO);
 }	
 //得到炮台转轮速度//
-float get_roll_v()
-{ 
-	float s=(ADC_A+ADC_B)/2;
-	return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/(Pi*WHEEL_DIAMETER)*COUNTS_PER_ROUND);
+float get_roll_v(void)
+{   
+	//四号车的炮台速度比较小需要加大//
+	//一号车在顺时针 -1 4   1 3.5//	四号炮台+0.2
+	if(s<=4000)
+	{
+	if(if_go==1)
+	{
+		if( diagonal==1)
+		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*4);
+		else
+		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*3.5);
+	}else
+	{   if( diagonal==-1)
+		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*4.25);
+		else
+		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*3.7);
+	}
+    }
+	else return(50);
 	
 }
 
 void get_sendangle(void)
-{   void get_angle2(float a,float b,int n,int round);
+
+{   void	get_d(float,float);
+	void pull_ball();
+	void get_angle2(float a,float b,int n,int round);
 	float point_x;
 	float point_y;
     float sendsend_angle;
 	float getget_angle;	
 	if(if_go==-1)
-	{	if(change_compere_angle<=-80&&change_compere_angle>=-170)
+	{	if(change_compere_angle<=-45&&change_compere_angle>=-135)
 		{
-			point_x=-2400;
-			point_y=-13;
+			point_x=-2350;
+			point_y=-500;
+			diagonal=1;
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
 			YawPosCtrl(80-body_angle+xya.compare_angle);
 			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
 			YawPosCtrl(440-body_angle+xya.compare_angle);
-		}else if((change_compere_angle<=180&&change_compere_angle>=100)||(change_compere_angle>=-180&&change_compere_angle<=-170))
+			if(change_compere_angle<=-50&&change_compere_angle>=-125)
+				pull_ball();
+			else push_balltime=0;
+		}else if((change_compere_angle<=180&&change_compere_angle>=135)||(change_compere_angle>=-180&&change_compere_angle<=-135))
 		{
-			point_x=-2400;
-			point_y=4787;
+			point_x=-2450;
+			point_y=4100;
+		    diagonal=-1;
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
 			YawPosCtrl(80-body_angle+xya.compare_angle);
 			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
 			YawPosCtrl(440-body_angle+xya.compare_angle);
-		}else if(change_compere_angle<=100&&change_compere_angle>=10)
+			if((change_compere_angle<=-140)||(change_compere_angle<=180&&change_compere_angle>=145))
+			 pull_ball();
+			else push_balltime=0;
+		}else if(change_compere_angle<=135&&change_compere_angle>=45)
 		{
 			point_x=2400;
-			point_y=4787;			
+			point_y=5500;
+           	diagonal=1;	
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
 			YawPosCtrl(80-body_angle+xya.compare_angle);			
 			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198 )
 				YawPosCtrl(280-body_angle+xya.compare_angle);
-		}else if(change_compere_angle<=10&&change_compere_angle>=-80)
+			if(change_compere_angle<=125&&change_compere_angle>=55)
+				pull_ball();
+			else push_balltime=0;
+		}else if(change_compere_angle<=45&&change_compere_angle>=-45)
 		{
-			point_x=2400;
-			point_y=-13;
+			point_x=2600;
+			point_y=600;
+			diagonal=-1 ;
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=-270+body_angle;
 			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
 			YawPosCtrl(440-body_angle+xya.compare_angle);			
 			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198 )
 				YawPosCtrl(80-body_angle+xya.compare_angle);
+			if(change_compere_angle<=40&&change_compere_angle>=-35)
+				pull_ball();
+			else push_balltime=0;
 		}
+		get_d(point_x,point_y);
 	}else 
 	{
-		if((change_compere_angle<=-100&&change_compere_angle>=-180)||(change_compere_angle>=170&&change_compere_angle<=180))
-		{
+		if((change_compere_angle<=-135&&change_compere_angle>=-180)||(change_compere_angle>=135&&change_compere_angle<=180))
+		{ 
+			diagonal=1;
 			point_x=-2400;
-			point_y=0;
+			point_y=500;
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
 			YawPosCtrl(80-body_angle+xya.compare_angle);
 			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
 			YawPosCtrl(440-body_angle+xya.compare_angle);
-		}else if(change_compere_angle<=170&&change_compere_angle>=80)
-		{
-			point_x=-2400;
-			point_y=4800;
+			if((change_compere_angle>=140)||(change_compere_angle>=-180&&change_compere_angle<=-145))
+			 pull_ball();
+			else push_balltime=0;
+		}else if(change_compere_angle<=135&&change_compere_angle>=45)
+		{   diagonal=-1;
+			point_x=-2300;
+			point_y=5000;
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
 			YawPosCtrl(80-body_angle+xya.compare_angle);
 			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
 			YawPosCtrl(440-body_angle+xya.compare_angle);
-		}else if(change_compere_angle<=80&&change_compere_angle>=-10)
-		{
+			if(change_compere_angle>=50&&change_compere_angle<=125)
+				pull_ball();
+			else push_balltime=0;
+		}else if(change_compere_angle<=45&&change_compere_angle>=-45)
+		{   diagonal=1;
 			point_x=2400;
-			point_y=4800;			
+			point_y=4200;			
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
 			YawPosCtrl(80-body_angle+xya.compare_angle);			
 			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198 )
 				YawPosCtrl(280-body_angle+xya.compare_angle);
-		}else if(change_compere_angle<=-10&&change_compere_angle>=-100)
-		{
-			point_x=2400;
-			point_y=0;
+			if(change_compere_angle>=-40&&change_compere_angle<=35)
+				pull_ball();
+			else push_balltime=0;
+		}else if(change_compere_angle<=-45&&change_compere_angle>=-135)
+		{    diagonal=-1;
+			point_x=2300;
+			point_y=-100;
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=-270+body_angle;
 			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
 			YawPosCtrl(440-body_angle+xya.compare_angle);			
-			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198 )
+			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198)
 				YawPosCtrl(80-body_angle+xya.compare_angle);
+			if(change_compere_angle>=-130&&change_compere_angle<=-55)
+				pull_ball();
+			else push_balltime=0;
 		}
+		get_d(point_x,point_y);
 	}
 }
 void get_angle2(float a,float b,int n,int round)
@@ -914,5 +950,24 @@ void get_angle2(float a,float b,int n,int round)
             			
 		}
 		
+	}	
+}
+
+void pull_ball(void)
+{
+	push_balltime++;
+	if(push_balltime==80||push_balltime==240)
+	{ // 推球	
+	  PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+	}else if(push_balltime==160||push_balltime==320)
+	{// 复位//	   
+	  PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 	}
+	if(push_balltime>=320)
+	  push_balltime=321;
+	
+}
+void get_d(float x,float y)
+{
+	s= sqrt(pow (xya.x-x,2)+pow(xya.y-y,2));
 }
