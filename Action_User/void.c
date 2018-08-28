@@ -11,9 +11,9 @@
 #include "movebase.h"
 #include "pps.h"
 #include "fort.h"
-#define mode 2
+#define mode 3
 #define Angchange 1
-#define recolong 1000
+#define recolong 700
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
 struct position
 {
@@ -198,7 +198,7 @@ void Walkline( int setx,int sety, int r,int direction , float v )
 	}
 	AngPID=AnglePID(Ang,SetAngle);
 	diff=AngPID;
-//	USART_OUT(UART4,(uint8_t*) "diff:%d	distance:%d	%d	%d\r\n",(int)(diff),(int)(distance),(int)(GetXpos()),(int)(GetYpos()));   ///////////////////////////////////test//////////////////////////
+//USART_OUT(UART4,(uint8_t*) "diff:%d	distance:%d	%d	%d\r\n",(int)(diff),(int)(distance),(int)(GetXpos()),(int)(GetYpos()));   ///////////////////////////////////test//////////////////////////
 	vright=(int)(exchange(v)+diff);
 	vleft=(int)(-exchange(v)+diff);
 	if(direction==0)
@@ -303,26 +303,32 @@ void errdeal(void)
 //			USART_OUT(UART4,(uint8_t*)"%d %d %d\n",Lastx,Lasty,errtime);          /////////errtime  test////////////
 }
 
+float  Distopow(float distance)
+{
+	float power;
+//  power=0.02*distance+41;
+//	power=0.0153*distance+34.046;
+		power=(40.0/3102.505)*distance+21.7+5;
+	return power;
+}
+
 void PushBall(int T)
 {
-	for(int t=0;t<1000;t++)
+	static int t=0;
+	t++;
+	if(t==T)
 	{
 		// 推球
-		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+		YawPosCtrl(Adcangle2()+20);    /////航向电机
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);		
 	}
-	for(int t=0;t<1000;t++)
+	if(t==2*T)
 	{
 		// 复位
-		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);		
+		t=0;
 	}
-//		USART_OUT(UART4,(uint8_t*)"%d\n",t);
-}
-int  Distopow(float distance)
-{
-	int power;
-//	power=0.0153*distance+34.046;
-		power=40.0/3102.505*distance+35.7;
-	return power;
+//	USART_OUT(UART4,(uint8_t*) "%d\r\n",t);	
 }
 
 void PushBall2(int T)
@@ -340,49 +346,67 @@ void PushBall2(int T)
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);		
 		t=0;
 	}
+	//	USART_OUT(UART4,(uint8_t*) "%d\r\n",t);	
 }
 void PushBall3(int T)
 {
-	static int PushFlag=1,t=0;
-	if(PushFlag==1)
+	static int t=0;
+	t++;
+	if(t==1)
 	{
 		// 推球
-		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);	
-		PushFlag=0;
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);		
 	}
-	if(PushFlag==0)
+	if(t==T)
 	{
-		t++;
-		if(t>=T)
-		{
 		// 复位
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);		
-		t=0;
-		PushFlag=1;
-		}
 	}
-	
+	if(t==2*T)
+	{
+		t=0;
+	}
+	//	USART_OUT(UART4,(uint8_t*) "%d\r\n",t);	
 }
 void ShootBall(void)
 {
-		int power,distance;
-		distance=ReadLaserAValue();
+		float power,distance;
+//	distance=ReadLaserAValue();
+		distance=ReadLaserAValue()*2.4973-160;
 		power=Distopow(distance);
+		if(power>=95)
+		{
+			power=95;
+		}
+		if(ReadLaserAValue()>800)
+		{
+			power=Distopow(800*2.4973-160);
+		}
 		ShooterVelCtrl(power);     /////发射枪转速
-//	YawPosCtrl(220);    /////航向电机
 	#if mode==1
 		YawPosCtrl(Adcangle());    /////航向电机
 		if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()>=recolong)
 		{
-			PushBall(100);
+			PushBall3(50);
 		}
 	#elif mode==2
 		YawPosCtrl(Adcangle2());    /////航向电机
 		if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()<=recolong)
 		{
-			YawPosCtrl(Adcangle2()+20);    /////航向电机
-			PushBall2(50);
-
+			YawPosCtrl(Adcangle2()+20);    /////航向电机补充偏移角
+			PushBall3(50);
+		}
+	#elif mode==3
+		static int angle=0;
+		YawPosCtrl(210+angle);    /////航向电机
+		if((int)ReadLaserAValue()<=recolong||(int)ReadLaserBValue()<=recolong)
+		{
+			angle++;
+			PushBall3(50);
+		}
+		else if((int)ReadLaserAValue()>recolong&&(int)ReadLaserBValue()>recolong)
+		{
+			YawPosCtrl(210);    /////航向电机
 		}
 	#endif
 		USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue(),power);
@@ -450,10 +474,10 @@ int Adcangle2(void)
 		angle+=Angchange;
 		}		
 	}
-	if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()>=recolong)
-	{
-		angle-=Angchange;
-	}
+//	if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()>=recolong)
+//	{
+//		angle-=Angchange;
+//	}
 	if((int)ReadLaserAValue()>=recolong&&(int)ReadLaserBValue()<=recolong)
 	{
 		angle+=Angchange;

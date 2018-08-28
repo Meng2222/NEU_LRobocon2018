@@ -34,7 +34,7 @@ void driveGyro(void);
 void errdeal(void);
 void PushBall(int T);
 void ShootBall(void);
-int  Distopow(float distance);
+float  Distopow(float distance);
 void PushBall2(int T);
 void PushBall3(int T);
 int Adcangle(void);

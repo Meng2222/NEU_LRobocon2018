@@ -95,12 +95,12 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);   	// 控制电机的转速，脉冲。
+		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);			// 控制电机的转速，脉冲。
 		r=Radius();
 		adc=AdcFlag();
 //		YawPosCtrl(220);    /////航向电机
-//		Walkline(0,2400,2200,1,0.5);   ////setx  sety=2400  r=2200  方向  速度
-		ShootBall();
+			Walkline(0,2400,2200,1,0.5);   ////setx  sety=2400  r=2200  方向  速度
+			ShootBall();
 //		PushBall2(200);
 //		errdeal();
 //////////////////发数测试////////////////////////////
