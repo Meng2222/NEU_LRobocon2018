@@ -53,7 +53,7 @@ int last_angle=90;
 int new_angle;
 int kpa1=10000;
 int kpd1=400;//
-int kpa=150;//旧车1m/s圆弧闭环为150//新车/15000
+int kpa=200;//旧车1m/s圆弧闭环为150//新车/15000
 int kpd=6;//旧车1m/s圆弧闭环为6//新车400
 int kdd=2;
 int aord;
@@ -240,7 +240,7 @@ void go(float v)
 	    ShooterVelCtrl(get_roll_v());		
 		//航向电机//
 		get_sendangle();		
-		Round(0,2350,R,V,if_go);
+		Round(0,2300,R,V,if_go);
 		q++;       
    }
 	
@@ -305,16 +305,16 @@ void go(float v)
 	{  
 		if_go=-if_go;
 		
-//		if(R>=2300)
+//		if(R>=2000)
 //		add_or_dec=-1;
 //		if(R<=800)	
 //		add_or_dec=1;
 //		R=add_or_dec*300+R;
 //		if(R>=2300)
 //			R=2300;
-//		if(R<=700)
-//			R=700;
-		
+//		if(R<=600)
+//			R=600;
+//		
 	}
 	last_back=if_back;
 	 #if car==1
@@ -531,7 +531,7 @@ void get_angle(float a,float b,int n,int round)
 	}
   if(if_add)	
   { if(if_go==1)
-	{if(set_angle<=-80&&set_angle>=-82)
+	{if(set_angle>=-100&&set_angle<=-98)
 	{
 		cril_flag=1;
 		if_in=1;
@@ -539,7 +539,7 @@ void get_angle(float a,float b,int n,int round)
     
     }
 	 if(if_go==-1)
-	{if(set_angle>=-100&&set_angle<=-98)
+	{if(set_angle>=-82&&set_angle<=-80)
 	{
 		cril_flag=1;
 		if_in=1;
@@ -549,10 +549,10 @@ void get_angle(float a,float b,int n,int round)
 	if(cril_flag>lastcril_flag)
 	{
 //		R=add_or_dec*300+R;
-//		if(R>=2300)
-//			R=2300;
-//		if(R<=700)
-//			R=700;
+//		if(R>=2200)
+//			R=2200;
+//		if(R<=600)
+//			R=600;
 //		
 //		if(R>=2000)
 //		add_or_dec=-1;
@@ -744,7 +744,7 @@ float get_roll_v(void)
 		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*3.5);
 	}else
 	{   if( diagonal==-1)
-		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*4.25);
+		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*4.2);
 		else
 		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*3.7);
 	}
@@ -753,8 +753,8 @@ float get_roll_v(void)
 	
 }
 
+//使航向电机对准目标//
 void get_sendangle(void)
-
 {   void	get_d(float,float);
 	void pull_ball();
 	void get_angle2(float a,float b,int n,int round);
@@ -826,8 +826,8 @@ void get_sendangle(void)
 		if((change_compere_angle<=-135&&change_compere_angle>=-180)||(change_compere_angle>=135&&change_compere_angle<=180))
 		{ 
 			diagonal=1;
-			point_x=-2400;
-			point_y=500;
+			point_x=-2500;
+			point_y=550;
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
@@ -839,8 +839,8 @@ void get_sendangle(void)
 			else push_balltime=0;
 		}else if(change_compere_angle<=135&&change_compere_angle>=45)
 		{   diagonal=-1;
-			point_x=-2300;
-			point_y=5000;
+			point_x=-2350;
+			point_y=5450;
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
@@ -852,7 +852,7 @@ void get_sendangle(void)
 			else push_balltime=0;
 		}else if(change_compere_angle<=45&&change_compere_angle>=-45)
 		{   diagonal=1;
-			point_x=2400;
+			point_x=2500;
 			point_y=4200;			
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
@@ -866,7 +866,7 @@ void get_sendangle(void)
 		}else if(change_compere_angle<=-45&&change_compere_angle>=-135)
 		{    diagonal=-1;
 			point_x=2300;
-			point_y=-100;
+			point_y=-600;
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=-270+body_angle;
 			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
@@ -953,10 +953,11 @@ void get_angle2(float a,float b,int n,int round)
 	}	
 }
 
+//推球//
 void pull_ball(void)
 {
 	push_balltime++;
-	if(push_balltime==80||push_balltime==240)
+	if(push_balltime==800||push_balltime==240)
 	{ // 推球	
 	  PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
 	}else if(push_balltime==160||push_balltime==320)
@@ -967,6 +968,7 @@ void pull_ball(void)
 	  push_balltime=321;
 	
 }
+//得到车与四个点的距离//
 void get_d(float x,float y)
 {
 	s= sqrt(pow (xya.x-x,2)+pow(xya.y-y,2));
