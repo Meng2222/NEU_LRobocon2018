@@ -13,7 +13,7 @@
 #include "fort.h"
 #define mode 3
 #define Angchange 1
-#define recolong 700
+#define recolong 800
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
 struct position
 {
@@ -308,7 +308,7 @@ float  Distopow(float distance)
 	float power;
 //  power=0.02*distance+41;
 //	power=0.0153*distance+34.046;
-		power=(40.0/3102.505)*distance+21.7+5;
+		power=(40.0/3102.505)*distance+40.7+5;
 	return power;
 }
 
@@ -397,28 +397,34 @@ void ShootBall(void)
 			PushBall3(50);
 		}
 	#elif mode==3
-		static int angle=0;
-		YawPosCtrl(210+angle);    /////航向电机
-		if((int)ReadLaserAValue()<=recolong||(int)ReadLaserBValue()<=recolong)
+		static int angle=0,PosAngle=0,SuoDing=0;
+		angle=(int)GetAngle()-PosAngle;
+		if((int)ReadLaserBValue()<=recolong&&(int)ReadLaserAValue()>recolong)        /////////
 		{
-			angle++;
+			SuoDing=1;
+		}
+		if(SuoDing==1)
+		{
+			YawPosCtrl(210+angle);    /////航向电机
 			PushBall3(50);
 		}
-		else if((int)ReadLaserAValue()>recolong&&(int)ReadLaserBValue()>recolong)
+		if((int)ReadLaserBValue()>recolong&&(int)ReadLaserAValue()>recolong)         ///////////
 		{
 			YawPosCtrl(210);    /////航向电机
+			SuoDing=0;
 		}
+		PosAngle=(int)GetAngle();
 	#endif
 		USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue(),power);
 }
 int Adcangle(void)
 {
 	static int angle=220,direction=1;
-	if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()>=recolong)
+	if((int)ReadLaserBValue()<=recolong&&(int)ReadLaserAValue()>=recolong)      /////
 	{
 		//PushBall2(100);
 	}
-	if((int)ReadLaserAValue()>=recolong&&(int)ReadLaserBValue()>=recolong)
+	if((int)ReadLaserBValue()>=recolong&&(int)ReadLaserAValue()>=recolong)
 	{
 		if(angle>=340)
 		{
