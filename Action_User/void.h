@@ -36,6 +36,7 @@ void PushBall(int T);
 void ShootBall(void);
 int  Distopow(float distance);
 void PushBall2(int T);
+void PushBall3(int T);
 int Adcangle(void);
 int Adcangle2(void);
 #define Left '1'

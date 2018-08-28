@@ -12,6 +12,8 @@
 #include "pps.h"
 #include "fort.h"
 #define mode 2
+#define Angchange 1
+#define recolong 1000
 #define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*Pi)
 struct position
 {
@@ -215,8 +217,8 @@ void Walkback(float v)
 }
 void Walkaway(float v)
 {
-	VelCrl(CAN2,0x01,exchange(v)-2000);
-	VelCrl(CAN2,0x02,-exchange(v)-2000);	
+	VelCrl(CAN2,0x01,exchange(v+0.3));
+	VelCrl(CAN2,0x02,-exchange(v-0.1));	
 }
 void Walkahead(float v)
 {
@@ -242,13 +244,13 @@ int AdcFlag(void)
 int Radius(void)
 {
 		static int LastX=0;
-		static int r=2000;   ////初始半径
-		static int Rflag=0;
+		static int r=900;   ////初始半径
+		static int Rflag=1;
 		if(r>=2000)
 		{
 			Rflag=0;
 		}
-		else if (r<=800)
+		else if (r<=900)
 		{
 			Rflag=1;
 		}
@@ -277,16 +279,16 @@ void errdeal(void)
 		{
 			errtime=0;
 		}
-			if(errtime>3)   
+			if(errtime>15)   
 			{
 				for(int i=0;i<2000;i++)
 				{
-					Walkback(0.7);
+					Walkback(1.0);
 					i++;
 				}
 				for(int i=0;i<2000;i++)
 				{
-					Walkaway(0.7);
+					Walkaway(1.0);
 					i++;
 				}
 //				for(int i=0;i<2000;i++)
@@ -313,19 +315,19 @@ void PushBall(int T)
 		// 复位
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 	}
-//		USART_OUT(UART4,(uint8_t*)"%d\n",t); 
+//		USART_OUT(UART4,(uint8_t*)"%d\n",t);
 }
 int  Distopow(float distance)
 {
 	int power;
 //	power=0.0153*distance+34.046;
-		power=40.0/3102.505*distance+35.7+5;
+		power=40.0/3102.505*distance+35.7;
 	return power;
 }
 
 void PushBall2(int T)
 {
-	static int t;
+	static int t=0;
 	t++;
 	if(t==T)
 	{
@@ -339,6 +341,28 @@ void PushBall2(int T)
 		t=0;
 	}
 }
+void PushBall3(int T)
+{
+	static int PushFlag=1,t=0;
+	if(PushFlag==1)
+	{
+		// 推球
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);	
+		PushFlag=0;
+	}
+	if(PushFlag==0)
+	{
+		t++;
+		if(t>=T)
+		{
+		// 复位
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);		
+		t=0;
+		PushFlag=1;
+		}
+	}
+	
+}
 void ShootBall(void)
 {
 		int power,distance;
@@ -348,15 +372,17 @@ void ShootBall(void)
 //	YawPosCtrl(220);    /////航向电机
 	#if mode==1
 		YawPosCtrl(Adcangle());    /////航向电机
-		if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()>=700)
+		if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()>=recolong)
 		{
-			PushBall2(80);
+			PushBall(100);
 		}
 	#elif mode==2
 		YawPosCtrl(Adcangle2());    /////航向电机
-		if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()<=700)
+		if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()<=recolong)
 		{
-			PushBall2(80);
+			YawPosCtrl(Adcangle2()+20);    /////航向电机
+			PushBall2(50);
+
 		}
 	#endif
 		USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue(),power);
@@ -364,11 +390,11 @@ void ShootBall(void)
 int Adcangle(void)
 {
 	static int angle=220,direction=1;
-	if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()>=700)
+	if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()>=recolong)
 	{
 		//PushBall2(100);
 	}
-	if((int)ReadLaserAValue()>=700&&(int)ReadLaserBValue()>=700)
+	if((int)ReadLaserAValue()>=recolong&&(int)ReadLaserBValue()>=recolong)
 	{
 		if(angle>=340)
 		{
@@ -380,20 +406,20 @@ int Adcangle(void)
 		}	
 		if(direction==1)
 		{
-		angle--;
+		angle-=Angchange;
 		}
 		if(direction==2)
 		{
-		angle++;
+		angle+=Angchange;
 		}
 	}
-	if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()<=700)
+	if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()<=recolong)
 	{
-		angle++;
+		angle+=Angchange;
 	}
-	if((int)ReadLaserAValue()>=700&&(int)ReadLaserBValue()<=700)
+	if((int)ReadLaserAValue()>=recolong&&(int)ReadLaserBValue()<=recolong)
 	{
-		angle++;
+		angle+=Angchange;
 	}
 	return(angle);
 }
@@ -401,11 +427,11 @@ int Adcangle(void)
 int Adcangle2(void)
 {
 	static int angle=220,direction=1;
-	if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()<=700)
+	if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()<=recolong)
 	{
-		//PushBall2(100);
+		angle+=Angchange;
 	}
-	if((int)ReadLaserAValue()>=700&&(int)ReadLaserBValue()>=700)
+	if((int)ReadLaserAValue()>=recolong&&(int)ReadLaserBValue()>=recolong)
 	{
 		if(angle>=340)
 		{
@@ -417,20 +443,20 @@ int Adcangle2(void)
 		}	
 		if(direction==1)
 		{
-		angle--;
+		angle-=Angchange;
 		}
 		if(direction==2)
 		{
-		angle++;
+		angle+=Angchange;
 		}		
 	}
-	if((int)ReadLaserAValue()<=700&&(int)ReadLaserBValue()>=700)
+	if((int)ReadLaserAValue()<=recolong&&(int)ReadLaserBValue()>=recolong)
 	{
-		angle--;
+		angle-=Angchange;
 	}
-	if((int)ReadLaserAValue()>=700&&(int)ReadLaserBValue()<=700)
+	if((int)ReadLaserAValue()>=recolong&&(int)ReadLaserBValue()<=recolong)
 	{
-		angle++;
+		angle+=Angchange;
 	}	
 	return angle;
 }
