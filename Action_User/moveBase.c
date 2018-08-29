@@ -735,9 +735,9 @@ void SquareTwo(void)
 	switch(flagOne)
 	{
 		case 0:
-			if(sTY < 2200)
+			if(sTY < 2000)
 			{
-				HighSpeedStraightLine(1,0,-700,0,1200);
+				HighSpeedStraightLine(1,0,-700,0,1500);
 			}
 			else
 				flagOne++;
@@ -745,30 +745,30 @@ void SquareTwo(void)
 		case 1:
 			if(sTX > 0)
 			{
-				HighSpeedStraightLine(0,1,-2900,1,1200);
+				HighSpeedStraightLine(0,1,-2900,1,1500);
 			}
 			else
 				flagOne++;
 			break;
 		case 2:
-			if(sTY > 2300)
+			if(sTY > 2500)
 			{
-				HighSpeedStraightLine(1,0,700,1,1200);
+				HighSpeedStraightLine(1,0,700,1,1500);
 			}
 			else
 				flagOne++;
 			break;
 		case 3:
-			if(sTX < 500)
+			if(sTX < 300)
 			{
-				HighSpeedStraightLine(0,1,-1600,0,1200);
+				HighSpeedStraightLine(0,1,-1600,0,1500);
 			}
 			else
 				flagOne++;
 			break;
 			
 		case 4:
-			if(sTY < 2700)
+			if(sTY < 2600)
 			{
 				if(sTY < 2275)
 					speed1=SpeedPid(sTY,1000);
@@ -780,7 +780,7 @@ void SquareTwo(void)
 				flagOne++;
 			break;
 		case 5:
-			if(sTX > -400)
+			if(sTX > -300)
 			{
 				if(sTX > 0)
 					speed1=SpeedPid(1250,sTX);
@@ -792,7 +792,7 @@ void SquareTwo(void)
 				flagOne++;
 			break;
 		case 6:
-			if(sTY > 1600)
+			if(sTY > 1800)
 			{
 				if(sTY < 2275)
 					speed1=SpeedPid(sTY,1000);
@@ -1042,7 +1042,7 @@ void Walk(uint8_t *getAdcFlag)
 		}
 		else
 		{
-			BiggerSquareTwo();
+			SquareTwo();
 		}
 	}
 
@@ -1224,7 +1224,7 @@ void Round2(float centerX,float centerY,float r,uint8_t o,float speed)
 		else if(o == 1)
 			angleSet=angleErr+angleK;
 	}
-	Turn2(angleSet,400);
+	Turn2(angleSet,speed);
 	
 	usartValue.turnAngleValue=angleSet;
 	usartValue.d=d-r;

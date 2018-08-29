@@ -158,14 +158,14 @@ void WalkTask(void)
 	
 	//旧底盘
 	//1m/s
-	Angle_PidPara(25,0,300);
-	Distance_PidPara(0.09,0,0); 
-	
-//	//大于1m/s
-//	Angle_PidPara(20,0,300);
+//	Angle_PidPara(25,0,300);
 //	Distance_PidPara(0.09,0,0); 
-//	Speed_PidPara(1.7,0,0); 
-//	
+	
+	//大于1m/s
+	Angle_PidPara(20,0,300);
+	Distance_PidPara(0.09,0,0); 
+	Speed_PidPara(1.7,0,0); 
+	
 	squareFlag=0;
 	
 	float laserAValue=0;
@@ -176,13 +176,13 @@ void WalkTask(void)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
 		
-//		SquareTwo();
+		SquareTwo();
 //		//发射摩擦轮转速
 //		ShooterVelCtrl(50);
 //		
 		//走位
 		Walk(&adcFlag);
-		Shoot(adcFlag); 
+//		Shoot(adcFlag); 
 //		WorkTwo(&adcFlag);
 //		RoundTwo(0,2350,2000,0,1000);
 ////
@@ -208,7 +208,7 @@ void WalkTask(void)
 //		Round3();
 		
 		//新底盘闭环圆
-//		Round2(500,1000,400,0,250);
+//		Round2(0,2300,1200,0,1500);
 
 		//新底盘闭环直线
 //		straightLine2(1,-1,-400,0);
@@ -260,7 +260,7 @@ void Init(void)
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	ElmoInit(CAN2);
 	
-	//右轮电机初始化
+//	//右轮电机初始化
 	VelLoopCfg(CAN2, 0x01, 20000000, 20000000);
 	
 	//左轮电机初始化
@@ -270,7 +270,7 @@ void Init(void)
 	VelLoopCfg(CAN1, 0x08, 50000, 500000);
 //	
 	//推球电机初始化
-	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,50000);
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,20000);
 ////	
 //	//航向电机初始化
 //	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
@@ -284,7 +284,7 @@ void Init(void)
 	MotorOn(CAN2, 0x02);
 	MotorOn(CAN1, 0x08);
 	MotorOn(CAN1, PUSH_BALL_ID);
-//	MotorOn(CAN1, GUN_YAW_ID);
+	MotorOn(CAN1, GUN_YAW_ID);
 
 //	MotorOn(CAN2, 0x05);
 //	MotorOn(CAN2, 0x06);

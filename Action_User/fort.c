@@ -175,143 +175,142 @@ void Shoot(uint8_t flg)
 	float shootSpeed=0;
 	float shootAngle=0;
 	float shootTurnAngle=0;
-	if(flg == 0)
-	{
-		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX > -1400  && shootY < 1000))
-		{
-			shootFlag=0;
-			
-		}
-		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY < 3600))
-		{
-			shootFlag=1;
-		}
-		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < 1400  && shootY > 3600))
-		{
-			shootFlag=2;
-		}
-		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX > 1400  && shootY > 1000))
-		{
-			shootFlag=3;
-		}	
-	}
-	if(flg == 1)
-	{
-		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY > 1000))
-		{ 
-			shootFlag=0;
-			
-		}
-		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX > -1400  && shootY > 3600))
-		{
-			shootFlag=1;
-		}
-		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY < 3600))
-		{
-			shootFlag=2;
-		}
-		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX < 1400  && shootY < 1000))
-		{
-			shootFlag=3;
-		}	
-	}
-	
-//	shootCnt++;
-//	if(flg == 0)
-//	{
-//		if((shootX < 0 && shootX > -1400 && shootY < 2300 && shootY > 1000) || (shootX > -1400  && shootY < 1000))
+//+
+//		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX > -1400  && shootY < 1000))
 //		{
 //			shootFlag=0;
-//			if(shootCnt == 200)
-//			{
-//				// 推球	
-//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-//				shootCnt=0;
-//			}
 //			
 //		}
-//		else if((shootX < 0 && shootX > -1400 && shootY > 2300 && shootY < 3600) || (shootX < -1400  && shootY < 3600))
+//		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY < 3600))
 //		{
 //			shootFlag=1;
-//			if(shootCnt == 200)
-//			{
-//				// 推球	
-//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-//				shootCnt=0;
-//			}
 //		}
-//		else if((shootX > 0 && shootX < 1400 && shootY > 2300 && shootY < 3600) || (shootX < 1400  && shootY > 3600))
+//		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < 1400  && shootY > 3600))
 //		{
 //			shootFlag=2;
-//			if(shootCnt == 200)
-//			{
-//				// 推球	
-//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-//				shootCnt=0;
-//			}
 //		}
-//		else if((shootX > 0 && shootX < 1400 && shootY < 2300 && shootY > 1000) || (shootX > 1400  && shootY > 1000))
+//		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX > 1400  && shootY > 1000))
 //		{
 //			shootFlag=3;
-//			if(shootCnt == 200)
-//			{
-//				// 推球	
-//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-//				shootCnt=0;
-//			}
 //		}	
 //	}
-
 //	if(flg == 1)
 //	{
 //		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY > 1000))
 //		{ 
 //			shootFlag=0;
-//			if(shootCnt == 200)
-//			{
-//				// 推球	
-//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-//				shootCnt=0;
-//			}
 //			
 //		}
 //		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX > -1400  && shootY > 3600))
 //		{
 //			shootFlag=1;
-//			if(shootCnt == 200)
-//			{
-//				// 推球	
-//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-//				shootCnt=0;
-//			}
 //		}
 //		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY < 3600))
 //		{
 //			shootFlag=2;
-//			if(shootCnt == 200)
-//			{
-//				// 推球	
-//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-//				shootCnt=0;
-//			}
 //		}
 //		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX < 1400  && shootY < 1000))
 //		{
 //			shootFlag=3;
-//			if(shootCnt == 200)
-//			{
-//				// 推球	
-//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-//				shootCnt=0;
-//			}
 //		}	
 //	}
 	
-//	if(shootFlagLast != shootFlag)
-//	{
-//		shootCnt=0;
-//		shootFlagLast=shootFlag;
-//	}
+	shootCnt++;
+	if(flg == 0)
+	{
+		if((shootX < 0 && shootX > -1400 && shootY < 2300 && shootY > 1000) || (shootX > -1400  && shootY < 1000))
+		{
+			shootFlag=0;
+			if(shootCnt == 200)
+			{
+				// 推球	
+				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+				shootCnt=0;
+			}
+			
+		}
+		else if((shootX < 0 && shootX > -1400 && shootY > 2300 && shootY < 3600) || (shootX < -1400  && shootY < 3600))
+		{
+			shootFlag=1;
+			if(shootCnt == 200)
+			{
+				// 推球	
+				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+				shootCnt=0;
+			}
+		}
+		else if((shootX > 0 && shootX < 1400 && shootY > 2300 && shootY < 3600) || (shootX < 1400  && shootY > 3600))
+		{
+			shootFlag=2;
+			if(shootCnt == 200)
+			{
+				// 推球	
+				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+				shootCnt=0;
+			}
+		}
+		else if((shootX > 0 && shootX < 1400 && shootY < 2300 && shootY > 1000) || (shootX > 1400  && shootY > 1000))
+		{
+			shootFlag=3;
+			if(shootCnt == 200)
+			{
+				// 推球	
+				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+				shootCnt=0;
+			}
+		}	
+	}
+
+	if(flg == 1)
+	{
+		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY > 1000))
+		{ 
+			shootFlag=0;
+			if(shootCnt == 200)
+			{
+				// 推球	
+				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+				shootCnt=0;
+			}
+			
+		}
+		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX > -1400  && shootY > 3600))
+		{
+			shootFlag=1;
+			if(shootCnt == 200)
+			{
+				// 推球	
+				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+				shootCnt=0;
+			}
+		}
+		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY < 3600))
+		{
+			shootFlag=2;
+			if(shootCnt == 200)
+			{
+				// 推球	
+				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+				shootCnt=0;
+			}
+		}
+		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX < 1400  && shootY < 1000))
+		{
+			shootFlag=3;
+			if(shootCnt == 200)
+			{
+				// 推球	
+				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+				shootCnt=0;
+			}
+		}	
+	}
+	
+	if(shootFlagLast != shootFlag)
+	{
+		shootCnt=0;
+		shootFlagLast=shootFlag;
+	}
 		
 	if(shootFlag == 2 || shootFlag == 3)
 	{
@@ -321,7 +320,7 @@ void Shoot(uint8_t flg)
 		{
 			shootTurnAngle=350;
 		}
-		else if(shootTurnAngle > 360)
+		else if(shootTurnAngle > 360) 
 		{
 			shootTurnAngle=shootTurnAngle-360;
 		}
@@ -347,8 +346,8 @@ void Shoot(uint8_t flg)
 			shootTurnAngle=0;
 		}
 	}
-	YawPosCtrl(shootTurnAngle+3);
-//	YawPosCtrl(shootTurnAngle+2);
+//	YawPosCtrl(shootTurnAngle+3);
+	YawPosCtrl(shootTurnAngle+2);
 	
 	usartValue.shootangle=shootTurnAngle;
 	usartValue.flagValue=shootFlag;
@@ -357,20 +356,25 @@ void Shoot(uint8_t flg)
 	
 	if(shootDistance < 4000 && shootDistance > 2300)
 	{
-		shootSpeed=(SHOOOT_KP*shootDistance)+29;
-//		shootSpeed=(SHOOOT_KP*shootDistance)+23;
+		shootSpeed=(SHOOOT_KP*shootDistance)+23;
 		
 		ShooterVelCtrl(shootSpeed);
-		shootCnt++;
-		if(shootCnt == 40)
-		{
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-		}
-		else
-		{
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-			shootCnt=0;
-		}
 	}
+//	if(shootDistance < 3400 && shootDistance > 2000)
+//	{
+//		shootSpeed=(SHOOOT_KP*shootDistance)+28;
+//		
+//		ShooterVelCtrl(shootSpeed);
+//		shootCnt++;
+//		if(shootCnt == 130)
+//		{
+//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+//		}
+//		else if(shootCnt > 260)
+//		{
+//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+//			shootCnt=0;
+//		}
+//	}
 
 }
