@@ -39,11 +39,11 @@
   * @retval None
   */
 #define pi 3.141592f
-float Kp=200,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1,Vkl=0,Sumli=0;
+float Kp=200,Ki=0.01,Kd=0,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1,Vkl=0,Sumli=0;
 void Straight(float v)
 {
 	VelCrl(CAN2,5,REDUCTION_RATIO*v*8192/(pi*WHEEL_DIAMETER));
-	VelCrl(CAN2,6,Vk*REDUCTION_RATIO);
+	VelCrl(CAN2,6,-10*Vk*REDUCTION_RATIO);
 }	
 void Spin(float R,float v)
 {
@@ -57,15 +57,10 @@ void TurnRight(float angle,float v)
 }	
 void AnglePID(float setAngle,float feedbackAngle)
 {
-	/*(setAngle>180)
-		setAngle=-(360-setAngle);
-	if(setAngle<-180)
-		setAngle=360+setAngle;*/
 	err=setAngle-feedbackAngle;
 	if(err>180)
 		err=-(360-err);
 	if(err<-180)
-		
 		err=360+err;
 	Sumi+=Ki*err;
 	Vk=Kp*err+Sumi+Kd*(err-lastErr);
@@ -111,50 +106,45 @@ void GetFunction(float x1,float y1,float x2,float y2)
 			}	
 			flag=1;
 		}
-		#if CAR_NUM==1
-			lAngle=-lAngle;
-		#endif
 }	
 void linePID(float x1,float y1,float x2,float y2,float v)
 {
 		
 		GetFunction(x1,y1,x2,y2);
-		x=GetX();
-		y=GetY();
 		if(flag)
 		{
 			if(k>0)
 				if((y-k*x-b)*(y2-y1)>0)
-					setAngle=lAngle-90*(1-1000/(y-k*x-b+1000));
+					setAngle=lAngle-90*(1-500/(y-k*x-b+500));
 				else
-					setAngle=lAngle+90*(1-1000/(-y+k*x+b+1000));
+					setAngle=lAngle+90*(1-500/(-y+k*x+b+500));
 			else
 				if((y-k*x-b)*(y2-y1)>0)
-					setAngle=lAngle+90*(1-1000/(y-k*x-b+1000));
+					setAngle=lAngle+90*(1-500/(y-k*x-b+500));
 				else
-					setAngle=lAngle-90*(1-1000/(-y+k*x+b+1000));
+					setAngle=lAngle-90*(1-500/(-y+k*x+b+500));
 			//斜率为0	
 			if(y1-0.5<y2&&y2<y1+0.5)
 			{	
 				if(x2>x1)
 					if(y>y1)
-						setAngle=lAngle-90*(1-1000/(y-b+1000));
+						setAngle=lAngle-90*(1-500/(y-b+500));
 					else
-						setAngle=lAngle+90*(1-1000/(-y+b+1000));
+						setAngle=lAngle+90*(1-500/(-y+b+500));
 				else
 					if(y>y1)
-						setAngle=lAngle+90*(1-1000/(y-b+1000));
+						setAngle=lAngle+90*(1-500/(y-b+500));
 					else
-						setAngle=lAngle-90*(1-1000/(-y+b+1000));	
+						setAngle=lAngle-90*(1-500/(-y+b+500));	
 			}	
 		}	
 		//斜率不存在
 	 	else
 		{	
 			if((y2-y1)*(x-x1)<0)
-					setAngle=lAngle-90*(1-1000/(fabs(x-x1)+1000));
+					setAngle=lAngle-90*(1-500/(fabs(x-x1)+500));
 			else
-					setAngle=lAngle+90*(1-1000/(fabs(x-x1)+1000));	
+					setAngle=lAngle+90*(1-500/(fabs(x-x1)+500));	
 		}
 		AnglePID(setAngle,GetAngle());
 		Straight(v);
@@ -162,8 +152,6 @@ void linePID(float x1,float y1,float x2,float y2,float v)
 }	
 void CirclePID(float x0,float y0,float R,float v,int status)
 {
-	x=GetX();
-	y=GetY();
 	GetFunction(x,y,x0,y0);
 	d=(x-x0)*(x-x0)+(y-y0)*(y-y0);
 	//逆时针

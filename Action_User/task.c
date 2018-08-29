@@ -14,6 +14,8 @@
 #include "math.h"
 #include "adc.h"
 #include "pps.h"
+#include "fort.h"
+#define pi 3.141592
 /*
 ===============================================================
 						信号量定义
@@ -51,12 +53,13 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	TIM_Init(TIM2,999,83,1,3);
+	TIM_Init(TIM2,999,83,1,0);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	USART1_Init(921600);
 	USART3_Init(115200);
 	UART4_Init(921600);
+	UART5_Init(921600);
 //	Adc_Init();
 //	ElmoInit(CAN1);
 	ElmoInit(CAN2);
@@ -73,19 +76,19 @@ void ConfigTask(void)
 	MotorOn(CAN2,5);
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
+	BEEP_ON;
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float xRepair;
+extern FortType fort;
+int time,lastTime;
 void WalkTask(void)
 {
-	static int flag=0,R=600,status,lastTime=0,errFlag=0,count;
+	static int flag=0,R=1600,status,errFlag=0,count,errTime=0;
 	static float lastX=-100,dLeft,dRight,lastY=-100,changeAngle;
-	extern float x,y,Cnt,time;
+	extern float x,y,Cnt;
 //	do
 //	{
-//		xRepair=dLeft-dRight;
-//		//右ADC
 //		dRight=Get_Adc_Average(14,20)*0.92;
 //		//左ADC
 //		dLeft=Get_Adc_Average(15,20)*0.92;	
@@ -94,7 +97,7 @@ void WalkTask(void)
 //	if(dRight<=1000)
 //		status=0;
 //	else if(dLeft<=1000)
-//		status=1;
+		status=1;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
@@ -102,34 +105,35 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem,0,&os_err);
-//		x=GetX();
-//		y=GetY();
-//		if(errFlag==1)
-//		{	
-//			AnglePID(changeAngle,GetAngle());
-//			Straight(-1000);
-//			if(Get_Time_Flag())	
-//				errFlag=0;
-//			time=0;
-//		}	
-//		else
-//		{
-//			CirclePID(0,2400,R,1000,status);
-//			if(x<0&&lastX>0&&R>600)
-//				R-=450;
-//			if(x<0&&lastX>0&&R<800)
-//				R+=450;
-//		}	
-//		if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>20)
-//			lastTime=time;
-//		if(time-lastTime>=100)
-//		{	
-//			errFlag=1;
-//			changeAngle=GetAngle()+45;
-//			Cnt=0;
-//		}	
-//		lastX=x;
-//		lastY=y;	
+		x=GetX()+TURN_AROUND_WHEEL_TO_BACK_WHEEL*sin(GetAngle()*2*pi/360);
+		y=GetY()-TURN_AROUND_WHEEL_TO_BACK_WHEEL*cos(GetAngle()*2*pi/360);
+		if(errFlag==1)
+		{	
+			AnglePID(changeAngle,GetAngle());
+			Straight(-1000);
+			if(errTime%2==0)
+				status=abs(1-status);	
+			if(Get_Time_Flag())	
+				errFlag=0;
+			time=0;
+		}	
+		else
+		{
+			CirclePID(0,2400,R,1000,status);
+			if(x<0&&lastX>0&&R<1600)
+					R+=500;
+			if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>20)
+				lastTime=time;
+			if(time-lastTime>500)
+			{	
+				errFlag=1;
+				errTime++;
+				changeAngle=GetAngle()+45;
+				Cnt=0;
+			}	
+			lastX=x;
+			lastY=y;	
+		}	
 //		count++;
 //		SendUint8();
 //		YawAngleCtr(90);
@@ -142,7 +146,7 @@ void WalkTask(void)
 //		{PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 //			count=0;
 //		}	
-		CirclePID(0,500,500,100,1);
+//		CirclePID(0,1000,1000,500,1);
 		USART_OUT(USART1,(uint8_t *)"%d\t%d\t%d\r\n",(int)GetAngle(),(int)GetX(),(int)GetY());
 
 	}

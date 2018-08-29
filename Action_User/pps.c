@@ -23,7 +23,7 @@
 #include "moveBase.h"
 #include "math.h"
 #define pi 3.14159
-#define a (0)
+#define a 0
 /*告诉定位系统准备开始积分*/
 static uint8_t ppsTalkOk = 0;
 /*定位系统准备完毕开始发数*/
@@ -97,8 +97,8 @@ void USART3_IRQHandler(void)
 						SetAngle( posture.value[0]);
 						SetSpeedX(posture.value[1]);
 						SetSpeedY(posture.value[2]);
-						SetX(posture.value[3]*cos(a)+posture.value[4]*sin(a));
-						SetY(-posture.value[3]*sin(a)+posture.value[4]*cos(a)+OPS_TO_BACK_WHEEL);
+						SetX(-posture.value[3]);
+						SetY(-posture.value[4]+OPS_TO_BACK_WHEEL);
 						SetWZ(posture.value[5]);
 
 						/*定义的全局结构体变量可以在这里赋值*/
