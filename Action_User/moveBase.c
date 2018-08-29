@@ -39,7 +39,7 @@ extern struct usartValue_{
 }usartValue;
 
 
-uint8_t flg=0;
+uint8_t flag=0;
 extern float outMax2;
 extern float outMin2;
 /**
@@ -627,7 +627,6 @@ void Walk(uint8_t *getAdcFlag)
 	static float X_Now=0;
 	static float Y_Now=0;
 	static uint8_t errFlag=0;
-	static uint8_t errFlagLast=0;
 	
 	static uint16_t walkCnt=0;
 	float speedx=0;
@@ -646,19 +645,18 @@ void Walk(uint8_t *getAdcFlag)
 			X_Now=GetPosX();
 			Y_Now=GetPosY();
 			walkCnt=0;
-		}
-		if(errFlagLast != errFlag)
+		} 
+		if(errFlag == 1)
 		{
-			if(flg >= 3)
-				flg=3;
+			if(flag >= 3)
+				flag=3;
 			else
-				flg++;
-			errFlagLast=errFlag;
+				flag++;
+			
 		}
-		
 	}
 	else
-		flg=0;
+		flag=0;
 	
 	if(errFlag)
 	{

@@ -26,7 +26,7 @@
 //宏定义左轮电机ID
 #define LEFT_ID (1)
 //宏定义右轮电机ID
-#define RIGHT_BALL_ID (2)
+#define RIGHT_ID (2)
 // 电机旋转一周的脉冲数
 #define COUNT_PER_ROUND (4096.0f)
 // 宏定义每度对应脉冲数
@@ -136,6 +136,7 @@ void WalkTask(void)
 void Init(void)
 {
 	TIM_Init(TIM2, 999, 84, 0x01, 0x03);
+	USART3_Init(115200);
 	UART4_Init(921600);
 	UART5_Init(921600);
 	Adc_Init();
@@ -147,7 +148,7 @@ void Init(void)
 	VelLoopCfg(CAN2, LEFT_ID, 20000000, 20000000);
 	
 	//左轮电机初始化
-	VelLoopCfg(CAN2, RIGHT_BALL_ID, 20000000, 20000000);
+	VelLoopCfg(CAN2, RIGHT_ID, 20000000, 20000000);
 	
 	//收球电机初始化
 	VelLoopCfg(CAN1, COLLECT_BALL_ID, 50000, 500000);
@@ -156,7 +157,7 @@ void Init(void)
 	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,20000);
 	
 	MotorOn(CAN2, LEFT_ID);
-	MotorOn(CAN2, RIGHT_BALL_ID);
+	MotorOn(CAN2, RIGHT_ID);
 	MotorOn(CAN1, COLLECT_BALL_ID);
 	MotorOn(CAN1, PUSH_BALL_ID);
 	delay_ms(5000);
