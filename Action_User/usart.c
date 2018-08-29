@@ -281,8 +281,8 @@ void UART5_Init(uint32_t BaudRate)
 
   RCC_APB1PeriphClockCmd(RCC_APB1Periph_UART5, ENABLE);
 
-  //若使用蓝牙屏掉此句
-  USART_DeInit(UART5);  //复位串口5
+//  //若使用蓝牙屏掉此句
+//  USART_DeInit(UART5);  //复位串口5
 	
   /* Connect PXx to USARTx_Tx*/
   GPIO_PinAFConfig(GPIOC, GPIO_PinSource12, GPIO_AF_UART5);
