@@ -24,8 +24,7 @@
 
 /*****************定义的一些全局变量用于串口返回值****************************/
 
-float newPosX;
-float newPosY;
+
 
 extern struct usartValue_{
 	uint32_t cnt;//用于检测是否数据丢失
@@ -40,7 +39,7 @@ extern struct usartValue_{
 }usartValue;
 
 
-
+uint8_t flg=0;
 extern float outMax2;
 extern float outMin2;
 /**
@@ -70,7 +69,7 @@ void Turn(float angle,float gospeed)
 }	
  
 /**
-  * @brief  PID 转弯
+  * @brief  PID 后退转弯
   * @note	
   * @param  angle：给定角度
   * @param  gospeed：基础速度
@@ -625,25 +624,41 @@ float Speed_Y(void)
 void Walk(uint8_t *getAdcFlag)
 {
 	uint8_t ready=0;
-	float speedx=0;
-	float speedy=0;
-	static uint8_t errFlag=0;
 	static float X_Now=0;
 	static float Y_Now=0;
+	static uint8_t errFlag=0;
+	static uint8_t errFlagLast=0;
+	
+	static uint16_t walkCnt=0;
+	float speedx=0;
+	float speedy=0;
+	
+	
 	speedx=Speed_X();
 	speedy=Speed_Y();
 	
 	if((speedx < 200) && (speedx > -200) && (speedy < 200) && (speedy > -200))
 	{
-		usartValue.cnt++;
-		if(usartValue.cnt >= 100)
+		walkCnt++;
+		if(walkCnt >= 100)
 		{
 			errFlag=!errFlag;
-			X_Now=usartValue.xValue;
-			Y_Now=usartValue.yValue;
-			usartValue.cnt=0;
+			X_Now=GetPosX();
+			Y_Now=GetPosY();
+			walkCnt=0;
 		}
+		if(errFlagLast != errFlag)
+		{
+			if(flg >= 3)
+				flg=3;
+			else
+				flg++;
+			errFlagLast=errFlag;
+		}
+		
 	}
+	else
+		flg=0;
 	
 	if(errFlag)
 	{

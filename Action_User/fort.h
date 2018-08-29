@@ -41,7 +41,7 @@ void ReadYawPos(void);
 void ReadLaserAValue(void);
 void ReadLaserBValue(void);
 void GetValueFromFort(uint8_t data);
-void Shoot(uint8_t flg);
+void Shoot(uint8_t flg,uint16_t pushTime);
 extern FortType fort;
 
 

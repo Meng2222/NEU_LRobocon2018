@@ -145,12 +145,12 @@ void GetValueFromFort(uint8_t data)
 }
 
 extern uint8_t flagOne;
-void Shoot(uint8_t flg)
+extern uint8_t flg;
+void Shoot(uint8_t flg,uint16_t pushTime)
 {
 	static float bucketPosX[4]={BUCKET_ONE_X,BUCKET_TWO_X,BUCKET_THR_X,BUCKET_FOR_X};
 	static float bucketPosY[4]={BUCKET_ONE_Y,BUCKET_TWO_Y,BUCKET_THR_Y,BUCKET_FOR_Y};	
 	static uint8_t shootFlag=0;
-	static uint8_t posCrlFlag=0;
 	static uint8_t shootFlagLast=0;
 	static uint16_t shootCnt=0;
 	
@@ -168,7 +168,7 @@ void Shoot(uint8_t flg)
 		if((shootX < 0 && shootX > -1400 && shootY < 2300 && shootY > 1000) || (shootX > -1400  && shootY < 1000))
 		{
 			shootFlag=0;
-			if(shootCnt == 200)
+			if(shootCnt == pushTime)
 			{
 				// 推球	
 				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
@@ -179,7 +179,7 @@ void Shoot(uint8_t flg)
 		else if((shootX < 0 && shootX > -1400 && shootY > 2300 && shootY < 3600) || (shootX < -1400  && shootY < 3600))
 		{
 			shootFlag=1;
-			if(shootCnt == 200)
+			if(shootCnt == pushTime)
 			{
 				// 推球	
 				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
@@ -189,7 +189,7 @@ void Shoot(uint8_t flg)
 		else if((shootX > 0 && shootX < 1400 && shootY > 2300 && shootY < 3600) || (shootX < 1400  && shootY > 3600))
 		{
 			shootFlag=2;
-			if(shootCnt == 200)
+			if(shootCnt == pushTime)
 			{
 				// 推球	
 				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
@@ -199,7 +199,7 @@ void Shoot(uint8_t flg)
 		else if((shootX > 0 && shootX < 1400 && shootY < 2300 && shootY > 1000) || (shootX > 1400  && shootY > 1000))
 		{
 			shootFlag=3;
-			if(shootCnt == 200)
+			if(shootCnt == pushTime)
 			{
 				// 推球	
 				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
@@ -210,47 +210,74 @@ void Shoot(uint8_t flg)
 
 	if(flg == 1)
 	{
-		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY > 1000))
-		{ 
-			shootFlag=0;
-			if(shootCnt == 200)
+		if(flg >= 3)
+		{
+			shootCnt++;
+			if(shootCnt == 100)
 			{
-				// 推球	
 				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-				shootCnt=0;
 			}
-			
-		}
-		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX > -1400  && shootY > 3600))
-		{
-			shootFlag=1;
-			if(shootCnt == 200)
+			else if(shootCnt == 200)
 			{
-				// 推球	
 				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			}
+			else if(shootCnt > 250)
+			{
 				shootCnt=0;
+				if(shootFlag < 4)
+				{
+					shootFlag++;
+				}
+				else
+				{
+					shootFlag=0;
+				}
 			}
 		}
-		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY < 3600))
+		else
 		{
-			shootFlag=2;
-			if(shootCnt == 200)
-			{
-				// 推球	
-				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-				shootCnt=0;
+			if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY > 1000))
+			{ 
+				shootFlag=0;
+				if(shootCnt == pushTime)
+				{
+					// 推球	
+					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+					shootCnt=0;
+				}
+				
 			}
-		}
-		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX < 1400  && shootY < 1000))
-		{
-			shootFlag=3;
-			if(shootCnt == 200)
+			else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX > -1400  && shootY > 3600))
 			{
-				// 推球	
-				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-				shootCnt=0;
+				shootFlag=1;
+				if(shootCnt == pushTime)
+				{
+					// 推球	
+					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+					shootCnt=0;
+				}
 			}
-		}	
+			else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY < 3600))
+			{
+				shootFlag=2;
+				if(shootCnt == pushTime)
+				{
+					// 推球	
+					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+					shootCnt=0;
+				}
+			}
+			else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX < 1400  && shootY < 1000))
+			{
+				shootFlag=3;
+				if(shootCnt == pushTime)
+				{
+					// 推球	
+					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+					shootCnt=0;
+				}
+			}
+		}			
 	}
 	
 	if(shootFlagLast != shootFlag)
