@@ -55,10 +55,3 @@ void DebugMon_Handler(void);
 #endif /* __STM32F4xx_IT_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-/**struct Pos_t
-{
-	float X;
-	float Y;
-	float angle;
-};
-**/

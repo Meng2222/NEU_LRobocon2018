@@ -21,12 +21,12 @@
 #define cc 0
 //y大于0的FB都等1
 #define FB 2
-#define xx 500
-#define yy 500    //-2300
-#define r 500
+#define xx 0
+#define yy -2300    //18:-2330  17:-2300
+#define r 1760
 //顺1逆2
-#define Set_Clock 2
-#define Speed 500
+#define Set_Clock 1
+#define Speed 1000
 #define COLLECT_BALL_ID (8)
 #define PUSH_BALL_ID (6)
 #define PUSH_POSITION (4500)
@@ -71,7 +71,8 @@ void App_Task()
    初始化任务
    ===============================================================
 */
-int startflag=0;
+int startflag=1;
+float angle,fixang,Rps,d;
 extern int posokflag;
 int left,right;
 int front_vel,behind_vel;
@@ -80,33 +81,26 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	//定时器10ms pwm CAN通信 右1左2 轮子CAN2  引脚 串口3/4
 	TIM_Init(TIM2,999,83,0x00,0x00);
-//	Adc_Init();
-	//连接主控板和电脑，使电脑读到定位系统给主控板发回的信息
-	USART1_Init(921600);
-	//串口3接收定位系统返回的信息
-	USART3_Init(115200);
+	#if CAR_CONTRAL==17
+  //Adc_Init();
 	UART4_Init(921600);
-	UART5_Init(921600);
+	USART3_Init(115200);
+  UART5_Init(921600);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
-	//驱动器初始化
-//	ElmoInit(CAN1);
+	ElmoInit(CAN1);
 	ElmoInit(CAN2);
-	//轮子 左2右1 用CAN2
-	VelLoopCfg(CAN2,6,10000000,10000000);
-	VelLoopCfg(CAN2,5,10000000,10000000);
-//	VelLoopCfg(CAN1, 8, 50000, 50000);
-//	PosLoopCfg(CAN1, PUSH_BALL_ID, 50000,50000,20000);
-	MotorOn(CAN2,6);
-	MotorOn(CAN2,5);
-//	MotorOn(CAN1,8);
-//	MotorOn(CAN1,6);
-//	MotorOn(CAN1,7);
+	//轮子 左2右1
+	VelLoopCfg(CAN2,1,1000,0);
+	VelLoopCfg(CAN2,2,1000,0);
+	VelLoopCfg(CAN1, 8, 50000, 50000);
+  PosLoopCfg(CAN1, 6, 500000,500000,200000);
+	MotorOn(CAN2,1);
+  MotorOn(CAN2,2);
+  MotorOn(CAN1,8);
+  MotorOn(CAN1,6);
 	delay_s(2);
-	/*一直等待定位系统初始化完成*/
-	BEEP_ON;
 	WaitOpsPrepare();
 //	while(!startflag)
 //	{
@@ -119,7 +113,21 @@ void ConfigTask(void)
 //	  else startflag=0;
 //		USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\r\n",left,right,startflag);
 //	}
-	USART_OUT(USART1,(uint8_t*)"ok\r\n");
+	#elif CAR_CONTRAL==18
+	USART1_Init(921600);
+	USART3_Init(115200);
+  UART5_Init(921600);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	ElmoInit(CAN2);
+	//轮子后5前6
+	VelLoopCfg(CAN2,6,10000000,10000000);
+  VelLoopCfg(CAN2,5,10000000,10000000);
+	MotorOn(CAN2,5);
+  MotorOn(CAN2,6);
+	delay_s(2);
+	WaitOpsPrepare();
+	#endif
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 
@@ -128,24 +136,28 @@ float Out_Agl=0;
 int vel1,vel2,vel,turnflag=0;
 float X,Y;
 int Out_Pulse;
-int flag=0,Flag=0;
-float R_cover=2000;
+int flag=0,Flag=0,T_Flag=0,min=0;
+float R_cover=560;
 extern Pos_t position;
 
-void Round(float speed,float R);
 void PID(int Agl_Flag);
 void PID_Agl(float Set_Angle);
 void PID_Awy(float D_err);
+void Open_Round(float speed,float R);
+void N_Open_Round(float speed1,float round);
+void Squart_Walk(void);
+void Set_Square(void);
 void Strght_Walk (float a,float b,float c,int F_B);
-void Square_Walk(void);
-void SET_openRound(float x,float y,float R,float clock,float speed);
-void SET_closeRound_N(float x,float y,float R,float clock,float speed);
+void N_Strght_Walk (float a,float b,float c,int F_B);
+void SET_closeRound(float x,float y,float R,float clock,float speed);
+void N_SET_closeRound(float x,float y,float R,float clock,float speed);
 void Round_Cover(void);
-void SendUint8(void);
-void YawAngleCtr(float yawAngle);
-void open_Round(float speed1,float round); 
+void N_Round_Cover(void);
+void GPS_Aim_Pitch(void);
 
-int timCnt=0,pushCnt;
+int timCnt=0,flag1=0,flag2=0,sign=0,pushflag=0,pushCnt1=0,pushCnt2=0,lastpushflag;
+int laserflag=0,courseflag=0;
+float lastangle,diffangle,Angle;
 extern FortType fort;
 void WalkTask(void)
 {
@@ -155,91 +167,368 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		//USART_OUT(USART1,(uint8_t*)"%d\t%d\r\n",(int)(X),(int)(Y),(int)(position.ppsAngle));
+		#if CAR_CONTRAL==18
+		//18非差速转换坐标原点
 		X=position.ppsX-OPS_TO_BACK_WHEEL*sin(position.ppsAngle*Pi/180);
-		Y=position.ppsY-OPS_TO_BACK_WHEEL+OPS_TO_BACK_WHEEL*cos(position.ppsAngle*Pi/180);
-		USART_OUT(USART1,(uint8_t*)"%d\t%d\r\n",(int)(X),(int)(Y));
-		//open_Round(500,500); 
-//		SendUint8();
-//		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
-//		timCnt++;
-//		timCnt=timCnt%1000;
-//		if(timCnt%200==0) 
-//			pushCnt++;
-//		pushCnt=pushCnt%100;
-//		if(pushCnt%2)
-//		  PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-//		else
-//		  PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-//		YawAngleCtr(45);
-    //Round_Cover();
-    //SET_closeRound(xx,yy,r,Set_Clock,Speed);
-		//SET_closeRound_N(xx,yy,r,Set_Clock,Speed);
+		Y=position.ppsY-OPS_TO_BACK_WHEEL+OPS_TO_BACK_WHEEL*cos(position.ppsAngle*Pi/180); 
+		#endif
+		
+    GPS_Aim_Pitch();
+		//Round_Cover();
+		//N_Round_Cover();
+    SET_closeRound(xx,yy,r,startflag,Speed);
+		//N_SET_closeRound(xx,yy,r,Set_Clock,Speed);
+		//N_Open_Round(500,500);
 		//Square_Walk();
+		//Set_Square();
 		//Strght_Walk (aa,bb,cc,FB);
-		//Round(0.1,0.2);
-		//我的1号车走一个正方形
-		/**switch(flag)
-		{
-			case 0:
-				PID(0);
-			  VelCrl(CAN2,1,7000);
-		    VelCrl(CAN2,2,-7000-Out_Pulse);
-				if(position.X<-1550)
-				  flag=1;
-	    	break;
-			case 1:
-				PID(1);
-			  VelCrl(CAN2,1,0);
-		    VelCrl(CAN2,2,-Out_Pulse);
-			  if(position.angle>89)
-					flag=2;
-				break;
-			case 2:
-				PID(1);
-			  VelCrl(CAN2,1,7000);
-		    VelCrl(CAN2,2,-7000-Out_Pulse);
-			  if(position.Y>1550)
-					flag=3;
-				break;
-			case 3:
-				PID(2);
-			  VelCrl(CAN2,1,0);
-		    VelCrl(CAN2,2,-Out_Pulse);
-			  if(position.angle>178)
-					flag=4;
-				break;
-			case 4:
-				PID(2);
-				VelCrl(CAN2,1,7000);
-		    VelCrl(CAN2,2,-7000-Out_Pulse);
-				if(position.X>-450)
-					flag=5;
-				break;
-			case 5:
-				PID(3);
-			  VelCrl(CAN2,1,0);
-		    VelCrl(CAN2,2,-Out_Pulse);
-			  if(position.angle>-90.5&&position.angle<-89.5)
-				  flag=6; 
-				break;
-			case 6:
-				PID(3);
-			  VelCrl(CAN2,1,7000);
-		    VelCrl(CAN2,2,-7000-Out_Pulse);
-			  if(position.Y<450)
-				  flag=7; 
-				break;
-			case 7:
-				PID(0);
-			  VelCrl(CAN2,1,0);
-		    VelCrl(CAN2,2,-Out_Pulse);
-			  if(position.angle>-1)
-				  flag=0; 
-				break;
-		}**/
+		//N_Strght_Walk (aa,bb,cc,FB);
+		//Open_Round(0.1,0.2);
 	}
 }
+
+void LASER_Aim_Pitch(void)
+{
+	if(!laserflag)
+	{
+		if(Angle<=0) courseflag=1;
+		else if(Angle>=342) courseflag=0;
+		if(courseflag) Angle=Angle+1;
+		else Angle=Angle-1;
+	}
+	if((fort.laserAValueReceive>1350)&&(fort.laserBValueReceive>400&&fort.laserBValueReceive<1300))
+    laserflag=1;
+	if(laserflag)
+	{
+		courseflag=1;
+		//一直推球+意境瞄准给墙转速投球
+		
+	}
+}
+void GPS_Aim_Pitch(void)
+{
+	VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
+	if(startflag==1)
+	{
+		if(position.ppsY>position.ppsX-2300&&position.ppsY>=-position.ppsX-2300)
+		{
+			fixang=atan((100-position.ppsY)/(2400-position.ppsX))*180/Pi+90;
+			d=sqrt(pow(position.ppsX-2200,2)+pow(position.ppsY+100,2));
+		}
+		else if(position.ppsY<=position.ppsX-2300&&position.ppsY>-position.ppsX-2300)
+		{
+			fixang=atan((-4700-position.ppsY)/(2400-position.ppsX))*180/Pi+90;
+			d=sqrt(pow(position.ppsX-2200,2)+pow(position.ppsY+4500,2));
+		}
+		else if(position.ppsY<position.ppsX-2300&&position.ppsY<=-position.ppsX-2300)
+		{
+			fixang=atan((-4700-position.ppsY)/(-2400-position.ppsX))*180/Pi-90;
+			d=sqrt(pow(position.ppsX+2200,2)+pow(position.ppsY+4500,2));
+		}
+		else if(position.ppsY>=position.ppsX-2300&&position.ppsY<-position.ppsX-2300)
+		{
+			fixang=atan((100-position.ppsY)/(-2400-position.ppsX))*180/Pi-90;
+			d=sqrt(pow(position.ppsX+2200,2)+pow(position.ppsY+100,2));
+		}
+		if((position.ppsY>-2*position.ppsX-2300&&position.ppsY>position.ppsX-2300)
+		||(position.ppsY<0.5*position.ppsX-2300&&position.ppsY>-position.ppsX-2300)
+		||(position.ppsY<-2*position.ppsX-2300&&position.ppsY<position.ppsX-2300)
+		||(position.ppsY>0.5*position.ppsX-2300&&position.ppsY<-position.ppsX-2300))
+		  pushflag=1;
+		else pushflag=0;
+	}
+	else if(startflag==2)
+	{
+    if(position.ppsY>=position.ppsX-2300&&position.ppsY>-position.ppsX-2300)
+		{
+			fixang=atan((100-position.ppsY)/(-2400-position.ppsX))*180/Pi-90;
+			d=sqrt(pow(position.ppsX+2200,2)+pow(position.ppsY+100,2));
+		}
+	  else if(position.ppsY>position.ppsX-2300&&position.ppsY<=-position.ppsX-2300)
+	  {
+		  fixang=atan((-4700-position.ppsY)/(-2400-position.ppsX))*180/Pi-90;
+		  d=sqrt(pow(position.ppsX+2200,2)+pow(position.ppsY+4500,2));
+	  }
+		else if(position.ppsY<=position.ppsX-2300&&position.ppsY<-position.ppsX-2300)
+		{
+			fixang=atan((-4700-position.ppsY)/(2400-position.ppsX))*180/Pi+90;
+			d=sqrt(pow(position.ppsX-2200,2)+pow(position.ppsY+4500,2));
+		}
+		else if(position.ppsY<position.ppsX-2300&&position.ppsY>=-position.ppsX-2300)
+		{
+			fixang=atan((100-position.ppsY)/(2400-position.ppsX))*180/Pi+90;
+      d=sqrt(pow(position.ppsX-2200,2)+pow(position.ppsY+100,2));
+		}
+		if((position.ppsY>2*position.ppsX-2300&&position.ppsY>-position.ppsX-2300)
+		||(position.ppsY<-0.5*position.ppsX-2300&&position.ppsY>position.ppsX-2300)
+		||(position.ppsY<2*position.ppsX-2300&&position.ppsY<-position.ppsX-2300)
+		||(position.ppsY>-0.5*position.ppsX-2300&&position.ppsY<position.ppsX-2300))
+		  pushflag=1;
+		else pushflag=0;
+	}
+	diffangle=fixang-position.ppsAngle;
+	if(diffangle>180)
+		diffangle=diffangle-360;
+	else if(diffangle<-180)
+		diffangle=diffangle+360;
+	angle=170-diffangle;
+	if(angle<0) angle=0;
+	else if(angle>342) angle=342;
+  YawPosCtrl(angle);
+	if(lastpushflag==0&&pushflag==1)
+		pushCnt1=0;
+	lastpushflag=pushflag;
+	if(pushflag)
+	{
+		pushCnt1++;
+		pushCnt1=pushCnt1%1000;
+		if(pushCnt1%50==0)
+		{
+		 	pushCnt2++;
+		  pushCnt2=pushCnt2%100;
+		}
+		if(pushCnt2%2)
+		  PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+		else
+			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+	}
+	Rps=40.0/3102.505*d+35.7-9;
+	ShooterVelCtrl(Rps);
+}
+float Agl;
+//17差速覆盖大部分 倒退的临界速度要改  转换半径改成了400
+void Round_Cover(void)
+{
+	static int count=0,lastcount=0,set=0,number=0,figure=0,Cnt=0,stopflag=0;
+	Cnt++;
+	if(Cnt>=100) Cnt=100;//限幅
+	if(Cnt>50)//防止一开局的停止进入这里
+	{
+	  if(sqrt(pow(position.ppsSpeedX,2)+pow(position.ppsSpeedY,2))<200)
+		  number++;
+	  else number=0;
+	  if(number>50)//长时间停下 倒退标志位 置1
+	  {
+		  number=0;
+		  stopflag=1;
+	  }
+  }
+	if(stopflag)//倒退 改变半径
+	{
+		figure++;
+		VelCrl(CAN2,1,-10865);
+	  VelCrl(CAN2,2,10865);
+		if(figure>100)//后退0.5秒后出去以新半径转圈
+		{
+			figure=0;
+			stopflag=0;
+			if(R_cover>700)
+				R_cover=R_cover-400;
+			else
+			{
+				min++;
+				min=min%10;
+				if(min%2)
+					R_cover=R_cover+400;
+				else
+					R_cover=R_cover+800;
+			}
+		}
+	}
+	else//转圈
+	{
+	  SET_closeRound(xx,yy,R_cover,startflag,Speed);
+	  if(startflag==1)
+	  {
+		  if(Agl>130&&Agl<132)
+		    count=1;
+	    else 
+		    count=0;
+	    if(Agl>-90&&Agl<0)
+		    set=1;
+    }
+  	else if(startflag==2)
+	  {
+		  if(Agl>-132&&Agl<-130)
+		    count=1;
+	    else 
+	     	count=0;
+		  if(Agl>0&&Agl<90)
+		    set=1;
+    }
+	  if(R_cover>2000)
+		  Flag=1;
+	  else if(R_cover<700)
+		  Flag=0;
+	  if(count==1&&lastcount==0&&set)
+	  {
+		  if(Flag)
+			  R_cover=R_cover-400;
+		  else
+		  	R_cover=R_cover+400;
+		  set=0;
+	  }
+	  lastcount=count;
+  }
+
+}
+
+//18非差速覆盖大部分
+void N_Round_Cover(void)
+{
+	static int count=0,lastcount=0,set=0,number=0,figure=0,Cnt=0,stopflag=0;
+	Cnt++;
+	if(Cnt>=100) Cnt=100;//限幅
+	if(Cnt>50)//防止一开局的停止进入这里
+	{
+	  if(sqrt(pow(position.ppsSpeedX,2)+pow(position.ppsSpeedY,2))<200)
+		  number++;
+	  else number=0;
+	  if(number>50)//长时间停下 倒退标志位 置1
+	  {
+		  number=0;
+		  stopflag=1;
+	  }
+  }
+	USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)(X),(int)(Y),Cnt,number,stopflag,(int)(R_cover));
+	if(stopflag)//倒退 改变半径
+	{
+		figure++;
+		VelCrl(CAN2,5,-12730*REDUCTION_RATIO);
+	  VelCrl(CAN2,6,0);
+		if(figure>100)//后退0.5秒后出去以新半径转圈
+		{
+			figure=0;
+			stopflag=0;
+			if(R_cover>700)
+				R_cover=R_cover-300;
+			else
+			{
+				min++;
+				min=min%10;
+				if(min%2)
+					R_cover=R_cover+600;
+				else
+					R_cover=R_cover+300;
+			}
+		}
+	}
+	else//转圈
+	{
+	  N_SET_closeRound(xx,yy,R_cover,startflag,Speed);
+	  if(startflag==1)
+	  {
+		  if(Agl>93&&Agl<95)
+		    count=1;
+	    else 
+		    count=0;
+	    if(Agl>-90&&Agl<0)
+		    set=1;
+    }
+  	else if(startflag==2)
+	  {
+		  if(Agl>-95&&Agl<-93)
+		    count=1;
+	    else 
+	     	count=0;
+		  if(Agl>0&&Agl<90)
+		    set=1;
+    }
+	  if(R_cover>2000)
+		  Flag=1;
+	  else if(R_cover<700)
+		  Flag=0;
+	  if(count==1&&lastcount==0&&set)
+	  {
+		  if(Flag)
+			  R_cover=R_cover-300;
+		  else
+		  	R_cover=R_cover+300;
+		  set=0;
+	  }
+	  lastcount=count;
+  }
+}
+
+//17差速走任意固定圆   要改KP:400
+void SET_closeRound(float x,float y,float R,float clock,float speed)
+{
+	float Distance=0;
+	float k;
+	Distance=sqrt(pow(position.ppsX-x,2)+pow(position.ppsY-y,2))-R;
+	k=(position.ppsX-x)/(y-position.ppsY);
+	//顺1逆2
+	if(clock==1)
+	{
+		if(position.ppsY>y)
+		  Agl=90+atan(k)*180/Pi;
+	  else if(position.ppsY<y)
+		  Agl=-90+atan(k)*180/Pi;
+	  else if(position.ppsY==y&&position.ppsX>=x)
+		  Agl=0;
+	  else if(position.ppsY==y&&position.ppsX<x)
+		  Agl=180;
+	  PID_Awy(Distance);
+		PID_Agl(Agl-Out_Agl);
+	}
+	else if(clock==2)
+	{
+		if(position.ppsY>y)
+		  Agl=-90+atan(k)*180/Pi;
+	  else if(position.ppsY<y)
+		  Agl=90+atan(k)*180/Pi;
+	  else if(position.ppsY==y&&position.ppsX>=x)
+		  Agl=180;
+	  else if(position.ppsY==y&&position.ppsX<x)
+		  Agl=0;
+	  PID_Awy(Distance);
+		PID_Agl(Agl+Out_Agl);
+	}
+	vel=(int)(speed*4096/(Pi*WHEEL_DIAMETER));
+	VelCrl(CAN2,1,vel+Out_Pulse);
+	VelCrl(CAN2,2,-vel+Out_Pulse);
+}
+
+//18非差速任意固定圆   要改KP:5000
+void N_SET_closeRound(float x,float y,float R,float clock,float speed)
+{
+	float Distance=0;
+	float k;
+	Distance=sqrt(pow(X-x,2)+pow(Y-y,2))-R;
+	k=(X-x)/(y-Y);
+	//顺1逆2
+	if(clock==1)
+	{
+		if(Y>y)
+		  Agl=90+atan(k)*180/Pi;
+	  else if(Y<y)
+		  Agl=-90+atan(k)*180/Pi;
+	  else if(Y==y&&X>=x)
+		  Agl=0;
+	  else if(Y==y&&X<x)
+		  Agl=180;
+	  PID_Awy(Distance);
+		PID_Agl(Agl-Out_Agl);
+	}
+	else if(clock==2)
+	{
+		if(Y>y)
+		  Agl=-90+atan(k)*180/Pi;
+	  else if(Y<y)
+		  Agl=90+atan(k)*180/Pi;
+	  else if(Y==y&&X>=x)
+		  Agl=180;
+	  else if(Y==y&&X<x)
+		  Agl=0;
+	  PID_Awy(Distance);
+		PID_Agl(Agl+Out_Agl);
+	}
+	vel=(int)(speed*8196*REDUCTION_RATIO/(Pi*WHEEL_DIAMETER));
+	VelCrl(CAN2,5,vel);
+	VelCrl(CAN2,6,-Out_Pulse*REDUCTION_RATIO);
+}
+
+
 //原1号车-17差速1m/s走任0意固定直线PID：通过距离PID的输出值输入到角度PID，让距离越来越近的同时角度越来越接近设定角度值
 /**void Strght_Walk (float a,float b,float c,int F_B)
 {
@@ -398,8 +687,8 @@ void WalkTask(void)
   VelCrl(CAN2,2,-10865-Out_Pulse);
 }**/
 
-//18费差速-任意固定直线
-void Strght_Walk (float a,float b,float c,int F_B)
+//18非差速-任意固定直线
+void N_Strght_Walk (float a,float b,float c,int F_B)
 {
 	float k,Agl,Dis;
 	Dis=fabs(a*X+b*Y+c)/sqrt(pow(a,2)+pow(b,2));
@@ -556,8 +845,9 @@ void Strght_Walk (float a,float b,float c,int F_B)
   VelCrl(CAN2,6,-Out_Pulse*REDUCTION_RATIO);
 }
 
+
 //原1号车-17差速一轮向前一轮向后原地转-固定某一正方形原1号车
-/**void Square_Walk(void)
+/**void Set_Square(void)
 
 {
 	float Dis;
@@ -596,184 +886,85 @@ void Strght_Walk (float a,float b,float c,int F_B)
 		VelCrl(CAN2,2,-8000-Out_Pulse);
 }**/
 
-//17差速走任意固定圆   要改KP
-float Agl;
-void SET_closeRound(float x,float y,float R,float clock,float speed)
+//我的原1号车走一个正方形-仅角度闭环
+/**void Squart_Walk(void)
 {
-	float Distance=0;
-	float k;
-	Distance=sqrt(pow(X-x,2)+pow(Y-y,2))-R;
-	k=(X-x)/(y-Y);
-	//顺1逆2
-	if(clock==1)
+	switch(flag)
 	{
-		if(Y>y)
-		  Agl=90+atan(k)*180/Pi;
-	  else if(Y<y)
-		  Agl=-90+atan(k)*180/Pi;
-	  else if(Y==y&&X>=x)
-		  Agl=0;
-	  else if(Y==y&&X>x)
-		  Agl=180;
-	  PID_Awy(Distance);
-		PID_Agl(Agl+Out_Agl);
-	}
-	else if(clock==2)
-	{
-		if(Y>y)
-		  Agl=-90+atan(k)*180/Pi;
-	  else if(Y<y)
-		  Agl=90+atan(k)*180/Pi;
-	  else if(Y==y&&X>=x)
-		  Agl=180;
-	  else if(Y==y&&X>x)
-		  Agl=0;
-	  PID_Awy(Distance);
-		PID_Agl(Agl-Out_Agl);
-	}
-	vel=(int)(speed*10865);
-	VelCrl(CAN2,1,vel-Out_Pulse);
-	VelCrl(CAN2,2,-vel-Out_Pulse);
-	vel=(int)(speed*8196*REDUCTION_RATIO/(Pi*WHEEL_DIAMETER));
-	VelCrl(CAN2,5,vel);
-	VelCrl(CAN2,6,-Out_Pulse*REDUCTION_RATIO);
-}
+	  case 0:
+			PID(0);
+			VelCrl(CAN2,1,7000);
+		  VelCrl(CAN2,2,-7000-Out_Pulse);
+		  if(position.X<-1550)
+			  flag=1;
+	    break;
+		case 1:
+			PID(1);
+		  VelCrl(CAN2,1,0);
+		  VelCrl(CAN2,2,-Out_Pulse);
+			if(position.angle>89)
+				flag=2;
+			break;
+		case 2:
+			PID(1);
+		  VelCrl(CAN2,1,7000);
+		  VelCrl(CAN2,2,-7000-Out_Pulse);
+			if(position.Y>1550)
+				flag=3;
+			break;
+		case 3:
+			PID(2);
+			VelCrl(CAN2,1,0);
+		  VelCrl(CAN2,2,-Out_Pulse);
+			if(position.angle>178)
+				flag=4;
+			break;
+		case 4:
+			PID(2);
+			VelCrl(CAN2,1,7000);
+		  VelCrl(CAN2,2,-7000-Out_Pulse);
+			if(position.X>-450)
+				flag=5;
+			break;
+		case 5:
+			PID(3);
+			VelCrl(CAN2,1,0);
+		  VelCrl(CAN2,2,-Out_Pulse);
+			if(position.angle>-90.5&&position.angle<-89.5)
+			  flag=6; 
+			break;
+		case 6:
+			PID(3);
+		  VelCrl(CAN2,1,7000);
+		  VelCrl(CAN2,2,-7000-Out_Pulse);
+			if(position.Y<450)
+			  flag=7; 
+			break;
+		case 7:
+			PID(0);
+			VelCrl(CAN2,1,0);
+		  VelCrl(CAN2,2,-Out_Pulse);
+			if(position.angle>-1)
+				flag=0; 
+			break;
+}**/
 
-//18非差速任意固定圆   要改KP
-void SET_closeRound_N(float x,float y,float R,float clock,float speed)
+//17差速开环圆
+void Open_Round(float speed,float R)
 {
-	float Distance=0;
-	float k;
-	Distance=sqrt(pow(X-x,2)+pow(Y-y,2))-R;
-	k=(X-x)/(y-Y);
-	//顺1逆2
-	if(clock==1)
-	{
-		if(Y>y)
-		  Agl=90+atan(k)*180/Pi;
-	  else if(Y<y)
-		  Agl=-90+atan(k)*180/Pi;
-	  else if(Y==y&&X>=x)
-		  Agl=0;
-	  else if(Y==y&&X<x)
-		  Agl=180;
-	  PID_Awy(Distance);
-		PID_Agl(Agl-Out_Agl);
-	}
-	else if(clock==2)
-	{
-		if(Y>y)
-		  Agl=-90+atan(k)*180/Pi;
-	  else if(Y<y)
-		  Agl=90+atan(k)*180/Pi;
-	  else if(Y==y&&X>=x)
-		  Agl=180;
-	  else if(Y==y&&X<x)
-		  Agl=0;
-	  PID_Awy(Distance);
-		PID_Agl(Agl+Out_Agl);
-	}
-	vel=(int)(speed*10865);
-	VelCrl(CAN2,1,vel-Out_Pulse);
-	VelCrl(CAN2,2,-vel-Out_Pulse);
-	vel=(int)(speed*8196*REDUCTION_RATIO/(Pi*WHEEL_DIAMETER));
-	VelCrl(CAN2,5,vel);
-	VelCrl(CAN2,6,-Out_Pulse*REDUCTION_RATIO);
+	vel1=(int)(10865*speed*(R-0.217)/R);
+  vel2=-(int)(10865*speed*(R+0.217)/R);
 }
-
-//17差速覆盖大部分
-void Round_Cover(void)
+//18非差速开环圆
+void N_Open_Round(float speed1,float round) 
 {
-	static int count=0,lastcount=0,set=0,number=0,figure=0,Cnt=0,stopflag=0;
-	Cnt++;
-	if(Cnt>=100) Cnt=100;//限幅
-	if(Cnt>50)//防止一开局的停止进入这里
-	{
-	  if(sqrt(pow(position.ppsSpeedX,2)+pow(position.ppsSpeedY,2))<400)
-		  number++;
-	  else number=0;
-	  if(number>50)//长时间停下 倒退标志位 置1
-	  {
-		  number=0;
-		  stopflag=1;
-	  }
-  }
-	USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)(position.ppsSpeedX),(int)(position.ppsSpeedY),Cnt,number,stopflag,(int)(R_cover));
-	if(stopflag)//倒退 改变半径
-	{
-		figure++;
-		VelCrl(CAN2,5,-12730*REDUCTION_RATIO);
-	  VelCrl(CAN2,6,0);
-		if(figure>100)//后退0.5秒后出去以新半径转圈
-		{
-			figure=0;
-			stopflag=0;
-			if(R_cover>400)
-				R_cover=R_cover-400;
-			else
-				R_cover=R_cover+400;
-		}
-	}
-	else//转圈
-	{
-	  SET_closeRound(xx,yy,R_cover,startflag,Speed);
-	  if(startflag==1)
-	  {
-		  if(Agl>93&&Agl<95)
-		    count=1;
-	    else 
-		    count=0;
-	    if(Agl>-90&&Agl<0)
-		    set=1;
-    }
-  	else if(startflag==2)
-	  {
-		  if(Agl>-95&&Agl<-93)
-		    count=1;
-	    else 
-	     	count=0;
-		  if(Agl>0&&Agl<90)
-		    set=1;
-    }
-	  if(R_cover>1800)
-		  Flag=1;
-	  else if(R_cover<600)
-		  Flag=0;
-	  if(count==1&&lastcount==0&&set)
-	  {
-		  if(Flag)
-			  R_cover=R_cover-400;
-		  else
-		  	R_cover=R_cover+400;
-		  set=0;
-	  }
-	  lastcount=count;
-  }
-
-}
-void PID_Agl(float Set_Angle)
-{
-	float A_err;
-	static float Last_Aerr,Sum_Aerr;
-	A_err=Set_Angle-position.ppsAngle;
-	if(A_err>180)
-		A_err=A_err-360;
-	if(A_err<-180)
-		A_err=A_err+360;
-	Sum_Aerr=Sum_Aerr+A_err;
-	Out_Pulse=(int)(5000*A_err);
-		//+5*Sum_Aerr+5*(A_err-Last_Aerr));
-	Last_Aerr=A_err;
-}
-void PID_Awy(float D_err)
-{
-	static float Last_Derr,Sum_Derr;
-	Sum_Derr=Sum_Derr+D_err;
-	Out_Agl=D_err/10;
-	if(Out_Agl>=90)
-    Out_Agl=90;
-	//+5*Sum_Derr+5*(D_err-Last_Derr)); 
-  Last_Derr=D_err;
+	float speed2;
+	speed2=speed1*TURN_AROUND_WHEEL_TO_BACK_WHEEL/round;
+	behind_vel=(int)(speed1*REDUCTION_RATIO*8192/(Pi*WHEEL_DIAMETER));
+	front_vel=(int)(speed2*REDUCTION_RATIO*8192/(Pi*TURN_AROUND_WHEEL_DIAMETER));
+	//USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\r\n",behind_vel,front_vel,speed2);
+	VelCrl(CAN2,5,behind_vel);
+	VelCrl(CAN2,6,front_vel);
 }
 
 /**void PID(int Agl_Flag)
@@ -812,53 +1003,28 @@ void PID_Awy(float D_err)
 	Last_err=err;
 }**/
 
-//17差速开环圆
-void Round(float speed,float R)
+void PID_Agl(float Set_Angle)
 {
-	vel1=(int)(10865*speed*(R-0.217)/R);
-  vel2=-(int)(10865*speed*(R+0.217)/R);
+	float A_err;
+	static float Last_Aerr,Sum_Aerr;
+	A_err=Set_Angle-position.ppsAngle;
+	if(A_err>180)
+		A_err=A_err-360;
+	if(A_err<-180)
+		A_err=A_err+360;
+	Sum_Aerr=Sum_Aerr+A_err;
+	Out_Pulse=(int)(400*A_err);
+		//+5*Sum_Aerr+5*(A_err-Last_Aerr));
+	Last_Aerr=A_err;
 }
-//18非差速开环圆
-void open_Round(float speed1,float round) 
-{
-	float speed2;
-	speed2=speed1*TURN_AROUND_WHEEL_TO_BACK_WHEEL/round;
-	behind_vel=(int)(speed1*REDUCTION_RATIO*8192/(Pi*WHEEL_DIAMETER));
-	front_vel=(int)(speed2*REDUCTION_RATIO*8192/(Pi*TURN_AROUND_WHEEL_DIAMETER));
-	//USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\r\n",behind_vel,front_vel,speed2);
-	VelCrl(CAN2,5,behind_vel);
-	VelCrl(CAN2,6,front_vel);
-}
-typedef union
-{
-    //这个32位整型数是给电机发送的速度（脉冲/s）
-    int32_t Int32 ;
-    //通过串口发送数据每次只能发8位
-    uint8_t Uint8[4];
 
-}num_t;
-
-//定义联合体
-num_t u_Num;
-void SendUint8(void)
+void PID_Awy(float D_err)
 {
-    u_Num.Int32 = 1000;
-
-    //起始位
-    USART_SendData(USART1, 'A');
-    //通过串口1发数
-    USART_SendData(USART1, u_Num.Uint8[0]);
-    USART_SendData(USART1, u_Num.Uint8[1]);
-    USART_SendData(USART1, u_Num.Uint8[2]);
-    USART_SendData(USART1, u_Num.Uint8[3]);
-    //终止位
-    USART_SendData(USART1, 'J');
-}
-float YawTransform(float yawAngle)
-{
-	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
-}
-void YawAngleCtr(float yawAngle)
-{
-	PosCrl(CAN1, GUN_YAW_ID, ABSOLUTE_MODE, YawTransform(yawAngle));
+	static float Last_Derr,Sum_Derr;
+	Sum_Derr=Sum_Derr+D_err;
+	Out_Agl=D_err/10;
+	if(Out_Agl>=90)
+    Out_Agl=90;
+	//+5*Sum_Derr+5*(D_err-Last_Derr)); 
+  Last_Derr=D_err;
 }
