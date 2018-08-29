@@ -4,7 +4,7 @@
 #include "stdint.h"
 
 typedef union
-{	
+{
 	uint8_t data8[4];
 	int			data32;
 	float   dataFloat;
@@ -16,20 +16,19 @@ typedef struct
 	usartData_t usartReceiveData;
 	float yawPosReceive ;
 	float shooterVelReceive;
-	 float laserAValueReceive ;
+	float laserAValueReceive ;
 	float laserBValueReceive ; 
 }FortType;
 
 void YawPosCtrl(float ang);
 void ShooterVelCtrl(float rps);
-void ReadShooterVel(void);
-void ReadYawPos(void);
-void ReadLaserAValue(void);
-void ReadLaserBValue(void);
+float ReadShooterVel(void);
+float ReadYawPos(void);
+float ReadLaserAValue(void);
+float ReadLaserBValue(void);
 void GetValueFromFort(uint8_t data);
 
 extern FortType fort;
 
 #endif
-
 

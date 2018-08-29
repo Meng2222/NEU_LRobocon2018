@@ -98,7 +98,7 @@ void GetValueFromFort(uint8_t data)
 		bufferInit();
 	}
 	if(buffer[bufferI - 2] == '\r' && buffer[bufferI - 1] == '\n')
-	{ 
+	{
 		if(bufferI > 2 &&  strncmp(buffer,"PO",2) == 0)//接收航向位置
 		{
 				for(int i = 0; i < 4; i++)
@@ -128,4 +128,19 @@ void GetValueFromFort(uint8_t data)
 }
 
 
-
+float ReadShooterVel(void)
+{
+	return fort.shooterVelReceive;
+}
+float ReadYawPos(void)
+{
+	return fort.yawPosReceive;
+}
+float ReadLaserAValue(void)
+{
+	return fort.laserAValueReceive;
+}
+float ReadLaserBValue(void)
+{
+	return fort.laserBValueReceive;
+}

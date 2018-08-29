@@ -20,6 +20,7 @@
 #include  <ucos_ii.h>
 #include "timer.h"
 #include "pps.h"
+#include "fort.h"
 
 /*告诉定位系统准备开始积分*/
 static uint8_t ppsTalkOk = 0;
@@ -29,7 +30,7 @@ static PosSend_t posture={0};
 /*定义定位系统返回值结构体*/
 static Pos_t ppsReturn={0.f};
 
-
+//四号车定位系统串口接受中断函数，更新频率200Hz
 void USART3_IRQHandler(void)
 {
 		static uint8_t ch;
@@ -91,7 +92,7 @@ void USART3_IRQHandler(void)
 					{
 						SetOpsReady(1);
 						/*传入定位系统返回的值*/
-						SetAngle( posture.value[0]);
+						SetAngle(posture.value[0]);
 						SetSpeedX(posture.value[1]);
 						SetSpeedY(posture.value[2]);
 						SetX(posture.value[3]);
@@ -108,7 +109,6 @@ void USART3_IRQHandler(void)
 					}
 					count=0;
 				break;
-
 				default:
 					count=0;
 				break;		 
@@ -158,7 +158,7 @@ void TalkOpsToGetReady(void)
 void WaitOpsPrepare(void)
 {
 	  /*告诉定位系统准备*/
-	  TalkOpsToGetReady();
+		TalkOpsToGetReady();
 		/*等待定位系统准备完成*/
 		while(!GetOpsReady()){};
 }
@@ -203,7 +203,7 @@ void SetWZ(float setValue)
 	ppsReturn.ppsWZ = setValue;
 }
 
-
+extern float *error;
 /*返回定位系统的角度*/
 float GetAngle(void)
 {
@@ -212,27 +212,27 @@ float GetAngle(void)
 /*返回定位系统的X值*/
 float GetX(void)
 {
-	return ppsReturn.ppsX;
+	return (0-ppsReturn.ppsX+*error);
 }
 /*返回定位系统的Y值*/
 float GetY(void)
 {
-	return ppsReturn.ppsY;
+	return (0-ppsReturn.ppsY);
 }
 /*返回定位系统的X轴的速度*/
 float GetSpeedX(void)
 {
-	return ppsReturn.ppsSpeedX;
+	return (0-ppsReturn.ppsSpeedX);
 }
-/*返回定位系统的角度*/
+/*返回定位系统的Y轴的速度*/
 float GetSpeedY(void)
 {
-	return ppsReturn.ppsSpeedY;
+	return (0-ppsReturn.ppsSpeedY);
 }
 /*返回定位系统的Z轴角速度值*/
 float GetWZ(void)
 {
-	return ppsReturn.ppsWZ;
+	return (ppsReturn.ppsWZ);
 }
 
 
@@ -324,3 +324,85 @@ void CorrectAngle(float value)
 
 
 /************************ (C) COPYRIGHT 2016 ACTION *****END OF FILE****/
+float ABS(float thing)
+{
+	if(thing > 0) return thing;
+	else return (0-thing);
+}
+float Compare(float a1,float b1)
+{
+	if(a1>b1) return 1.0f;
+	else return -1.0f;
+}
+float constrain(float amt, float high, float low) 
+{
+    return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
+
+void UART4_OUT(PID_Value *pid_out)
+{
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetX());
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetY());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)(sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())));
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadShooterVel());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadYawPos());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetYawPosCommand());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadLaserAValue());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadLaserBValue());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(15,10));
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(14,10));
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
+	USART_SendData(UART4,'\r');
+	USART_SendData(UART4,'\n');
+}
+
+command commandRecieveData;
+int buffer2 = 0;
+char buffer1[10] = {0};
+void bufferInit1()
+{
+	for(int i = 0; i < 20; i++)
+	{
+		buffer1[i] = 0;
+	}
+	buffer2 = 0;
+}
+
+void GetValueFromPC(u8 data)
+{
+	buffer1[buffer2] = data;
+	buffer2++;
+	if(buffer2 >= 10)
+	{
+		bufferInit1();
+	}
+	if(buffer1[buffer2 - 2] == '\r' && buffer1[buffer2 - 1] == '\n')
+	{
+		if(buffer2 > 2 &&  strncmp(buffer1,"PO",2) == 0)//接收航向位置
+		{
+			commandRecieveData.yawPosReceive1 = (float)((int)(buffer1[2]-0x30))*0+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[4]-0x30));
+		}
+		else if(buffer2 > 2 &&  strncmp(buffer1,"VE",2) == 0)//接收发射电机转速
+		{
+			commandRecieveData.shooterVelReceive1 = (float)((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[4]-0x30));
+		}
+		bufferInit1();
+	}
+}
+
+float GetYawPosCommand(void)
+{
+	return ((commandRecieveData.yawPosReceive1)/10);
+}
+
+float GetShooterVelCommand(void)
+{
+	return ((commandRecieveData.shooterVelReceive1)/10);
+}

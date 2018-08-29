@@ -17,7 +17,7 @@ INT32S main (void)
 	os_err = OSTaskCreateExt((void (*)(void *)) App_TaskStart,  /* Create the start task.                               */
 						 (void          * ) 0,
 						 (OS_STK        * )&App_TaskStartStk[APP_TASK_START_STK_SIZE - 1],
-						 (INT8U           ) APP_TASK_START_PRIO,
+						 (INT8U           ) APP_TASK_START_PRIO,						 
 						 (INT16U          ) APP_TASK_START_PRIO,
 						 (OS_STK        * )&App_TaskStartStk[0],
 						 (INT32U          ) APP_TASK_START_STK_SIZE,

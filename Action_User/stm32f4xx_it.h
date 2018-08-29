@@ -33,8 +33,9 @@
 extern "C" {
 #endif
 
+#include "stm32f4xx.h"
+#define CarNumber 1
 /* Includes ------------------------------------------------------------------*/
-
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
@@ -47,15 +48,9 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
+u8 isOKSend(void);
+void resetOK(void);
 
-//存储接收定位系统x, y, angle数据结构体
-typedef struct
-{ 
-	float x;
-	float y;
-	float angle;
-	
-}Pos_t;
 #ifdef __cplusplus
 }
 #endif

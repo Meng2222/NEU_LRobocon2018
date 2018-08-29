@@ -38,6 +38,9 @@
 #include "can.h"
 #include "gpio.h"
 #include "elmo.h"
+#include "fort.h"
+#include "pps.h"
+
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
@@ -50,14 +53,14 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	
 	//CAN1口接受任意数据以通过标志位中断
 	uint32_t StdId = 0;
 	uint8_t CAN1Buffer[8] = {0};
 	uint8_t receiveLength = 8;
-	CanRxMsg RxMessage;
-    CAN_RxMsg(CAN1, 0x00, CAN1Buffer, &receiveLength);
+//	CanRxMsg RxMessage;
+    CAN_RxMsg(CAN1, &StdId, CAN1Buffer, &receiveLength);
 	
+
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -84,14 +87,14 @@ void CAN2_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	
 	//CAN2口接受任意数据以通过标志位中断
 	uint32_t StdId = 0;
 	uint8_t CAN2Buffer[8] = {0};
 	uint8_t receiveLength = 8;
-	CanRxMsg RxMessage;
-    CAN_RxMsg(CAN1, 0x00, CAN2Buffer, &receiveLength);
+//	CanRxMsg RxMessage;
+    CAN_RxMsg(CAN2, &StdId, CAN2Buffer, &receiveLength);
 	
+
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -109,6 +112,7 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
+extern OS_EVENT *CPUUsageSem;
 
 void TIM2_IRQHandler(void)
 {
@@ -124,7 +128,6 @@ void TIM2_IRQHandler(void)
 
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
@@ -201,10 +204,12 @@ void TIM4_IRQHandler(void)
 	}
 	OSIntExit();
 }
+
 //试场调参数用蓝牙串口中断函数
 void UART4_IRQHandler(void)
 {
 
+	uint8_t data;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
@@ -212,9 +217,26 @@ void UART4_IRQHandler(void)
 
 	if (USART_GetITStatus(UART4, USART_IT_RXNE) == SET)
 	{
-
+		data = USART_ReceiveData(UART4);
+		GetValueFromPC(data);
 		USART_ClearITPendingBit(UART4, USART_IT_RXNE);
 	}
+	else
+	{
+		USART_ClearITPendingBit(UART5, USART_IT_PE);
+		USART_ClearITPendingBit(UART5, USART_IT_TXE);
+		USART_ClearITPendingBit(UART5, USART_IT_TC);
+		USART_ClearITPendingBit(UART5, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(UART5, USART_IT_IDLE);
+		USART_ClearITPendingBit(UART5, USART_IT_LBD);
+		USART_ClearITPendingBit(UART5, USART_IT_CTS);
+		USART_ClearITPendingBit(UART5, USART_IT_ERR);
+		USART_ClearITPendingBit(UART5, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(UART5, USART_IT_NE);
+		USART_ClearITPendingBit(UART5, USART_IT_FE);
+		USART_ReceiveData(UART5);
+	}
+
 	OSIntExit();
 }
 /***************************试场调参数用蓝牙串口中断*****************************************************/
@@ -341,111 +363,34 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	OSIntExit();
 }
 
-Pos_t pos;
-extern int isOKFlag;
-extern uint8_t opsFlag;
-//四号车定位系统串口接受中断函数，更新频率200Hz
-void USART3_IRQHandler(void) 
-{
-	static uint8_t ch;
-	static union {
-		uint8_t data[24];
-		float ActVal[6];
-	} posture;
-	static uint8_t count = 0;
-	static uint8_t i = 0;
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-	OSIntNesting++;
-	OS_EXIT_CRITICAL();
 
-	if(USART_GetITStatus(USART3, USART_IT_ORE_ER) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
-		USART_ReceiveData(USART3);
-	}
-	
-	if(USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-		ch = USART_ReceiveData(USART3);
-		switch(count)
-		{
-		case 0:
-			if(ch == 0x0d)
-				count++;
-			else if(ch == 'O')
-                count = 5;
-			else
-				count = 0;
-			break;
 
-		case 1:
-			if(ch == 0x0a)
-			{
-				i = 0;
-				count++;
-			}
-			else if(ch == 0x0d)
-			{
-				
-			}
-			else
-				count = 0;
-			break;
 
-		case 2:
-			posture.data[i] = ch;
-			i++;
-			if(i >= 24)
-			{
-				i = 0;
-				count++;
-			}
-			break;
 
-		case 3:
-			if(ch == 0x0a)
-				count++;
-			else
-				count = 0;
-			break;
 
-		case 4:
-			if(ch == 0x0d)
-			{
-				opsFlag = 1;
-				pos.angle = posture.ActVal[0];
-				posture.ActVal[1] = posture.ActVal[1];
-				posture.ActVal[2] = posture.ActVal[2];
-				pos.x=posture.ActVal[3];
-	            pos.y=posture.ActVal[4];
-				posture.ActVal[5] = posture.ActVal[5];	
-			}
-			count = 0;
-			break;
-		case 5:
-            count = 0;
- 		    if(ch == 'K')
-				isOKFlag = 1;
-            break;
 
-		default:
-			count = 0;
-			break;
-		}
-	}
-	else
-	{
-		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-		USART_ReceiveData(USART3);
-	}
-	OSIntExit();	
-}
+//USART3接收中断在pps.c里，作为定位系统模块的一部分
+
+
+//void UART5_IRQHandler(void)
+//{
+
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+//	OSIntNesting++;
+//	OS_EXIT_CRITICAL();
+
+//	if (USART_GetITStatus(UART5, USART_IT_RXNE) == SET)
+//	{
+
+//		USART_ClearITPendingBit(UART5, USART_IT_RXNE);
+//	}
+//	OSIntExit();
+//}
 
 void UART5_IRQHandler(void)
 {
-
+	uint8_t data;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
@@ -453,8 +398,24 @@ void UART5_IRQHandler(void)
 
 	if (USART_GetITStatus(UART5, USART_IT_RXNE) == SET)
 	{
-
+		data = USART_ReceiveData(UART5);
+		GetValueFromFort(data);
 		USART_ClearITPendingBit(UART5, USART_IT_RXNE);
+	}
+	else
+	{
+		USART_ClearITPendingBit(UART5, USART_IT_PE);
+		USART_ClearITPendingBit(UART5, USART_IT_TXE);
+		USART_ClearITPendingBit(UART5, USART_IT_TC);
+		USART_ClearITPendingBit(UART5, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(UART5, USART_IT_IDLE);
+		USART_ClearITPendingBit(UART5, USART_IT_LBD);
+		USART_ClearITPendingBit(UART5, USART_IT_CTS);
+		USART_ClearITPendingBit(UART5, USART_IT_ERR);
+		USART_ClearITPendingBit(UART5, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(UART5, USART_IT_NE);
+		USART_ClearITPendingBit(UART5, USART_IT_FE);
+		USART_ReceiveData(UART5);
 	}
 	OSIntExit();
 }
@@ -482,6 +443,7 @@ void HardFault_Handler(void)
 	/* Go to infinite loop when Hard Fault exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t*)"HardFault\r\n");
 	}
 }
 
@@ -495,6 +457,7 @@ void MemManage_Handler(void)
 	/* Go to infinite loop when Memory Manage exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t*)" MemManage\r\n");
 	}
 }
 
@@ -509,6 +472,7 @@ void BusFault_Handler(void)
 	/* Go to infinite loop when Bus Fault exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t*)" BusFaul\r\n");
 	}
 }
 
@@ -523,6 +487,7 @@ void UsageFault_Handler(void)
 	/* Go to infinite loop when Usage Fault exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t*)" UsageFault\r\n");
 	}
 }
 
@@ -543,3 +508,14 @@ void SVC_Handler(void)
 void DebugMon_Handler(void)
 {
 }
+
+
+
+
+
+
+
+
+
+
+
