@@ -54,7 +54,6 @@ void vel_radious(float vel,float radious)
 }
 
 uint8_t adcFlag=0;
-extern uint8_t squareFlag;
 struct usartValue_{
 	uint32_t cnt;//用于检测是否数据丢失
 	float xValue;//串口输出x坐标
@@ -152,21 +151,11 @@ void WalkTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	
-//	//新底盘
-//	Angle_PidPara(20,0,0);
-//	Distance_PidPara(1,0,0); 
-	
-	//旧底盘
-	//1m/s
-//	Angle_PidPara(25,0,300);
-//	Distance_PidPara(0.09,0,0); 
 	
 	//大于1m/s
 	Angle_PidPara(20,0,300);
 	Distance_PidPara(0.09,0,0); 
 	Speed_PidPara(1.7,0,0); 
-	
-	squareFlag=0;
 	
 	float laserAValue=0;
 	float laserBValue=0;
@@ -176,73 +165,9 @@ void WalkTask(void)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
 		
-		SquareTwo();
-//		//发射摩擦轮转速
-//		ShooterVelCtrl(50);
-//		
 		//走位
 		Walk(&adcFlag);
-//		Shoot(adcFlag); 
-//		WorkTwo(&adcFlag);
-//		RoundTwo(0,2350,2000,0,1000);
-////
-////		
-
-		
-//		cnt++;
-//		if(cnt == 50)
-//		{
-//			// 推球	
-//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-//		}
-//		else if(cnt > 100)
-//		{
-//			// 复位
-//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-//			cnt=0;
-//		}
-		//新底盘闭环转弯
-//		Turn2(-135,250);
-		
-		//新底盘开环圆
-//		Round3();
-		
-		//新底盘闭环圆
-//		Round2(0,2300,1200,0,1500);
-
-		//新底盘闭环直线
-//		straightLine2(1,-1,-400,0);
-
-		//收球电机
-//		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
-//		
-//		//航向电机
-//		YawAngleCtr(40);
-//		
-//		SendUint8();
-//	
-		USART_OUT(UART4, " %d\t", (int)usartValue.flagValue);
-//		USART_OUT(UART4, " %d\t", (int)usartValue.turnAngleValue);
-		USART_OUT(UART4, " %d\t", (int)fort.shooterVelReceive);
-//		USART_OUT(UART4, " %d\t", (int)usartValue.pidValueOut);
-//		USART_OUT(UART4, " %d\t", (int)adcFlag);
-//		USART_OUT(UART4, " %d\t", (int)usartValue.angleValue);
-		USART_OUT(UART4, " %d\t", (int)usartValue.shootangle);
-//		USART_OUT(UART4, " %d\t", (int)fort.yawPosReceive);
-//		USART_OUT(UART4, " %d\t", (int)fort.shooterVelReceive);
-		USART_OUT(UART4, " %d\t", (int)usartValue.xValue);
-		USART_OUT(UART4, " %d\r\n", (int)usartValue.yValue);
-
-//		USART_OUT(UART4, " %d\t", (int)laserAValue);
-//		USART_OUT(UART4, " %d\r\n", (int)laserBValue);
-//		USART_OUT(USART1, " %d\t", (int)usartValue.d);
-//		USART_OUT(USART1, " %d\t", (int)usartValue.turnAngleValue);
-//		USART_OUT(USART1, " %d\t", (int)usartValue.angleValue);
-//		USART_OUT(USART1, " %d\t", (int)usartValue.xValue);
-//		USART_OUT(USART1, " %d\r\n", (int)usartValue.yValue);
-
-
-	
+		Shoot(adcFlag); 
 	}
 }
  
@@ -271,23 +196,12 @@ void Init(void)
 //	
 	//推球电机初始化
 	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,20000);
-////	
-//	//航向电机初始化
-//	PosLoopCfg(CAN1, GUN_YAW_ID, 50000,50000,20000);
 	
-	//新底盘后轮电机初始化
-//	VelLoopCfg(CAN2, 0x05, 10000000, 10000000);
-//	
-//	//新底盘前轮电机初始化
-//	VelLoopCfg(CAN2, 0x06, 10000000, 10000000);
 	MotorOn(CAN2, 0x01);
 	MotorOn(CAN2, 0x02);
 	MotorOn(CAN1, 0x08);
 	MotorOn(CAN1, PUSH_BALL_ID);
 	MotorOn(CAN1, GUN_YAW_ID);
-
-//	MotorOn(CAN2, 0x05);
-//	MotorOn(CAN2, 0x06);
 	
 	delay_ms(5000);
 	PosConfig();
@@ -321,34 +235,3 @@ void PosConfig(void)
 
 
 
-
-//定义联合体
-num_t u_Num;
-
-void SendUint8(void)
-{
-    u_Num.Int32 = 1000;
-
-    //起始位
-    USART_SendData(USART1, 'A');
-    //通过串口1发数
-    USART_SendData(USART1, u_Num.Uint8[0]);
-    USART_SendData(USART1, u_Num.Uint8[1]);
-    USART_SendData(USART1, u_Num.Uint8[2]);
-    USART_SendData(USART1, u_Num.Uint8[3]);
-    //终止位
-    USART_SendData(USART1, 'J');
-}
-
-// 将角度转换为脉冲
-float YawTransform(float yawAngle)
-{
-	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
-}
-
-//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
-void YawAngleCtr(float yawAngle)
-{
-	PosCrl(CAN1, GUN_YAW_ID, ABSOLUTE_MODE, YawTransform(yawAngle));
-}
-// 同样要配置位置环

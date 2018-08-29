@@ -92,29 +92,15 @@
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
 
-
-void Straight(float speed);
-void Round(float rightSpeed,float radius);
-void Turn(float angle,float gospeed);
 void BackTurn(float angle,float gospeed);
-void BTP(float angle);
-void Square(void);
 uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir);
 void straightLine(float A1,float B1,float C1,uint8_t dir);
 void HighSpeedStraightLine(float A1,float B1,float C1,uint8_t dir,float highSpeed);
 void BiggerSquareOne(void);
 void BiggerSquareTwo(void);
-void SquareTwo(void);
-void RoundTwo(float centerX,float centerY,float r,uint8_t o,float speed);
 float Speed_X(void);
 float Speed_Y(void);
 void Walk(uint8_t *getAdcFlag);
-void WorkTwo(uint8_t *flag);
-void Turn2(float setAngle1,float tSpeed);
-void straightLine2(float A1,float B1,float C1,uint8_t dir);
-void Round2(float centerX,float centerY,float r,uint8_t o,float speed);
-void Round3(void);
-void Transformation(void);
 #endif /* ___H */
 
 

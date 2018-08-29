@@ -144,20 +144,6 @@ void GetValueFromFort(uint8_t data)
 	}
 }
 
-
-int  GetLaserAValueReceive(void)
-{
-	return fort.laserAValueReceive;
-}
-
-
-int  GetLaserBValueReceive(void)
-{
-	return fort.laserBValueReceive;
-}
-
-
-extern uint8_t squareFlag;
 extern uint8_t flagOne;
 void Shoot(uint8_t flg)
 {
@@ -175,46 +161,7 @@ void Shoot(uint8_t flg)
 	float shootSpeed=0;
 	float shootAngle=0;
 	float shootTurnAngle=0;
-//+
-//		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX > -1400  && shootY < 1000))
-//		{
-//			shootFlag=0;
-//			
-//		}
-//		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY < 3600))
-//		{
-//			shootFlag=1;
-//		}
-//		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < 1400  && shootY > 3600))
-//		{
-//			shootFlag=2;
-//		}
-//		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX > 1400  && shootY > 1000))
-//		{
-//			shootFlag=3;
-//		}	
-//	}
-//	if(flg == 1)
-//	{
-//		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY > 1000))
-//		{ 
-//			shootFlag=0;
-//			
-//		}
-//		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX > -1400  && shootY > 3600))
-//		{
-//			shootFlag=1;
-//		}
-//		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY < 3600))
-//		{
-//			shootFlag=2;
-//		}
-//		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX < 1400  && shootY < 1000))
-//		{
-//			shootFlag=3;
-//		}	
-//	}
-	
+
 	shootCnt++;
 	if(flg == 0)
 	{
@@ -346,7 +293,6 @@ void Shoot(uint8_t flg)
 			shootTurnAngle=0;
 		}
 	}
-//	YawPosCtrl(shootTurnAngle+3);
 	YawPosCtrl(shootTurnAngle+2);
 	
 	usartValue.shootangle=shootTurnAngle;
@@ -360,21 +306,5 @@ void Shoot(uint8_t flg)
 		
 		ShooterVelCtrl(shootSpeed);
 	}
-//	if(shootDistance < 3400 && shootDistance > 2000)
-//	{
-//		shootSpeed=(SHOOOT_KP*shootDistance)+28;
-//		
-//		ShooterVelCtrl(shootSpeed);
-//		shootCnt++;
-//		if(shootCnt == 130)
-//		{
-//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-//		}
-//		else if(shootCnt > 260)
-//		{
-//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-//			shootCnt=0;
-//		}
-//	}
 
 }
