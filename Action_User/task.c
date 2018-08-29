@@ -208,6 +208,10 @@ pos_t action;
 	int round_cnt=0;
 	int buff_cnt=1;
 	int ra=0;
+	int fire_cnt=0;
+	int fire_ready=1;
+	int firE_cnt=0;
+	int fire_flag=0;
 /*
 ==================================================================================
 */
@@ -477,23 +481,23 @@ void WalkTask(void)
 	
        buff_cnt=buff_cnt+0.2;	 
        if(add_flag==1)//加
-		ra=Ra-400/buff_cnt;
+		ra=Ra-300/buff_cnt;
 	   if(add_flag==-1)
-		ra=Ra+400/buff_cnt;
+		ra=Ra+300/buff_cnt;
        loop(-2400,100,ra,ra/600,sn);//逆时针转为1,顺时针为-1
        record++;
     }
 	if(stable_flag==1)
     {
 		 loop(-2400,0,2000,1.0,1);//闭环转圆
-     	if((action.y>-2700-1.09*action.x)&&(action.y<0.916*action.x+2100))
-	    aim(-200,2200);
+        if((action.y>-2700-1.09*action.x)&&(action.y<0.916*action.x+2100))
+	    aim(-50,2200);
 		if((action.y>-2700-1.09*action.x)&&(action.y>0.916*action.x+2100))
-		aim(-4600,2200);
+		aim(-4600,2400);
 		if((action.y<-2700-1.09*action.x)&&(action.y>0.916*action.x+2100))
-		aim(-4637,-2271);
+		aim(-4937,-2271);
 		if((action.y<0.916*action.x+2100)&&(action.y<-2700-1.09*action.x))
-		aim(-100,-2200);		
+		aim(-100,-2300);		
 		  record++;
 	}
 }//sn!=0//启动
@@ -676,7 +680,7 @@ int accident_check()
 		}
 		if(accident_conner!=0)
 		{
-			for(back_time=0;back_time<50;back_time++)
+			for(back_time=0;back_time<80;back_time++)
 				{
 					VelCrl(CAN2, 01,-10000);//倒车· 
 					VelCrl(CAN2, 02,10000); //倒车
@@ -1157,10 +1161,10 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 	distance_err=DISTANCE-Radium;//偏离圆周的距离
 	Ierr=Ierr+distance_err;
 	I_value=Ierr*KI;
-	if(V_loop<1.5)
-		V_loop=1.5;//速度不小于1米每秒
-	if(V_loop>=2.5)
-		V_loop=2.5;
+	if(V_loop<1.2)
+		V_loop=1.2;//速度不小于1米每秒
+	if(V_loop>=2)
+		V_loop=2;
 	if(SN==1)//逆时针
 	{
 		if(action.y>corey)
@@ -1336,7 +1340,7 @@ aim shoot;
 	Vhe=sqrt(2*9.8*(s)*(s)*0.001/(1.732*s-H));
 	shoot.V=sqrt(pow(V_move,2)+0.25*Vhe*Vhe-V_move*Vhe*cos(deta_angle*PAI/180.0f))*2;
 	fuzhu_angle=asin(V_move/shoot.V*sin(deta_angle/180.0*PAI))*180/PAI;
-	shoot.angle=target_angle;
+	shoot.angle=target_angle+fuzhu_angle;
 	pratical_value=(3.0)*shoot.V/(PAI*YAW_diameter*0.001);
 	//瞄准
 	
@@ -1346,38 +1350,54 @@ aim shoot;
 	if(pratical_angle<0)
 		pratical_angle=pratical_angle+360;
 	if(pratical_angle>170&&pratical_angle<320)
-	pratical_angle=pratical_angle+20000/s;
+	pratical_angle=pratical_angle+30000/s;
 	if(pratical_angle>320)
 	pratical_angle=pratical_angle+48000/s;
 	
 	  YawPosCtrl(pratical_angle);	//旧车炮台系统,航向角
 	 ShooterVelCtrl(pratical_value);   	//开火
 	
-	if(fort.yawPosReceive-pratical_angle<30&&fort.yawPosReceive-pratical_angle>-5)//
-		   push_flag=1;
-	    if(push_flag==1&&reset_flag==0)
+	
+	
+	if((((fort.yawPosReceive-pratical_angle<40000/s)))&&fire_ready)//
+		fire_cnt++;
+	else fire_cnt=0;
+	if(fire_cnt>firE_cnt)
+		fire_flag++;
+	firE_cnt=fire_cnt;
+	
+	if(fire_flag%2==0)
+      push_flag=1;
+	if(fire_flag%2==1)
+	  reset_flag=1;
+	if(push_flag==1)
 	{
-		  USART_OUT( UART4, (uint8_t*)"fire");
-		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+		fire_ready=0;
 		push++;
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
 	}
-		if(push==25)
-		{
-			push_flag=0;
-			reset_flag=1;
-			push=0;
-		}
-		if(reset_flag==1)
-		{
-			reset++;
-			PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-		}
-		if(reset==40)
-		{
-		  reset_flag=0;
-		  reset=0;
-		}
+	if(reset_flag==1)
+	{
+		fire_ready=0;
+		reset++;
+		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+	}
+	if(reset==25)
+	{
+	reset_flag=0;
+	reset=0;
+	}
+	if(push==25)
+	{
+	push_flag=0;
+	push=0;
+	}
+	if(reset_flag==0&&push_flag==0)
+		fire_ready=1;
 
+
+	
+	
 
 
 
