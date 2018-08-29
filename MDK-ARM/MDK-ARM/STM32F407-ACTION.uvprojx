@@ -10,7 +10,7 @@
       <TargetName>ACTION</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060422::V5.06 update 4 (build 422)::ARMCC</pCCUsed>
+      <pCCUsed>5060750::V5.06 update 6 (build 750)::ARMCC</pCCUsed>
       <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
@@ -430,6 +430,21 @@
               <FileName>pps.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Action_User\pps.c</FilePath>
+            </File>
+            <File>
+              <FileName>adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\adc.c</FilePath>
+            </File>
+            <File>
+              <FileName>adc.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Action_User\adc.h</FilePath>
+            </File>
+            <File>
+              <FileName>fort.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\fort.c</FilePath>
             </File>
           </Files>
         </Group>
