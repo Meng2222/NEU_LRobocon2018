@@ -53,6 +53,8 @@ void SetY(void);
 float GetAngle(void);
 float GetPosX(void);
 float GetPosY(void);
+float GetSpeeedX(void);
+float GetSpeeedY(void);
 
 //存储接收定位系统x, y, angle数据结构体
 typedef struct

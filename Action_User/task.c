@@ -128,7 +128,10 @@ void WalkTask(void)
 		//走位
 		Walk(&adcFlag);
 		//发球
-//		Shoot(adcFlag,200); 
+		Shoot(adcFlag,200); 
+		USART_OUT(UART4, " %d\t", (int)GetSpeeedX());
+		USART_OUT(UART4, " %d\r\n", (int)GetSpeeedY());
+		
 	}
 }
  

@@ -351,7 +351,7 @@ void USART6_IRQHandler(void) //更新频率200Hz
 
 
 
-static float angle=0,posX=0,posY=0;
+static float angle=0,posX=0,posY=0,speed_X=0,speed_Y=0;
 
 extern uint8_t isOKFlag;
 
@@ -426,9 +426,9 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 				 { 
 
 					 sendFlag=1;
-					 angle =posture.ActVal[0] ;//角度 
-					 posture.ActVal[1] = posture.ActVal[1]; 
-					 posture.ActVal[2] = posture.ActVal[2]; 
+					 angle = posture.ActVal[0] ;//角度 
+					 speed_X = -posture.ActVal[1]; 
+					 speed_Y = -posture.ActVal[2]; 
 					 posX = -posture.ActVal[3];//x 
 					 posY = -posture.ActVal[4];//y 
 					 posture.ActVal[5] = posture.ActVal[5];
@@ -474,7 +474,15 @@ float GetPosY(void)
 {
 	return posY;
 }
-
+float GetSpeeedX(void)
+{
+	return speed_X;
+	
+}
+float GetSpeeedY(void)
+{
+	return speed_Y;
+}
 
 void UART5_IRQHandler(void)
 {

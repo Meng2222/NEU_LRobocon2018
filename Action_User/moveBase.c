@@ -299,7 +299,6 @@ void BiggerSquareOne(void)
 	float sTX=GetPosX();
 	float sTY=GetPosY();
 	float speed1=0;
-	usartValue.flagValue=flagOne;
 	switch(flagOne)
 	{
 		case 0:
@@ -342,10 +341,10 @@ void BiggerSquareOne(void)
 		case 4:
 			if(sTY < 2700)
 			{
-				if(sTY < 2275)
+				if(sTY < 2250)
 					speed1=SpeedPid(sTY,1100);
 				else
-					speed1=SpeedPid(3450,sTY);
+					speed1=SpeedPid(3300,sTY);
 				HighSpeedStraightLine(1,0,1250,0,speed1);
 				
 			}
@@ -366,9 +365,9 @@ void BiggerSquareOne(void)
 				flagOne++;
 			break;
 		case 6:
-			if(sTY > 1700)
+			if(sTY > 1800)
 			{
-				if(sTY < 2275)
+				if(sTY < 2250)
 					speed1=SpeedPid(sTY,1100);
 				else
 					speed1=SpeedPid(3400,sTY);
@@ -379,12 +378,12 @@ void BiggerSquareOne(void)
 				flagOne++;
 			break;
 		case 7:
-			if(sTX > 600)
+			if(sTX > 800)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1150,sTX); 
+					speed1=SpeedPid(1400,sTX); 
 				else
-					speed1=SpeedPid(sTX,-1150);
+					speed1=SpeedPid(sTX,-1400);
 				HighSpeedStraightLine(0,1,-1000,1,speed1);
 				
 			}
@@ -395,10 +394,10 @@ void BiggerSquareOne(void)
 		case 8:
 			if(sTY < 3200)
 			{
-				if(sTY < 2300)
+				if(sTY < 2150)
 					speed1=SpeedPid(sTY,700);
 				else
-					speed1=SpeedPid(3900,sTY);
+					speed1=SpeedPid(3600,sTY);
 				HighSpeedStraightLine(1,0,1800,0,speed1);
 				
 			}
@@ -409,9 +408,9 @@ void BiggerSquareOne(void)
 			if(sTX < 800)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1500,sTX);
+					speed1=SpeedPid(1400,sTX);
 				else
-					speed1=SpeedPid(sTX,-1500);
+					speed1=SpeedPid(sTX,-1400);
 				HighSpeedStraightLine(0,1,-4200,0,speed1);
 				
 			}
@@ -421,10 +420,10 @@ void BiggerSquareOne(void)
 		case 10:
 			if(sTY > 1400)
 			{
-				if(sTY < 2300)
-					speed1=SpeedPid(sTY,700);
+				if(sTY < 2150)
+					speed1=SpeedPid(sTY,800);
 				else
-					speed1=SpeedPid(3900,sTY);
+					speed1=SpeedPid(3600,sTY);
 				HighSpeedStraightLine(1,0,-1800,1,speed1);
 				
 			}
@@ -435,9 +434,9 @@ void BiggerSquareOne(void)
 			if(sTX > -800)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1500,sTX);
+					speed1=SpeedPid(1400,sTX);
 				else
-					speed1=SpeedPid(sTX,-1500);
+					speed1=SpeedPid(sTX,-1400);
 				HighSpeedStraightLine(0,1,-400,1,speed1);
 				
 			}

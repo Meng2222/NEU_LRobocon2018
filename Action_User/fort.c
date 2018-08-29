@@ -361,7 +361,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 			shootTurnAngle=0;
 		}
 	}
-	YawPosCtrl(shootTurnAngle+6);
+	YawPosCtrl(shootTurnAngle-2);
 	
 	usartValue.shootangle=shootTurnAngle;
 	usartValue.flagValue=shootFlag;
@@ -370,7 +370,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 	
 	if(shootDistance < 4000 && shootDistance > 2300)
 	{
-		shootSpeed=(SHOOOT_KP*shootDistance)+20;
+		shootSpeed=(SHOOOT_KP*shootDistance)+24;
 		
 		ShooterVelCtrl(shootSpeed);
 	}

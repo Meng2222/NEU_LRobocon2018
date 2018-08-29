@@ -6,7 +6,7 @@ float outMax2=90;
 float outMin2=-90;
 
 static float outMax3=2000;
-static float outMin3=1500; 
+static float outMin3=1200; 
 
 static struct PIDPara_{
 	float aKp;
