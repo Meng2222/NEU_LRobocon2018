@@ -43,17 +43,22 @@ PosCrl(CAN1, GUN_YAW_ID, RELATIVE_MODE, YawTransform(yawAngle));
 
 float O_Yaw_angle_veh;
 float O_Yaw_angle_fort;//(扫描)
-
-float C_Yaw_angle;
-float Yaw_angle=0;
-int t_angle;
-int Yaw_lock=0;
+float C_Yaw_angle_fort;
+extern FortType fort;
 float target_x;
 float target_y;
+float O_distance_tptarget;
+float C_distance_tptarget;
+//float C_angle_tptarget;
+float C_v_shootervel;
+
+int t_angle=0;
+
+int target_lock;
 
 void Target_Angle_Calculate(void)//计算目标对车角度（分立）
 {
-	O_Yaw_angle_veh=180*(atan((positionf.Y-target_y)/(positionf.X-target_x)))/pi;
+	O_Yaw_angle_veh=(180*(atan((positionf.Y-target_y)/(positionf.X-target_x)))/pi);
 	if(target_y-positioni.Y>0&&target_x-positioni.X<0){O_Yaw_angle_veh=O_Yaw_angle_veh+180;}
 	if(target_y-positioni.Y<0&&target_x-positioni.X<0){O_Yaw_angle_veh=O_Yaw_angle_veh-180;}
 }
@@ -64,54 +69,94 @@ void Target_Angle(void)//开环计算目标角度(相对车)————四区�
 	//未考虑车顺、逆时针扫荡（目前为顺时针扫荡的炮台锁定实验）
 	if(positionf.Y<positionf.X+2400&&positionf.Y<-positionf.X+2400)
 	{
-	target_x=-2200;target_y=200;
+	target_x=-2200;target_y=200-95;
 	Target_Angle_Calculate();
 	}
 	if(positionf.X>positionf.Y-2400&&positionf.Y>-positionf.X+2400)
 	{
-	target_x=2200;target_y=200;
+	target_x=2200;target_y=200-95;
 	Target_Angle_Calculate();
 	}
 	if(positionf.Y>positionf.X+2400&&positionf.Y>-positionf.X+2400)
 	{
-	target_x=2200;target_y=4200;
+	target_x=2200;target_y=4200-95;
 	Target_Angle_Calculate();
 	}
 	if(positionf.Y>positionf.X+2400&&positionf.Y<-positionf.X+2400)
 	{
-	target_x=-2200;target_y=4200;
+	target_x=-2200;target_y=4200-95;
 	Target_Angle_Calculate();
 	}
 	
 	O_Yaw_angle_veh-=90;
 	if(O_Yaw_angle_veh<-180){O_Yaw_angle_veh+=360;}
-	//目标对车在车坐标系下的角度
+	//车坐标系下,目标对车的角度
+	////////////////////
+	//       |-y      //
+	//      0|0       //
+	// 90    |    -90 //
+	// ——————|—————— >//
+	//       |     -x //
+	//    180|-180    //
+	//       |        //
+	////////////////////
 }
 void Target_Relative_Angle_Lock(void)//计算目标相对炮台角度（炮台旋角与车坐标系进行拟合）（随车移动而改变）
 {
-//拟合车对地角度与炮台对车角度（约170度）
+	//拟合目标对车角度、车对地角度、炮台对车角度（约170度）
+		
+	//positionf.Angle车坐标系下 车对地角度————————|
+	//O_Yaw_angle_veh车坐标系下 目标对车角度——————|——————O_Yaw_angle_fort炮台坐标系下炮台锁定角度角度
+	//炮台坐标系下车与炮台角度换算————————————————|
 
-//	O_Yaw_angle_fort=-(O_Yaw_angle_veh+100);
-//	if(O_Yaw_angle_fort<0){O_Yaw_angle_fort+=360;}
+	O_Yaw_angle_fort=positionf.Angle-O_Yaw_angle_veh;
+	if (O_Yaw_angle_fort>180) {O_Yaw_angle_fort-=360;}
+	if (O_Yaw_angle_fort<-180){O_Yaw_angle_fort+=360;}
+	O_Yaw_angle_fort+=170;
 }
-void Yaw_Scanning (void)//炮台激光对目标范围进行扫描/锁定
+void Yaw_Scanning (void)//炮台激光对目标范围进行扫描/锁定/测距
 {
-	
+	O_distance_tptarget=sqrt((target_x-positionf.X)*(target_x-positionf.X)+(target_y-positionf.Y)*(target_y-positionf.Y));
+	if(target_lock==0)
+	{
+		C_Yaw_angle_fort=O_Yaw_angle_fort;
+		if(t_angle>=-10){t_angle+=2;}
+		if(t_angle>10)  {t_angle=-10;}
+		C_Yaw_angle_fort+=t_angle;
+    }
+	//坐标+adc同时判断目标位置
+	if((fort.laserAValueReceive-fort.laserBValueReceive)>-50&&(fort.laserAValueReceive-fort.laserBValueReceive)<50)
+	{
+		//if(fort.laserAValueReceive-distance_tptarget<350&&fort.laserAValueReceive-distance_tptarget>-50&&fort.laserBValueReceive-distance_tptarget<350&&fort.laserBValueReceive-distance_tptarget>-50)
+		//{
+		C_distance_tptarget=((fort.laserAValueReceive+fort.laserBValueReceive)/2);
+		target_lock=1;
+		//}
+	}
+	else{target_lock=0;}
+	YawPosCtrl(C_Yaw_angle_fort);
 }
-void Yaw_Lock(void)//驱动电机锁定角度拟合后目标（车坐标to炮台坐标）
+//void Yaw_Lock(void)//驱动电机锁定角度拟合后目标（车坐标to炮台坐标）
+//{
+
+//}
+//void Target_Distance(void)//激光计算目标距离
+//{
+//	
+//}
+//void Target_Position_Lock(void)//计算目标实际位置（不必要）
+//{
+
+//}
+//控制发射枪电机转速// 
+void ShooterVelControl(void)
 {
-
+	if(target_lock==1)
+	{
+	C_v_shootervel=(((40*C_distance_tptarget-8000)/3102.5)+35.7);
+    ShooterVelCtrl(C_v_shootervel);
+	}
 }
-void Target_Distance(void)//激光计算目标距离
-{
-	
-}
-void Target_Position_Lock(void)//计算目标实际位置（不必要）
-{
-
-}
-
-
 
 /*航向电机*/		
 //	if(fort.laserAValueReceive-fort.laserBValueReceive>=-50&&fort.laserAValueReceive-fort.laserBValueReceive<=50)
@@ -238,9 +283,12 @@ void Angle_Lock4(float angle_target)//锁定角度方案4【成功】———�
 	if(CangleLock.m_angle_Dvalue<-180){CangleLock.m_angle_Dvalue=CangleLock.m_angle_Dvalue+360;}
 	//运行
 	if(veh==1){Move(v1-Kp_A*CangleLock.m_angle_Dvalue,-v2-Kp_A*CangleLock.m_angle_Dvalue);}
-    if(veh==0){Move_0(v1,Kp_A0*CangleLock.m_angle_Dvalue);}
-	
+    if(veh==0)
+	{
 	USART_OUT(USART1,(uint8_t*)"%d  ",(int)CangleLock.m_angle_Dvalue);
+	Move_0(v1,Kp_A0*CangleLock.m_angle_Dvalue);
+	}
+	
 //	//记录v1、v2
 //	v1_record=v1-Kp_A*CangleLock.m_angle_Dvalue;
 //	v2_record=-v1+Kp_A*CangleLock.m_angle_Dvalue;
@@ -489,11 +537,11 @@ USART_OUT(UART4,(uint8_t*)"%d\r\n",(int)CcircleLock.m_d_angle);
 //                                正方形扫荡（方案）
 //====================================================================================
 int Cho=0;
-int square_edg=1900;
+int square_edg=1950;
 int sweep_mode=0;
 void Square_Sweep_Right1(int square_m , int square_e)//回到原定路线
 {
-	if(square_edg>=1900) {sweep_mode=0;}
+	if(square_edg>=1950) {sweep_mode=0;}
 	if(square_edg<=500)  {sweep_mode=1;}
 
 	if(Cho==0){Line_Lock4(-90,square_m-square_e,0);}
@@ -505,14 +553,14 @@ void Square_Sweep_Right1(int square_m , int square_e)//回到原定路线
 	if(Cho==3){Line_Lock4(180,0,-square_e);}
 	if(Cho==3&&positioni.Y<=square_m -square_e+switch_distance)
 	{
-	if(sweep_mode==0){Cho=0;Line_Lock4(-90,square_m -square_e,0);square_edg=square_edg-280;}
-	if(sweep_mode==1){Cho=0;Line_Lock4(-90,square_m -square_e,0);square_edg=square_edg+280;}
+	if(sweep_mode==0){Cho=0;Line_Lock4(-90,square_m -square_e,0);square_edg=square_edg-290;}
+	if(sweep_mode==1){Cho=0;Line_Lock4(-90,square_m -square_e,0);square_edg=square_edg+290;}
 	}
 }
 
 void Square_Sweep_Left1(int square_m , int square_e)
 {
-	if(square_edg>=2000) {sweep_mode=0;}
+	if(square_edg>=1950) {sweep_mode=0;}
 	if(square_edg<=500)  {sweep_mode=1;}
 		
 	if(Cho==0){Line_Lock4(90,square_m-square_e,0);}
@@ -525,9 +573,9 @@ void Square_Sweep_Left1(int square_m , int square_e)
 	if(Cho==3&&positioni.Y<=square_m -square_e+switch_distance)
 	{
 	if(sweep_mode==0)
-	{Cho=0;Line_Lock4(90,square_m -square_e,0);square_edg=square_edg-300;}
+	{Cho=0;Line_Lock4(90,square_m -square_e,0);square_edg=square_edg-290;}
 	if(sweep_mode==1)
-	{Cho=0;Line_Lock4(90,square_m -square_e,0);square_edg=square_edg+300;}	
+	{Cho=0;Line_Lock4(90,square_m -square_e,0);square_edg=square_edg+290;}	
 	}
 }
 //====================================================================================
@@ -546,6 +594,7 @@ void Square_Sweep_Left1(int square_m , int square_e)
 
 	int t_adc=0;
 	int left=0,right=0;
+    int t_col=0;	     //碰撞计时
 
 void Adc(void)
 {
@@ -578,7 +627,8 @@ void Adc_Check(void)
 {
 	if(V5<1){t_adc--;}
 	if(V4<1){t_adc++;}
-	if(t_adc>=100){right=1;}               //判断左、右
+	if(t_adc>-100&&t_adc<100){t_col=0;}
+	if(t_adc>=100) {right=1;}              //判断左、右
 	if(t_adc<=-100){left=1;}               //判断左、右
     //反馈数据
 	USART_OUT(UART4,(uint8_t*)"%d  ",(int)left);
@@ -593,7 +643,6 @@ int square_break=0;
 float v_calculate;
 float v_real;
 
-int t_col=0;	     //碰撞计时
 int t_back=0;        //倒退计时
 int t_times=0;       //碰撞计次
 int t_times_return=0;//计次倒计
@@ -617,15 +666,15 @@ void square_edg_jump(void)
 		{
 			t_times++;
 			square_break=0;
-			if(sweep_mode==0&&square_edg>=780){square_edg-=280;}
-			if(sweep_mode==1&&square_edg<=1620){square_edg+=280;}
-			if(square_edg<=500){sweep_mode=1;square_edg+=280;}
-			if(square_edg>=1900){sweep_mode=0;square_edg-=280;}
+			if(sweep_mode==0&&square_edg>=790){square_edg-=290;}
+			if(sweep_mode==1&&square_edg<=1660){square_edg+=290;}
+			if(square_edg<=500){sweep_mode=1;square_edg+=290;}
+			if(square_edg>=1900){sweep_mode=0;square_edg-=290;}
 			t_back=0;
 		}
 		if(t_times>=3)
 		{
-         if(t_back<235)////////////////////////////////////////////////////////可能会变（再改）
+         if(t_back<335)////////////////////////////////////////////////////////可能会变（再改）
 		{
 			if(right==1)
 			{
@@ -642,12 +691,12 @@ void square_edg_jump(void)
 			if(Cho==3){Angle_Lock5_plus(0);}
 			}
 		}
-		if(t_back>=235)
+		if(t_back>=335)
 		{
 			square_break=0;
 			t_times=0;
 			t_back=0;
-			//原地自旋
+			//反向
 			if(right==1)
 			{
 				left=1;
@@ -666,20 +715,22 @@ void square_edg_jump(void)
 		}
 	    }
 	}
-	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s  ","E","R","R","O","R");//发送数据
+	if(veh==1){USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s  ","E","R","R","O","R");}//发送数据
 }
 
 void Collision_Processing(void)
 {
+	if(veh==1)
+	{
 	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%d  ","t","i","m","s",":",t_times);//发送数据
 	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","x","1","0",":",(int)x_p10);//发送数据
 	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","y","1","0",":",(int)y_p10);//发送数据
+	}
 	
-	
-//	v_calculate=(v1_record-v2_record)/(2*10865);
+////////	v_calculate=(v1_record-v2_record)/(2*10865);
 	v_real=((sqrt((positionf.X-x_p10)*(positionf.X-x_p10)+(positionf.Y-y_p10)*(positionf.Y-y_p10)))/(10.f));//(m/s)
 	
-	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s%s%d  ","v","_","r","e","a","l",":",(int)(v_real*1000));//发送数据
+	if(veh==1){USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s%s%d  ","v","_","r","e","a","l",":",(int)(v_real*1000));}//发送数据
 	
     if(v_real>0.3){t_col=0;}
 	if(v_real<=0.3){t_col++;}
@@ -688,8 +739,11 @@ void Collision_Processing(void)
 	if(t_col>=150){square_break=1;}
 	if(square_break==1){t_times_return=0;t_col=0;t_back++;square_edg_jump();}
 	
+	if(veh==1)
+	{
 	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%d  ","s","q","b","r",":",square_break);//发送数据
 	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","b","a","c",":",t_back);//发送数据
 	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","t","t","r",":",t_times_return);
+	}
 }
 

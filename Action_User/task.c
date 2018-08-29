@@ -264,9 +264,6 @@ void WalkTask(void)
 				/*棍子收球机*/
 				// 控制电机的转速，脉冲。
 				VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
-				
-				//控制发射枪电机转速// 
-				ShooterVelCtrl(66);
 
 				/*推球电机*/
 				t_push++;
@@ -287,6 +284,12 @@ void WalkTask(void)
 				ReadLaserAValue();
 				ReadLaserBValue();
 				
+				Target_Angle_Calculate();
+				Target_Angle();
+				Target_Relative_Angle_Lock();
+				Yaw_Scanning ();
+				ShooterVelControl();
+				
 			v1=(int)10865*v;
 			v2=(int)10865*v;
 			}
@@ -300,7 +303,10 @@ void WalkTask(void)
 		
 		if(Mode==0)//测试状态
 	    {
+			if(veh==1)
+			{
 			USART_OUT(UART4,(uint8_t*)"%s %s %s %s\r\n","T","E","S","T");//mode0
+			}
 			if(veh==0)
 			{
 			USART_OUT(USART1,(uint8_t*)"%s %s %s %s\r\n","T","E","S","T");//mode0
@@ -329,41 +335,61 @@ void WalkTask(void)
 		{Square_Lock1(CsquareLock.m_square_middle , CsquareLock.m_square_halfedges);}
 		
 		if(Mode==5)
-		{Circle_Lock1();}
+		{Circle_Lock1();}//圆闭环
 		
 		if(Mode==6)//正方形扫荡+ADC激光爆炸
 		{
-			if(left==0&&right==0)
+			if(veh==1)
 			{
-			Adc();//adc收到数据处理、反馈
-            Adc_Check();//检测左右
-			}
-			if(left==1||right==1)
-			{
-//				//判断是否被卡住
-//				Check_Error();
-
-//				//如果被卡住
-
-				Collision_Processing();
-
-//				  //死亡旋转
-//				//如果没有被卡住
-				if(square_break==0)
+				if(left==0&&right==0)
 				{
-					if(right==1)                             //右
+				Adc();//adc收到数据处理、反馈
+				Adc_Check();//检测左右
+				}
+				if(left==1||right==1)
+				{
+	//				//判断是否被卡住
+	//				Check_Error();
+
+	//				//如果被卡住
+
+					Collision_Processing();
+
+	//				  //死亡旋转
+	//				//如果没有被卡住
+					if(square_break==0)
 					{
-					{Square_Sweep_Right1(2200 , square_edg);}
-					USART_OUT(UART4,(uint8_t*)"%d  ",(int)square_edg);	
+						if(right==1)                             //右
+						{
+						{Square_Sweep_Right1(2200 , square_edg);}
+						USART_OUT(UART4,(uint8_t*)"%d  ",(int)square_edg);	
+						}
+						else if(left==1)	                     //左
+						{
+						{Square_Sweep_Left1(2200 , square_edg);}
+						USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","e","d","g",":",(int)square_edg);	
+						}
 					}
-					else if(left==1)	                     //左
-					{
-					{Square_Sweep_Left1(2200 , square_edg);}
-					USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d  ","e","d","g",":",(int)square_edg);	
-					}
-			    }
+				}
 		    }
-			USART_OUT(UART4,(uint8_t*)"\r\n");	//换行（独列）
+			if(veh==0)
+			{
+				    right=1;left=0;
+					Collision_Processing();
+					if(square_break==0)
+					{
+						if(right==1)                             //右
+						{
+						{Square_Sweep_Right1(2200 , square_edg);}
+						USART_OUT(USART1,(uint8_t*)"%d  ",(int)square_edg);	
+						}
+						else if(left==1)	                     //左
+						{
+						{Square_Sweep_Left1(2200 , square_edg);}
+						USART_OUT(USART1,(uint8_t*)"%s%s%s%s%d  ","e","d","g",":",(int)square_edg);	
+						}
+					}
+			}
 		}
 		if(veh==1){USART_OUT(UART4,(uint8_t*)"\r\n");}	//换行（独列）
 		if(veh==0){USART_OUT(USART1,(uint8_t*)"\r\n");}

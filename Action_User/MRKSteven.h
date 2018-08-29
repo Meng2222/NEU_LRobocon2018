@@ -47,16 +47,16 @@ typedef struct CCircle
 //| |_| |_| |_| |_| |_| |_| |_| |_| |_【参数选择】_| |_| |_| |_| |_| |_| |_| |_| |_| |
 //
 //====================================================================================	
-#define veh 1
+#define veh         0
 	
-#define v           0.5      //【Mode1】【Mode2】【Mode3】【Mode4】【Mode5】车身速度（m/s）
-#define Mode        0      // 0调试状态（目前设置为静止）
+#define v           1      //【Mode1】【Mode2】【Mode3】【Mode4】【Mode5】车身速度（m/s）
+#define Mode        3      // 0调试状态（目前设置为静止）
 				           // 1直行（r=0）||圆周运动 前进/后退; 
                            // 2直行（r=0）||多边形运动（此时r为多边形边长）（带自动校正）
                            // 3直线闭环
-                           // 4
-	                       // 5
-	                       // 6
+                           // 4正方形闭环
+	                       // 5圆闭环
+	                       // 6正方形扫荡+ADC激光爆炸
 #define pi          3.14
 
 #define Kp_A        200    //【P】角度闭环————|| 300的Kp_A可能导致角度积分错误
@@ -80,9 +80,9 @@ typedef struct CCircle
 //角度闭环参量
 #define angle            180.f
 //直线闭环参量
-#define line_angle       150.f
+#define line_angle       0.f
 #define line_xintercept  0.f
-#define line_yintercept  1000.f
+#define line_yintercept  0.f
 //square闭环参量
 #define	square_middle    2000
 #define square_halfedges 1000
@@ -156,4 +156,10 @@ void Move_Basic(void);
 void square_edg_jump(void);
 void Collision_Processing(void);
 void Angle_Lock5_plus(float angle_target);
+
+void Target_Angle_Calculate(void);
+void Target_Angle(void);
+void Target_Relative_Angle_Lock(void);
+void Yaw_Scanning (void);
+void ShooterVelControl(void);
 #endif
