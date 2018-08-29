@@ -114,6 +114,7 @@ void Turn(float angle,float gospeed)
 	usartValue.pidValueOut=speed;
 	
 	pulseNum=(speed*4095)/(PI*WHEEL_DIAMETER);
+	
 	VelCrl(CAN2, 0x01,bPulseNum+pulseNum);
 	VelCrl(CAN2, 0x02,pulseNum-bPulseNum);
 
@@ -435,6 +436,99 @@ void straightLine(float A1,float B1,float C1,uint8_t dir)
 	
 }
 
+
+/**
+  * @brief  沿直线走，能回到直线,距离速度pid
+  * @note	给定直线以Ax+By+C=0形式
+  * @param  A：
+  * @param  B:
+  * @param  C:
+  * @param  dir:dir为0，向右；dir为1，向左
+  * @retval None
+  */
+
+void HighSpeedStraightLine(float A1,float B1,float C1,uint8_t dir,float highSpeed)
+{
+	float setAngle=0;
+	float getAngle=GetAngle();
+	float getX=GetPosX();
+	float getY=GetPosY();
+	float distance=((A1*getX)+(B1*getY)+C1)/sqrt(A1*A1+B1*B1);
+	float angleAdd=DistancePid(distance,0);
+	float speedAdd=__fabs(distance)*0.3;
+	
+	
+
+	if((B1 > -0.005) && (B1 < 0.005))
+	{
+		if(!dir)
+		{
+			setAngle=0;
+		}
+		else
+		{
+				if(A1 > 0)
+				{
+					setAngle=-180;
+				}
+				else
+				{
+					setAngle=180;
+				}
+		}
+	}
+	else
+	{
+		if(!dir)
+		{
+			setAngle=(atan(-A1/B1)*180/PI)-90;
+		}
+		else
+		{
+			setAngle=(atan(-A1/B1)*180/PI)+90;
+		}
+	}
+
+	
+	
+	usartValue.d=distance;
+	usartValue.xValue=getX;
+	usartValue.yValue=getY;
+	usartValue.angleValue=getAngle;
+	if(distance > 10)
+	{
+		if(setAngle < 0)
+		{
+			Turn(setAngle-angleAdd,highSpeed+speedAdd);
+			usartValue.turnAngleValue=setAngle-angleAdd;
+		}
+		else
+		{
+			Turn(setAngle+angleAdd,highSpeed+speedAdd);
+			usartValue.turnAngleValue=setAngle+angleAdd;			
+		}
+	}
+	else if(distance < -10)
+	{
+		if(setAngle >= 0)
+		{
+			Turn(setAngle+angleAdd,highSpeed+speedAdd);
+			usartValue.turnAngleValue=setAngle+angleAdd;
+		}
+		else
+		{
+			Turn(setAngle-angleAdd,highSpeed+speedAdd);
+			usartValue.turnAngleValue=setAngle-angleAdd;			
+		}
+	}
+	else
+	{
+		Turn(setAngle,highSpeed);
+		usartValue.turnAngleValue=setAngle;
+	}
+	
+}
+
 /**
   * @brief  顺时针走方形，面积渐渐变大，偏离轨道后能回去
   * @note	
@@ -622,45 +716,153 @@ void BiggerSquareTwo(void)
 	usartValue.flagValue=squareFlag;
 }
 
+
+
 /**
   * @brief  直线闭环方形 2000*2000
   * @note	
   * @param 
   * @retval None
   */
-
+uint8_t flagOne=0;
 void SquareTwo(void)
 {
-	static uint8_t flagOne=0;
 	float sTAngle=GetAngle();
 	float sTX=GetPosX();
 	float sTY=GetPosY();
+	float speed1=0;
 	usartValue.flagValue=flagOne;
 	switch(flagOne)
 	{
 		case 0:
-			if(sTY < 1400)
-				straightLine(1,0,0,0);
+			if(sTY < 2200)
+			{
+				HighSpeedStraightLine(1,0,-700,0,1200);
+			}
 			else
 				flagOne++;
 			break;
 		case 1:
-			if(sTX < 1400)
-				straightLine(0,1,-2000,0);
+			if(sTX > 0)
+			{
+				HighSpeedStraightLine(0,1,-2900,1,1200);
+			}
 			else
 				flagOne++;
 			break;
 		case 2:
-			if(sTY > 600)
-				straightLine(1,0,-2000,1);
+			if(sTY > 2300)
+			{
+				HighSpeedStraightLine(1,0,700,1,1200);
+			}
 			else
 				flagOne++;
 			break;
 		case 3:
-			if(sTX > 600)
-				straightLine(0,1,0,1);
+			if(sTX < 500)
+			{
+				HighSpeedStraightLine(0,1,-1600,0,1200);
+			}
 			else
-				flagOne=0;
+				flagOne++;
+			break;
+			
+		case 4:
+			if(sTY < 2700)
+			{
+				if(sTY < 2275)
+					speed1=SpeedPid(sTY,1000);
+				else
+					speed1=SpeedPid(3550,sTY);
+				HighSpeedStraightLine(1,0,-1250,0,speed1);
+			}
+			else
+				flagOne++;
+			break;
+		case 5:
+			if(sTX > -400)
+			{
+				if(sTX > 0)
+					speed1=SpeedPid(1250,sTX);
+				else
+					speed1=SpeedPid(sTX,-1250);
+				HighSpeedStraightLine(0,1,-3550,1,speed1);
+			}
+			else
+				flagOne++;
+			break;
+		case 6:
+			if(sTY > 1600)
+			{
+				if(sTY < 2275)
+					speed1=SpeedPid(sTY,1000);
+				else
+					speed1=SpeedPid(3500,sTY);
+				HighSpeedStraightLine(1,0,1250,1,speed1);
+			}
+			else
+				flagOne++;
+			break;
+		case 7:
+			if(sTX < 600)
+			{
+				if(sTX > 0)
+					speed1=SpeedPid(1250,sTX);
+				else
+					speed1=SpeedPid(sTX,-1250);
+				HighSpeedStraightLine(0,1,-1000,0,speed1);
+			}
+			else
+				flagOne++;
+			break;
+			
+		case 8:
+			if(sTY < 2800)
+			{
+				if(sTY < 2300)
+					speed1=SpeedPid(sTY,400);
+				else
+					speed1=SpeedPid(4200,sTY);
+				HighSpeedStraightLine(1,0,-1800,0,speed1);
+			}
+			else
+				flagOne++;
+			break;
+		case 9:
+			if(sTX > -500)
+			{
+				if(sTX > 0)
+					speed1=SpeedPid(1800,sTX);
+				else
+					speed1=SpeedPid(sTX,-1700);
+				HighSpeedStraightLine(0,1,-4200,1,speed1);
+			}
+			else
+				flagOne++;
+			break;
+		case 10:
+			if(sTY > 1700)
+			{
+				if(sTY < 2300)
+					speed1=SpeedPid(sTY,400);
+				else
+					speed1=SpeedPid(4200,sTY);
+				HighSpeedStraightLine(1,0,1800,1,speed1);
+			}
+			else
+				flagOne++;
+			break;
+		case 11:
+			if(sTX < 600)
+			{
+				if(sTX > 0)
+					speed1=SpeedPid(1800,sTX);
+				else
+					speed1=SpeedPid(sTX,-1800);
+				HighSpeedStraightLine(0,1,-400,0,speed1);
+			}
+			else
+				flagOne=8;
 			break;
 		default: flagOne=0;break;
 	}
@@ -770,7 +972,7 @@ void Walk(uint8_t *getAdcFlag)
 	speedx=Speed_X();
 	speedy=Speed_Y();
 	
-	if((speedx < 50) && (speedx > -50) && (speedy < 50) && (speedy > -50))
+	if((speedx < 100) && (speedx > -100) && (speedy < 100) && (speedy > -100))
 	{
 		usartValue.cnt++;
 		if(usartValue.cnt >= 100)

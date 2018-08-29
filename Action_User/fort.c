@@ -158,12 +158,16 @@ int  GetLaserBValueReceive(void)
 
 
 extern uint8_t squareFlag;
+extern uint8_t flagOne;
 void Shoot(uint8_t flg)
 {
 	static float bucketPosX[4]={BUCKET_ONE_X,BUCKET_TWO_X,BUCKET_THR_X,BUCKET_FOR_X};
 	static float bucketPosY[4]={BUCKET_ONE_Y,BUCKET_TWO_Y,BUCKET_THR_Y,BUCKET_FOR_Y};	
 	static uint8_t shootFlag=0;
-	static uint8_t shootCnt=0;
+	static uint8_t posCrlFlag=0;
+	static uint8_t shootFlagLast=0;
+	static uint16_t shootCnt=0;
+	
 	float shootX=GetPosX();
 	float shootY=GetPosY();
 	float getAngle=GetAngle();
@@ -171,51 +175,147 @@ void Shoot(uint8_t flg)
 	float shootSpeed=0;
 	float shootAngle=0;
 	float shootTurnAngle=0;
-
 	if(flg == 0)
 	{
-		if((shootX < 0 && shootX > -1400 && shootY < 2300 && shootY > 1000) || (shootX < 1400  && shootY < 1000))
+		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX > -1400  && shootY < 1000))
 		{
 			shootFlag=0;
 			
 		}
-		else if((shootX < 0 && shootX > -1400 && shootY > 2300 && shootY < 3600) || (shootX < -1400  && shootY > 1000))
+		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY < 3600))
 		{
 			shootFlag=1;
 		}
-		else if((shootX > 0 && shootX < 1400 && shootY > 2300 && shootY < 3600) || (shootX > -1400  && shootY > 3600))
+		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < 1400  && shootY > 3600))
 		{
 			shootFlag=2;
 		}
-		else if((shootX > 0 && shootX < 1400 && shootY < 2300 && shootY > 1000) || (shootX > 1400  && shootY > 1000))
+		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX > 1400  && shootY > 1000))
 		{
 			shootFlag=3;
 		}	
 	}
 	if(flg == 1)
 	{
-		if((shootX < 0 && shootX > -1400 && shootY < 2300 && shootY > 1000) || (shootX < -1400  && shootY > 1000))
-		{
+		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY > 1000))
+		{ 
 			shootFlag=0;
 			
 		}
-		else if((shootX < 0 && shootX > -1400 && shootY > 2300 && shootY < 3600) || (shootX < 1400  && shootY > 3600))
+		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX > -1400  && shootY > 3600))
 		{
 			shootFlag=1;
 		}
-		else if((shootX > 0 && shootX < 1400 && shootY > 2300 && shootY < 3600) || (shootX > 1400  && shootY > 1000))
+		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY < 3600))
 		{
 			shootFlag=2;
 		}
-		else if((shootX > 0 && shootX < 1400 && shootY < 2300 && shootY > 1000) || (shootX > -1400  && shootY < 1000))
+		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX < 1400  && shootY < 1000))
 		{
 			shootFlag=3;
 		}	
 	}
 	
+//	shootCnt++;
+//	if(flg == 0)
+//	{
+//		if((shootX < 0 && shootX > -1400 && shootY < 2300 && shootY > 1000) || (shootX > -1400  && shootY < 1000))
+//		{
+//			shootFlag=0;
+//			if(shootCnt == 200)
+//			{
+//				// 推球	
+//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+//				shootCnt=0;
+//			}
+//			
+//		}
+//		else if((shootX < 0 && shootX > -1400 && shootY > 2300 && shootY < 3600) || (shootX < -1400  && shootY < 3600))
+//		{
+//			shootFlag=1;
+//			if(shootCnt == 200)
+//			{
+//				// 推球	
+//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+//				shootCnt=0;
+//			}
+//		}
+//		else if((shootX > 0 && shootX < 1400 && shootY > 2300 && shootY < 3600) || (shootX < 1400  && shootY > 3600))
+//		{
+//			shootFlag=2;
+//			if(shootCnt == 200)
+//			{
+//				// 推球	
+//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+//				shootCnt=0;
+//			}
+//		}
+//		else if((shootX > 0 && shootX < 1400 && shootY < 2300 && shootY > 1000) || (shootX > 1400  && shootY > 1000))
+//		{
+//			shootFlag=3;
+//			if(shootCnt == 200)
+//			{
+//				// 推球	
+//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+//				shootCnt=0;
+//			}
+//		}	
+//	}
+
+//	if(flg == 1)
+//	{
+//		if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY > 1000))
+//		{ 
+//			shootFlag=0;
+//			if(shootCnt == 200)
+//			{
+//				// 推球	
+//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+//				shootCnt=0;
+//			}
+//			
+//		}
+//		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX > -1400  && shootY > 3600))
+//		{
+//			shootFlag=1;
+//			if(shootCnt == 200)
+//			{
+//				// 推球	
+//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+//				shootCnt=0;
+//			}
+//		}
+//		else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY < 3600))
+//		{
+//			shootFlag=2;
+//			if(shootCnt == 200)
+//			{
+//				// 推球	
+//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+//				shootCnt=0;
+//			}
+//		}
+//		else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX < 1400  && shootY < 1000))
+//		{
+//			shootFlag=3;
+//			if(shootCnt == 200)
+//			{
+//				// 推球	
+//				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+//				shootCnt=0;
+//			}
+//		}	
+//	}
+	
+//	if(shootFlagLast != shootFlag)
+//	{
+//		shootCnt=0;
+//		shootFlagLast=shootFlag;
+//	}
+		
 	if(shootFlag == 2 || shootFlag == 3)
 	{
-		shootAngle=263-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
+		shootAngle=260-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
 		shootTurnAngle=getAngle+shootAngle;
 		if(shootTurnAngle > 350 && shootTurnAngle <= 360)
 		{
@@ -232,7 +332,7 @@ void Shoot(uint8_t flg)
 	}
 	else if(shootFlag == 0 || shootFlag == 1)
 	{
-		shootAngle=83-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
+		shootAngle=80-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
 		shootTurnAngle=getAngle+shootAngle;
 		if(shootTurnAngle > 350 && shootTurnAngle <= 360)
 		{
@@ -247,27 +347,30 @@ void Shoot(uint8_t flg)
 			shootTurnAngle=0;
 		}
 	}
-	YawPosCtrl(shootTurnAngle);
+	YawPosCtrl(shootTurnAngle+3);
+//	YawPosCtrl(shootTurnAngle+2);
 	
 	usartValue.shootangle=shootTurnAngle;
 	usartValue.flagValue=shootFlag;
 	
 	shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
-	if(shootDistance < 3000 && shootDistance > 1300)
+	
+	if(shootDistance < 4000 && shootDistance > 2300)
 	{
 		shootSpeed=(SHOOOT_KP*shootDistance)+29;
+//		shootSpeed=(SHOOOT_KP*shootDistance)+23;
+		
 		ShooterVelCtrl(shootSpeed);
 		shootCnt++;
 		if(shootCnt == 40)
 		{
-			// 推球	
 			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
 		}
-		else if(shootCnt > 80)
+		else
 		{
-			// 复位
 			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
 			shootCnt=0;
 		}
 	}
+
 }
