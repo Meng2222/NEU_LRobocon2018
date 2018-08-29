@@ -116,9 +116,9 @@ void WalkTask(void)
 	
 	
 	//PID参数
-	Angle_PidPara(20,0,300);
+	Angle_PidPara(20,0,600);
 	Distance_PidPara(0.09,0,0); 
-	Speed_PidPara(1.7,0,0); 
+	Speed_PidPara(2,0,0); 
 	
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
@@ -128,7 +128,7 @@ void WalkTask(void)
 		//走位
 		Walk(&adcFlag);
 		//发球
-		Shoot(adcFlag,200); 
+//		Shoot(adcFlag,200); 
 	}
 }
  
@@ -154,7 +154,7 @@ void Init(void)
 	VelLoopCfg(CAN1, COLLECT_BALL_ID, 50000, 500000);
 //	
 	//推球电机初始化
-	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,20000);
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,200000);
 	
 	MotorOn(CAN2, LEFT_ID);
 	MotorOn(CAN2, RIGHT_ID);

@@ -305,7 +305,8 @@ void BiggerSquareOne(void)
 		case 0:
 			if(sTY < 2000)
 			{
-				HighSpeedStraightLine(1,0,700,0,1500);
+				HighSpeedStraightLine(1,0,700,0,1300);
+				
 			}
 			else
 				flagOne++;
@@ -313,7 +314,8 @@ void BiggerSquareOne(void)
 		case 1:
 			if(sTX < 0)
 			{
-				HighSpeedStraightLine(0,1,-2900,0,1500);
+				HighSpeedStraightLine(0,1,-2900,0,1300);
+				
 			}
 			else
 				flagOne++;
@@ -321,52 +323,57 @@ void BiggerSquareOne(void)
 		case 2:
 			if(sTY > 2500)
 			{
-				HighSpeedStraightLine(1,0,-700,1,1500);
+				HighSpeedStraightLine(1,0,-700,1,1300);
+				
 			}
 			else
 				flagOne++;
 			break;
 		case 3:
-			if(sTX > 300)
+			if(sTX > -300)
 			{
-				HighSpeedStraightLine(0,1,-1600,1,1500);
+				HighSpeedStraightLine(0,1,-1600,1,1300);
+				
 			}
 			else
 				flagOne++;
 			break;
 			
 		case 4:
-			if(sTY < 2600)
+			if(sTY < 2700)
 			{
 				if(sTY < 2275)
-					speed1=SpeedPid(sTY,1000);
+					speed1=SpeedPid(sTY,1100);
 				else
-					speed1=SpeedPid(3550,sTY);
+					speed1=SpeedPid(3450,sTY);
 				HighSpeedStraightLine(1,0,1250,0,speed1);
+				
 			}
 			else
 				flagOne++;
 			break;
 		case 5:
-			if(sTX < -300)
+			if(sTX < -400)
 			{
-				if(sTX < 0)
-					speed1=SpeedPid(1250,sTX);
+				if(sTX > 0)
+					speed1=SpeedPid(1150,sTX);
 				else
-					speed1=SpeedPid(sTX,-1250);
+					speed1=SpeedPid(sTX,-1150);
 				HighSpeedStraightLine(0,1,-3550,0,speed1);
+				
 			}
 			else
 				flagOne++;
 			break;
 		case 6:
-			if(sTY > 1800)
+			if(sTY > 1700)
 			{
 				if(sTY < 2275)
-					speed1=SpeedPid(sTY,1000);
+					speed1=SpeedPid(sTY,1100);
 				else
-					speed1=SpeedPid(3500,sTY);
+					speed1=SpeedPid(3400,sTY);
 				HighSpeedStraightLine(1,0,-1250,1,speed1);
+				
 			}
 			else
 				flagOne++;
@@ -375,64 +382,70 @@ void BiggerSquareOne(void)
 			if(sTX > 600)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1250,sTX);
+					speed1=SpeedPid(1150,sTX); 
 				else
-					speed1=SpeedPid(sTX,-1250);
+					speed1=SpeedPid(sTX,-1150);
 				HighSpeedStraightLine(0,1,-1000,1,speed1);
+				
 			}
 			else
 				flagOne++;
 			break;
 			
 		case 8:
-			if(sTY < 2800)
+			if(sTY < 3200)
 			{
 				if(sTY < 2300)
-					speed1=SpeedPid(sTY,400);
+					speed1=SpeedPid(sTY,700);
 				else
-					speed1=SpeedPid(4200,sTY);
+					speed1=SpeedPid(3900,sTY);
 				HighSpeedStraightLine(1,0,1800,0,speed1);
+				
 			}
 			else
 				flagOne++;
 			break;
 		case 9:
-			if(sTX < -500)
+			if(sTX < 800)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1800,sTX);
+					speed1=SpeedPid(1500,sTX);
 				else
-					speed1=SpeedPid(sTX,-1700);
+					speed1=SpeedPid(sTX,-1500);
 				HighSpeedStraightLine(0,1,-4200,0,speed1);
+				
 			}
 			else
 				flagOne++;
 			break;
 		case 10:
-			if(sTY > 1700)
+			if(sTY > 1400)
 			{
 				if(sTY < 2300)
-					speed1=SpeedPid(sTY,400);
+					speed1=SpeedPid(sTY,700);
 				else
-					speed1=SpeedPid(4200,sTY);
+					speed1=SpeedPid(3900,sTY);
 				HighSpeedStraightLine(1,0,-1800,1,speed1);
+				
 			}
 			else
 				flagOne++;
 			break;
 		case 11:
-			if(sTX > 600)
+			if(sTX > -800)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1800,sTX);
+					speed1=SpeedPid(1500,sTX);
 				else
-					speed1=SpeedPid(sTX,-1800);
+					speed1=SpeedPid(sTX,-1500);
 				HighSpeedStraightLine(0,1,-400,1,speed1);
+				
 			}
 			else
 				flagOne=8;
 			break;
-		default: flagOne=0;break;
+		default: flagOne=0;
+			break;
 	}
 }
 
@@ -456,7 +469,8 @@ void BiggerSquareTwo(void)
 		case 0:
 			if(sTY < 2000)
 			{
-				HighSpeedStraightLine(1,0,-700,0,1500);
+				HighSpeedStraightLine(1,0,-700,0,1300);
+				
 			}
 			else
 				flagOne++;
@@ -464,15 +478,16 @@ void BiggerSquareTwo(void)
 		case 1:
 			if(sTX > 0)
 			{
-				HighSpeedStraightLine(0,1,-2900,1,1500);
+				HighSpeedStraightLine(0,1,-2900,1,1300);
+				break;
 			}
 			else
 				flagOne++;
-			break;
 		case 2:
 			if(sTY > 2500)
 			{
-				HighSpeedStraightLine(1,0,700,1,1500);
+				HighSpeedStraightLine(1,0,700,1,1300);
+				
 			}
 			else
 				flagOne++;
@@ -480,7 +495,8 @@ void BiggerSquareTwo(void)
 		case 3:
 			if(sTX < 300)
 			{
-				HighSpeedStraightLine(0,1,-1600,0,1500);
+				HighSpeedStraightLine(0,1,-1600,0,1300);
+				
 			}
 			else
 				flagOne++;
@@ -494,6 +510,7 @@ void BiggerSquareTwo(void)
 				else
 					speed1=SpeedPid(3550,sTY);
 				HighSpeedStraightLine(1,0,-1250,0,speed1);
+				
 			}
 			else
 				flagOne++;
@@ -506,6 +523,7 @@ void BiggerSquareTwo(void)
 				else
 					speed1=SpeedPid(sTX,-1250);
 				HighSpeedStraightLine(0,1,-3550,1,speed1);
+				
 			}
 			else
 				flagOne++;
@@ -518,6 +536,7 @@ void BiggerSquareTwo(void)
 				else
 					speed1=SpeedPid(3500,sTY);
 				HighSpeedStraightLine(1,0,1250,1,speed1);
+				
 			}
 			else
 				flagOne++;
@@ -530,6 +549,7 @@ void BiggerSquareTwo(void)
 				else
 					speed1=SpeedPid(sTX,-1250);
 				HighSpeedStraightLine(0,1,-1000,0,speed1);
+				
 			}
 			else
 				flagOne++;
@@ -543,6 +563,7 @@ void BiggerSquareTwo(void)
 				else
 					speed1=SpeedPid(4200,sTY);
 				HighSpeedStraightLine(1,0,-1800,0,speed1);
+				
 			}
 			else
 				flagOne++;
@@ -555,6 +576,7 @@ void BiggerSquareTwo(void)
 				else
 					speed1=SpeedPid(sTX,-1700);
 				HighSpeedStraightLine(0,1,-4200,1,speed1);
+				
 			}
 			else
 				flagOne++;
@@ -567,6 +589,7 @@ void BiggerSquareTwo(void)
 				else
 					speed1=SpeedPid(4200,sTY);
 				HighSpeedStraightLine(1,0,1800,1,speed1);
+				
 			}
 			else
 				flagOne++;
@@ -579,11 +602,13 @@ void BiggerSquareTwo(void)
 				else
 					speed1=SpeedPid(sTX,-1800);
 				HighSpeedStraightLine(0,1,-400,0,speed1);
+				
 			}
 			else
 				flagOne=8;
 			break;
-		default: flagOne=0;break;
+		default: flagOne=0;
+			break;
 	}
 }
 
@@ -636,10 +661,10 @@ void Walk(uint8_t *getAdcFlag)
 	speedx=Speed_X();
 	speedy=Speed_Y();
 	
-	if((speedx < 200) && (speedx > -200) && (speedy < 200) && (speedy > -200))
+	if((speedx < 100) && (speedx > -100) && (speedy < 100) && (speedy > -100))
 	{
 		walkCnt++;
-		if(walkCnt >= 100)
+		if(walkCnt >= 120)
 		{
 			errFlag=!errFlag;
 			X_Now=GetPosX();
@@ -648,7 +673,7 @@ void Walk(uint8_t *getAdcFlag)
 		} 
 		if(errFlag == 1)
 		{
-			if(flag >= 3)
+			if(flag > 3)
 				flag=3;
 			else
 				flag++;

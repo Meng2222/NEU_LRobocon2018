@@ -153,6 +153,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 	static uint8_t shootFlag=0;
 	static uint8_t shootFlagLast=0;
 	static uint16_t shootCnt=0;
+	static uint8_t shootFlag2=0;
 	
 	float shootX=GetPosX();
 	float shootY=GetPosY();
@@ -179,19 +180,26 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 			else if(shootCnt > 450)
 			{
 				shootCnt=0;
-				if(shootFlag < 4)
+				
+				if(shootFlag2 < 4)
 				{
-					shootFlag++;
+					shootFlag=shootFlag2;
+					shootFlag2++;
+				}
+				else if(shootFlag2 < 8)
+				{
+					shootFlag=7-shootFlag2;
+					shootFlag2++;
 				}
 				else
 				{
-					shootFlag=0;
+					shootFlag2=0;
 				}
 			}
 		}
 		else
 		{
-			if((shootX < 0 && shootX > -1400 && shootY < 2300 && shootY > 1000) || (shootX > -1400  && shootY < 1000))
+			if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX > -1400  && shootY < 1000))
 			{
 				shootFlag=0;
 				if(shootCnt == pushTime)
@@ -202,7 +210,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 				}
 				
 			}
-			else if((shootX < 0 && shootX > -1400 && shootY > 2300 && shootY < 3600) || (shootX < -1400  && shootY < 3600))
+			else if(((flagOne <= 7 && flagOne >= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY < 3600))
 			{
 				shootFlag=1;
 				if(shootCnt == pushTime)
@@ -212,7 +220,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 					shootCnt=0;
 				}
 			}
-			else if((shootX > 0 && shootX < 1400 && shootY > 2300 && shootY < 3600) || (shootX < 1400  && shootY > 3600))
+			else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX < 1400  && shootY > 3600))
 			{
 				shootFlag=2;
 				if(shootCnt == pushTime)
@@ -222,7 +230,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 					shootCnt=0;
 				}
 			}
-			else if((shootX > 0 && shootX < 1400 && shootY < 2300 && shootY > 1000) || (shootX > 1400  && shootY > 1000))
+			else if(((flagOne <= 7 && flagOne >= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY > 1000))
 			{
 				shootFlag=3;
 				if(shootCnt == pushTime)
@@ -251,19 +259,25 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 			else if(shootCnt > 450)
 			{
 				shootCnt=0;
-				if(shootFlag < 4)
+				if(shootFlag2 < 4)
 				{
-					shootFlag++;
+					shootFlag=shootFlag2;
+					shootFlag2++;
+				}
+				else if(shootFlag2 < 8)
+				{
+					shootFlag=7-shootFlag2;
+					shootFlag2++;
 				}
 				else
 				{
-					shootFlag=0;
+					shootFlag2=0;
 				}
 			}
 		}
 		else
 		{
-			if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY > 1000))
+			if(((flagOne <= 3) && (shootX <= 1500 && shootX >= -1500 && shootY < 3700 && shootY > 1000) && shootY < shootX) || (shootX < -1500  && shootY > 1000))
 			{ 
 				shootFlag=0;
 				if(shootCnt == pushTime)
@@ -274,7 +288,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 				}
 				
 			}
-			else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX > -1400  && shootY > 3600))
+			else if(((flagOne <= 7 && flagOne >= 3) && (shootX <= 1500 && shootX >= -1500 && shootY < 3700 && shootY > 1000) && shootY < -shootX) || (shootX > -1500  && shootY > 3700))
 			{
 				shootFlag=1;
 				if(shootCnt == pushTime)
@@ -284,7 +298,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 					shootCnt=0;
 				}
 			}
-			else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY < 3600))
+			else if(((flagOne <= 3) && (shootX <= 1500 && shootX >= -1500 && shootY < 3700 && shootY > 1000) && shootY > shootX) || (shootX > 1500  && shootY < 3700))
 			{
 				shootFlag=2;
 				if(shootCnt == pushTime)
@@ -294,7 +308,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 					shootCnt=0;
 				}
 			}
-			else if(((flagOne <= 7 && flagOne >= 8) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX < 1400  && shootY < 1000))
+			else if(((flagOne <= 7 && flagOne >= 3) && (shootX <= 1500 && shootX >= -1500 && shootY < 3700 && shootY > 1000) && shootY > -shootX) || (shootX < 1500  && shootY < 1000))
 			{
 				shootFlag=3;
 				if(shootCnt == pushTime)
@@ -347,7 +361,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 			shootTurnAngle=0;
 		}
 	}
-	YawPosCtrl(shootTurnAngle+3);
+	YawPosCtrl(shootTurnAngle+6);
 	
 	usartValue.shootangle=shootTurnAngle;
 	usartValue.flagValue=shootFlag;
@@ -356,7 +370,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 	
 	if(shootDistance < 4000 && shootDistance > 2300)
 	{
-		shootSpeed=(SHOOOT_KP*shootDistance)+22;
+		shootSpeed=(SHOOOT_KP*shootDistance)+20;
 		
 		ShooterVelCtrl(shootSpeed);
 	}
