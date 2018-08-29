@@ -32,7 +32,7 @@ int exchange(float v)
 float AnglePID(float Angle,float SetAngle)
 {
 	struct PID Ang;
-	Ang.p=300;
+	Ang.p=100;   				//////////300
 	Ang.i=0;
 	Ang.d=0;
 	float err=0,u=0,err1=0,err2=0;
@@ -67,13 +67,13 @@ float DirectionPID( float distance,float setdistance )
 	}
 	else if(distance<500&&distance>-500)
 	{
-		Dir.p=0.1;
-		u=Dir.p*errd-12;
+		Dir.p=0.06;
+		u=Dir.p*errd;
 	}
 	else
 	{
-		Dir.p=0.15;
-		u=Dir.p*errd-37;
+		Dir.p=0.06;
+		u=Dir.p*errd;
 	}
 	return u;
 }
@@ -217,8 +217,8 @@ void Walkback(float v)
 }
 void Walkaway(float v)
 {
-	VelCrl(CAN2,0x01,exchange(v+0.3));
-	VelCrl(CAN2,0x02,-exchange(v-0.1));	
+	VelCrl(CAN2,0x01,exchange(v+0.4));
+	VelCrl(CAN2,0x02,-exchange(v-0.3));	
 }
 void Walkahead(float v)
 {
@@ -244,13 +244,13 @@ int AdcFlag(void)
 int Radius(void)
 {
 		static int LastX=0;
-		static int r=900;   ////初始半径
-		static int Rflag=1;
-		if(r>=2000)
+		static int r=1400;   ////初始半径
+		static int Rflag=0;
+		if(r>=1500)
 		{
 			Rflag=0;
 		}
-		else if (r<=900)
+		else if (r<=200)
 		{
 			Rflag=1;
 		}
@@ -258,11 +258,11 @@ int Radius(void)
 		{
 			if(Rflag==0)
 			{
-				r-=200;
+				r-=400;
 			}
 			else if(Rflag==1)
 			{
-				r+=200;
+				r+=400;
 			}
 		}
 		LastX=(int)GetX();
@@ -279,9 +279,9 @@ void errdeal(void)
 		{
 			errtime=0;
 		}
-			if(errtime>15)   
+			if(errtime>10)   
 			{
-				for(int i=0;i<2000;i++)
+				for(int i=0;i<3000;i++)
 				{
 					Walkback(1.0);
 					i++;
@@ -308,7 +308,7 @@ float  Distopow(float distance)
 	float power;
 //  power=0.02*distance+41;
 //	power=0.0153*distance+34.046;
-		power=(40.0/3102.505)*distance+40.7+5;
+		power=(40.0/3102.505)*distance+35.7;
 	return power;
 }
 
@@ -372,13 +372,13 @@ void ShootBall(void)
 {
 		float power,distance;
 //	distance=ReadLaserAValue();
-		distance=ReadLaserAValue()*2.4973-160;
+		distance=ReadLaserBValue()*2.4973-160;        ////////
 		power=Distopow(distance);
 		if(power>=95)
 		{
 			power=95;
 		}
-		if(ReadLaserAValue()>800)
+		if(ReadLaserBValue()>800)											///////
 		{
 			power=Distopow(800*2.4973-160);
 		}
@@ -397,23 +397,18 @@ void ShootBall(void)
 			PushBall3(50);
 		}
 	#elif mode==3
-		static int angle=0,PosAngle=0,SuoDing=0;
-		angle=(int)GetAngle()-PosAngle;
-		if((int)ReadLaserBValue()<=recolong&&(int)ReadLaserAValue()>recolong)        /////////
+		static int angle=0;
+		YawPosCtrl(210+angle);    /////航向电机
+		if(((int)ReadLaserBValue()<=recolong||(int)ReadLaserAValue()<=recolong))     /////
 		{
-			SuoDing=1;
-		}
-		if(SuoDing==1)
-		{
-			YawPosCtrl(210+angle);    /////航向电机
+			angle++;
 			PushBall3(50);
 		}
-		if((int)ReadLaserBValue()>recolong&&(int)ReadLaserAValue()>recolong)         ///////////
+		else if((int)ReadLaserBValue()>recolong&&(int)ReadLaserAValue()>recolong)  /////
 		{
 			YawPosCtrl(210);    /////航向电机
-			SuoDing=0;
+			angle=0;  
 		}
-		PosAngle=(int)GetAngle();
 	#endif
 		USART_OUT(UART4,(uint8_t*) "%d	%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue(),power);
 }
@@ -424,7 +419,7 @@ int Adcangle(void)
 	{
 		//PushBall2(100);
 	}
-	if((int)ReadLaserBValue()>=recolong&&(int)ReadLaserAValue()>=recolong)
+	if((int)ReadLaserBValue()>=recolong&&(int)ReadLaserAValue()>=recolong)      /////
 	{
 		if(angle>=340)
 		{
@@ -490,3 +485,17 @@ int Adcangle2(void)
 	}	
 	return angle;
 }
+
+//int ShootFlag(void)
+//{
+//	int Shootflag;
+//	if(GetX()>1500&&GetY()<600)
+//	{
+//		Shootflag=1;
+//	}
+//	if(GetX()>1500&&GetY()<4800&&GetY()>3800)
+//	{
+//		Shootflag=1;
+//	}
+//	if(GetX()<)
+//}	

@@ -90,19 +90,14 @@ void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-	int r,adc;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-//		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);			// 控制电机的转速，脉冲。
-			r=Radius();
-			adc=AdcFlag();
-//		YawPosCtrl(220);    /////航向电机
-			Walkline(0,2400,2200,1,0.5);   ////setx  sety=2400  r=2200  方向  速度
+		VelCrl(CAN1,COLLECT_BALL_ID,60*4096);			// 控制电机的转速，脉冲。
+			Walkline(0,2400,Radius(),AdcFlag(),1.0);   ////圆心X坐标  圆心Y坐标 半径  方向  速度
 			ShootBall();
-//		PushBall2(200);
-//		errdeal();
+			errdeal();
 //////////////////发数测试////////////////////////////
 //	USART_OUT(UART4,(uint8_t*) "%d	%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius(),(int)GetAngle());
 //	USART_OUT(UART4,(uint8_t*) "%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue());
