@@ -39,21 +39,25 @@
 
 float Yangle=0;
 
-int car=3;
+int car=44;
 int Car=1;  
 int Angle=0;     //蓝牙发数的整型转换
 int X=0;         //蓝牙发数的整型转换
 int Y=0;
 int max=8000;//最大偏差
+float deta_err=0;
+float last_err;;//pid  I  调节
 //调车参数///////////////
 float Ierr=0;//圆形
 float I_value=0;//圆形
+float D_value=0;
 float KI=-0.12;//圆形
-float rate=0.06;// 正方形  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04,           0.15
+float KD=3;
+float rate=0.09;// 正方形  1m/s距离转化角度的比例为（0.06）,,1.5m/s为0.04,           0.15
    //正方形  提前量：duty=650(1m/s)，   1.5m/s duty为900，
-float KP=0; //Kp给300(1m/s)，，，kp给450（1.5m/s）
+float KP=150; //Kp给300(1m/s)，，，kp给450（1.5m/s）
 float V0=0.5;//车的基础速度(m/s)
-float buff=1500;//(最大偏离区域)
+float buff=1400;//(最大偏离区域)
 //////////////////////////////////////////////////////
 //炮台参数
 float k=2.4;//发射电机射击转速补偿参数（aim函数里面和d-to_value函数都有使用用）
@@ -172,13 +176,15 @@ pos_t action;
     //float cc=0;
 	int cycle_flag=0;//cycle_flag为全局变量，两个函数都能改变(autoPID)
 	int change=1;//change为全局变量，两个函数都能改变(auto_PID)
-	float Ra=800;//(可变半径)
+	float Ra=600;//(可变半径)
 	int add_flag=1;//(半径增减的标志位)
 	int start_flag=0;
 	int sn=0;//如果sn为1则逆时针，sn为-1则顺时针
 	float last_x=0;
 	float last_y=0;
 	float last_angle=0;
+	 int rounD_switch=0;
+	int round_switch=0;
 	//后退的程序变量
 	int back_flag=0;
 	int mark_flag=0;
@@ -188,7 +194,8 @@ pos_t action;
 	float back_time=0;//卡住的时间
 	float back_accident=0;
 	int accident_flag=1;//意外判断标识符
-	int lets_go=1;//(正常走)
+
+int lets_go=1;//(正常走)
 	int choose=0;
 	uint8_t square_flag=0;
 	int record=0;
@@ -199,15 +206,14 @@ pos_t action;
 	int r_switch=0;
 	float fire_v=0;
 	float T_meters=0;//得出目标距离毫米
-	int push_cnt=0;//推球机构时间计数
+	int push_flag=1;//推球机构推球计数开始
     int push=0;//推球机构的运行周期控制
-	int reset=0;
-	int push_flag=0;
 	int reset_flag=0;
+	int reset=0;
+    int round_cnt=0;
 	int stable_flag=0;
-	int round_cnt=0;
-	int buff_cnt=1;
-	int ra=0;
+	int ra=0;//渐变半径
+	int buff_cnt=1;//半径的变化计数
 /*
 ==================================================================================
 */
@@ -263,7 +269,7 @@ void ConfigTask(void)
 	// 配置速度环
 
 	// 配置位置环
-    PosLoopCfg(CAN1, PUSH_BALL_ID, 1000000,1000000,200000);
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,500000);
     VelLoopCfg(CAN1, COLLECT_BALL_ID, 50000, 50000);
 	
 	
@@ -273,7 +279,7 @@ void ConfigTask(void)
 		MotorOn(CAN1, 6);   //炮台机构
 		MotorOn(CAN1, 8);    //炮台机构
 // 控制电机的转速，脉冲。
-    VelCrl(CAN1,COLLECT_BALL_ID,50*4096); 
+    VelCrl(CAN1,COLLECT_BALL_ID,40*4096); 
 	//MotorOn(CAN2, 05);//新车
 	//MotorOn(CAN2, 06);//新车
 	//定位系统串口初始化
@@ -443,59 +449,80 @@ void WalkTask(void)
             last_x=action.x;
             last_y=action.y;
 		    record=0;
-		
 	  }//
 	  
-	   if(action.y>0&&last_y<0&&action.x>-2400)
-{
+	  
+	  if(action.y>0&&last_y<0&&action.x>-2400)
+	{
 		R_switch=1;  
 	    if(R_switch>r_switch)  
-      { 
-		  round_cnt++;
-		
-		  if(round_cnt%2==0)
-			  stable_flag=1;
-		  if(round_cnt%2==1)
-  {	  
+  { 
+     round_cnt++; 
+	  buff_cnt=0;
+	 if(round_cnt%2==1)
+	   stable_flag=1;
+	 if(round_cnt%2==0)
+{	  
 	 stable_flag=0;
-	    buff_cnt=1;
-	  if(Ra<=800)	  
-	 add_flag=1;
-	  if(Ra>=1400)  
-	 add_flag=-1;
-	   if(add_flag==-1)
-	   Ra=Ra-300;
-	   if(add_flag==1)
-	   Ra=Ra+300;
-  }
-     }  
-}	  else R_switch=0;
+	if(add_flag==-1)
+	    Ra=Ra-400;
+	if(add_flag==1)
+	    Ra=Ra+400;
+	if(Ra<=600)	  
+	{
+		add_flag=1;  
+	}
+	if(Ra>=1800)
+    { 
+		 add_flag=-1;
+	 } 
+	  
+	  
+}
+	 }  r_switch=R_switch;
+	  }	  else R_switch=0;
 	 r_switch =R_switch;
+	
+	  
+	  
+	  
+	  
 	  
     if(lets_go==1&&stable_flag==0)
-    { 
-	
-       buff_cnt=buff_cnt+0.2;	 
-       if(add_flag==1)//加
-		ra=Ra-400/buff_cnt;
-	   if(add_flag==-1)
-		ra=Ra+400/buff_cnt;
-       loop(-2400,100,ra,ra/600,sn);//逆时针转为1,顺时针为-1
-       record++;
-    }
-	if(stable_flag==1)
     {
-		 loop(-2400,0,2000,1.0,1);//闭环转圆
-     	if((action.y>-2700-1.09*action.x)&&(action.y<0.916*action.x+2100))
+	  
+//		  if((fabs(action.y)<2050&&fabs(action.y)>1950&&action.x>-2350&&action.x<2450)||(action.x>-4450&&action.x<-4350&&fabs(action.y)<50))//最大的圈会冲一下
+//	  {
+//	   VelCrl(CAN2, 01,18000);
+//	   VelCrl(CAN2, 02,-18000); 
+//	  }else  
+	  buff_cnt=buff_cnt+0.05;
+		if(buff_cnt>=400)
+			buff_cnt=400;
+		if(add_flag==1)//在原来的基础上加上400
+		  ra=Ra-400/buff_cnt;
+		if(add_flag==-1)
+		  ra=Ra+400/buff_cnt;
+		
+	  loop(-2400,0,ra,(ra)/600,sn);//逆时针转为1,顺时针为-1
+	
+    record++;
+	    
+    }//accident_check=0无故障运行
+if(stable_flag==1)	//射球状态  
+	  {
+
+		loop(-2400,0,2000,1,1);//闭环转圆
+		if((action.y>-1.1*action.x-2700)&&(action.y<0.9*action.x+2100))
 	    aim(-200,2200);
-		if((action.y>-2700-1.09*action.x)&&(action.y>0.916*action.x+2100))
-		aim(-4600,2200);
-		if((action.y<-2700-1.09*action.x)&&(action.y>0.916*action.x+2100))
-		aim(-4637,-2271);
-		if((action.y<0.916*action.x+2100)&&(action.y<-2700-1.09*action.x))
-		aim(-100,-2200);		
-		  record++;
-	}
+		if((action.y>-1.1*action.x-2700)&&(action.y>0.9*action.x+2100))
+		aim(-4747,2200);
+		if((action.y<-1.1*action.x-2700)&&(action.y>0.9*action.x+2100))
+		aim(-4697,-2270);
+		if((action.y<-1.1*action.x-2700)&&(action.y<0.9*action.x+2100))
+		aim(-100,-2164);		  
+	   record++;}
+
 }//sn!=0//启动
 
 
@@ -503,25 +530,87 @@ void WalkTask(void)
 	
 if(car==3)
 {
-  loop(-2350,0,2000,1,1);//闭环转圆
-     	if((action.y>-2700-1.09*action.x)&&(action.y<0.916*action.x+2100))
-	    aim(-50,2200);
-		if((action.y>-2700-1.09*action.x)&&(action.y>0.916*action.x+2100))
-		aim(-4600,2400);
-		if((action.y<-2700-1.09*action.x)&&(action.y>0.916*action.x+2100))
-		aim(-4937,-2271);
-		if((action.y<0.916*action.x+2100)&&(action.y<-2700-1.09*action.x))
-		aim(-100,-2300);	
+//    YawPosCtrl(YAW_initangle);	//旧车炮台系统,航向角
+//	
+//	T_meters=laser_to_value(fort.laserAValueReceive);	//得出距离
+//	
+//	fire_v= d_to_yawvalue(T_meters);					//得出出球速度
+//	
+//	ShooterVelCtrl(fire_v);   	//开火
+
+ 
+        loop(-2400,0,2000,1,1);//闭环转圆
+    
+//if(ADC_judge()==1)//有东西挡住推球
 
 		
-			  
+//	if(ADC_judge()!=1)//没东西挡住复位
+
+	
+//	推球测试
+//	if(push_flag==1)
+//	{
+//		push++;
+//		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);	
+//	}
+//	if(push==15)
+//	{
+//		push_flag=0;
+//		reset_flag=1;
+//		push=0;
+//	}
+//	if(reset_flag==1)
+//	{
+//		reset++;
+//		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);	
+//	}
+//	if(reset==15)
+//	{
+//		push_flag=1;
+//		reset_flag=0;
+//		reset=0;
+//	}
+
+	
+//	   if(fabs((action.x+2400)*(action.x-3)+(action.y-2173)*action.y)<100)
+//	   target_lock=4;
+//		if(fabs((action.x+2400)*(action.x+4947)+action.y*(action.y-2257))<100)
+//		target_lock=1;
+//		if(fabs((action.x+2400)*(action.x+4937)+action.y*(action.y+2271))<100)
+//		target_lock=2;
+//		if(fabs((action.x+2400)*(action.x+10)+action.y*action.y+2264)<100)
+//		target_lock=3;
+//	    
+//		if(target_lock==1)
+//				aim(-4947,2257);
+//		if(target_lock==2)
+//				aim(-4937,-2271);
+//		if(target_lock==3)
+//				aim(-10,-2264);	
+//		if(target_lock==4)
+//				aim(3,2173);
+//	  X=(int)action.x;
+//	  Y=(int)action.y;
+
+		if((action.y>-1.1*action.x-2700)&&(action.y<0.9*action.x+2100))
+	    aim(-200,2200);
+		if((action.y>-1.1*action.x-2700)&&(action.y>0.9*action.x+2100))
+		aim(-4747,2200);
+		if((action.y<-1.1*action.x-2700)&&(action.y>0.9*action.x+2100))
+		aim(-4697,-2270);
+		if((action.y<-1.1*action.x-2700)&&(action.y<0.9*action.x+2100))
+		aim(-100,-2164);	
+		
+		USART_OUT( UART4, (uint8_t*)"%d ", X);
+		USART_OUT( UART4, (uint8_t*)"%d ", Y);
+		USART_OUT( UART4, (uint8_t*)"%d ", Angle);
+		USART_OUT( UART4, (uint8_t*)"\r\n");
+}
 
 }
 
-
-
 	}//while
-}//task
+//task
 
 int cnt_flag=0;
 float last_amount=0;
@@ -1073,6 +1162,9 @@ void run_to(float BETA,float Vm)//由当前角度pao向BETA
 	int  RR=0;
 	int  LL=0;
 	B_err=BETA-action.angle;//当前角度与设定值的偏差
+	deta_err=B_err-last_err;
+	last_err=B_err;
+	D_value=deta_err*KD;
 	if(B_err>180)//偏差超过180，优弧转劣弧
 		B_err=B_err-360;
 	if(B_err<-180)
@@ -1082,7 +1174,11 @@ void run_to(float BETA,float Vm)//由当前角度pao向BETA
 		I_value=2500;
 	if(I_value<-2500)
 		I_value=-2500;
-	B_Uk=B_err*300;
+	if(D_value>5000)
+		D_value=5000;
+	if(D_value<-5000)
+		D_value=-5000;
+	B_Uk=B_err*(100+250*(Vm-0.8))+I_value+D_value;
 	
 	
 	if(B_Uk>max)//限幅，不至于反转
@@ -1155,10 +1251,11 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 	float fake_tan=0;
 	DISTANCE=sqrt((action.x-corex)*(action.x-corex)+(action.y-corey)*(action.y-corey));
 	distance_err=DISTANCE-Radium;//偏离圆周的距离
+
 	Ierr=Ierr+distance_err;
 	I_value=Ierr*KI;
-	if(V_loop<1.5)
-		V_loop=1.5;//速度不小于1米每秒
+	if(V_loop<1.2)
+		V_loop=1.2;//速度不小于0.5米每秒
 	if(V_loop>=2.5)
 		V_loop=2.5;
 	if(SN==1)//逆时针
@@ -1292,7 +1389,7 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 
 
 
-float aim(float aim_x,float aim_y)
+float aim(float aim_x,float aim_y)//实验版只要距离就行aimx,aimy
 {
 	float aim_angle=0;//射击的角度
 	
@@ -1337,7 +1434,8 @@ aim shoot;
 	shoot.V=sqrt(pow(V_move,2)+0.25*Vhe*Vhe-V_move*Vhe*cos(deta_angle*PAI/180.0f))*2;
 	fuzhu_angle=asin(V_move/shoot.V*sin(deta_angle/180.0*PAI))*180/PAI;
 	shoot.angle=target_angle;
-	pratical_value=(3.0)*shoot.V/(PAI*YAW_diameter*0.001);
+
+	pratical_value=(2.8+550/s)*shoot.V/(PAI*YAW_diameter*0.001);
 	//瞄准
 	
 	pratical_angle=(YAW_initangle+shoot.angle-action.angle);
@@ -1345,23 +1443,28 @@ aim shoot;
 		pratical_angle=pratical_angle-360;
 	if(pratical_angle<0)
 		pratical_angle=pratical_angle+360;
-	if(pratical_angle>170&&pratical_angle<320)
-	pratical_angle=pratical_angle+20000/s;
-	if(pratical_angle>320)
-	pratical_angle=pratical_angle+48000/s;
+	V_buff=V_move*2;
 	
-	  YawPosCtrl(pratical_angle);	//旧车炮台系统,航向角
+    if(pratical_angle>170&&pratical_angle<320)
+	pratical_angle=pratical_angle+(18000)/s;
+	if(pratical_angle>=320)
+		pratical_angle=pratical_angle+32000/s;
+	
+	
+	YawPosCtrl(pratical_angle);	//旧车炮台系统,航向角
 	 ShooterVelCtrl(pratical_value);   	//开火
-	
-	if(fort.yawPosReceive-pratical_angle<30&&fort.yawPosReceive-pratical_angle>-5)//
-		   push_flag=1;
-	    if(push_flag==1&&reset_flag==0)
+	if(((fort.yawPosReceive-pratical_angle<40000/s))&&(fort.yawPosReceive-pratical_angle>0))//
+{
+		push_flag=1;
+		
+	}
+	if(push_flag==1&&reset_flag==0)
 	{
 		  USART_OUT( UART4, (uint8_t*)"fire");
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
 		push++;
 	}
-		if(push==25)
+		if(push==40 )
 		{
 			push_flag=0;
 			reset_flag=1;
@@ -1381,26 +1484,30 @@ aim shoot;
 
 
 
-//	  int shootv=(int)shoot.V;
-//	 
-//	  int target_Angle=(int)target_angle;
-//	  int shoot_v=(int)shoot.V;
-//	  int fuzhu_Angle=(int)fuzhu_angle;
-//	  int S=(int)s;
-//	  int v_move=(int)V_move;
-//	int x_speed=(int)action.x_speed;
-//	int y_speed=(int)action.y_speed;
-//	int Angle=(int)action.angle;
-//	  USART_OUT( UART4, (uint8_t*)"fire");
-//	  USART_OUT( UART4, (uint8_t*)"%d ", target_Angle);
-//   	  USART_OUT( UART4, (uint8_t*)"%d ", S);
-//      USART_OUT( UART4, (uint8_t*)"%d ", shootv);
-//	  
-//	  USART_OUT( UART4, (uint8_t*)"%d ", x_speed);
-//	  USART_OUT( UART4, (uint8_t*)"%d ", y_speed);
-//	  USART_OUT( UART4, (uint8_t*)"%d ", v_move);
-//	  USART_OUT( UART4, (uint8_t*)"\r\n");
-//	  USART_OUT( UART4, (uint8_t*)"%d ", fuzhu_Angle);
+	
+	  int shootv=(int)shoot.V;
+	 int pratical_Angle=pratical_angle;
+	  int target_Angle=(int)target_angle;
+	  int shoot_v=(int)shoot.V;
+	  int fuzhu_Angle=(int)fuzhu_angle;
+	  int S=(int)s;
+	  int v_move=(int)V_move;
+	int x_speed=(int)action.x_speed;
+	int y_speed=(int)action.y_speed;
+	int Angle=(int)action.angle;
+	
+		int yaw_angel=(int)fort.yawPosReceive;
+	   USART_OUT( UART4, (uint8_t*)"%d ", yaw_angel);
+	  USART_OUT( UART4, (uint8_t*)"%d ", target_Angle);
+   	  USART_OUT( UART4, (uint8_t*)"%d ", S);
+      USART_OUT( UART4, (uint8_t*)"%d ", shootv);
+	  USART_OUT( UART4, (uint8_t*)"%d ", pratical_Angle );
+	  USART_OUT( UART4, (uint8_t*)"%d ", x_speed);
+	  USART_OUT( UART4, (uint8_t*)"%d ", y_speed);
+	  USART_OUT( UART4, (uint8_t*)"%d ", v_move);  
+	  USART_OUT( UART4, (uint8_t*)"%d ", fuzhu_Angle);
+	  USART_OUT( UART4, (uint8_t*)"\r\n");
+	
 	  
 }
 
@@ -1489,7 +1596,7 @@ void USART3_IRQHandler(void)
 												action.y_speed=-posture.value[1];
 						//						=posture.value[5];
 //						action.x=action.x+OPS_TO_BACK_WHEEL*(cos(action.angle*PAI/180.0)-1);
-//                        action.y=action.y-OPS_TO_BACK_WHEEL *sin(action.angle*PAI/180.0);						
+//                      action.y=action.y-OPS_TO_BACK_WHEEL *sin(action.angle*PAI/180.0);						
 					} 
 					count=0;
 				break;
