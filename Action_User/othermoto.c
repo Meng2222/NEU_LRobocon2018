@@ -24,17 +24,20 @@
 // 宏定义航向角减速比
 #define YAW_REDUCTION_RATIO (4.0f)
 //发射器到定位器的距离
-#define RPOS4LAUNCHER (95)
-//推球次数
-#define TIMES_4_PUSH_BALL (50)
-//复位次数
-#define TIMES_4_RESET (50)
+#define RPOS4LAUNCHER (95.0f)
 //激光器最大误差
-#define MAX_ERR_4_LASER (15)
+#define MAX_ERR_4_LASER (15.0f)
+//发射器角度与射球角度的最大偏差
+#define MAX_ERR_4_ANGLE (1.0f)
+#define MAX_ERR_4_RANGE (10.0f)
 
 static point storageInAirPointlb, storageInAirPointlf, storageInAirPointrb, storageInAirPointrf;
 
+static linewithdir cross1 = {1, 1, -2400, forward};
+static linewithdir cross2 = {-1, 1, -2400, forward};
+
 extern point nowPoint;
+extern enum {clockwise, anticlockwise} Dir2TurnAround;
 
 float GetLauncherSpeed(void)
 {
@@ -61,7 +64,7 @@ void OtherMotoInit(void)
     UART5_Init(921600);
     CAN_Config(CAN1, 500, GPIOB, GPIO_Pin_8, GPIO_Pin_9);
     VelLoopCfg(CAN1, COLLECT_BALL_ID, 50000, 50000);
-    PosLoopCfg(CAN1, PUSH_BALL_ID, 500000,500000,500000);
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 500000,500000,250000);
     ElmoInit(CAN1);
     MotorOn(CAN1, COLLECT_BALL_ID);
     MotorOn(CAN1, PUSH_BALL_ID);
@@ -82,30 +85,16 @@ void CollecterWheelSpeedCtrl(float speed)
 
 void SendBall2Launcher(void)
 {
-    static uint16_t counter = 0;
-    counter++;
-    //设置推球状态维持次数
-    if(counter <= TIMES_4_PUSH_BALL)
+    static _Bool sender = 0;
+    if(sender)
     {
-        // 推球
-        if(counter == 1)
-        {
-            PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-        }
+        sender = 0;
+        PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
     }
-    //设置复位状态维持次数
-    else if(counter > TIMES_4_PUSH_BALL && counter <= (TIMES_4_PUSH_BALL + TIMES_4_RESET))
+    else
     {
-        // 复位
-        if(counter == TIMES_4_PUSH_BALL + 1)
-        {
-            PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-        }
-    }
-    //计数器清零
-    if(counter >= (TIMES_4_PUSH_BALL + TIMES_4_RESET))
-    {
-        counter = 0;
+        sender = 1;
+        PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
     }
 }
 
@@ -138,29 +127,59 @@ point GetPosToLauncher(const point storageInAirPoint)
 //返回最近的炮台的炮台
 point SuitableStoragePos(void)
 {
-    point nowpoint;
-    nowpoint = GetNowPoint();
+    reldir dir2corss1,dir2corss2;
+    nowPoint = GetNowPoint();
     StoragePosSet();
-    if(nowpoint.x >= 0)
+    dir2corss1 = RelDir2Line(cross1, nowPoint);
+    dir2corss2 = RelDir2Line(cross2, nowPoint);
+    if(Dir2TurnAround == clockwise)
     {
-        if(nowpoint.y <= 2400)
+        if(dir2corss1 == left)
         {
-            return storageInAirPointrb;
+            if(dir2corss2 == right)
+            {
+                return storageInAirPointlb;
+            }
+            else
+            {
+                return storageInAirPointlf;
+            }
         }
         else
         {
-            return storageInAirPointrf;
+            if(dir2corss2 == left)
+            {
+                return storageInAirPointrf;
+            }
+            else
+            {
+                return storageInAirPointrb;
+            }
         }
     }
     else
     {
-        if(nowpoint.y <= 2400)
+        if(dir2corss1 == left)
         {
-            return storageInAirPointlb;
+            if(dir2corss2 == right)
+            {
+                return storageInAirPointrb;
+            }
+            else
+            {
+                return storageInAirPointlb;
+            }
         }
         else
         {
-            return storageInAirPointlf;
+            if(dir2corss2 == left)
+            {
+                return storageInAirPointlf;
+            }
+            else
+            {
+                return storageInAirPointrf;
+            }
         }
     }
 }
@@ -173,8 +192,7 @@ point SuitableStoragePos(void)
 float SuitableSpeed2Launch(float distance)
 {
     float speed = 0;
-    speed = 0.0153f * distance + 34.046f;
-//    speed = 0.0129f * distance + 35.070f;
+    speed = 0.0129f * distance + 35.070f;
     return speed;
 }
 
@@ -202,6 +220,32 @@ _Bool Delta4Laser(void)
     if(DlaserA > (225 - MAX_ERR_4_LASER) && DlaserB > (225 - MAX_ERR_4_LASER) && DlaserA < (225 + MAX_ERR_4_LASER) && DlaserB < (225 + MAX_ERR_4_LASER))
     {
         return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+_Bool LaunchFlag(point storagePos)
+{
+    if(GetLauncherAngle() >= storagePos.a - MAX_ERR_4_ANGLE && GetLauncherAngle() <= storagePos.a + MAX_ERR_4_ANGLE)
+    {
+        if(GetLauncherSpeed() >= SuitableSpeed2Launch(storagePos.r - MAX_ERR_4_RANGE) && GetLauncherSpeed() <= SuitableSpeed2Launch(storagePos.r + MAX_ERR_4_RANGE))
+        {
+            if((int32_t) GetSpeedX() >= -2 && (int32_t) GetSpeedX() <=  2 && (int32_t) GetSpeedY() >= 2 && (int32_t) GetSpeedY() <= 2)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        else
+        {
+            return 0;
+        }
     }
     else
     {

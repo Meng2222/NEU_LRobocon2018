@@ -1,4 +1,6 @@
 #include "Pos.h"
+#include "includes.h"
+#include "usart.h"
 
 #define LENGTH_OF_LOCATOR_2_BACK 65
 

@@ -20,6 +20,7 @@
 #include "string.h"
 #include "timer.h"
 #include "Pos.h"
+#include "usart.h"
 
 
 //对应的收发串口

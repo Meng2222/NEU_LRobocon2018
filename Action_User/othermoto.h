@@ -79,5 +79,12 @@ float SuitableSpeed2Launch(float distance);
  * @return  [在范围内返回1,反之返回0]
  */
 _Bool Delta4Laser(void);
+
+/**
+ * [LaunchFlag 确认是否达到发射条件]
+ * @param  storagePos [要瞄准的位置]
+ * @return            [准备好返回1,否则返回0]
+ */
+_Bool LaunchFlag(point storagePos);
     
 #endif

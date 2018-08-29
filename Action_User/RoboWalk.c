@@ -1,8 +1,8 @@
 #include "RoboWalk.h"
 
 //LengthProcessing中使用,当x小于X1时,返回0,大于X2时返回1,之间是返回一个之间的量
-#define X1 50
-#define X2 80
+#define X1 100
+#define X2 200
 //两侧激光遮挡的临界值,大于它时认为没有阻挡,小于它时认为激光被挡住了
 #define THRESHOLD4ADC 150
 
@@ -10,29 +10,11 @@ extern point nowPoint;
 
 enum {clockwise, anticlockwise} Dir2TurnAround = clockwise; 
 
-linewithdir line1 = {0, -1, 0, forward};
-linewithdir line2 = {-1, 0, 0, forward};
-linewithdir line3 = {0, -1, 0, backward};
-linewithdir line4 = {-1, 0, 0, backward};
-
-const linewithdir corss1 = {1, 1, -2400, forward};
-const linewithdir corss2 = {-1, 1, -2400, forward};
-
 #define CCX 0
 #define CCY 2400
 point circlecentre;//{2400, 0}
 reldir circledir = right;
 float circleradius = 800;
-float length = 0;
-enum {circle, fang} roadsignal = circle;
-
-linewithdir Target =
-{
-    .a = 0,
-    .b = 1,
-    .c = 0,
-    .linedir = forward,
-};
 
 /**
  * [RoboWalkInit 机器人行走初始化]
@@ -43,14 +25,14 @@ void RoboWalkInit(void)
     extern PIDCtrlStructure PidB;	
     MoveBaseInit();
     Adc_Init();
-    PidA.KP = 40; //20
-    PidA.KI= 0.02; //0.01
-    PidA.KD = 40; //20
+    PidA.KP = 20; //20
+    PidA.KI= 0.01; //0.01
+    PidA.KD = 1; //1
     PidA.GetVar = GetA;
     PidA.ExOut = 0;
-    PidB.KP = 20; //10
-    PidB.KI= 0.002; //0.0001
-    PidB.KD = 40; //20
+    PidB.KP = 10; //10
+    PidB.KI= 0.0001; //0.0001
+    PidB.KD = 0.5; //0.5
     PidB.GetVar = GetA;
     PidB.ExOut = 0;
     circlecentre = setPointXY(CCX, CCY);
@@ -108,29 +90,6 @@ float GetP4circle(void)
 }
 
 /**
- * [GetP4fang 把采到的距离按照pid的输入量返回]
- * @more  当车在带方向直线右边时,返回正值,左边反之
- * @return  [符合pid输入量关系的量]
- */
-float GetP4fang(void)
-{
-    float tempNum = 0;
-    tempNum =Point2Line(Target, nowPoint);
-    if(RelDir2Line(Target, nowPoint) == right)
-    {
-        return LengthProcessing(__fabs(tempNum));
-    }
-    else if(RelDir2Line(Target, nowPoint) == left)
-    {
-        return -1 * LengthProcessing(__fabs(tempNum));
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-/**
  * [SetDir2TurnAround 根据Dir2TurnAround的值改变相关线路方向]
  */
 void SetDir2TurnAround(void)
@@ -138,31 +97,11 @@ void SetDir2TurnAround(void)
     if(Dir2TurnAround == clockwise)
     {
         circledir = right;
-        line1.linedir = forward;
-        line2.linedir = forward;
-        line3.linedir = backward;
-        line4.linedir = backward;
     }
     else if(Dir2TurnAround == anticlockwise)
     {
         circledir = left;
-        line1.linedir = backward;
-        line2.linedir = backward;
-        line3.linedir = forward;
-        line4.linedir = forward;
     }
-}
-
-/**
- * [setFangArea 设置方形区域的相关线路]
- * @param length [方形区域的半边长]
- */
-void setFangArea(float length)
-{
-    line1.c = 2400 - length;
-    line2.c = -length;
-    line3.c = 2400 + length;
-    line4.c = length;
 }
 
 /**
@@ -174,6 +113,7 @@ void ChangeRoad(void)
     extern PIDCtrlStructure PidB;	
     static _Bool yChangeFlag = 0;
     static float lasta = 0;
+    _Bool changFlag = 0;
     linewithdir line2centre;
     point relPoint;
     SetDir2TurnAround();
@@ -187,87 +127,35 @@ void ChangeRoad(void)
         if(lasta * relPoint.a < 0)
         {
             yChangeFlag = 0;
-            if(roadsignal == circle)
+            if(changFlag == 0)
             {
-                circleradius += 500;
+                circleradius += 300;
             }
-            if(roadsignal == fang)
+            if(changFlag == 1)
             {
-                length -= 500;
-                setFangArea(length);
+                circleradius -= 300;
             }
         }
     }
     lasta = relPoint.a;
-    if(circleradius > 1800 && roadsignal == circle)
+    if(circleradius > 1700 && changFlag == 0)
     {
-//        roadsignal = fang;
         while(1)
         {
             WheelSpeed(0, 1);
-            WheelSpeed(0, 2);
+            WheelSpeed(0, 2); 
         }
-        length = 1800;
-        circleradius = 0;
-        setFangArea(length);
+        changFlag = 1;
+        circleradius = 1700;
     }
-    if(length < 800 && roadsignal == fang)
+    if(circleradius < 800 && changFlag == 1)
     {
-        roadsignal = circle;
+        changFlag = 0;
         circleradius = 800;
-        length = 0;
     }
-    if(roadsignal == fang)
-    {
-        reldir dir2corss1,dir2corss2;
-        dir2corss1 = RelDir2Line(corss1, nowPoint);
-        dir2corss2 = RelDir2Line(corss2, nowPoint);
-        if(dir2corss1 == left)
-        {
-            if(dir2corss2 == right)
-            {
-                Target = line1;
-            }
-            else if(dir2corss2 == left)
-            {
-                Target = line2;
-            }
-            else
-            {
-                Target = Target;
-            }
-        }
-        else if(dir2corss1 == right)
-        {
-            if(dir2corss2 == left)
-            {
-                Target = line3;
-            }
-            else if(dir2corss2 == right)
-            {
-                Target = line4;
-            }
-            else
-            {
-                Target = Target;
-            }
-        }
-        else
-        {
-            Target = Target;
-        }
-    }
-    if(roadsignal == circle)
-    {
-        line2centre = DirlinePoint2Point(circlecentre, nowPoint);
-        PidA.ExOut = VDirForLine(line2centre, circledir);
-        PidB.ExOut = PidA.ExOut - 90 * GetP4circle();
-    }
-    else if(roadsignal == fang)
-    {
-        PidA.ExOut = LineDir(Target);
-        PidB.ExOut = PidA.ExOut + 90 * GetP4fang();
-    }
+    line2centre = DirlinePoint2Point(circlecentre, nowPoint);
+    PidA.ExOut = VDirForLine(line2centre, circledir);
+    PidB.ExOut = PidA.ExOut - 90 * GetP4circle();
     if(PidB.ExOut >= 180)
     {
         PidB.ExOut -= 360;

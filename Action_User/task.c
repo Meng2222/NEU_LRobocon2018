@@ -44,6 +44,8 @@ static _Bool errCheckOn_Flag;
     
 point storagePos;
 
+extern enum {clockwise, anticlockwise} Dir2TurnAround;
+
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -94,11 +96,10 @@ void ConfigTask(void)
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
     TIM_Init(TIM2, 999, 83, 0x00, 0x00);
     UART4_Init(921600);
-    RoboWalkInit();
-    OtherMotoInit();
     ppsInit();
+    OtherMotoInit();
+    RoboWalkInit();
     OSTaskSuspend(ERR_CHECK_PRIO);
-    OSTaskSuspend(LAUNCH_THE_BALL_PRIO);
     errCheckOn_Flag = 0;
 	OSTaskSuspend(OS_PRIO_SELF);
 }
@@ -120,8 +121,22 @@ void WalkTask(void)
         nowPoint = GetNowPoint();
         centre = setPointXY(0, 2400);
         relPoint = RelPos(centre, nowPoint);
-        delta = (int32_t)(relPoint.a + 30 + (45 * ((circleradius - 800) / 800))) % 90;
-//        delta = (int32_t)(relPoint.a + 45) % 90;
+//        if(Dir2TurnAround == clockwise)
+//        {
+//            delta = (int32_t)(relPoint.a + (45 * ((circleradius - 800) / 1200))) % 90;
+//        }
+//        else
+//        {
+//            delta = (int32_t)(relPoint.a - (45 * ((circleradius - 800) / 1200))) % 90;
+//        }
+        if(Dir2TurnAround == clockwise)
+        {
+            delta = (int32_t)(relPoint.a + 50) % 90;
+        }
+        else
+        {
+            delta = (int32_t)(relPoint.a + 40) % 90;
+        }
         if(delta == 0)
         {
             OSSemPost(LaunchSem);
@@ -142,7 +157,6 @@ void WalkTask(void)
         {
             errCheckOn_Flag = 1;
             OSTaskResume(ERR_CHECK_PRIO);
-            OSTaskResume(LAUNCH_THE_BALL_PRIO);
         }
 //        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.x);
 //        USART_OUT(UART4, (uint8_t *)"%d   ", (int32_t) nowPoint.y);
@@ -169,7 +183,7 @@ void ErrCheck(void)
         {
             counter++;
         }
-        if(counter > 10)
+        if(counter >= 10)
         {
             counter = 0;
             OSSemPost(ErrSem);
@@ -210,26 +224,39 @@ void LaunchTheBall(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-    uint8_t counter = 100;
-    uint8_t counter2 = 100;
+    uint8_t counter = 50;
     OSSemSet(LaunchSem, 0, &os_err);
 	while (1)
 	{
         OSSemPend(LaunchSem, 0, &os_err);
         OSTaskSuspend(Walk_TASK_PRIO);
         OSTaskSuspend(ERR_CHECK_PRIO);
-        counter2 = 100;
-        OSSemSet(PeriodSem3, 0, &os_err);
-        while(counter2--)
+        WheelSpeed(0, 1);
+        WheelSpeed(0, 2);
+        nowPoint = GetNowPoint();
+        storagePos = GetPosToLauncher(SuitableStoragePos()); 
+//        counter = 75 ;
+//        OSSemSet(PeriodSem3, 0, &os_err);
+//        while(counter--)
+//        {
+//            OSSemPend(PeriodSem3, 0, &os_err);
+//            nowPoint = GetNowPoint();
+//            WheelSpeed(0, 1);
+//            WheelSpeed(0, 2); 
+//            storagePos = GetPosToLauncher(SuitableStoragePos());
+//            LauncherYAWCtrl(storagePos.a);
+//            LauncherWheelSpeedCtrl(SuitableSpeed2Launch(storagePos.r));
+//        }
+        while(!(LaunchFlag(storagePos)))
         {
-            OSSemPend(PeriodSem3, 0, &os_err);
-            nowPoint = GetNowPoint();
             WheelSpeed(0, 1);
             WheelSpeed(0, 2); 
+            nowPoint = GetNowPoint();
             storagePos = GetPosToLauncher(SuitableStoragePos());
             LauncherYAWCtrl(storagePos.a);
+            LauncherWheelSpeedCtrl(SuitableSpeed2Launch(storagePos.r));
         }
-        counter = 100;
+        counter = 50;
         OSSemSet(PeriodSem3, 0, &os_err);
         while(counter--)
         {
@@ -237,8 +264,16 @@ void LaunchTheBall(void)
             nowPoint = GetNowPoint();
             WheelSpeed(0, 1);
             WheelSpeed(0, 2);
-            storagePos = GetPosToLauncher(SuitableStoragePos());
-            LauncherYAWCtrl(storagePos.a);
+            if(counter == 50)
+            {
+                SendBall2Launcher();
+            }
+            if(counter == 25)
+            {
+                SendBall2Launcher();
+            }
+////            storagePos = GetPosToLauncher(SuitableStoragePos());
+////            LauncherYAWCtrl(storagePos.a);
 //            LauncherYAWCtrl(0);
 //            if(!(Delta4Laser()))
 //            {
@@ -259,9 +294,9 @@ void LaunchTheBall(void)
 //                    storagePos.a -= 0.1f;
 //                }
 //            }
-            LauncherWheelSpeedCtrl(SuitableSpeed2Launch(storagePos.r));
-            SendBall2Launcher();
-        }    
+////            LauncherWheelSpeedCtrl(SuitableSpeed2Launch(storagePos.r));
+////            SendBall2Launcher();
+        }
         OSSemSet(PeriodSem, 0, &os_err);
         OSSemSet(PeriodSem2, 0, &os_err);
         OSTaskResume(Walk_TASK_PRIO);

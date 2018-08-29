@@ -29,6 +29,9 @@ typedef union
 	float  value[GET_PPS_VALUE_NUM];
 }PosSend_t;
 
+extern Pos PosGet_t;
+extern speed speed_t;
+
 /*告诉定位系统准备开始积分*/
 static uint8_t ppsTalkOk = 0;
 /*定位系统准备完毕开始发数*/
@@ -45,8 +48,6 @@ void ppsInit(void)
 
 void USART3_IRQHandler(void)
 {
-    extern Pos PosGet_t;
-    extern speed speed_t;
     static uint8_t ch;
     static uint8_t count=0;
     static uint8_t i=0;
