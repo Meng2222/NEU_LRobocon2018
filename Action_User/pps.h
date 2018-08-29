@@ -62,9 +62,6 @@ float GetSpeedX(void);
 float GetSpeedY(void);
 /*返回定位系统的Z轴角速度值*/
 float GetWZ(void);
-float ABS(float thing);
-float Compare(float a1,float b1);
-float constrain(float amt, float high, float low);
 void UART4_OUT(PID_Value *pid_out);
 void GetValueFromPC(u8 data);
 float GetYawPosCommand(void);

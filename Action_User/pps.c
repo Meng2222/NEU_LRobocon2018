@@ -322,46 +322,7 @@ void CorrectAngle(float value)
 	}
 }
 
-
 /************************ (C) COPYRIGHT 2016 ACTION *****END OF FILE****/
-float ABS(float thing)
-{
-	if(thing > 0) return thing;
-	else return (0-thing);
-}
-float Compare(float a1,float b1)
-{
-	if(a1>b1) return 1.0f;
-	else return -1.0f;
-}
-float constrain(float amt, float high, float low) 
-{
-    return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
-}
-
-void UART4_OUT(PID_Value *pid_out)
-{
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetX());
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetY());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)(sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())));
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadShooterVel());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadYawPos());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetYawPosCommand());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadLaserAValue());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadLaserBValue());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(15,10));
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(14,10));
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
-	USART_SendData(UART4,'\r');
-	USART_SendData(UART4,'\n');
-}
 
 command commandRecieveData;
 int buffer2 = 0;
@@ -387,7 +348,7 @@ void GetValueFromPC(u8 data)
 	{
 		if(buffer2 > 2 &&  strncmp(buffer1,"PO",2) == 0)//接收航向位置
 		{
-			commandRecieveData.yawPosReceive1 = (float)((int)(buffer1[2]-0x30))*0+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[4]-0x30));
+			commandRecieveData.yawPosReceive1 = (float)((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[4]-0x30));
 		}
 		else if(buffer2 > 2 &&  strncmp(buffer1,"VE",2) == 0)//接收发射电机转速
 		{

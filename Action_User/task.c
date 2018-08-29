@@ -4,7 +4,7 @@
 #define COLLECT_BALL_ID (8)
 /*
 ===============================================================
-						信号量定义
+					                        	信号量定义
 ===============================================================
 */
 OS_EXT INT8U OSCPUUsage;
@@ -15,7 +15,7 @@ static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 /*
 ===============================================================
-                           APP_Task
+                                                APP_Task
 ===============================================================
 */
 void App_Task(void)
@@ -42,7 +42,7 @@ void App_Task(void)
 
 /*
 ===============================================================
-                          初始化任务
+                                             初始化任务
 ===============================================================
 */
 PID_Value *PID_x = NULL;
@@ -108,7 +108,7 @@ void ConfigTask(void)
 
 /*
 ===============================================================
-                   WalkTask      初始化后执行
+                                  WalkTask      初始化后执行
 ===============================================================
 */
 void WalkTask(void)
@@ -122,10 +122,9 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
-		PID_Control_Competition(PID_x,Gun_x,direction);
-		Shoot_Control_Competition(PID_x,Gun_x,direction);
 		UART4_OUT(PID_x);
 	}
 }
+//     上位机控制炮台航向，射速函数
 //		YawPosCtrl(GetYawPosCommand());
 //		ShooterVelCtrl(GetShooterVelCommand());

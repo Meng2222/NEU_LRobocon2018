@@ -1,5 +1,23 @@
 #include "PID.h"
+Line_Value Line_N[26];
+Arc_Value Arc_N[12];
+Coordinate_Value Coordinate_N[12];
+float ABS(float thing)                                                       //浮点绝对值函数
+{
+	if(thing > 0) return thing;
+	else return (0-thing);
+}
 
+float Compare(float a1,float b1)                                             //比较函数，输出1或-1
+{
+	if(a1>b1) return 1.0f;
+	else return -1.0f;
+}
+
+float constrain(float amt, float high, float low)                            //浮点数限幅函数
+{
+    return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
 
 void Init_PID(PID_Value *pid_init)                                           //PID参数初始化（重开pid时需要用到）
 {
@@ -7,10 +25,7 @@ void Init_PID(PID_Value *pid_init)                                           //P
 	pid_init->ITerm = pid_init->vel;
 }
 
-Line_Value Line_N[26];
-Arc_Value Arc_N[12];
-Coordinate_Value Coordinate_N[12];
-void PID_Line_Init(void)
+void PID_Line_Init(void)                                                     //直线参数初始化
 {
 	Line_N[0].x1 = 700;
 	Line_N[0].y1 = 1500;
@@ -302,7 +317,7 @@ void PID_Line_Init(void)
 	Line_N[25].line_Error = 0;
 }
 
-void PID_Arc_Init(void)
+void PID_Arc_Init(void)                                                      //圆形参数初始化
 {
 	Arc_N[0].x0 = 0;
 	Arc_N[0].y0 = 2200;
@@ -329,13 +344,13 @@ void PID_Arc_Init(void)
 	Arc_N[2].arc_kp = 20;
 }
 
-void PID_Coordinate_Init(void)
+void PID_Coordinate_Init(void)                                               //坐标参数初始化
 {
 	Coordinate_N[0].x3 = 1000;
 	Coordinate_N[0].y3 = 1000;
 	Coordinate_N[0].coordinate_Angle = 0;
 }
-void PID_Init(PID_Value *PID_a)
+void PID_Init(PID_Value *PID_a)                                              //PID总参数初始化
 {
 	PID_a->Angle_Last = 0;
 	PID_a->Angle_Set = 0;
@@ -364,7 +379,7 @@ void PID_Init(PID_Value *PID_a)
 	PID_a->c = &Coordinate_N[PID_a->Coordinate_Num];
 }
 
-void PID_Control(PID_Value *p)
+void PID_Control(PID_Value *p)                                               //PID控制函数，输出电机转速
 {
 	if(p->Mode == manual)
 	{
@@ -442,13 +457,12 @@ void PID_Control(PID_Value *p)
 	p->DTerm = p->Angle_Last - p->Angle;
 	p->vel = p->kp * p->Error + p->ki * p->ITerm + p->kd * p->DTerm;
 	p->vel = constrain(p->vel,2000.0f,-2000.0f);
-//	p->V = (p->V_Set);
 	p->V = (p->V_Set)/(((ABS(GetWZ()))/150.f)+1);
 	p->Angle_Last = p->Angle;
 	p->Mode_Last = p->Mode;
 }
 
-void PID_Pre(PID_Value *p)
+void PID_Pre(PID_Value *p)                                                   //去掉PID部分的PID函数^_^
 {
 	p->l = &Line_N[p->Line_Num];
 	p->r = &Arc_N[p->Arc_Num];
@@ -494,200 +508,32 @@ void PID_Pre(PID_Value *p)
 	}
 }
 
-void GO(PID_Value *p_GO)
+void GO(PID_Value *p_GO)                                                     //电机控制函数
 {
 	VelCrl(CAN2,1,(int)(((4096/378)*(p_GO->vel))+(4096/378)*(p_GO->V)));
 	VelCrl(CAN2,2,(int)(((4096/378)*(p_GO->vel))-(4096/378)*(p_GO->V)));
 }
 
-void PID_Control_Competition(PID_Value *pid,Gun_Value *gun,u8 dir)
+void UART4_OUT(PID_Value *pid_out)                                           //串口输出函数
 {
-	if(dir == Right)
-	{
-		pid->Mode = Line;
-		PID_Control(pid);
-		GO(pid);
-		pid->Line_Num += 1;
-		if((pid->Line_Num) == 13) pid->Line_Num = 9;
-		PID_Pre(pid);
-		if(((pid->Line_Num)<8) && (pid->l->line_Error>800))
-		{
-			pid->Line_Num -= 1;
-		}
-		else if(((pid->Line_Num)>7) && (pid->l->line_Error>1300))
-		{
-			pid->Line_Num -= 1;		
-		}
-	}
-	else if(dir == Left)
-	{
-		pid->Mode = Line;
-		PID_Control(pid);
-		GO(pid);
-		pid->Line_Num += 1;
-		if((pid->Line_Num) == 26) pid->Line_Num = 22;
-		PID_Pre(pid);
-		if(((pid->Line_Num)<8) && (pid->l->line_Error<-800))
-		{
-			pid->Line_Num -= 1;			
-		}
-		else if(((pid->Line_Num)>7) && (pid->l->line_Error<-1300))
-		{
-			pid->Line_Num -= 1;			
-		}
-	}
-}
-
-
-void PID_Control_Competition_2(PID_Value *pid,u8 dir)
-{
-	static u8 flag = 1;
-	if(dir == Right)
-	{
-		pid->Mode = Arc;
-		pid->r->arc_Direction = ACW;
-		PID_Control(pid);
-		GO(pid);
-		if(((pid->X > -500) && (pid->X < -400)) && ((pid->Angle < -90) && (flag == 1))) 
-		{
-			pid->Arc_Num++;
-			flag = 0;
-		}
-		if(pid->Y > 2200) flag = 1;
-	}
-	else if(dir == Left)
-	{
-		pid->Mode = Arc;
-		pid->r->arc_Direction = CW;
-		PID_Control(pid);
-		GO(pid);
-		if(((pid->X > 400) && (pid->X < 500)) && ((pid->Angle > 90) && (flag == 1)))
-		{
-			pid->Arc_Num++;
-			flag = 0;
-		}
-		if(pid->Y > 2200) flag = 1;
-	}
-}
-
-void Shoot_Control_Competition(PID_Value *pid,Gun_Value *gun,u8 dir)
-{
-	if((dir == Right) && (pid->Line_Num > 7))
-	{
-		if(pid->Line_Num == 8)
-		{
-			gun->x_pre = pid->X;
-			gun->y_pre = pid->Y + 260;
-			gun->target_x = 2200;
-			gun->target_y = 4440 - 800;
-			gun->distance = sqrt((gun->target_x - gun->x_pre)*(gun->target_x - gun->x_pre) + (gun->target_y - gun->y_pre)*(gun->target_y - gun->y_pre));
-			gun->shootervel_set = ((40.f * gun->distance) / 3102.505f) + 35.7f;
-			gun->yawpos_set = (264 - ((float)atan(ABS((gun->target_y - gun->y_pre) / (gun->target_x - gun->x_pre))))*(180/Pi));
-			YawPosCtrl(gun->yawpos_set);
-			ShooterVelCtrl(gun->shootervel_set);
-			if(((pid->Y < 2200) && (pid->Y > 2000))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-//			if(((pid->Y > 2600) && (pid->Y < 2800))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-		}
-		if(pid->Line_Num == 9)
-		{
-			gun->x_pre = pid->X - 260;
-			gun->y_pre = pid->Y;
-			gun->target_x = -2200 + 800;
-			gun->target_y = 4440;
-			gun->distance = sqrt((gun->target_x - gun->x_pre)*(gun->target_x - gun->x_pre) + (gun->target_y - gun->y_pre)*(gun->target_y - gun->y_pre));
-			gun->shootervel_set = ((40.f * gun->distance) / 3102.505f) + 35.7f-5.f;
-			gun->yawpos_set = (174 + ((float)atan(ABS((gun->target_y - gun->y_pre) / (gun->target_x - gun->x_pre))))*(180/Pi));
-			YawPosCtrl(gun->yawpos_set);
-			ShooterVelCtrl(gun->shootervel_set);
-			if(((pid->X > 0) && (pid->X < 200))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-//			if(((pid->X > -600) && (pid->X < -400))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE9_MODE,PUSH_RESET_POSITION);
-		}
-		if(pid->Line_Num == 10)
-		{
-			gun->x_pre = pid->X;
-			gun->y_pre = pid->Y - 260;
-			gun->target_x = -2200;
-			gun->target_y = 40 + 200;
-			gun->distance = sqrt((gun->target_x - gun->x_pre)*(gun->target_x - gun->x_pre) + (gun->target_y - gun->y_pre)*(gun->target_y - gun->y_pre));
-			gun->shootervel_set = ((40.f * gun->distance) / 3102.505f) + 35.7f-7.5f;
-			gun->yawpos_set = (264 - ((float)atan(ABS((gun->target_y - gun->y_pre) / (gun->target_x - gun->x_pre))))*(180/Pi));
-			YawPosCtrl(gun->yawpos_set);
-			ShooterVelCtrl(gun->shootervel_set);
-			if(((pid->Y > 2200) && (pid->Y < 2400))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-//			if(((pid->Y > 1600) && (pid->Y < 1800))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-		}
-		if(pid->Line_Num == 11)
-		{
-			gun->x_pre = pid->X + 260;
-			gun->y_pre = pid->Y;
-			gun->target_x = 2200 - 200;
-			gun->target_y = 40;
-			gun->distance = sqrt((gun->target_x - gun->x_pre)*(gun->target_x - gun->x_pre) + (gun->target_y - gun->y_pre)*(gun->target_y - gun->y_pre));
-			gun->shootervel_set = ((40.f * gun->distance) / 3102.505f) + 35.7f-7.5f;
-			gun->yawpos_set = (174 + ((float)atan(ABS((gun->target_y - gun->y_pre) / (gun->target_x - gun->x_pre))))*(180/Pi));
-			YawPosCtrl(gun->yawpos_set);
-			ShooterVelCtrl(gun->shootervel_set);
-			if(((pid->X < 0) && (pid->X > -200))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-//			if(((pid->X < 600) && (pid->X > 400))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-		}
-	}
-	if((dir == Left) && (pid->Line_Num > 20))
-	{
-		if(pid->Line_Num == 21)
-		{
-			gun->x_pre = pid->X;
-			gun->y_pre = pid->Y + 260;
-			gun->target_x = -2200;
-			gun->target_y = 4440 - 800;
-			gun->distance = sqrt((gun->target_x - gun->x_pre)*(gun->target_x - gun->x_pre) + (gun->target_y - gun->y_pre)*(gun->target_y - gun->y_pre));
-			gun->shootervel_set = ((40.f * gun->distance) / 3102.505f) + 35.7f;
-			gun->yawpos_set = (84 + ((float)atan(ABS((gun->target_y - gun->y_pre) / (gun->target_x - gun->x_pre))))*(180/Pi));
-			YawPosCtrl(gun->yawpos_set);
-			ShooterVelCtrl(gun->shootervel_set);
-			if(((pid->Y < 2200) && (pid->Y > 2000))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-//			if(((pid->Y > 2600) && (pid->Y < 2800))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-		}
-		if(pid->Line_Num == 22)
-		{
-			gun->x_pre = pid->X - 260;
-			gun->y_pre = pid->Y;
-			gun->target_x = 2200 - 800;
-			gun->target_y = 4440;
-			gun->distance = sqrt((gun->target_x - gun->x_pre)*(gun->target_x - gun->x_pre) + (gun->target_y - gun->y_pre)*(gun->target_y - gun->y_pre));
-			gun->shootervel_set = ((40.f * gun->distance) / 3102.505f) + 35.7f-4.f;
-			gun->yawpos_set = (174 - ((float)atan(ABS((gun->target_y - gun->y_pre) / (gun->target_x - gun->x_pre))))*(180/Pi));
-			YawPosCtrl(gun->yawpos_set);
-			ShooterVelCtrl(gun->shootervel_set);
-			if(((pid->X > -200) && (pid->X < 0))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-//			if(((pid->X > 800) && (pid->X < 600))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-		}
-		if(pid->Line_Num == 23)
-		{
-			gun->x_pre = pid->X;
-			gun->y_pre = pid->Y - 260;
-			gun->target_x = 2200;
-			gun->target_y = 40 + 200;
-			gun->distance = sqrt((gun->target_x - gun->x_pre)*(gun->target_x - gun->x_pre) + (gun->target_y - gun->y_pre)*(gun->target_y - gun->y_pre));
-			gun->shootervel_set = ((40.f * gun->distance) / 3102.505f) + 35.7f-5.f;
-			gun->yawpos_set = (84 + ((float)atan(ABS((gun->target_y - gun->y_pre) / (gun->target_x - gun->x_pre))))*(180/Pi));
-			YawPosCtrl(gun->yawpos_set);
-			ShooterVelCtrl(gun->shootervel_set);
-			if(((pid->Y > 2200) && (pid->Y < 2400))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-//			if(((pid->Y > 1600) && (pid->Y < 1800))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-		}
-		if(pid->Line_Num == 24)
-		{
-			gun->x_pre = pid->X - 260;
-			gun->y_pre = pid->Y;
-			gun->target_x = -2200 + 200;
-			gun->target_y = 40;
-			gun->distance = sqrt((gun->target_x - gun->x_pre)*(gun->target_x - gun->x_pre) + (gun->target_y - gun->y_pre)*(gun->target_y - gun->y_pre));
-			gun->shootervel_set = ((40.f * gun->distance) / 3102.505f) + 35.7f-5.f;
-			gun->yawpos_set = (174 - ((float)atan(ABS((gun->target_y - gun->y_pre) / (gun->target_x - gun->x_pre))))*(180/Pi));
-			YawPosCtrl(gun->yawpos_set);
-			ShooterVelCtrl(gun->shootervel_set);
-			if(((pid->X > 0) && (pid->X < 200))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-//			if(((pid->X > -600) && (pid->X < -400))) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-		}
-	}
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetX());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetY());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)(sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())));
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadShooterVel());
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadYawPos());
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetYawPosCommand());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadLaserAValue());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadLaserBValue());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(15,10));
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(14,10));
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
+	USART_SendData(UART4,'\r');
+	USART_SendData(UART4,'\n');
 }

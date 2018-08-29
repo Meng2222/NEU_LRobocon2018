@@ -48,10 +48,6 @@ float GetSpeedX(void);
 /*返回定位系统的角度*/
 float GetSpeedY(void);
 /*返回定位系统的Z轴角速度值*/
-float GetWZ(void);
-float ABS(float thing);
-float Compare(float a1,float b1);
-float constrain(float amt, float high, float low);
 
 #define manual 1
 #define Arc 2
@@ -61,6 +57,7 @@ float constrain(float amt, float high, float low);
 #define CW 6
 #define Left 7
 #define Right 8
+
 typedef struct line
 {
 	float x1;
@@ -148,5 +145,10 @@ void PID_Pre(PID_Value *p);
 void PID_Control_Competition_2(PID_Value *pid,u8 dir);
 void shoot(Gun_Value *gun);
 void Shoot_Control_Competition(PID_Value *pid,Gun_Value *gun,u8 dir);
-
+float GetWZ(void);
+float ABS(float thing);
+float Compare(float a1,float b1);
+float constrain(float amt, float high, float low);
+float GetShooterVelCommand(void);
+float GetYawPosCommand(void);
 #endif

@@ -14,6 +14,8 @@
   * @param  None
   * @retval None
   */
+  
+  
 int fputc(int ch, FILE *f)
 {
 	 USART_SendData(UART5, (uint8_t) ch);
