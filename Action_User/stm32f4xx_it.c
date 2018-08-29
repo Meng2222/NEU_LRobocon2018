@@ -38,7 +38,6 @@
 #include "can.h"
 #include "gpio.h"
 #include "elmo.h"
-#include "fort.h"
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
@@ -107,8 +106,7 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
-int Cnt;
-extern int time;
+int Cnt,time;
 void TIM2_IRQHandler(void)
 {
 #define PERIOD_COUNTER 10
@@ -123,12 +121,12 @@ void TIM2_IRQHandler(void)
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 		Cnt++;
-		time++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
 		{
 			OSSemPost(PeriodSem);
+			time++;
 			periodCounter = PERIOD_COUNTER;
 		}
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
@@ -137,7 +135,7 @@ void TIM2_IRQHandler(void)
 }
 int Get_Time_Flag(void)
 {
-	if(Cnt>=1000)
+	if(Cnt>=2000)
 	{
 		Cnt=0;
 		return 1;
@@ -350,7 +348,7 @@ void USART6_IRQHandler(void) //更新频率200Hz
 }
 void UART5_IRQHandler(void)
 {
-	uint8_t data;
+
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
@@ -358,24 +356,8 @@ void UART5_IRQHandler(void)
 
 	if (USART_GetITStatus(UART5, USART_IT_RXNE) == SET)
 	{
-		data = USART_ReceiveData(UART5);
-		GetValueFromFort(data);
+
 		USART_ClearITPendingBit(UART5, USART_IT_RXNE);
-	}
-	else
-	{
-		USART_ClearITPendingBit(UART5, USART_IT_PE);
-		USART_ClearITPendingBit(UART5, USART_IT_TXE);
-		USART_ClearITPendingBit(UART5, USART_IT_TC);
-		USART_ClearITPendingBit(UART5, USART_IT_ORE_RX);
-		USART_ClearITPendingBit(UART5, USART_IT_IDLE);
-		USART_ClearITPendingBit(UART5, USART_IT_LBD);
-		USART_ClearITPendingBit(UART5, USART_IT_CTS);
-		USART_ClearITPendingBit(UART5, USART_IT_ERR);
-		USART_ClearITPendingBit(UART5, USART_IT_ORE_ER);
-		USART_ClearITPendingBit(UART5, USART_IT_NE);
-		USART_ClearITPendingBit(UART5, USART_IT_FE);
-		USART_ReceiveData(UART5);
 	}
 	OSIntExit();
 }
