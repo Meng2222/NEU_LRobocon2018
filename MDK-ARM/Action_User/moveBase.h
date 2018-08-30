@@ -83,6 +83,7 @@ void GetFunction(float x1,float y1,float x2,float y2);
 void linePID(float x1,float y1,float x2,float y2,float v);
 void CirclePID(float x0,float y0,float R,float v,int status);
 void GetYawangle(float x1,float y1);
+void GetDistance(float x1,float y1);
 #define WHEEL_TREAD (355.4f)
 #define pi 3.141592f
 //后轮电机的CAN ID号

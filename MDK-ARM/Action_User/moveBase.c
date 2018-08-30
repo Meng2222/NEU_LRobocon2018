@@ -182,15 +182,16 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 	Straight(v);
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
-
+extern float angle,T,v,Distance;
+extern int R;
 void GetYawangle(float x1,float y1)
 {
-	
-	x=GetX();
-	y=GetY();
-	GetFunction(x,y,x1,y1);
+	static float x,y;
 	if(status==0)
 	{	
+		x=R*cos((angle+90-180*T*v/(pi*R))*pi/180);
+		y=R*sin((angle+90-180*T*v/(pi*R))*pi/180)+2400;
+		GetFunction(x,y,x1,y1);
 		if(GetAngle()<-90&&lAngle>90)
 			yawAngle=170+360+GetAngle()-lAngle;
 		else
@@ -198,9 +199,27 @@ void GetYawangle(float x1,float y1)
 	}
 	else
 	{
+		x=R*cos((angle-90+180*T*v/(pi*R))*pi/180);
+		y=R*sin((angle-90+180*T*v/(pi*R))*pi/180)+2400;
+		GetFunction(x,y,x1,y1);
 		if(lAngle<-90&&GetAngle()>90)
 			yawAngle=170-360+GetAngle()-lAngle;
 		else
 			yawAngle=170+(GetAngle()-lAngle);	
 	}	
+}	
+void GetDistance(float x1,float y1)
+{
+	static float x,y;
+	if(status==0)
+	{	
+		x=R*cos((angle+90-180*T*v/(pi*R))*pi/180);
+		y=R*sin((angle+90-180*T*v/(pi*R))*pi/180)+2400;
+	}	
+	else
+	{
+		x=R*cos((angle-90+180*T*v/(pi*R))*pi/180);
+		y=R*sin((angle-90+180*T*v/(pi*R))*pi/180)+2400;
+	}	
+	Distance=sqrtf((x-x1)*(x-x1)+(y-y1)*(y-y1));
 }	

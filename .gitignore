@@ -56,3 +56,5 @@ MDK-ARM/List/
 MDK-ARM/Obj/
 MDK-ARM/DebugConfig/
 *.uvoptx
+*.TMP
+*.txt
