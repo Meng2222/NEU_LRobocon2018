@@ -131,7 +131,8 @@ void WalkTask(void)
 		Shoot(adcFlag,200); 
 		//USART_OUT(UART4, " %d\t", (int)GetSpeeedX());
 		//USART_OUT(UART4, " %d\r\n", (int)GetSpeeedY());
-		USART_OUT(UART4, " %d\t%d\t%d\t%d\r\n",(int)(GetPosX()),(int)(GetPosY()),(int)(GetSpeeedX()),(int)GetSpeeedY());
+		//USART_OUT(UART4, " %d\t%d\t%d\t%d\r\n",(int)(GetPosX()),(int)(GetPosY()),(int)(GetSpeeedX()),(int)GetSpeeedY());
+		USART_OUT(UART4,"%d\r\n",(int)(usartValue.flagValue));
 		
 	}
 }

@@ -363,6 +363,9 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 	}
 	YawPosCtrl(shootTurnAngle-2);
 	
+	usartValue.shootangle=shootTurnAngle;
+	usartValue.flagValue=shootFlag;
+	
 	shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
 	
 	if(shootDistance < 4000 && shootDistance > 2300)
