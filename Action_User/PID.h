@@ -19,7 +19,6 @@
 #include "includes.h"
 #include "usart.h"
 #include "movebase.h"
-#include "fort.h"
 // 宏定义推球电机ID
 #define PUSH_BALL_ID (6)
 // 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
@@ -114,7 +113,8 @@ typedef struct PID
 	int Arc_Num;
 	int Coordinate_Num;
 	int Line_Cnt;
-	int Line_Order[32];
+	int Line_Order[36];
+	int target_Num;
 	Line_Value *l;
 	Arc_Value *r;
 	Coordinate_Value *c;
@@ -154,4 +154,6 @@ float Compare(float a1,float b1);
 float constrain(float amt, float high, float low);
 float GetShooterVelCommand(void);
 float GetYawPosCommand(void);
+void PID_Competition_testVersion(PID_Value *pid, u8 dir);
+void PID_Competition(PID_Value *pid, u8 dir);
 #endif

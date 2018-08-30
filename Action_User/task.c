@@ -46,14 +46,11 @@ void App_Task(void)
 ===============================================================
 */
 PID_Value *PID_x = NULL;
-Gun_Value *Gun_x;
 PID_Value PID_A;
-Gun_Value Gun_A;
-float *error = 0;
+float *error = NULL;
 void ConfigTask(void)
 {
 	PID_x = &PID_A;
-	Gun_x = &Gun_A;
 	int ADC_Left = 0;
 	int ADC_Right = 0;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
@@ -79,7 +76,7 @@ void ConfigTask(void)
 	WaitOpsPrepare();                                                //等待定位系统准备完成
 	PID_Init(PID_x);                                                 //PID参数初始化
 	VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
-	YawPosCtrl(174);
+	YawPosCtrl(170);
 	
 	static float error1 = 0;                                         //用激光传感器矫正定位系统偏移
 	error1 = ((Get_Adc_Average(15,100) - Get_Adc_Average(14,100))/2)*0.922854f;
@@ -111,17 +108,38 @@ void ConfigTask(void)
                                   WalkTask      初始化后执行
 ===============================================================
 */
+extern GunneryData gundata;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;                                                 //防报错
 	static u32 direction = 0;
 	if(direction == 0) direction = (u32)OSMboxPend(adc_msg,0,&os_err);
-	if(direction == Left) PID_x->Line_Num = 13;
 	OSSemSet(PeriodSem, 0, &os_err);                 	 //信号量归零
+	int pushBallTime = 0;
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
+		PID_Competition(PID_x,direction);
+		gundata.detVel = 1000.0;
+		GunneryData_Operation(&gundata,PID_x);
+		YawPosCtrl(gundata.YawPosTarActAngle);
+		ShooterVelCtrl(gundata.ShooterVelSet);
+//		float devDis = fabs(PID_x->l->line_Error);
+//		if(devDis < 100.f)
+//		{
+//			pushBallTime++;
+//			if(pushBallTime == 120)
+//			{
+//				PosCrl(CAN1, PUSH_BALL_ID, ABSOLUTE_MODE, PUSH_POSITION);// 推球
+//			}
+//			if(pushBallTime == 240)
+//			{
+//				PosCrl(CAN1, PUSH_BALL_ID, ABSOLUTE_MODE, PUSH_RESET_POSITION);// 复位
+//			}
+//			pushBallTime = pushBallTime % 241;
+//		}
+
 		UART4_OUT(PID_x);
 	}
 }
