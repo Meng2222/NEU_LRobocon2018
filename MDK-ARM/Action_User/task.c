@@ -75,7 +75,7 @@ void ConfigTask(void)
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 float yawAngle=170;
-int status;
+int status,throwFlag=0;
 extern float x,y;
 extern int time,Cnt;
 void WalkTask(void)
@@ -138,40 +138,59 @@ void WalkTask(void)
 		if(status==0)
 		{
 		if(x>=-400&&y<2000)
-		{	GetYawangle(2200,200);
+		{	
+			if(x>400)
+			throwFlag=1;
+			else
+			throwFlag=0;
+			GetYawangle(2200,200);
 			Distance=sqrtf((x-2400)*(x-2400)+(y-0)*(y-0));
 		}	
 		if(y>=2000&&x>=400)
-		{	GetYawangle(2200,4600);
+		{	
+			if(y>2800)
+			throwFlag=1;
+			else
+			throwFlag=0;GetYawangle(2200,4600);
 			Distance=sqrtf((x-2400)*(x-2400)+(y-4800)*(y-4800));
 		}	
 		if(x<400&&y>=2800)
-		{	GetYawangle(-2200,4600);
+		{	
+			if(x<-400)
+			throwFlag=1;
+			else
+			throwFlag=0;
+			GetYawangle(-2200,4600);
 			Distance=sqrtf((x+2400)*(x+2400)+(y-4800)*(y-4800));
 		}	
 		if(y<2800&&x<-400)
-		{	GetYawangle(-2200,200);
+		{	
+			if(y<2000)
+			throwFlag=1;
+			else
+			throwFlag=0;
+			GetYawangle(-2200,200);
 			Distance=sqrtf((x+2400)*(x+2400)+(y-0)*(y-0));
 		}
 		}
 		else
 		{
-		if(x>=400&&y<2800)
-		{	GetYawangle(2200,200);
-			Distance=sqrtf((x-2400)*(x-2400)+(y-0)*(y-0));
-		}	
-		if(x>=-400&&y>=2800)
-		{	GetYawangle(2200,4600);
-			Distance=sqrtf((x-2400)*(x-2400)+(y-4800)*(y-4800));
-		}	
-		if(x<-400&&y>=2000)
-		{	GetYawangle(-2200,4600);
-			Distance=sqrtf((x+2400)*(x+2400)+(y-4800)*(y-4800));
-		}	
-		if(x<400&&y<2000)
-		{	GetYawangle(-2200,200);
-			Distance=sqrtf((x+2400)*(x+2400)+(y-0)*(y-0));
-		}
+			if(x>=400&&y<2800)
+			{	GetYawangle(2200,200);
+				Distance=sqrtf((x-2400)*(x-2400)+(y-0)*(y-0));
+			}	
+			if(x>=-400&&y>=2800)
+			{	GetYawangle(2200,4600);
+				Distance=sqrtf((x-2400)*(x-2400)+(y-4800)*(y-4800));
+			}	
+			if(x<-400&&y>=2000)
+			{	GetYawangle(-2200,4600);
+				Distance=sqrtf((x+2400)*(x+2400)+(y-4800)*(y-4800));
+			}
+			if(x<400&&y<2000)
+			{	GetYawangle(-2200,200);
+				Distance=sqrtf((x+2400)*(x+2400)+(y-0)*(y-0));
+			}
 		}
 		if(status==0)
 			yawcompangle=(yawAngle-170)*pi/180;
@@ -192,21 +211,21 @@ void WalkTask(void)
 		if(rps>100)
 			rps=50;
 		ShooterVelCtrl(rps);
-		if(R>1500)
+		if(R>1500&&throwFlag==1)
 		{
 			// 推球
 //			if(x*lastX<0||(y-2400)*(lastY-2400)<0)
-			if(push_Ball_Count==50)
-			{	PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);		
-				flag=1;
-			}		
-			// 复位
-			if(push_Ball_Count==100)
-			{	
-				PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-				push_Ball_Count=0;
-				flag=0;
-			}
+				if(push_Ball_Count==50)
+				{	PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);		
+					flag=1;
+				}		
+				// 复位
+				if(push_Ball_Count==100)
+				{	
+					PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+					push_Ball_Count=0;
+					flag=0;
+				}
 		}
 //		if(flag)
 			push_Ball_Count++;
