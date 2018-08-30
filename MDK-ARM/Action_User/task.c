@@ -81,7 +81,7 @@ extern int time,Cnt;
 void WalkTask(void)
 {
 	static int flag=0,R=600,lastTime=0,errFlag=0,push_Ball_Count=0,yawAngleFlag,yawcompangle,errTime=0,statusFlag;
-	static float lastX,dLeft,dRight,lastY,changeAngle,rps=50,Vx,Vy,V,Distance,shootAngle;
+	static float lastX=0,dLeft,dRight,lastY,changeAngle,rps=50,Vx,Vy,V,Distance,shootAngle,T,v;
 	do
 	{
 		//右ADC
@@ -115,18 +115,21 @@ void WalkTask(void)
 			if(Get_Time_Flag())	
 				errFlag=0;
 			time=0;
+			throwFlag=0;
 		}	
 		else
 		{
-			CirclePID(0,2400,R,1000,status);
+			throwFlag=1;
+			CirclePID(0,2400,R,v,status);
 			if(status==0)
-			{	if(x<200&&lastX>200&&R<1500)
+			{					
+				if(x<-200&&lastX>-200&&R<1500)		
 					R+=500;
 			}	
 			else
-				if(x<-200&&lastX>-200&&R<1500)	
+				if(x<200&&lastX>200&&R<1500)
 					R+=500;
-			if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>20)
+			if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>30)
 				lastTime=time;
 			if(time-lastTime>=100)
 			{	
@@ -229,11 +232,14 @@ void WalkTask(void)
 		//应给的速度
 		V=-Vx+Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*Vx*Vx)-sqrt(3)*Vx);
 		if(status==0)
-			shootAngle=yawAngle+atan(Vy/V)*180/pi;
+		{	shootAngle=yawAngle+atan(Vy/V)*180/pi;
+			YawPosCtrl(shootAngle+8);
+		}	
 		else
-			shootAngle=yawAngle-atan(Vy/V)*180/pi;
-		YawPosCtrl(shootAngle-10);
-		rps=(sqrtf(V*V+Vy*Vy)-208.65)/39.444;
+		{	shootAngle=yawAngle-atan(Vy/V)*180/pi;
+			YawPosCtrl(shootAngle-8);
+		}	
+		rps=(sqrtf(V*V+Vy*Vy)-208.65)/39.444+1;
 		if(rps>100)
 			rps=50;
 		ShooterVelCtrl(rps);
