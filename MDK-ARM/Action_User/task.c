@@ -80,8 +80,8 @@ extern float x,y;
 extern int time,Cnt;
 void WalkTask(void)
 {
-	static int flag=0,R=1600,lastTime=0,errFlag=0,push_Ball_Count=0,yawAngleFlag,yawcompangle,errTime=0,statusFlag;
-	static float lastX=-100,dLeft,dRight,lastY=-100,changeAngle,rps=50,Vx,Vy,V,Distance,shootAngle;
+	static int flag=0,R=600,lastTime=0,errFlag=0,push_Ball_Count=0,yawAngleFlag,yawcompangle,errTime=0,statusFlag;
+	static float lastX,dLeft,dRight,lastY,changeAngle,rps=50,Vx,Vy,V,Distance,shootAngle;
 	do
 	{
 		//右ADC
@@ -119,8 +119,13 @@ void WalkTask(void)
 		else
 		{
 			CirclePID(0,2400,R,1000,status);
-			if(x<-0.5&&lastX>0.5&&R<1500)
-				R+=500;
+			if(status==0)
+			{	if(x<200&&lastX>200&&R<1500)
+					R+=500;
+			}	
+			else
+				if(x<-200&&lastX>-200&&R<1500)	
+					R+=500;
 			if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>20)
 				lastTime=time;
 			if(time-lastTime>=100)
@@ -144,7 +149,7 @@ void WalkTask(void)
 				else
 					throwFlag=0;
 				GetYawangle(2200,200);
-				Distance=sqrtf((x-2400)*(x-2400)+(y-0)*(y-0));
+				Distance=sqrtf((x-2200)*(x-2200)+(y-200)*(y-200));
 			}	
 			if(y>=2000&&x>=400)
 			{	
@@ -153,7 +158,7 @@ void WalkTask(void)
 				else
 					throwFlag=0;
 				GetYawangle(2200,4600);
-				Distance=sqrtf((x-2400)*(x-2400)+(y-4800)*(y-4800));
+				Distance=sqrtf((x-2200)*(x-2200)+(y-4600)*(y-4600));
 			}	
 			if(x<400&&y>=2800)
 			{	
@@ -162,7 +167,7 @@ void WalkTask(void)
 				else
 					throwFlag=0;
 				GetYawangle(-2200,4600);
-				Distance=sqrtf((x+2400)*(x+2400)+(y-4800)*(y-4800));
+				Distance=sqrtf((x+2200)*(x+2200)+(y-4600)*(y-4600));
 			}	
 			if(y<2800&&x<-400)
 			{	
@@ -171,7 +176,7 @@ void WalkTask(void)
 				else
 					throwFlag=0;
 				GetYawangle(-2200,200);
-				Distance=sqrtf((x+2400)*(x+2400)+(y-0)*(y-0));
+				Distance=sqrtf((x+2200)*(x+2200)+(y-200)*(y-200));
 			}
 		}
 		else
@@ -183,7 +188,7 @@ void WalkTask(void)
 				else
 					throwFlag=0;
 				GetYawangle(2200,200);
-				Distance=sqrtf((x-2400)*(x-2400)+(y-0)*(y-0));
+				Distance=sqrtf((x-2200)*(x-2200)+(y-200)*(y-200));
 			}	
 			if(x>=-400&&y>=2800)
 			{	
@@ -192,7 +197,7 @@ void WalkTask(void)
 				else
 					throwFlag=0;
 				GetYawangle(2200,4600);
-				Distance=sqrtf((x-2400)*(x-2400)+(y-4800)*(y-4800));
+				Distance=sqrtf((x-2200)*(x-2200)+(y-4600)*(y-4600));
 			}	
 			if(x<-400&&y>=2000)
 			{	
@@ -201,7 +206,7 @@ void WalkTask(void)
 				else
 					throwFlag=0;
 				GetYawangle(-2200,4600);
-				Distance=sqrtf((x+2400)*(x+2400)+(y-4800)*(y-4800));
+				Distance=sqrtf((x+2200)*(x+2200)+(y-4600)*(y-4600));
 			}
 			if(x<400&&y<2000)
 			{	
@@ -210,7 +215,7 @@ void WalkTask(void)
 				else
 					throwFlag=0;
 				GetYawangle(-2200,200);
-				Distance=sqrtf((x+2400)*(x+2400)+(y-0)*(y-0));
+				Distance=sqrtf((x+2200)*(x+2200)+(y-200)*(y-200));
 			}
 		}
 		if(status==0)
@@ -222,17 +227,17 @@ void WalkTask(void)
 		//圆筒垂直方向速度
 		Vy=sin(yawcompangle)*sqrtf(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY());
 		//应给的速度
-		V=-Vx+(Distance-200)*9800/(sqrtf(4*4900*(sqrt(3)*(Distance-200)-650)+3*Vx*Vx)-sqrt(3)*Vx);
+		V=-Vx+Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*Vx*Vx)-sqrt(3)*Vx);
 		if(status==0)
-			shootAngle=yawAngle+atan(Vy/(V+Vx))*180/pi;
+			shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		else
-			shootAngle=yawAngle-atan(Vy/(V+Vx))*180/pi;
-		YawPosCtrl(shootAngle);
-		rps=(sqrtf((V+Vx)*(V+Vx)+Vy*Vy)-104.8)/39.507;
+			shootAngle=yawAngle-atan(Vy/V)*180/pi;
+		YawPosCtrl(shootAngle-10);
+		rps=(sqrtf(V*V+Vy*Vy)-208.65)/39.444;
 		if(rps>100)
 			rps=50;
 		ShooterVelCtrl(rps);
-		if(R>1500)
+		if(R>1000)
 		{
 			if(throwFlag==1)
 			{
@@ -245,7 +250,7 @@ void WalkTask(void)
 				}
 			}
 			else
-				push_Ball_Count=45;
+				push_Ball_Count=49;
 		}
 		push_Ball_Count++;
 		lastX=x;

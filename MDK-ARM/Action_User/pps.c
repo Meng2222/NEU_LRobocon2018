@@ -95,7 +95,7 @@ void USART3_IRQHandler(void)
 						SetSpeedX(-posture.value[1]);
 						SetSpeedY(-posture.value[2]);
 						SetX(-posture.value[3]);
-						SetY(-posture.value[4]);
+						SetY(-posture.value[4]+95);
 						SetWZ(posture.value[5]);
 
 						/*定义的全局结构体变量可以在这里赋值*/
