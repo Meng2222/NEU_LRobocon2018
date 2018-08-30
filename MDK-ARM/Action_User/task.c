@@ -137,58 +137,79 @@ void WalkTask(void)
 		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
 		if(status==0)
 		{
-		if(x>=-400&&y<2000)
-		{	
-			if(x>400)
-			throwFlag=1;
-			else
-			throwFlag=0;
-			GetYawangle(2200,200);
-			Distance=sqrtf((x-2400)*(x-2400)+(y-0)*(y-0));
-		}	
-		if(y>=2000&&x>=400)
-		{	
-			if(y>2800)
-			throwFlag=1;
-			else
-			throwFlag=0;GetYawangle(2200,4600);
-			Distance=sqrtf((x-2400)*(x-2400)+(y-4800)*(y-4800));
-		}	
-		if(x<400&&y>=2800)
-		{	
-			if(x<-400)
-			throwFlag=1;
-			else
-			throwFlag=0;
-			GetYawangle(-2200,4600);
-			Distance=sqrtf((x+2400)*(x+2400)+(y-4800)*(y-4800));
-		}	
-		if(y<2800&&x<-400)
-		{	
-			if(y<2000)
-			throwFlag=1;
-			else
-			throwFlag=0;
-			GetYawangle(-2200,200);
-			Distance=sqrtf((x+2400)*(x+2400)+(y-0)*(y-0));
-		}
+			if(x>=-400&&y<2000)
+			{	
+				if(x>400)
+					throwFlag=1;
+				else
+					throwFlag=0;
+				GetYawangle(2200,200);
+				Distance=sqrtf((x-2400)*(x-2400)+(y-0)*(y-0));
+			}	
+			if(y>=2000&&x>=400)
+			{	
+				if(y>2800)
+					throwFlag=1;
+				else
+					throwFlag=0;
+				GetYawangle(2200,4600);
+				Distance=sqrtf((x-2400)*(x-2400)+(y-4800)*(y-4800));
+			}	
+			if(x<400&&y>=2800)
+			{	
+				if(x<-400)
+					throwFlag=1;
+				else
+					throwFlag=0;
+				GetYawangle(-2200,4600);
+				Distance=sqrtf((x+2400)*(x+2400)+(y-4800)*(y-4800));
+			}	
+			if(y<2800&&x<-400)
+			{	
+				if(y<2000)
+					throwFlag=1;
+				else
+					throwFlag=0;
+				GetYawangle(-2200,200);
+				Distance=sqrtf((x+2400)*(x+2400)+(y-0)*(y-0));
+			}
 		}
 		else
 		{
 			if(x>=400&&y<2800)
-			{	GetYawangle(2200,200);
+			{
+				if(y<2000)
+					throwFlag=1;
+				else
+					throwFlag=0;
+				GetYawangle(2200,200);
 				Distance=sqrtf((x-2400)*(x-2400)+(y-0)*(y-0));
 			}	
 			if(x>=-400&&y>=2800)
-			{	GetYawangle(2200,4600);
+			{	
+				if(x>400)
+					throwFlag=1;
+				else
+					throwFlag=0;
+				GetYawangle(2200,4600);
 				Distance=sqrtf((x-2400)*(x-2400)+(y-4800)*(y-4800));
 			}	
 			if(x<-400&&y>=2000)
-			{	GetYawangle(-2200,4600);
+			{	
+				if(y>2800)
+					throwFlag=1;
+				else
+					throwFlag=0;
+				GetYawangle(-2200,4600);
 				Distance=sqrtf((x+2400)*(x+2400)+(y-4800)*(y-4800));
 			}
 			if(x<400&&y<2000)
-			{	GetYawangle(-2200,200);
+			{	
+				if(x<-400)
+					throwFlag=1;
+				else
+					throwFlag=0;
+				GetYawangle(-2200,200);
 				Distance=sqrtf((x+2400)*(x+2400)+(y-0)*(y-0));
 			}
 		}
@@ -211,24 +232,22 @@ void WalkTask(void)
 		if(rps>100)
 			rps=50;
 		ShooterVelCtrl(rps);
-		if(R>1500&&throwFlag==1)
+		if(R>1500)
 		{
-			// 推球
-//			if(x*lastX<0||(y-2400)*(lastY-2400)<0)
+			if(throwFlag==1)
+			{
 				if(push_Ball_Count==50)
-				{	PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);		
-					flag=1;
-				}		
-				// 复位
+					PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);		
 				if(push_Ball_Count==100)
 				{	
 					PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 					push_Ball_Count=0;
-					flag=0;
 				}
+			}
+			else
+				push_Ball_Count=45;
 		}
-//		if(flag)
-			push_Ball_Count++;
+		push_Ball_Count++;
 		lastX=x;
 		lastY=y;
 		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetAngle(),(int)GetX(),(int)GetY(),(int)rps,(int)GetSpeedX(),(int)GetSpeedY(),(int)Distance,(int)Vx,(int)Vy);
