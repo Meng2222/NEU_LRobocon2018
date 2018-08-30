@@ -116,7 +116,7 @@ void WalkTask(void)
 	
 	
 	//PID参数
-	Angle_PidPara(20,0,600);
+	Angle_PidPara(21,0,600);
 	Distance_PidPara(0.09,0,0); 
 	Speed_PidPara(2,0,0); 
 	
@@ -128,7 +128,10 @@ void WalkTask(void)
 		//走位
 		Walk(&adcFlag);
 		//发球
-		Shoot(adcFlag,200); 
+		Shoot(adcFlag,250); 
+		
+		USART_OUT(UART4, " %d\t", (int)GetPosX());
+		USART_OUT(UART4, " %d\t", (int)GetPosY());
 		USART_OUT(UART4, " %d\t", (int)GetSpeeedX());
 		USART_OUT(UART4, " %d\r\n", (int)GetSpeeedY());
 		

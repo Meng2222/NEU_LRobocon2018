@@ -211,7 +211,6 @@ void HighSpeedStraightLine(float A1,float B1,float C1,uint8_t dir,float highSpee
 	float getY=GetPosY();
 	float distance=((A1*getX)+(B1*getY)+C1)/sqrt(A1*A1+B1*B1);
 	float angleAdd=DistancePid(distance,0);
-	float speedAdd=__fabs(distance)*0.3;
 	
 	
 
@@ -255,26 +254,26 @@ void HighSpeedStraightLine(float A1,float B1,float C1,uint8_t dir,float highSpee
 	{
 		if(setAngle < 0)
 		{
-			Turn(setAngle-angleAdd,highSpeed+speedAdd);
-			usartValue.turnAngleValue=setAngle-angleAdd;
+			Turn(setAngle-angleAdd,highSpeed);
+			usartValue.turnAngleValue=setAngle;
 		}
 		else
 		{
-			Turn(setAngle+angleAdd,highSpeed+speedAdd);
-			usartValue.turnAngleValue=setAngle+angleAdd;			
+			Turn(setAngle+angleAdd,highSpeed);
+			usartValue.turnAngleValue=setAngle;			
 		}
 	}
 	else if(distance < -10)
 	{
 		if(setAngle >= 0)
 		{
-			Turn(setAngle+angleAdd,highSpeed+speedAdd);
-			usartValue.turnAngleValue=setAngle+angleAdd;
+			Turn(setAngle+angleAdd,highSpeed);
+			usartValue.turnAngleValue=setAngle;
 		}
 		else
 		{
-			Turn(setAngle-angleAdd,highSpeed+speedAdd);
-			usartValue.turnAngleValue=setAngle-angleAdd;			
+			Turn(setAngle-angleAdd,highSpeed);
+			usartValue.turnAngleValue=setAngle;			
 		}
 	}
 	else
@@ -302,7 +301,7 @@ void BiggerSquareOne(void)
 	switch(flagOne)
 	{
 		case 0:
-			if(sTY < 2000)
+			if(sTY < 2200)
 			{
 				HighSpeedStraightLine(1,0,700,0,1300);
 				
@@ -320,7 +319,7 @@ void BiggerSquareOne(void)
 				flagOne++;
 			break;
 		case 2:
-			if(sTY > 2500)
+			if(sTY > 2300)
 			{
 				HighSpeedStraightLine(1,0,-700,1,1300);
 				
@@ -329,7 +328,7 @@ void BiggerSquareOne(void)
 				flagOne++;
 			break;
 		case 3:
-			if(sTX > -300)
+			if(sTX > -250)
 			{
 				HighSpeedStraightLine(0,1,-1600,1,1300);
 				
@@ -339,12 +338,12 @@ void BiggerSquareOne(void)
 			break;
 			
 		case 4:
-			if(sTY < 2700)
+			if(sTY < 2500)
 			{
 				if(sTY < 2250)
-					speed1=SpeedPid(sTY,1100);
+					speed1=SpeedPid(sTY,950);
 				else
-					speed1=SpeedPid(3300,sTY);
+					speed1=SpeedPid(3150,sTY);
 				HighSpeedStraightLine(1,0,1250,0,speed1);
 				
 			}
@@ -352,25 +351,25 @@ void BiggerSquareOne(void)
 				flagOne++;
 			break;
 		case 5:
-			if(sTX < -400)
+			if(sTX < 250)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1150,sTX);
+					speed1=SpeedPid(850,sTX);
 				else
-					speed1=SpeedPid(sTX,-1150);
-				HighSpeedStraightLine(0,1,-3550,0,speed1);
+					speed1=SpeedPid(sTX,-1850);
+				HighSpeedStraightLine(0,1,-3500,0,speed1);
 				
 			}
 			else
 				flagOne++;
 			break;
 		case 6:
-			if(sTY > 1800)
+			if(sTY > 2000)
 			{
 				if(sTY < 2250)
-					speed1=SpeedPid(sTY,1100);
+					speed1=SpeedPid(sTY,1350);
 				else
-					speed1=SpeedPid(3400,sTY);
+					speed1=SpeedPid(4100,sTY);
 				HighSpeedStraightLine(1,0,-1250,1,speed1);
 				
 			}
@@ -378,12 +377,12 @@ void BiggerSquareOne(void)
 				flagOne++;
 			break;
 		case 7:
-			if(sTX > 800)
+			if(sTX > -800)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1400,sTX); 
+					speed1=SpeedPid(1850,sTX); 
 				else
-					speed1=SpeedPid(sTX,-1400);
+					speed1=SpeedPid(sTX,-1650);
 				HighSpeedStraightLine(0,1,-1000,1,speed1);
 				
 			}
@@ -392,25 +391,25 @@ void BiggerSquareOne(void)
 			break;
 			
 		case 8:
-			if(sTY < 3200)
+			if(sTY < 3100)
 			{
-				if(sTY < 2150)
-					speed1=SpeedPid(sTY,700);
+				if(sTY < 2250)
+					speed1=SpeedPid(sTY,350);
 				else
-					speed1=SpeedPid(3600,sTY);
-				HighSpeedStraightLine(1,0,1800,0,speed1);
+					speed1=SpeedPid(3650,sTY);
+				HighSpeedStraightLine(1,0,1900,0,speed1);
 				
 			}
 			else
 				flagOne++;
 			break;
 		case 9:
-			if(sTX < 800)
+			if(sTX < 700)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1400,sTX);
+					speed1=SpeedPid(1350,sTX);
 				else
-					speed1=SpeedPid(sTX,-1400);
+					speed1=SpeedPid(sTX,-2250);
 				HighSpeedStraightLine(0,1,-4200,0,speed1);
 				
 			}
@@ -418,25 +417,25 @@ void BiggerSquareOne(void)
 				flagOne++;
 			break;
 		case 10:
-			if(sTY > 1400)
+			if(sTY > 1500)
 			{
-				if(sTY < 2150)
-					speed1=SpeedPid(sTY,800);
+				if(sTY < 2250)
+					speed1=SpeedPid(sTY,850);
 				else
-					speed1=SpeedPid(3600,sTY);
-				HighSpeedStraightLine(1,0,-1800,1,speed1);
+					speed1=SpeedPid(4850,sTY);
+				HighSpeedStraightLine(1,0,-1900,1,speed1);
 				
 			}
 			else
 				flagOne++;
 			break;
 		case 11:
-			if(sTX > -800)
+			if(sTX > -700)
 			{
 				if(sTX > 0)
-					speed1=SpeedPid(1400,sTX);
+					speed1=SpeedPid(2250,sTX);
 				else
-					speed1=SpeedPid(sTX,-1400);
+					speed1=SpeedPid(sTX,-1350);
 				HighSpeedStraightLine(0,1,-400,1,speed1);
 				
 			}
