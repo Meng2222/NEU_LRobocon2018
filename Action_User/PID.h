@@ -121,20 +121,15 @@ typedef struct PID
 	float vel;
 }PID_Value;
 
-typedef struct gun
+typedef struct errorDisposal
 {
+	float Err_X;
+	float Err_Y;
+	float timeCnt;
 	float distance;
-	float yawpos;
-	float shootervel;
-	float yawpos_set;
-	float shootervel_set;
-	float x_pre;
-	float y_pre;
-	float target_x;
-	float target_y;
+	float err_distance;
 	u8 flag;
-	int time_cnt;
-}Gun_Value;
+}Err;
 
 void PID_Init(PID_Value *PID_a);
 void PID_Line_Init(void);
@@ -143,11 +138,7 @@ void PID_Coordinate_Init(void);
 void Init_PID(PID_Value *pid_init);
 void PID_Control(PID_Value *p);
 void GO(PID_Value *p_GO);
-void PID_Control_Competition(PID_Value *pid,Gun_Value *gun,u8 dir);
 void PID_Pre(PID_Value *p);
-void PID_Control_Competition_2(PID_Value *pid,u8 dir);
-void shoot(Gun_Value *gun);
-void Shoot_Control_Competition(PID_Value *pid,Gun_Value *gun,u8 dir);
 float GetWZ(void);
 float ABS(float thing);
 float Compare(float a1,float b1);
@@ -155,5 +146,7 @@ float constrain(float amt, float high, float low);
 float GetShooterVelCommand(void);
 float GetYawPosCommand(void);
 void PID_Competition_testVersion(PID_Value *pid, u8 dir);
-void PID_Competition(PID_Value *pid, u8 dir);
+void PID_Competition(PID_Value *pid, u8 dir, Err *error);
+void ErrorDisposal(PID_Value *pid,Err *error);
+void GetData(PID_Value *p);
 #endif

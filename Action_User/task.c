@@ -47,10 +47,19 @@ void App_Task(void)
 */
 PID_Value *PID_x = NULL;
 PID_Value PID_A;
+Err *Error_x;
+Err Error_A;
 float *error = NULL;
 void ConfigTask(void)
 {
 	PID_x = &PID_A;
+	Error_x = &Error_A;
+	Error_A.Err_X = 0;
+	Error_A.Err_Y = 0;
+	Error_A.flag = 0;
+	Error_A.timeCnt = 0;
+	Error_A.distance = 0;
+	Error_A.err_distance = 100;
 	int ADC_Left = 0;
 	int ADC_Right = 0;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
@@ -99,7 +108,7 @@ void ConfigTask(void)
 			OSMboxPost(adc_msg,(void *)Right);
 			OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
 		}
-		else USART_OUT(UART4,(uint8_t*)"%s","wait for adc data\r\n");
+//		else USART_OUT(UART4,(uint8_t*)"%s","wait for adc data\r\n");
 	}
 }
 
@@ -116,30 +125,23 @@ void WalkTask(void)
 	static u32 direction = 0;
 	if(direction == 0) direction = (u32)OSMboxPend(adc_msg,0,&os_err);
 	OSSemSet(PeriodSem, 0, &os_err);                 	 //信号量归零
-	int pushBallTime = 0;
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
-		PID_Competition(PID_x,direction);
-		gundata.detVel = 1000.0;
-		GunneryData_Operation(&gundata,PID_x);
+		
+		GetData(PID_x);
+		ErrorDisposal(PID_x,Error_x);
+		PID_Competition(PID_x,direction,Error_x);
+		
+		gundata.detVel = sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY());		   //检测到的当前车速
+		gundata.Distance_Accuracy = 30;    //距离精度
+		gundata.Yaw_Angle_Offset = GetYawPosCommand();      //航向角偏差
+		gundata.Shooter_Vel_Offset = GetShooterVelCommand();    //射球转速补偿
+		gundata.BucketNum = PID_A.target_Num;
+		GunneryData_Operation(PID_x,&gundata);
 		YawPosCtrl(gundata.YawPosTarActAngle);
 		ShooterVelCtrl(gundata.ShooterVelSet);
-//		float devDis = fabs(PID_x->l->line_Error);
-//		if(devDis < 100.f)
-//		{
-//			pushBallTime++;
-//			if(pushBallTime == 120)
-//			{
-//				PosCrl(CAN1, PUSH_BALL_ID, ABSOLUTE_MODE, PUSH_POSITION);// 推球
-//			}
-//			if(pushBallTime == 240)
-//			{
-//				PosCrl(CAN1, PUSH_BALL_ID, ABSOLUTE_MODE, PUSH_RESET_POSITION);// 复位
-//			}
-//			pushBallTime = pushBallTime % 241;
-//		}
-
+		
 		UART4_OUT(PID_x);
 	}
 }

@@ -36,12 +36,11 @@
 #include "fort.h"
 #include "PID.h"
 
-
 //对应的收发串口
 #define USARTX UART5
 
+
 #define Yaw_Zero_Offset (170.0f)                                //炮台角度指向车头方向置零    170°
-#define Yaw_Angle_Offset (5.0f)                                 //手动给定补偿角              5.0°
 #define Fort_TO_BACK_WHEEL (65.0f)                              //炮台到车轴中点距离          65.0mm
 #define BACK_WHEEL_TO_WALL (95.0f)                              //车轴中点到墙面距离          95.0mm
 #define G (9800.0f)                                             //重力加速度                  9800mm/s2
@@ -170,6 +169,7 @@ float Constrain_float_Angle(float angle)
 	return angle;
 }
 
+
 /**
 * @brief  计算射击诸元
 * @param  Square_Mode：顺/逆时针模式
@@ -179,13 +179,12 @@ float Constrain_float_Angle(float angle)
 * @author 陈昕炜
 * @note   在使用该函数之前需输入当前速度的检测值 单位mm/s
 */
-void GunneryData_Operation(GunneryData *Gun,PID_Value *pos)
+void GunneryData_Operation(PID_Value *pos,GunneryData *Gun)
 {
 	//炮台坐标补偿
 	Gun->Fort_x = pos->X - (Fort_TO_BACK_WHEEL) * sin(pos->Angle * Pi / 180.0);
 	Gun->Fort_y = pos->Y + (Fort_TO_BACK_WHEEL) * cos(pos->Angle * Pi / 180.0) + BACK_WHEEL_TO_WALL;
 	Gun->Fort_angle = Constrain_float_Angle(Yaw_Zero_Offset - fort.yawPosReceive + pos->Angle);
-	Gun->BucketNum = pos->target_Num;
 	
 	//以直线方向为y轴正向建立坐标系，计算炮台到目标点的横轴坐标相对距离
 	switch(Gun->BucketNum)
@@ -240,18 +239,34 @@ void GunneryData_Operation(GunneryData *Gun,PID_Value *pos)
 			break;
 	}
 	
-	//计算射球水平速度y轴分量
-	Gun->ShooterVelSetA_Y = ((2.0 * Fort_To_Bucket_Height * Gun->detVel - Gun->Distance_Y * tan(Fort_Elevation_Rad) * Gun->detVel) + \
-	(Gun->Distance_Y * sqrt(tan(Fort_Elevation_Rad) * tan(Fort_Elevation_Rad) * Gun->detVel * Gun->detVel + 2.0 * Gun->Distance_Y * tan(Fort_Elevation_Rad) * G - 2.0 * Fort_To_Bucket_Height * G))) / \
-	(2.0 * Gun->Distance_Y * tan(Fort_Elevation_Rad) - 2.0 * Fort_To_Bucket_Height);
-	//计算飞行时间
-	Gun->ShooterTime = Gun->Distance_Y / (Gun->ShooterVelSetA_Y + Gun->detVel);
-	//计算补偿后的炮台距离
-	Gun->Distance_Fort = sqrt(Gun->ShooterVelSetA_Y * Gun->ShooterVelSetA_Y * Gun->ShooterTime * Gun->ShooterTime + Gun->Distance_X * Gun->Distance_X);
-	//设定转速
-	Gun->ShooterVelSet = 40.0 / 3102.505 * Gun->Distance_Fort + 35.7;
-	//以直线方向为y轴正向建立坐标系，计算炮台偏移角度
-	Gun->YawPosTarAngle = Constrain_float_Angle(atan(Gun->Distance_X / (Gun->ShooterVelSetA_Y * Gun->ShooterTime)) * 180.0 / Pi) + Yaw_Angle_Offset;
+	Gun->Distance_Car_Y = 0;                    //初始化射球飞行时间中车移动的距离
+	Gun->Distance_Shoot_X = Gun->Distance_X;    //初始化射球实际移动的横坐标距离为炮台到目标点的横坐标距离
+	Gun->Distance_Shoot_Y = Gun->Distance_Y;    //初始化射球实际移动的纵坐标距离为炮台到目标点的纵坐标距离
+	//当前迭代只考虑直线方向的车速度
+	do
+	{
+		//计算射球实际移动的纵坐标距离 = 炮台到桶纵坐标距离 - 射球飞行时间中车移动的距离
+		Gun->Distance_Shoot_Y = Gun->Distance_Y - Gun->Distance_Car_Y;
+		//计算炮台偏向角 = arctan(射球实际移动的横坐标距离 / 射球实际移动的纵坐标距离)
+		Gun->YawPosTarAngle = atan(Gun->Distance_Shoot_X / Gun->Distance_Shoot_Y) * 180.0 / Pi;
+		
+		//计算射球实际移动距离
+		Gun->Distance_Fort = sqrt(Gun->Distance_Shoot_X * Gun->Distance_Shoot_X + Gun->Distance_Shoot_Y * Gun->Distance_Shoot_Y);
+		//计算射球水平速度
+		Gun->ShooterVelSetA = sqrt((Gun->Distance_Fort * Gun->Distance_Fort * G) / (2.0 * (Gun->Distance_Fort * tan(Fort_Elevation_Rad) - Fort_To_Bucket_Height)));
+		//计算射球飞行时间
+		Gun->ShooterTime = Gun->Distance_Fort / Gun->ShooterVelSetA;
+		//计算射球飞行时间中车移动的距离
+		Gun->Distance_Car_Y = Gun->detVel * Gun->ShooterTime;
+		//计算射球飞行时间中车移动的距离 加上 射球实际移动纵坐标距离 与 炮台到目标点的纵坐标距离 的差值
+		Gun->Distance_Deviation = fabs(Gun->Distance_Shoot_Y + Gun->Distance_Car_Y - Gun->Distance_Y);
+	}
+	//当差值大于精度要求时，继续迭代
+	while(Gun->Distance_Deviation > Gun->Distance_Accuracy);
+    //根据射球电机转速与静止炮台到桶距离经验公式计算
+	Gun->ShooterVelSet = 40.0 / 3102.505 * Gun->Distance_Fort + 35.7 + Gun->Shooter_Vel_Offset;
+	Gun->YawPosTarAngle = Gun->YawPosTarAngle + Gun->Yaw_Angle_Offset;
+	
 	if(pos->direction == CW)
 	{
 		Gun->YawPosTarAngle = Gun->YawPosTarAngle * -1.0;
