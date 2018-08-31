@@ -199,9 +199,14 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 		}
 		else
 		{
-			if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < shootX) || (shootX > -1400  && shootY < 1000))
+			if(flagOne == 7 || flagOne == 11)
 			{
 				shootFlag=0;
+				
+				if(flagOne == 7)
+					pushTime=pushTime-100;
+				else;
+				
 				if(shootCnt == pushTime)
 				{
 					// 推球	
@@ -210,9 +215,14 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 				}
 				
 			}
-			else if(((flagOne <= 7 && flagOne >= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY < -shootX) || (shootX < -1400  && shootY < 3600))
+			else if(flagOne == 4 || flagOne == 8 || flagOne == 12)
 			{
 				shootFlag=1;
+				
+				if(flagOne == 4)
+					pushTime=pushTime-100;
+				else;
+				
 				if(shootCnt == pushTime)
 				{
 					// 推球	
@@ -220,9 +230,14 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 					shootCnt=0;
 				}
 			}
-			else if(((flagOne <= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > shootX) || (shootX < 1400  && shootY > 3600))
+			else if(flagOne == 5 || flagOne == 9)
 			{
 				shootFlag=2;
+				
+				if(flagOne == 5)
+					pushTime=pushTime-100;
+				else;
+				
 				if(shootCnt == pushTime)
 				{
 					// 推球	
@@ -230,9 +245,13 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 					shootCnt=0;
 				}
 			}
-			else if(((flagOne <= 7 && flagOne >= 3) && (shootX <= 1400 && shootX >= -1400 && shootY < 3600 && shootY > 1000) && shootY > -shootX) || (shootX > 1400  && shootY > 1000))
+			else if(flagOne == 6 || flagOne == 10)
 			{
 				shootFlag=3;
+				
+				if(flagOne == 6)
+					pushTime=pushTime-100;
+				
 				if(shootCnt == pushTime)
 				{
 					// 推球	
@@ -277,9 +296,13 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 		}
 		else
 		{
-			if(((flagOne <= 3) && (shootX <= 1500 && shootX >= -1500 && shootY < 3700 && shootY > 1000) && shootY < shootX) || (shootX < -1500  && shootY > 1000))
+			if(flagOne == 6 || flagOne == 10)
 			{ 
 				shootFlag=0;
+				if(flagOne == 6)
+					pushTime=pushTime-100;
+				else;
+				
 				if(shootCnt == pushTime)
 				{
 					// 推球	
@@ -288,9 +311,13 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 				}
 				
 			}
-			else if(((flagOne <= 7 && flagOne >= 3) && (shootX <= 1500 && shootX >= -1500 && shootY < 3700 && shootY > 1000) && shootY < -shootX) || (shootX > -1500  && shootY > 3700))
+			else if(flagOne == 5 || flagOne == 9)
 			{
 				shootFlag=1;
+				if(flagOne == 5)
+					pushTime=pushTime-100;
+				else;
+				
 				if(shootCnt == pushTime)
 				{
 					// 推球	
@@ -298,9 +325,14 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 					shootCnt=0;
 				}
 			}
-			else if(((flagOne <= 3) && (shootX <= 1500 && shootX >= -1500 && shootY < 3700 && shootY > 1000) && shootY > shootX) || (shootX > 1500  && shootY < 3700))
+			else if(flagOne == 4 || flagOne == 8 || flagOne == 12)
 			{
 				shootFlag=2;
+				
+				if(flagOne == 4)
+					pushTime=pushTime-100;
+				else;
+				
 				if(shootCnt == pushTime)
 				{
 					// 推球	
@@ -308,12 +340,17 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 					shootCnt=0;
 				}
 			}
-			else if(((flagOne <= 7 && flagOne >= 3) && (shootX <= 1500 && shootX >= -1500 && shootY < 3700 && shootY > 1000) && shootY > -shootX) || (shootX < 1500  && shootY < 1000))
+			else if(flagOne == 7 || flagOne == 11)
 			{
 				shootFlag=3;
+				
+				if(flagOne == 7)
+					pushTime=pushTime-100;
+				else;
+				
 				if(shootCnt == pushTime)
 				{
-					// 推球	
+		 			// 推球	
 					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
 					shootCnt=0;
 				}
@@ -361,13 +398,26 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 			shootTurnAngle=0;
 		}
 	}
-	YawPosCtrl(shootTurnAngle-2);
+	if(flg == 0)
+	{
+		if(flagOne < 8)
+			YawPosCtrl(shootTurnAngle-5);
+		else
+			YawPosCtrl(shootTurnAngle-3);
+	}
+	else
+	{
+		if(flagOne < 8)
+			YawPosCtrl(shootTurnAngle+8);
+		else
+			YawPosCtrl(shootTurnAngle+6);
+	}
 	
 	shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
 	
 	if(shootDistance < 4000 && shootDistance > 2300)
 	{
-		shootSpeed=(SHOOOT_KP*shootDistance)+24;
+		shootSpeed=(SHOOOT_KP*shootDistance)+20;
 		
 		ShooterVelCtrl(shootSpeed);
 	}

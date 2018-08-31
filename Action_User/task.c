@@ -117,8 +117,8 @@ void WalkTask(void)
 	
 	//PID参数
 	Angle_PidPara(20,0,600);
-	Distance_PidPara(0.09,0,0); 
-	Speed_PidPara(2,0,0); 
+	Distance_PidPara(0.09,0,1); 
+	Speed_PidPara(2,0,0);
 	
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
@@ -128,11 +128,9 @@ void WalkTask(void)
 		//走位
 		Walk(&adcFlag);
 		//发球
-		Shoot(adcFlag,200); 
+		Shoot(adcFlag,250); 
 		//USART_OUT(UART4, " %d\t", (int)GetSpeeedX());
-		//USART_OUT(UART4, " %d\r\n", (int)GetSpeeedY());
-		USART_OUT(UART4, " %d\t%d\t%d\t%d\r\n",(int)(GetPosX()),(int)(GetPosY()),(int)(GetSpeeedX()),(int)GetSpeeedY());
-		
+		//USART_OUT(UART4, " %d\r\n", (int)GetSpeeedY());		
 	}
 }
  
@@ -168,7 +166,7 @@ void Init(void)
 	PosConfig();
 	
 	//收球电机
-	VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
+	VelCrl(CAN1,COLLECT_BALL_ID,10*60*4096); 
 	
 	GetDirection(&adcFlag);
 }

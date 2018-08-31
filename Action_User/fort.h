@@ -7,8 +7,8 @@
 #define BUCKET_ONE_X (-2200.0)
 #define BUCKET_ONE_Y 105.0
 #define BUCKET_TWO_X (-2200.0)
-#define BUCKET_TWO_Y 4500.0
-#define BUCKET_THR_X 2150.0
+#define BUCKET_TWO_Y 4600.0
+#define BUCKET_THR_X 2200.0
 #define BUCKET_THR_Y 4600.0
 #define BUCKET_FOR_X 2200.0
 #define BUCKET_FOR_Y 105.0
