@@ -456,13 +456,14 @@ void PID_Init(PID_Value *PID_a)                                              //P
 	PID_a->kd = 100;
 	PID_a->Mode = Line;
 	PID_a->Mode_Last = Line;
-	PID_a->V = 1000;
+	PID_a->V = 2000;
 	PID_a->Coordinate_Num = 0;
 	PID_a->Line_Num = 0;
 	PID_a->Line_Cnt = 0;
 	PID_a->Arc_Num = 0;
 	PID_a->V_Set = 2000;
 	PID_a->vel = 0;
+	PID_a->err_line_num = 0;
 	for(int i = 0;i < 24;i++) PID_a->Line_Order[i] = line_order1[i];
 		
 	PID_Line_Init();
@@ -534,7 +535,7 @@ void PID_Control(PID_Value *p)                                               //P
 	if ((p->Error) > -10 && (p->Error) < 10)
 	{
 		p->kp = 20;
-		p->kd = 1000;
+		p->kd = 100;
 		p->ki = 0.05;
 	}
 	else
@@ -549,7 +550,11 @@ void PID_Control(PID_Value *p)                                               //P
 	p->DTerm = p->Angle_Last - p->Angle;
 	p->vel = p->kp * p->Error + p->ki * p->ITerm + p->kd * p->DTerm;
 	p->vel = constrain(p->vel,2000.0f,-2000.0f);
-	p->V = (p->V_Set);
+//	if(p->Line_Num>3 && p->Line_Num<17) p->V = 1000;
+//	if(p->Line_Num<4) p->V = 1000;
+//	if(p->Line_Num<21 && p->Line_Num>16) p->V = 1000;
+//	if(p->Line_Num>20) p->V = 1000;
+	p->V = (p->V_Set)/(ABS(GetWZ())/150.f + 1);
 	p->Angle_Last = p->Angle;
 	p->Mode_Last = p->Mode;
 }
@@ -598,7 +603,7 @@ void PID_Pre(PID_Value *p)                                                   //È
 		default:
 			break;
 	}
-	p->V_Set = constrain(2*ABS(p->l->line_Error),1500,1000);
+//	p->V_Set = constrain(2*ABS(p->l->line_Error),1500,1000);
 //	p->V = (p->V_Set)/(GetWZ()/150.f + 1.f);
 }
 
@@ -606,6 +611,15 @@ void GO(PID_Value *p_GO)                                                     //µ
 {
 	VelCrl(CAN2,1,(int)(((4096/378)*(p_GO->vel))+(4096/378)*(p_GO->V)));
 	VelCrl(CAN2,2,(int)(((4096/378)*(p_GO->vel))-(4096/378)*(p_GO->V)));
+}
+
+void shoot(void)                                                             //ÉäÇòº¯Êý
+{
+	static int cnt = 0;
+	cnt++;
+	if(cnt == 80) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+	if(cnt == 160) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+	if(cnt == 160) cnt = 0;
 }
 
 void UART4_OUT(PID_Value *pid_out)                                           //´®¿ÚÊä³öº¯Êý
@@ -632,7 +646,7 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 	USART_SendData(UART4,'\n');
 }
 
-void PID_Competition_testVersion(PID_Value *pid, u8 dir)
+void PID_Competition_testVersion(PID_Value *pid, u8 dir)                     //test°æ×ßÏß
 {
 	static u8 flag = 0;
 	if(flag == 0 && dir == Right)
@@ -682,7 +696,7 @@ void PID_Competition_testVersion(PID_Value *pid, u8 dir)
 	}
 }
 
-void PID_Competition(PID_Value *pid, u8 dir, Err *error)
+void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //ÐÂ°æ×ßÏß
 {
 	static u8 flag = 0;
 	if(flag == 0 && dir == Right)
@@ -705,64 +719,89 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)
 			pid->Mode = Line;
 			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 			PID_Control(pid);
+			if(ABS(pid->l->line_Error) < 100) shoot();
 			GO(pid);
 			pid->Line_Cnt += 1;
 			if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
 			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 			PID_Pre(pid);
-			if(pid->l->line_Error>1200) pid->Line_Cnt -= 1;
+			if(pid->Line_Num<4 && pid->l->line_Error>800) pid->Line_Cnt -= 1;
+			if(pid->Line_Num>3 && pid->l->line_Error>1200) pid->Line_Cnt -= 1;
 			if(pid->Line_Cnt == -1) pid->Line_Cnt = 35;
 			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 			pid->target_Num = pid->Line_Num % 4 + 1;
 			if(pid->target_Num == 4) pid->target_Num = 0;
-			
 		}
 		else
 		{
 			static u8 flag1 = 0;
 			static u8 flag2 = 0;
-			if(flag1 == 0)
-			{
-				pid->Angle += 180;
-				pid->V_Set = -1000;
-				PID_Control(pid);
-			}
-			if((ABS(pid->l->line_Error) < 150) || flag1)
+			static int timeCnt = 0;
+			timeCnt++;
+			if(timeCnt < 500)
 			{
 				if(flag1 == 0)
 				{
-					flag1 = 1;
-					pid->Angle -= 180;
-				}
-				if(flag2 == 0)
-				{
-//					pid->Angle += 180;
-					pid->V_Set = 0;
-					pid->Line_Cnt += 1;
-					if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
-					pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
-					PID_Pre(pid);
-					if(pid->l->line_Error>1200) pid->Line_Cnt -= 1;
-					if(pid->Line_Cnt == -1) pid->Line_Cnt = 35;
-					pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+					pid->Angle += 180;
+					pid->V_Set = -2000;
 					PID_Control(pid);
 				}
-				if((ABS(pid->Error) < 10) || flag2)
+				if((ABS(pid->l->line_Error) < 150) || flag1)
 				{
-//					if(flag2 == 0) pid->Angle -= 180;
-					flag2 = 1;
-					pid->V_Set = 1000;
-					pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
-					PID_Control(pid);
-					if((ABS(pid->Error) < 10))
+					if(flag1 == 0)
 					{
-						error->flag = 0;
-						flag1 = 0;
-						flag2 = 0;
+						flag1 = 1;
+						pid->Angle -= 180;
+					}
+					if(flag2 == 0)
+					{
+						pid->V_Set = 0;
+						pid->Line_Cnt += 1;
+						if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
+						pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+						PID_Pre(pid);
+						if(pid->Line_Num<4 && pid->l->line_Error>800) pid->Line_Cnt -= 1;
+						if(pid->Line_Num>3 && pid->l->line_Error>1200) pid->Line_Cnt -= 1;
+						if(pid->Line_Cnt == -1) pid->Line_Cnt = 35;
+						pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+						PID_Control(pid);
+					}
+					if((ABS(pid->Error) < 10) || flag2)
+					{
+						flag2 = 1;
+						pid->V_Set = 2000;
+						pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+						PID_Control(pid);
+						if((ABS(pid->Error) < 10))
+						{
+							error->flag = 0;
+							flag1 = 0;
+							flag2 = 0;
+							timeCnt = 0;
+							pid->V_Set = 2000;
+						}
 					}
 				}
+				GO(pid);
 			}
-			GO(pid);
+			else
+			{
+				switch (pid->err_line_num)
+				{
+					case 0:
+						break;
+					case 1:
+						break;
+					case 2:
+						break;
+					case 3:
+						break;
+					case 4:
+						break;
+					default:
+						break;
+				}
+			}
 		}
 	}
 	else if(pid->Line_Num > 16)
@@ -773,12 +812,14 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)
 			pid->Mode = Line;
 			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 			PID_Control(pid);
+			if(ABS(pid->l->line_Error) < 100) shoot();
 			GO(pid);
 			pid->Line_Cnt += 1;
 			if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
 			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 			PID_Pre(pid);
-			if(pid->l->line_Error<-1200) pid->Line_Cnt -= 1;
+			if(pid->Line_Num<21 && pid->l->line_Error<-800) pid->Line_Cnt -= 1;
+			if(pid->Line_Num>20 && pid->l->line_Error<-1200) pid->Line_Cnt -= 1;
 			if(pid->Line_Cnt == -1) pid->Line_Cnt = 35;
 			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 			pid->target_Num = pid->Line_Num % 4 - 1;
@@ -788,53 +829,77 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)
 		{
 			static u8 flag1 = 0;
 			static u8 flag2 = 0;
-			if(flag1 == 0)
-			{
-				pid->Angle += 180;
-				pid->V_Set = -1000;
-				PID_Control(pid);
-			}
-			if((ABS(pid->l->line_Error) < 150) || flag1)
+			static int timeCnt = 0;
+			timeCnt++;
+			if(timeCnt < 500)
 			{
 				if(flag1 == 0)
 				{
-					flag1 = 1;
-					pid->Angle -= 180;
-				}
-				if(flag2 == 0)
-				{
-//					pid->Angle += 180;
-					pid->V_Set = 0;
-					pid->Line_Cnt += 1;
-					if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
-					pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
-					PID_Pre(pid);
-					if(pid->l->line_Error<-1200) pid->Line_Cnt -= 1;
-					if(pid->Line_Cnt == -1) pid->Line_Cnt = 35;
-					pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+					pid->Angle += 180;
+					pid->V_Set = -2000;
 					PID_Control(pid);
 				}
-				if((ABS(pid->Error) < 10) || flag2)
+				if((ABS(pid->l->line_Error) < 150) || flag1)
 				{
-//					if(flag2 == 0) pid->Angle -= 180;
-					flag2 = 1;
-					pid->V_Set = 1000;
-					pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
-					PID_Control(pid);
-					if((ABS(pid->Error) < 10))
+					if(flag1 == 0)
 					{
-						error->flag = 0;
-						flag1 = 0;
-						flag2 = 0;
+						flag1 = 1;
+						pid->Angle -= 180;
+					}
+					if(flag2 == 0)
+					{
+						pid->V_Set = 0;
+						pid->Line_Cnt += 1;
+						if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
+						pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+						PID_Pre(pid);
+						if(pid->Line_Num<4 && pid->l->line_Error>800) pid->Line_Cnt -= 1;
+						if(pid->Line_Num>3 && pid->l->line_Error>1200) pid->Line_Cnt -= 1;
+						if(pid->Line_Cnt == -1) pid->Line_Cnt = 35;
+						pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+						PID_Control(pid);
+					}
+					if((ABS(pid->Error) < 10) || flag2)
+					{
+						flag2 = 1;
+						pid->V_Set = 2000;
+						pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+						PID_Control(pid);
+						if((ABS(pid->Error) < 10))
+						{
+							error->flag = 0;
+							flag1 = 0;
+							flag2 = 0;
+							timeCnt = 0;
+							pid->V_Set = 2000;
+						}
 					}
 				}
+				GO(pid);
 			}
-			GO(pid);
+			else
+			{
+				switch (pid->err_line_num)
+				{
+					case 0:
+						break;
+					case 1:
+						break;
+					case 2:
+						break;
+					case 3:
+						break;
+					case 4:
+						break;
+					default:
+						break;
+				}
+			}
 		}
 	}
 }
 
-void GetData(PID_Value *p)
+void GetData(PID_Value *p)                                                   //¶ÁÊý
 {
 	p->Angle = GetAngle();
 	p->X = GetX();
@@ -843,7 +908,7 @@ void GetData(PID_Value *p)
 	p->Y_Speed = GetSpeedY();
 }
 
-void ErrorDisposal(PID_Value *pid,Err *error)
+void ErrorDisposal(PID_Value *pid,Err *error)                                //´íÎó¼ì²â
 {
 	if(error->flag == 1) return;
 	if(error->timeCnt == 0)
@@ -859,6 +924,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)
 		if(error->distance < error->err_distance) 
 		{
 			error->flag = 1;
+			pid->err_line_num = pid->Line_Num;
 			if(pid->Line_Num < 8) pid->Line_Num += 8;
 			if(pid->Line_Num > 7 && pid->Line_Num < 17) pid->Line_Num -= 8;
 			if(pid->Line_Num > 16 && pid->Line_Num < 25) pid->Line_Num += 8;

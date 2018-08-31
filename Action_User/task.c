@@ -84,7 +84,7 @@ void ConfigTask(void)
 	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
 	WaitOpsPrepare();                                                //等待定位系统准备完成
 	PID_Init(PID_x);                                                 //PID参数初始化
-	VelCrl(CAN1,COLLECT_BALL_ID,60*4096);
+	VelCrl(CAN1,COLLECT_BALL_ID,300*4096);
 	YawPosCtrl(170);
 	
 	static float error1 = 0;                                         //用激光传感器矫正定位系统偏移

@@ -115,6 +115,7 @@ typedef struct PID
 	int Line_Cnt;
 	int Line_Order[36];
 	int target_Num;
+	int err_line_num;
 	Line_Value *l;
 	Arc_Value *r;
 	Coordinate_Value *c;
