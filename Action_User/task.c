@@ -29,6 +29,7 @@ OS_EVENT *PeriodSem;
 #define PUSH_POSITION (4500)
 // 宏定义送弹机构收回时电机位置
 #define PUSH_RESET_POSITION (5)
+int if_push=0;
 int diagonal;
 float body_angle;
 float ADC_A;
@@ -66,13 +67,13 @@ float Left_d;
 float Right_d;
 float Add_V=0;
 float tangent_angle;
-float add_or_dec=1;
-float R=1500;//投球为1500//
+float add_or_dec=-1;
+float R=2000;//投球为1500//
 float right_cril;
 float left_cril;
 int time_number=0;
 int leftorright=1;
-float car_v=1000;
+float car_v=1700;
 int compare_number=80;
 int if_back=0;
 int last_back=0;
@@ -135,10 +136,11 @@ void ConfigTask(void)
     VelLoopCfg(CAN1, 8, 50000, 50000);
    	
 	// 推球装置配置位置环
-    PosLoopCfg(CAN1, PUSH_BALL_ID, 1000000,1000000,300000);
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 1000000,1000000,3000000);
    	
     MotorOn(CAN1,6);	
 	MotorOn(CAN1,8);
+	
 	#else
 	VelLoopCfg(CAN2,5,10000000,10000000);
 	VelLoopCfg(CAN2,6,10000000,10000000);
@@ -149,8 +151,7 @@ void ConfigTask(void)
 	/*一直等待定位系统初始化完成*/
 	delay_ms(2000);
 	BEEP_ON;
-	WaitOpsPrepare();
-	YawPosCtrl(170);	
+	WaitOpsPrepare();		
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 static int Right_cr1;
@@ -178,6 +179,7 @@ void WalkTask(void)
 	while (1)
 	{		
 		OSSemPend(PeriodSem,  0, &os_err);
+	
 		ADC_A=fort.laserAValueReceive*2.5112+38.72;
 		ADC_B=fort.laserBValueReceive*2.4267+358.54;
 		x=(int)xya.x;
@@ -187,8 +189,9 @@ void WalkTask(void)
 		angle=(int)xya.angle;
 	    #if car==1	
 		pull_ball();
+			
 		 //控制电机的转速，脉冲//
-        VelCrl(CAN1,8,80*4096); 
+        VelCrl(CAN1,8,350*4096); 
 		//控制发射枪电机转速//	
         Right_d=Get_Adc_Average(14,10);
 		Left_d=Get_Adc_Average(15,10);
@@ -236,10 +239,12 @@ void go(float v)
 	 float send_angle;
 	if(if_go!=0)	
 	{ 
-		
+		if(if_push==1)
+		{
 	    ShooterVelCtrl(get_roll_v());		
 		//航向电机//
-		get_sendangle();		
+		get_sendangle();	
+		}			
 		Round(0,2300,R,V,if_go);
 		q++;       
    }
@@ -255,44 +260,44 @@ void go(float v)
 	 {	
 		 if_back=1;		 
 		 if_add=0;
-//		for(i=0;i<=1500;i++)
-//		{   
-//			#if car==1
-//			VelCrl(CAN2,1,-10000);
-//			VelCrl(CAN2,2,10000);
-//			#else
-//			VelCrl(CAN2,6,0);
-//			VelCrl(CAN2,5,-300000);			
-//			#endif
-//			time_number=0;
-//		}
-//		
-//		if(if_go==1)
-//		{for(i=0;i<=500;i++)
-//		 {  
-//			#if car==1
-//			VelCrl(CAN2,1,-5000);
-//			VelCrl(CAN2,2,-5000);
-//			#else
-//			VelCrl(CAN2,5,-100000);
-//			VelCrl(CAN2,6,100000);			
-//			#endif
-//			time_number=0;
-//		 }
-//		}
-//		if(if_go==-1)
-//		{for(i=0;i<=500;i++)
-//		{   
-//			#if car==1
-//			VelCrl(CAN2,1,5000);
-//			VelCrl(CAN2,2,5000);
-//			#else
-//			VelCrl(CAN2,5,-100000);
-//			VelCrl(CAN2,6,-100000);			
-//			#endif
-//			time_number=0;
-//		}
-//		}
+		for(i=0;i<=1500;i++)
+		{   
+			#if car==1
+			VelCrl(CAN2,1,-10000);
+			VelCrl(CAN2,2,10000);
+			#else
+			VelCrl(CAN2,6,0);
+			VelCrl(CAN2,5,-300000);			
+			#endif
+			time_number=0;
+		}
+		
+		if(if_go==1)
+		{for(i=0;i<=500;i++)
+		 {  
+			#if car==1
+			VelCrl(CAN2,1,-5000);
+			VelCrl(CAN2,2,-5000);
+			#else
+			VelCrl(CAN2,5,-100000);
+			VelCrl(CAN2,6,100000);			
+			#endif
+			time_number=0;
+		 }
+		}
+		if(if_go==-1)
+		{for(i=0;i<=500;i++)
+		{   
+			#if car==1
+			VelCrl(CAN2,1,5000);
+			VelCrl(CAN2,2,5000);
+			#else
+			VelCrl(CAN2,5,-100000);
+			VelCrl(CAN2,6,-100000);			
+			#endif
+			time_number=0;
+		}
+		}
 		right_cril=0;
 		left_cril=0;	
 		q=0;
@@ -304,30 +309,36 @@ void go(float v)
 	if(if_back>last_back)
 	{  
 		if_go=-if_go;
+	
+		    if(R>=2100)
+			{   R=2100;
+				add_or_dec=-1;
+			}
+			if(R<=600)
+			{	
+				add_or_dec=1;
+				R=1500;
+				if_push=1;
+				car_v=1500;
+			}
+			R=add_or_dec*300+R;
+	   
+	
+			
 		
-//		if(R>=2000)
-//		add_or_dec=-1;
-//		if(R<=800)	
-//		add_or_dec=1;
-//		R=add_or_dec*300+R;
-//		if(R>=2300)
-//			R=2300;
-//		if(R<=600)
-//			R=600;
-//		
 	}
-	last_back=if_back;
+	 last_back=if_back;
 	 #if car==1
-	right_cril=Right_cr1+Dout+Aout;
-	left_cril=Left_cr2+Dout+Aout;
-    VelCrl(CAN2,1,right_cril);
-	VelCrl(CAN2,2, left_cril);
-	  right=right_cril;
+	 right_cril=Right_cr1+Dout+Aout;
+	 left_cril=Left_cr2+Dout+Aout;
+     VelCrl(CAN2,1,right_cril);
+	 VelCrl(CAN2,2, left_cril);
+	 right=right_cril;
 	 left=left_cril;
-   	 USART_OUT(USART1,(uint8_t*)"Right=%d\t",right);	   
-	 USART_OUT(USART1,(uint8_t*)"Left=%d\t",left);
-	 USART_OUT(USART1,(uint8_t*)"time_number=%d\t",time_number);
-	 USART_OUT(USART1,(uint8_t*)"if_go=%d\t",if_go);
+//   	 USART_OUT(USART1,(uint8_t*)"Right=%d\t",right);	   
+//	 USART_OUT(USART1,(uint8_t*)"Left=%d\t",left);
+//	 USART_OUT(USART1,(uint8_t*)"time_number=%d\t",time_number);
+//	 USART_OUT(USART1,(uint8_t*)"if_go=%d\t",if_go);
 	 Aout=0;
 	 Dout=0;
 	 #elif  car==2 	 
@@ -529,7 +540,7 @@ void get_angle(float a,float b,int n,int round)
 		else second_driection=-1;
 		
 	}
-  if(if_add)	
+  if(if_add&&!if_push)	
   { if(if_go==1)
 	{if(set_angle>=-100&&set_angle<=-98)
 	{
@@ -548,24 +559,29 @@ void get_angle(float a,float b,int n,int round)
     }
 	if(cril_flag>lastcril_flag)
 	{
-//		R=add_or_dec*300+R;
-//		if(R>=2200)
-//			R=2200;
-//		if(R<=600)
-//			R=600;
-//		
-//		if(R>=2000)
-//		add_or_dec=-1;
-//        if(R<=700)	
-//		add_or_dec=1;
+		R=add_or_dec*500+R;
+		if(R>=2100)		
+		{
+			add_or_dec=-1;
+			R=2100;
+		}
+		if(R<=600)
+		{   
+            add_or_dec=1;
+			R=1200;
+			car_v=1000;
+			if_add=0;
+			if_push=1;
+		}
+		
 	}
 	
 	lastcril_flag=cril_flag;
   }
     change_compere_angle=(int)set_angle;
     set_R=R;
-	USART_OUT(UART4,(uint8_t*)"set_R=%d\t",set_R);
-	USART_OUT(UART4,(uint8_t*)"if_in=%d\t",if_in);
+	//USART_OUT(UART4,(uint8_t*)"set_R=%d\t",set_R);
+	//USART_OUT(UART4,(uint8_t*)"if_in=%d\t",if_in);
 	pid_angle(tangent_angle,second_driection);
 	t=0;
 	if_in=0;
@@ -732,32 +748,39 @@ float Turn_v_to_headmaichong(float v,float r)
 //得到炮台转轮速度//
 float get_roll_v(void)
 {   
+	float roll_v;
 	//四号车的炮台速度比较小需要加大//
 	//一号车在顺时针 -1 4   1 3.5//	四号炮台+0.2
+	float	get_d(float,float);
 	if(s<=4000)
 	{
-	if(if_go==1)
+	if(if_go==1&&Add_V>=150)
 	{
 		if( diagonal==1)
-		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*4);
+		roll_v=((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*4.1*get_d(0,2300)/1000);
 		else
-		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*3.5);
+		roll_v=((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*3.7*get_d(0,2300)/1000);
 	}else
 	{   if( diagonal==-1)
-		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*4.2);
+		roll_v=((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*4.2*get_d(0,2300)/1000);
 		else
-		return((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*3.7);
+		roll_v=((sqrt(19600*pow(s,2)/((sqrt(3))*s-400)))/377*3.7*get_d(0,2300)/1000);
 	}
-    }
-	else return(50);
+    }else roll_v=(50);
 	
+	if(roll_v<=100)
+		return roll_v;
+	else return 50;
 }
 
 //使航向电机对准目标//
 void get_sendangle(void)
-{   void	get_d(float,float);
+{   
+	float	get_d(float,float);
 	void pull_ball();
 	void get_angle2(float a,float b,int n,int round);
+	float add_angle=1000/get_d(0,2300)*30; 
+	
 	float point_x;
 	float point_y;
     float sendsend_angle;
@@ -820,7 +843,7 @@ void get_sendangle(void)
 				pull_ball();
 			else push_balltime=0;
 		}
-		get_d(point_x,point_y);
+	  s=get_d(point_x,point_y);
 	}else 
 	{
 		if((change_compere_angle<=-135&&change_compere_angle>=-180)||(change_compere_angle>=135&&change_compere_angle<=180))
@@ -831,9 +854,9 @@ void get_sendangle(void)
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
-			YawPosCtrl(80-body_angle+xya.compare_angle);
+			YawPosCtrl(80-body_angle+xya.compare_angle+add_angle);
 			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
-			YawPosCtrl(440-body_angle+xya.compare_angle);
+			YawPosCtrl(440-body_angle+xya.compare_angle+add_angle);
 			if((change_compere_angle>=140)||(change_compere_angle>=-180&&change_compere_angle<=-145))
 			 pull_ball();
 			else push_balltime=0;
@@ -844,9 +867,9 @@ void get_sendangle(void)
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-170)
-			YawPosCtrl(80-body_angle+xya.compare_angle);
+			YawPosCtrl(80-body_angle+xya.compare_angle+add_angle);
 			else if(xya.compare_angle<getget_angle-198&&xya.compare_angle>=-180 )
-			YawPosCtrl(440-body_angle+xya.compare_angle);
+			YawPosCtrl(440-body_angle+xya.compare_angle+add_angle);
 			if(change_compere_angle>=50&&change_compere_angle<=125)
 				pull_ball();
 			else push_balltime=0;
@@ -857,9 +880,9 @@ void get_sendangle(void)
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=90+body_angle;
 			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
-			YawPosCtrl(80-body_angle+xya.compare_angle);			
+			YawPosCtrl(80-body_angle+xya.compare_angle+add_angle);			
 			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198 )
-				YawPosCtrl(280-body_angle+xya.compare_angle);
+				YawPosCtrl(280-body_angle+xya.compare_angle+add_angle);
 			if(change_compere_angle>=-40&&change_compere_angle<=35)
 				pull_ball();
 			else push_balltime=0;
@@ -870,15 +893,17 @@ void get_sendangle(void)
 			get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
 			getget_angle=-270+body_angle;
 			if(xya.compare_angle<getget_angle+172&&xya.compare_angle>=-180)
-			YawPosCtrl(440-body_angle+xya.compare_angle);			
+			YawPosCtrl(440-body_angle+xya.compare_angle+add_angle);			
 			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+198)
-				YawPosCtrl(80-body_angle+xya.compare_angle);
+				YawPosCtrl(80-body_angle+xya.compare_angle+add_angle);
 			if(change_compere_angle>=-130&&change_compere_angle<=-55)
 				pull_ball();
 			else push_balltime=0;
 		}
-		get_d(point_x,point_y);
+		s=get_d(point_x,point_y);
 	}
+	USART_OUT(UART4,(uint8_t*)"add_angle=%d\t",(int)add_angle);
+	USART_OUT(UART4,(uint8_t*)"push_balltime=%d\t",(int)push_balltime);
 }
 void get_angle2(float a,float b,int n,int round)
 { 	
@@ -969,7 +994,7 @@ void pull_ball(void)
 	
 }
 //得到车与四个点的距离//
-void get_d(float x,float y)
+float get_d(float x,float y)
 {
-	s= sqrt(pow (xya.x-x,2)+pow(xya.y-y,2));
+	return(sqrt(pow (xya.x-x,2)+pow(xya.y-y,2)));
 }
