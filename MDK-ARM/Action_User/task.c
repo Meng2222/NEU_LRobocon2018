@@ -62,19 +62,20 @@ void ConfigTask(void)
 	ElmoInit(CAN1);
 	ElmoInit(CAN2);
 	VelLoopCfg(CAN1,COLLECT_BALL_ID,50000,50000);
-	PosLoopCfg(CAN1,PUSH_BALL_ID,500000,500000,50000);
+	PosLoopCfg(CAN1,PUSH_BALL_ID,1000000,1000000,400000);
 	VelLoopCfg(CAN2,1,10000000,10000000);
 	VelLoopCfg(CAN2,2,10000000,10000000);
 	MotorOn(CAN1,PUSH_BALL_ID);
 	MotorOn(CAN1,COLLECT_BALL_ID);
 	MotorOn(CAN2,1);
 	MotorOn(CAN2,2);
+	VelCrl(CAN1,COLLECT_BALL_ID,600*4096); 
 	/*一直等待定位系统初始化完成*/
 	delay_s(2);
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float yawAngle=170,T=0.2,v=1500,angle,Distance;
+float yawAngle=170,T=0.2,v=1000,angle,Distance;
 int status,throwFlag=0,R=600;
 extern float x,y;
 extern int time,Cnt;
@@ -143,39 +144,39 @@ void WalkTask(void)
 		}	
 //		DistanceA=ReadLaserAValue()*2.4973+40;
 //		DistanceB=ReadLaserBValue()*2.4973+360;	
-		VelCrl(CAN1,COLLECT_BALL_ID,60*4096); 
+
 		if(status==0)
 		{
-			if(x>=-400&&y<2000)
+			if(x<=900&&y<1500)
 			{	
-				if(x>400)
+				if(x>-900)
 					throwFlag=1;
 				else
 					throwFlag=0;
 				GetYawangle(2200,200);
 				GetDistance(2200,200);
 			}	
-			if(y>=2000&&x>=400)
+			if(y<=3300&&x>=900)
 			{	
-				if(y>2800)
+				if(y>1500)
 					throwFlag=1;
 				else
 					throwFlag=0;
 				GetYawangle(2200,4600);
 				GetDistance(2200,4600);
 			}	
-			if(x<400&&y>=2800)
+			if(x>-900&&y>=3300)
 			{	
-				if(x<-400)
+				if(x<900)
 					throwFlag=1;
 				else
 					throwFlag=0;
 				GetYawangle(-2200,4600);
 				GetDistance(-2200,4600);
-			}	
-			if(y<2800&&x<-400)
+			}
+			if(y>1500&&x<-900)
 			{	
-				if(y<2000)
+				if(y<3300)
 					throwFlag=1;
 				else
 					throwFlag=0;
@@ -185,36 +186,36 @@ void WalkTask(void)
 		}
 		else
 		{
-			if(x>=400&&y<2800)
+			if(x>=900&&y>1500)
 			{
-				if(y<2000)
+				if(y<3300)
 					throwFlag=1;
 				else
 					throwFlag=0;
 				GetYawangle(2200,200);
 				GetDistance(2200,200);
 			}	
-			if(x>=-400&&y>=2800)
-			{	
-				if(x>400)
+			if(x<=900&&y>=3300)
+			{
+				if(x>-900)
 					throwFlag=1;
 				else
 					throwFlag=0;
 				GetYawangle(2200,4600);
 				GetDistance(2200,4600);
 			}	
-			if(x<-400&&y>=2000)
+			if(x<-900&&y<=3300)
 			{	
-				if(y>2800)
+				if(y>1500)
 					throwFlag=1;
 				else
 					throwFlag=0;
 				GetYawangle(-2200,4600);
 				GetDistance(-2200,4600);
 			}
-			if(x<400&&y<2000)
+			if(x>-900&&y<1500)
 			{	
-				if(x<-400)
+				if(x<900)
 					throwFlag=1;
 				else
 					throwFlag=0;
@@ -235,33 +236,34 @@ void WalkTask(void)
 		if(status==0)
 		{	shootAngle=yawAngle+atan(Vy/V)*180/pi;
 			YawPosCtrl(shootAngle);
-		}	
+		}
 		else
 		{	shootAngle=yawAngle-atan(Vy/V)*180/pi;
 			YawPosCtrl(shootAngle);
 		}	
-		rps=(sqrtf(V*V+Vy*Vy)-208.65)/39.444;
-		if(rps>100)
-			rps=50;
+		rps=(sqrtf(V*V+Vy*Vy)-208.65)/39.444+1;
+		if(rps>80)
+			rps=80;
+		USART_OUT(UART4,(uint8_t *)"%d\r\n",(int)rps);
 		ShooterVelCtrl(rps);
 		if(R>1000)
 		{
 			if(throwFlag==1)
 			{
-				if(push_Ball_Count==50)
+				if(push_Ball_Count==500)
 					PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);		
-				if(push_Ball_Count==100)
-				{	
+				if(push_Ball_Count==600)
+				{
 					PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 					push_Ball_Count=0;
 				}
 			}
 			else
-				push_Ball_Count=49;
+				push_Ball_Count=495;
 		}
 		push_Ball_Count++;
 		lastX=x;
 		lastY=y;
-		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetAngle(),(int)GetX(),(int)GetY(),(int)rps,(int)GetSpeedX(),(int)GetSpeedY(),(int)Distance,(int)Vx,(int)Vy);
+		//USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetAngle(),(int)GetX(),(int)GetY(),(int)rps,(int)GetSpeedX(),(int)GetSpeedY(),(int)Distance,(int)Vx,(int)Vy);
 	}
 }
