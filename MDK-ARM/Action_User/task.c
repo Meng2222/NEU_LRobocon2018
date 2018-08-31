@@ -75,7 +75,7 @@ void ConfigTask(void)
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float yawAngle=170,T=0.2,v=1000,angle,Distance;
+float yawAngle=170,T=0.2,v=1500,angle,Distance;
 int status,throwFlag=0,R=600;
 extern float x,y;
 extern int time,Cnt;
@@ -125,13 +125,13 @@ void WalkTask(void)
 			CirclePID(0,2400,R,v,status);
 			if(status==0)
 			{					
-				if(x<-200&&lastX>-200&&R<1500)		
+				if(x>-200&&lastX<-200&&R<1500&&y<2400)		
 					R+=500;
 			}	
 			else
-				if(x<100&&lastX>100&&R<1500)
+				if(x<100&&lastX>100&&R<1500&y<2400)
 					R+=500;
-			if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>30)
+			if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>50)
 				lastTime=time;
 			if(time-lastTime>=100)
 			{	
@@ -144,7 +144,6 @@ void WalkTask(void)
 		}	
 //		DistanceA=ReadLaserAValue()*2.4973+40;
 //		DistanceB=ReadLaserBValue()*2.4973+360;	
-
 		if(status==0)
 		{
 			if(x<=900&&y<1500)
@@ -223,10 +222,10 @@ void WalkTask(void)
 				GetDistance(-2200,200);
 			}
 		}
-		if(status==0)
+//		if(status==0)
 			yawcompangle=(yawAngle-170)*pi/180;
-		else
-			yawcompangle=(-yawAngle+170)*pi/180;
+//		else
+//			yawcompangle=(-yawAngle+170)*pi/180;
 		//圆筒方向速度
 		Vx=cos(yawcompangle)*sqrtf(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY());
 		//圆筒垂直方向速度
@@ -234,14 +233,11 @@ void WalkTask(void)
 		//应给的速度
 		V=-Vx+Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*Vx*Vx)-sqrt(3)*Vx);
 		if(status==0)
-		{	shootAngle=yawAngle+atan(Vy/V)*180/pi;
-			YawPosCtrl(shootAngle);
-		}
+			shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		else
-		{	shootAngle=yawAngle-atan(Vy/V)*180/pi;
-			YawPosCtrl(shootAngle);
-		}	
-		rps=(sqrtf(V*V+Vy*Vy)-208.65)/39.444+1;
+			shootAngle=yawAngle+atan(Vy/V)*180/pi;
+		YawPosCtrl(shootAngle);
+		rps=(sqrtf(V*V+Vy*Vy)-168.94)/39.56+1;
 		if(rps>80)
 			rps=80;
 		USART_OUT(UART4,(uint8_t *)"%d\r\n",(int)rps);
