@@ -267,7 +267,7 @@ void ConfigTask(void)
 	// 配置速度环
 
 	// 配置位置环
-    PosLoopCfg(CAN1, PUSH_BALL_ID, 1000000,1000000,200000);
+    PosLoopCfg(CAN1, PUSH_BALL_ID, 1000000,1000000,50000);
     VelLoopCfg(CAN1, COLLECT_BALL_ID, 50000, 50000);
 	
 	
@@ -323,7 +323,17 @@ void WalkTask(void)
 	{
 
 		OSSemPend(PeriodSem, 0, &os_err);
-
+         if(record==20)
+    	  {
+		  if(accident_check()==0)
+		    lets_go=1;
+		  else lets_go=0;
+		    if(lets_go==1)
+			{last_angle=action.angle;
+            last_x=action.x;
+            }last_y=action.y;
+		    record=0;		
+	  }//
 	
  
 	if(car==40)//离散点走直线
@@ -438,17 +448,7 @@ void WalkTask(void)
 {
 	  if( sn!=0)
 {	  
-	if(record==50)
-	  {
-		  if(accident_check()==0)
-		    lets_go=1;
-		  else lets_go=0;
-		    last_angle=action.angle;
-            last_x=action.x;
-            last_y=action.y;
-		    record=0;
-		
-	  }//
+	
 	  
 	   if(action.y>0&&last_y<0&&action.x>-2400)
 {
@@ -484,7 +484,7 @@ void WalkTask(void)
 		ra=Ra-300/buff_cnt;
 	   if(add_flag==-1)
 		ra=Ra+300/buff_cnt;
-       loop(-2400,100,ra,ra/600,sn);//逆时针转为1,顺时针为-1
+       loop(-2400,0,ra,Ra/600,sn);//逆时针转为1,顺时针为-1
        record++;
     }
 	if(stable_flag==1)
@@ -507,7 +507,7 @@ void WalkTask(void)
 	
 if(car==3)
 {
-  loop(-2350,0,2000,1,1);//闭环转圆
+  loop(-2400,0,2000,1,1);//闭环转圆
      	if((action.y>-2700-1.09*action.x)&&(action.y<0.916*action.x+2100))
 	    aim(-50,2200);
 		if((action.y>-2700-1.09*action.x)&&(action.y>0.916*action.x+2100))
@@ -516,7 +516,7 @@ if(car==3)
 		aim(-4937,-2271);
 		if((action.y<0.916*action.x+2100)&&(action.y<-2700-1.09*action.x))
 		aim(-100,-2300);	
-
+        record++;
 		
 			  
 
@@ -654,104 +654,120 @@ int accident_check()
 	            VelCrl(CAN2, 02,10000); //倒车
 			}
 			if(add_flag==-1)
-				Ra=Ra-200;
+			{
+				Ra=Ra-300;
+				for(back_time=0;back_time<800;back_time++)
+			   {
+				VelCrl(CAN2, 01,10000);//倒车· 
+	            VelCrl(CAN2, 02,-5000); //倒车
+		       }
+			}
 			if(add_flag==1)
-				Ra=Ra+200;
-			if(Ra>=2200)
 			{	
-			   Ra=1800;
+			Ra=Ra+300;
+			for(back_time=0;back_time<800;back_time++)
+			  {
+				VelCrl(CAN2, 01,5000);//倒车· 
+	            VelCrl(CAN2, 02,-10000); //倒车
+		      }
+			
+			}
+			if(Ra>=1700)
+			{	
+			   Ra=1400;
 			   add_flag=-1;
 			}
-			if(Ra<=600)
+			if(Ra<=500)
 			{
 			   Ra=800;
 				add_flag=1;
 			}
 			accident_back=0;//故障解除	
+//			if(action.angle==90&&action.x)
 		}
-		if(accident_ahead==1)//遇到阻力，向前加速
-		{
-			for(back_time=0;back_time<100;back_time++)
-			{
-			if(Ra<=1600)
-			loop(-2400,0,Ra,(Ra/1000)+0.5,sn);
-		     }
-			accident_ahead=0;//故障解除
-		}
-		if(accident_conner!=0)
-		{
-			for(back_time=0;back_time<80;back_time++)
-				{
-					VelCrl(CAN2, 01,-10000);//倒车· 
-					VelCrl(CAN2, 02,10000); //倒车
-				}
-			if(accident_conner==1||accident_conner==4||accident_conner==5||accident_conner==8)
-			accident_turn(-1);
-			if(accident_conner==2||accident_conner==3||accident_conner==6||accident_conner==7)
-			accident_turn(1);
-			accident_conner=0;//故障解除
-		}
-		if(accident_frame==1)
-		{
-		while(accident_frame!=0)
-		{
-			back_time++;
-			if(back_time==50)
-			{
-				turn(0,action.angle,1);//原地单轮转到固定角度
-				back_time=0;
-			}
-			if(fabs(action.angle)<5)
-				accident_frame=0;
-		}
-		}
-		
-		
-		if(accident_frame==2)
-		{
-		while(accident_frame!=0)
-		{
-			back_time++;
-			if(back_time==50)
-			{
-				turn(-90,action.angle,1);//原地单轮转到固定角度
-				back_time=0;
-			}
-			if(fabs(action.angle+90)<5)
-				accident_frame=0;
-		}
-		}
-		
-		
-		if(accident_frame==4)
-		{
-		while(accident_frame!=0)
-		{
-			back_time++;
-			if(back_time==50)
-			{
-				turn(90,action.angle,1);//原地单轮转到固定角度
-				back_time=0;
-			}
-			if(fabs(action.angle-90)<5)
-				accident_frame=0;
-		}
-		}
-		
-		if(accident_frame==3)
-		{
-		while(accident_frame!=0)
-		{
-			back_time++;
-			if(back_time==50)
-			{
-				turn(180,action.angle,1);//原地单轮转到固定角度
-				back_time=0;
-			}
-			if(((action.angle>0)&&(180-action.angle)<10)||((action.angle<0)&&(action.angle+180)<10))
-				accident_frame=0;
-		}
-		}
+//		if(accident_ahead==1)//遇到阻力，向前加速
+//		{
+//			for(back_time=0;back_time<100;back_time++)
+//			{
+//			if(Ra<=1600)
+//			loop(-2400,0,Ra,(Ra/1000)+0.5,sn);
+//		     }
+//			accident_ahead=0;//故障解除
+//		}
+//		if(accident_conner!=0)
+//		{
+//			for(back_time=0;back_time<80;back_time++)
+//				{
+//					VelCrl(CAN2, 01,-10000);//倒车· 
+//					VelCrl(CAN2, 02,10000); //倒车
+//				}
+//			if(accident_conner==1||accident_conner==4||accident_conner==5||accident_conner==8)
+//			accident_turn(-1);
+//			if(accident_conner==2||accident_conner==3||accident_conner==6||accident_conner==7)
+//			accident_turn(1);
+//			accident_conner=0;//故障解除
+//		}
+//		if(accident_frame==1)
+//		{
+//		while(accident_frame!=0)
+//		{
+//			back_time++;
+//			if(back_time==50)
+//			{
+//				turn(0,action.angle,1);//原地单轮转到固定角度
+//				back_time=0;
+//			}
+//			if(fabs(action.angle)<5)
+//				accident_frame=0;
+//		}
+//		}
+//		
+//		
+//		if(accident_frame==2)
+//		{
+//		while(accident_frame!=0)
+//		{
+//			back_time++;
+//			if(back_time==50)
+//			{
+//				turn(-90,action.angle,1);//原地单轮转到固定角度
+//				back_time=0;
+//			}
+//			if(fabs(action.angle+90)<5)
+//				accident_frame=0;
+//		}
+//		}
+//		
+//		
+//		if(accident_frame==4)
+//		{
+//		while(accident_frame!=0)
+//		{
+//			back_time++;
+//			if(back_time==50)
+//			{
+//				turn(90,action.angle,1);//原地单轮转到固定角度
+//				back_time=0;
+//			}
+//			if(fabs(action.angle-90)<5)
+//				accident_frame=0;
+//		}
+//		}
+//		
+//		if(accident_frame==3)
+//		{
+//		while(accident_frame!=0)
+//		{
+//			back_time++;
+//			if(back_time==50)
+//			{
+//				turn(180,action.angle,1);//原地单轮转到固定角度
+//				back_time=0;
+//			}
+//			if(((action.angle>0)&&(180-action.angle)<10)||((action.angle<0)&&(action.angle+180)<10))
+//				accident_frame=0;
+//		}
+//		}
 		
 	}
 	
@@ -1106,12 +1122,6 @@ void run_to(float BETA,float Vm)//由当前角度pao向BETA
 	USART_OUT( UART4, (uint8_t*)"%d ", i_value);
 }
 	
-	
-	
-	
-	
-	
-	
 int line(float aa, float bb, float cc, float nn,float VL)
 {
 	   float d=0;
@@ -1161,10 +1171,10 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 	distance_err=DISTANCE-Radium;//偏离圆周的距离
 	Ierr=Ierr+distance_err;
 	I_value=Ierr*KI;
-	if(V_loop<1.2)
-		V_loop=1.2;//速度不小于1米每秒
-	if(V_loop>=2)
-		V_loop=2;
+	if(V_loop<0.8)
+		V_loop=0.8;//速度不小于1米每秒
+	if(V_loop>=2.5)
+		V_loop=2.5;
 	if(SN==1)//逆时针
 	{
 		if(action.y>corey)
@@ -1297,7 +1307,7 @@ void loop(float corex,float corey,float Radium,float V_loop,int SN)//闭环转�
 
 
 float aim(float aim_x,float aim_y)
-{
+ {
 	float aim_angle=0;//射击的角度
 	
 	float Vhe=0;//合速度
@@ -1336,12 +1346,12 @@ aim shoot;
 	target_angle=a_gen(action.y-aim_y,aim_x-action.x,target_n);//输出给定直线的方向角
 	deta_angle=target_angle-action.angle;
 	V_move=sqrt(pow(action.x_speed*0.001,2)+pow(action.y_speed*0.001,2));
-	s=sqrt(pow(action.x-aim_x,2)+pow(action.y-aim_y,2));
+	s=sqrt(pow(last_x-aim_x,2)+pow(last_y-aim_y,2));
 	Vhe=sqrt(2*9.8*(s)*(s)*0.001/(1.732*s-H));
 	shoot.V=sqrt(pow(V_move,2)+0.25*Vhe*Vhe-V_move*Vhe*cos(deta_angle*PAI/180.0f))*2;
 	fuzhu_angle=asin(V_move/shoot.V*sin(deta_angle/180.0*PAI))*180/PAI;
 	shoot.angle=target_angle+fuzhu_angle;
-	pratical_value=(3.0)*shoot.V/(PAI*YAW_diameter*0.001);
+	pratical_value=(2.6+(300)/s)*shoot.V/(PAI*YAW_diameter*0.001);
 	//瞄准
 	
 	pratical_angle=(YAW_initangle+shoot.angle-action.angle);
@@ -1350,16 +1360,16 @@ aim shoot;
 	if(pratical_angle<0)
 		pratical_angle=pratical_angle+360;
 	if(pratical_angle>170&&pratical_angle<320)
-	pratical_angle=pratical_angle+30000/s;
+	pratical_angle=pratical_angle+20000/s;
 	if(pratical_angle>320)
-	pratical_angle=pratical_angle+48000/s;
+	pratical_angle=pratical_angle+32000/s;
 	
 	  YawPosCtrl(pratical_angle);	//旧车炮台系统,航向角
-	 ShooterVelCtrl(pratical_value);   	//开火
+	 ShooterVelCtrl(pratical_value); 
 	
 	
 	
-	if((((fort.yawPosReceive-pratical_angle<40000/s)))&&fire_ready)//
+	if((fort.yawPosReceive-pratical_angle<30000/s)&&fire_ready)//推球
 		fire_cnt++;
 	else fire_cnt=0;
 	if(fire_cnt>firE_cnt)
@@ -1382,12 +1392,12 @@ aim shoot;
 		reset++;
 		PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 	}
-	if(reset==25)
+	if(reset==50)
 	{
 	reset_flag=0;
 	reset=0;
 	}
-	if(push==25)
+	if(push==50)
 	{
 	push_flag=0;
 	push=0;
