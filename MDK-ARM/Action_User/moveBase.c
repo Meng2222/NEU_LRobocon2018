@@ -191,6 +191,9 @@ void GetYawangle(float x1,float y1)
 		//预判Ts后的坐标（适用于走圆形）
 		x=R*cos((angle-90+antiRad)*pi/180);
 		y=R*sin((angle-90+antiRad)*pi/180)+2400;
+		//预判Ts后炮台坐标
+		x=x-65*sin(GetAngle()*pi/180);
+		y=y+65*cos(GetAngle()*pi/180);
 		GetFunction(x,y,x1,y1);
 		if(GetAngle()<-90&&lAngle>90)
 			yawAngle=170+360+GetAngle()-lAngle;
@@ -201,6 +204,9 @@ void GetYawangle(float x1,float y1)
 	{
 		x=R*cos((angle+90-antiRad)*pi/180);
 		y=R*sin((angle+90-antiRad)*pi/180)+2400;
+		//预判Ts后炮台坐标
+		x=x-65*sin(GetAngle()*pi/180);
+		y=y+65*cos(GetAngle()*pi/180);
 		GetFunction(x,y,x1,y1);
 		if(lAngle<-90&&GetAngle()>90)
 			yawAngle=170-360+GetAngle()-lAngle;
@@ -225,6 +231,9 @@ void GetDistance(float x1,float y1)
 		x=R*cos((angle+90-antiRad)*pi/180);
 		y=R*sin((angle+90-antiRad)*pi/180)+2400;
 	}
+	//炮台坐标
+	x=x-65*sin(GetAngle()*pi/180);
+	y=y+65*cos(GetAngle()*pi/180);
 	Distance=sqrtf((x-x1)*(x-x1)+(y-y1)*(y-y1));
 	USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t",(int)Distance,(int)x,(int)y,(int)GetX(),(int)GetY(),(int)x1,(int)y1,(int)GetAngle());
 }	

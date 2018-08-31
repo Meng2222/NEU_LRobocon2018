@@ -62,7 +62,7 @@ void ConfigTask(void)
 	ElmoInit(CAN1);
 	ElmoInit(CAN2);
 	VelLoopCfg(CAN1,COLLECT_BALL_ID,50000,50000);
-	PosLoopCfg(CAN1,PUSH_BALL_ID,1000000,1000000,400000);
+	PosLoopCfg(CAN1,PUSH_BALL_ID,1000000,1000000,500000);
 	VelLoopCfg(CAN2,1,10000000,10000000);
 	VelLoopCfg(CAN2,2,10000000,10000000);
 	MotorOn(CAN1,PUSH_BALL_ID);
@@ -75,7 +75,7 @@ void ConfigTask(void)
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float yawAngle=170,T=0.2,v=1500,angle,Distance;
+float yawAngle=170,T=0.1,v=1000,angle,Distance;
 int status,throwFlag=0,R=600;
 extern float x,y;
 extern int time,Cnt;
@@ -232,12 +232,12 @@ void WalkTask(void)
 		Vy=sin(yawcompangle)*sqrtf(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY());
 		//应给的速度
 		V=-Vx+Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*Vx*Vx)-sqrt(3)*Vx);
-		if(status==0)
+		if	(status==0)
 			shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		else
 			shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		YawPosCtrl(shootAngle);
-		rps=(sqrtf(V*V+Vy*Vy)-168.94)/39.56+1;
+		rps=(sqrtf(V*V+Vy*Vy)-168.94)/39.56;
 		if(rps>80)
 			rps=80;
 		USART_OUT(UART4,(uint8_t *)"%d\r\n",(int)rps);
