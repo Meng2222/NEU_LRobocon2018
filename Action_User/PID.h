@@ -150,4 +150,5 @@ void PID_Competition_testVersion(PID_Value *pid, u8 dir);
 void PID_Competition(PID_Value *pid, u8 dir, Err *error);
 void ErrorDisposal(PID_Value *pid,Err *error);
 void GetData(PID_Value *p);
+void shoot(void);
 #endif

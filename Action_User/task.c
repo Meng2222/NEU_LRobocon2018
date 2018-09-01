@@ -72,7 +72,7 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2,2,8000000,8000000);                              //左电机速度环初始化
 	VelLoopCfg(CAN2,1,8000000,8000000);                              //右电机速度环初始化
 	VelLoopCfg(CAN1, 8, 40000000, 40000000);                               //收球电机
-	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,2000000);
+	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,200000);
 	MotorOn(CAN2,1);                                                 //右电机使能
 	MotorOn(CAN2,2);                                                 //左电机使能
 	MotorOn(CAN1,8); 
@@ -84,7 +84,7 @@ void ConfigTask(void)
 	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
 	WaitOpsPrepare();                                                //等待定位系统准备完成
 	PID_Init(PID_x);                                                 //PID参数初始化
-	VelCrl(CAN1,COLLECT_BALL_ID,300*4096);
+	VelCrl(CAN1,COLLECT_BALL_ID,400*4096);
 	YawPosCtrl(170);
 	
 	static float error1 = 0;                                         //用激光传感器矫正定位系统偏移
@@ -133,19 +133,43 @@ void WalkTask(void)
 		GetData(PID_x);
 		ErrorDisposal(PID_x,Error_x);
 		PID_Competition(PID_x,direction,Error_x);
-		
-		gundata.detVel = sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY());		   //检测到的当前车速
-		gundata.Distance_Accuracy = 50;                                                                          //距离精度
-		gundata.Yaw_Angle_Offset = GetYawPosCommand();                                             //航向角偏差
-		gundata.Shooter_Vel_Offset = GetShooterVelCommand();                                       //射球转速补偿
+
 		gundata.BucketNum = PID_A.target_Num;
-		GunneryData_Operation(PID_x,&gundata);
+					switch(gundata.BucketNum)
+			{
+				case 0:
+					gundata.Yaw_Angle_Offset = 4.0;        //航向角补偿 
+					gundata.Shooter_Vel_Offset = -3.0;      //射球转速补偿	
+					break;
+				case 1:
+					gundata.Yaw_Angle_Offset = 4.0;        //航向角补偿 
+					gundata.Shooter_Vel_Offset = -3.0;      //射球转速补偿	
+					break;
+				case 2:
+					gundata.Yaw_Angle_Offset = 4.0;        //航向角补偿 
+					gundata.Shooter_Vel_Offset = -3.0;      //射球转速补偿	
+					break;
+				case 3:
+					gundata.Yaw_Angle_Offset = 4.0;        //航向角补偿 
+					gundata.Shooter_Vel_Offset = -3.0;      //射球转速补偿	
+					break;
+			}
+		gundata.Distance_Accuracy = 10.0;    //距离精度
+		GunneryData_Operation(&gundata,PID_x);
 		YawPosCtrl(gundata.YawPosTarActAngle);
 		ShooterVelCtrl(gundata.ShooterVelSet);
-		
-		UART4_OUT(PID_x);
-	}
-}
-//     上位机控制炮台航向，射速函数
+		if(gundata.Angle_Deviation < 20.0) shoot();
+//		shoot();
+		//     上位机控制炮台航向，射速函数
 //		YawPosCtrl(GetYawPosCommand());
 //		ShooterVelCtrl(GetShooterVelCommand());
+//		UART4_OUT(PID_x)
+//		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.YawPos);
+//		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.YawPosTarActAngle);
+//		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVel);
+//		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVelSet);
+//		USART_SendData(UART4,'\r');
+//		USART_SendData(UART4,'\n');
+	}
+}
+

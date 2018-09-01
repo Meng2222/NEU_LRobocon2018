@@ -34,11 +34,9 @@
 #include "math.h"
 #include "adc.h"
 #include "fort.h"
-#include "PID.h"
 
 //对应的收发串口
 #define USARTX UART5
-
 
 #define Yaw_Zero_Offset (170.0f)                                //炮台角度指向车头方向置零    170°
 #define Fort_TO_BACK_WHEEL (65.0f)                              //炮台到车轴中点距离          65.0mm
@@ -179,12 +177,16 @@ float Constrain_float_Angle(float angle)
 * @author 陈昕炜
 * @note   在使用该函数之前需输入当前速度的检测值 单位mm/s
 */
-void GunneryData_Operation(PID_Value *pos,GunneryData *Gun)
+void GunneryData_Operation(GunneryData *Gun, PID_Value *pos)
 {
 	//炮台坐标补偿
-	Gun->Fort_x = pos->X - (Fort_TO_BACK_WHEEL) * sin(pos->Angle * Pi / 180.0);
-	Gun->Fort_y = pos->Y + (Fort_TO_BACK_WHEEL) * cos(pos->Angle * Pi / 180.0) + BACK_WHEEL_TO_WALL;
-	Gun->Fort_angle = Constrain_float_Angle(Yaw_Zero_Offset - fort.yawPosReceive + pos->Angle);
+	Gun->Fort_X = pos->X - (Fort_TO_BACK_WHEEL) * sin(pos->Angle * Pi / 180.0);
+	Gun->Fort_Y = pos->Y + (Fort_TO_BACK_WHEEL) * cos(pos->Angle * Pi / 180.0) + BACK_WHEEL_TO_WALL;
+	Gun->Fort_Angle = Constrain_float_Angle(Yaw_Zero_Offset - fort.yawPosReceive + pos->Angle);
+	
+	Gun->YawPos = fort.yawPosReceive;
+	Gun->ShooterVel = fort.shooterVelReceive;
+
 	
 	//以直线方向为y轴正向建立坐标系，计算炮台到目标点的横轴坐标相对距离
 	switch(Gun->BucketNum)
@@ -192,79 +194,104 @@ void GunneryData_Operation(PID_Value *pos,GunneryData *Gun)
 		case 0:
 			if(pos->direction == ACW)
 			{
-				Gun->Distance_X = fabs(Gun->Fort_y - 200.0);
-				Gun->Distance_Y = fabs(Gun->Fort_x - 2200.0);
+				Gun->Distance_X = fabs(Gun->Fort_Y - 200.0);
+				Gun->Distance_Y = fabs(Gun->Fort_X - 2200.0);
+				Gun->CarVel_X = pos->Y_Speed * -1.0;
+				Gun->CarVel_Y = pos->X_Speed;
+				Gun->Angle_Deviation = fabs(pos->Angle + 90.0);
 			}
 			if(pos->direction == CW)
 			{
-				Gun->Distance_X = fabs(Gun->Fort_x - 2200.0);
-				Gun->Distance_Y = fabs(Gun->Fort_y - 200.0);				
+				Gun->Distance_X = fabs(Gun->Fort_X - 2200.0);
+				Gun->Distance_Y = fabs(Gun->Fort_Y - 200.0);
+				Gun->CarVel_X = pos->X_Speed;
+				Gun->CarVel_Y = pos->Y_Speed * -1.0;
+				Gun->Angle_Deviation = Constrain_float_Angle(fabs(pos->Angle - 180.0));				
 			}
 			break;
 		case 1:
 			if(pos->direction == ACW)
 			{
-				Gun->Distance_X = fabs(Gun->Fort_x - 2200.0);
-				Gun->Distance_Y = fabs(Gun->Fort_y - 4600.0);
+				Gun->Distance_X = fabs(Gun->Fort_X - 2200.0);
+				Gun->Distance_Y = fabs(Gun->Fort_Y - 4600.0);
+				Gun->CarVel_X = pos->X_Speed;
+				Gun->CarVel_Y = pos->Y_Speed;
+				Gun->Angle_Deviation = fabs(pos->Angle - 0.0);
 			}
 			if(pos->direction == CW)
 			{
-				Gun->Distance_X = fabs(Gun->Fort_y - 4600.0);
-				Gun->Distance_Y = fabs(Gun->Fort_x - 2200.0);			
+				Gun->Distance_X = fabs(Gun->Fort_Y - 4600.0);
+				Gun->Distance_Y = fabs(Gun->Fort_X - 2200.0);
+				Gun->CarVel_X = pos->Y_Speed;
+				Gun->CarVel_Y = pos->X_Speed;
+				Gun->Angle_Deviation = fabs(pos->Angle + 90.0);				
 			}
 			break;		
 		case 2:
 			if(pos->direction == ACW)
 			{
-				Gun->Distance_X = fabs(Gun->Fort_y - 4600.0);
-				Gun->Distance_Y = fabs(Gun->Fort_x + 2200.0);
+				Gun->Distance_X = fabs(Gun->Fort_Y - 4600.0);
+				Gun->Distance_Y = fabs(Gun->Fort_X + 2200.0);
+				Gun->CarVel_X = pos->Y_Speed;
+				Gun->CarVel_Y = pos->X_Speed * -1.0;
+				Gun->Angle_Deviation = fabs(pos->Angle - 90.0);
 			}
 			if(pos->direction == CW)
 			{
-				Gun->Distance_X = fabs(Gun->Fort_x + 2200.0);		
-				Gun->Distance_Y = fabs(Gun->Fort_y - 4600.0);
+				Gun->Distance_X = fabs(Gun->Fort_X + 2200.0);		
+				Gun->Distance_Y = fabs(Gun->Fort_Y - 4600.0);
+				Gun->CarVel_X = pos->X_Speed * -1.0;
+				Gun->CarVel_Y = pos->Y_Speed;
+				Gun->Angle_Deviation = fabs(pos->Angle - 0.0);
 			}
 			break;		
 		case 3:
 			if(pos->direction == ACW)
 			{
-				Gun->Distance_X = fabs(Gun->Fort_x + 2200.0);
-				Gun->Distance_Y = fabs(Gun->Fort_y - 200.0);
+				Gun->Distance_X = fabs(Gun->Fort_X + 2200.0);
+				Gun->Distance_Y = fabs(Gun->Fort_Y - 200.0);
+				Gun->CarVel_X = pos->X_Speed * -1.0;
+				Gun->CarVel_Y = pos->Y_Speed * -1.0;
+				Gun->Angle_Deviation = Constrain_float_Angle(fabs(pos->Angle - 180.0));
 			}
 			if(pos->direction == CW)
 			{
-				Gun->Distance_X = fabs(Gun->Fort_y - 200.0);
-				Gun->Distance_Y = fabs(Gun->Fort_x + 2200.0);
+				Gun->Distance_X = fabs(Gun->Fort_Y - 200.0);
+				Gun->Distance_Y = fabs(Gun->Fort_X + 2200.0);
+				Gun->CarVel_X = pos->Y_Speed * -1.0;
+				Gun->CarVel_Y = pos->X_Speed * -1.0;
+				Gun->Angle_Deviation = fabs(pos->Angle - 90.0);
 			}
 			break;
 	}
-	
+	Gun->Distance_Fort = sqrt(Gun->Distance_X * Gun->Distance_X + Gun->Distance_Y * Gun->Distance_X);
+	Gun->Distance_Car_X = 0;	
 	Gun->Distance_Car_Y = 0;                    //初始化射球飞行时间中车移动的距离
 	Gun->Distance_Shoot_X = Gun->Distance_X;    //初始化射球实际移动的横坐标距离为炮台到目标点的横坐标距离
 	Gun->Distance_Shoot_Y = Gun->Distance_Y;    //初始化射球实际移动的纵坐标距离为炮台到目标点的纵坐标距离
+	Gun->cntIteration = 0;
 	//当前迭代只考虑直线方向的车速度
 	do
 	{
-		//计算射球实际移动的纵坐标距离 = 炮台到桶纵坐标距离 - 射球飞行时间中车移动的距离
+		Gun->cntIteration++;
+		Gun->Distance_Shoot_X = Gun->Distance_X - Gun->Distance_Car_X;
 		Gun->Distance_Shoot_Y = Gun->Distance_Y - Gun->Distance_Car_Y;
-		//计算炮台偏向角 = arctan(射球实际移动的横坐标距离 / 射球实际移动的纵坐标距离)
+		Gun->Distance_Shoot = sqrt(Gun->Distance_Shoot_X * Gun->Distance_Shoot_X + Gun->Distance_Shoot_Y * Gun->Distance_Shoot_Y);
 		Gun->YawPosTarAngle = atan(Gun->Distance_Shoot_X / Gun->Distance_Shoot_Y) * 180.0 / Pi;
 		
-		//计算射球实际移动距离
-		Gun->Distance_Fort = sqrt(Gun->Distance_Shoot_X * Gun->Distance_Shoot_X + Gun->Distance_Shoot_Y * Gun->Distance_Shoot_Y);
-		//计算射球水平速度
-		Gun->ShooterVelSetA = sqrt((Gun->Distance_Fort * Gun->Distance_Fort * G) / (2.0 * (Gun->Distance_Fort * tan(Fort_Elevation_Rad) - Fort_To_Bucket_Height)));
-		//计算射球飞行时间
-		Gun->ShooterTime = Gun->Distance_Fort / Gun->ShooterVelSetA;
-		//计算射球飞行时间中车移动的距离
-		Gun->Distance_Car_Y = Gun->detVel * Gun->ShooterTime;
-		//计算射球飞行时间中车移动的距离 加上 射球实际移动纵坐标距离 与 炮台到目标点的纵坐标距离 的差值
-		Gun->Distance_Deviation = fabs(Gun->Distance_Shoot_Y + Gun->Distance_Car_Y - Gun->Distance_Y);
+		Gun->ShooterVelSet_H = sqrt((Gun->Distance_Shoot * Gun->Distance_Shoot * G) / (2.0 * (Gun->Distance_Shoot * tan(Fort_Elevation_Rad) - Fort_To_Bucket_Height)));
+		Gun->ShooterTime = Gun->Distance_Shoot / Gun->ShooterVelSet_H;
+		
+		Gun->Distance_Car_X = Gun->CarVel_X * Gun->ShooterTime;		
+		Gun->Distance_Car_Y = Gun->CarVel_Y * Gun->ShooterTime;
+		Gun->Distance_Car = sqrt(Gun->Distance_Car_X * Gun->Distance_Car_X + Gun->Distance_Car_Y * Gun->Distance_Car_Y);
+		Gun->Distance_Deviation_X = fabs(Gun->Distance_Shoot_X + Gun->Distance_Car_X - Gun->Distance_X);
+		Gun->Distance_Deviation_Y = fabs(Gun->Distance_Shoot_Y + Gun->Distance_Car_Y - Gun->Distance_Y);
 	}
 	//当差值大于精度要求时，继续迭代
-	while(Gun->Distance_Deviation > Gun->Distance_Accuracy);
+	while((Gun->Distance_Deviation_X > Gun->Distance_Accuracy) || (Gun->Distance_Deviation_Y > Gun->Distance_Accuracy));
     //根据射球电机转速与静止炮台到桶距离经验公式计算
-	Gun->ShooterVelSet = 40.0 / 3102.505 * Gun->Distance_Fort + 35.7 + Gun->Shooter_Vel_Offset;
+	Gun->ShooterVelSet = 0.0118 * Gun->Distance_Shoot + 39.915 + Gun->Shooter_Vel_Offset;
 	Gun->YawPosTarAngle = Gun->YawPosTarAngle + Gun->Yaw_Angle_Offset;
 	
 	if(pos->direction == CW)
@@ -294,7 +321,7 @@ void GunneryData_Operation(PID_Value *pos,GunneryData *Gun)
 		case 1:
 			if(pos->direction == ACW)
 			{
-				Gun->YawPosTarActAngle = Yaw_Zero_Offset + (pos->Angle - 0) + Gun->YawPosTarAngle;
+				Gun->YawPosTarActAngle = Yaw_Zero_Offset + (pos->Angle - 0.0) + Gun->YawPosTarAngle;
 			}
 			if(pos->direction == CW)
 			{
@@ -308,7 +335,7 @@ void GunneryData_Operation(PID_Value *pos,GunneryData *Gun)
 			}
 			if(pos->direction == CW)
 			{
-				Gun->YawPosTarActAngle = Yaw_Zero_Offset + (pos->Angle - 0) + Gun->YawPosTarAngle;				
+				Gun->YawPosTarActAngle = Yaw_Zero_Offset + (pos->Angle - 0.0) + Gun->YawPosTarAngle;				
 			}
 			break;		
 		case 3:

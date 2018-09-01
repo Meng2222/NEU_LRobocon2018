@@ -1,4 +1,5 @@
 #include "PID.h"
+#include "fort.h"
 Line_Value Line_N[34];
 Arc_Value Arc_N[12];
 Coordinate_Value Coordinate_N[12];
@@ -544,7 +545,7 @@ void PID_Control(PID_Value *p)                                               //P
 		p->kd = 50;
 		p->ki = 0;
 	}
-	if(p->V_Set < 100 && p->V_Set > -100) p->kp = 15;
+	if(p->V_Set < 100 && p->V_Set > -100) p->kp = 10;
 	p->ITerm += p->ki * p->Error;
 	p->ITerm = constrain(p->ITerm,2000.0f,-2000.0f);
 	p->DTerm = p->Angle_Last - p->Angle;
@@ -617,28 +618,31 @@ void shoot(void)                                                             //É
 {
 	static int cnt = 0;
 	cnt++;
-	if(cnt == 80) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-	if(cnt == 160) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-	if(cnt == 160) cnt = 0;
+	if(cnt == 100) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
+	if(cnt == 200) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
+	if(cnt == 200) cnt = 0;
 }
 
+extern FortType fort;
 void UART4_OUT(PID_Value *pid_out)                                           //´®¿ÚÊä³öº¯Êý
 {
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetX());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetY());
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->l->line_Error);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)(sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())));
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadShooterVel());
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)fort.shooterVelReceive);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadYawPos());
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)fort.yawPosReceive);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetYawPosCommand());
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadLaserAValue());
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)ReadLaserBValue());
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(15,10));
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)Get_Adc_Average(14,10));
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
@@ -719,7 +723,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			pid->Mode = Line;
 			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 			PID_Control(pid);
-			if(ABS(pid->l->line_Error) < 100) shoot();
+//			if(ABS(pid->l->line_Error) < 100) shoot();
 			GO(pid);
 			pid->Line_Cnt += 1;
 			if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
@@ -746,7 +750,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					pid->V_Set = -2000;
 					PID_Control(pid);
 				}
-				if((ABS(pid->l->line_Error) < 150) || flag1)
+				if((ABS(pid->l->line_Error) < 400) || flag1)
 				{
 					if(flag1 == 0)
 					{
@@ -783,6 +787,12 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					}
 				}
 				GO(pid);
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)timeCnt);
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)flag1);
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)flag2);
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)pid->Line_Num);
+//				USART_SendData(UART4,'\r');
+//				USART_SendData(UART4,'\n');
 			}
 			else
 			{
@@ -791,6 +801,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				flag2 = 0;
 				timeCnt = 0;
 				pid->V_Set = 2000;
+				pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 //				switch (pid->err_line_num)
 //				{
 //					case 0:
@@ -817,7 +828,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			pid->Mode = Line;
 			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 			PID_Control(pid);
-			if(ABS(pid->l->line_Error) < 100) shoot();
+//			if(ABS(pid->l->line_Error) < 100) shoot();
 			GO(pid);
 			pid->Line_Cnt += 1;
 			if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
@@ -844,7 +855,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					pid->V_Set = -2000;
 					PID_Control(pid);
 				}
-				if((ABS(pid->l->line_Error) < 150) || flag1)
+				if((ABS(pid->l->line_Error) < 400) || flag1)
 				{
 					if(flag1 == 0)
 					{
@@ -881,6 +892,12 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					}
 				}
 				GO(pid);
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)timeCnt);
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)flag1);
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)flag2);
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)pid->Line_Num);
+//				USART_SendData(UART4,'\r');
+//				USART_SendData(UART4,'\n');
 			}
 			else
 			{
@@ -888,9 +905,10 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				flag1 = 0;
 				flag2 = 0;
 				timeCnt = 0;
-				pid->V_Set = 2000;	
+				pid->V_Set = 2000;
+				pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
 //				switch (pid->err_line_num)
-//				{			
+//				{
 //					case 0:
 //						break;
 //					case 1:
@@ -936,9 +954,13 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 			error->flag = 1;
 			pid->err_line_num = pid->Line_Cnt;
 			if(pid->Line_Num < 8) pid->Line_Num += 8;
-			if(pid->Line_Num > 7 && pid->Line_Num < 17) pid->Line_Num -= 8;
-			if(pid->Line_Num > 16 && pid->Line_Num < 25) pid->Line_Num += 8;
-			if(pid->Line_Num > 24 && pid->Line_Num < 34) pid->Line_Num -= 8;
+			else if(pid->Line_Num > 7 && pid->Line_Num < 17) pid->Line_Num -= 8;
+			else if(pid->Line_Num > 16 && pid->Line_Num < 25) pid->Line_Num += 8;
+			else if(pid->Line_Num > 24 && pid->Line_Num < 34) pid->Line_Num -= 8;
 		}
+//		USART_OUT(UART4,(uint8_t*)"%d	", (int)pid->Line_Num);
+//		USART_OUT(UART4,(uint8_t*)"%d	", (int)error->flag);
+//		USART_SendData(UART4,'\r');
+//		USART_SendData(UART4,'\n');
 	}
 }
