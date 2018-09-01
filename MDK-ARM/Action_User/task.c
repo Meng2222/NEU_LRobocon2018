@@ -75,14 +75,14 @@ void ConfigTask(void)
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float yawAngle=170,T=0.1,v=1000,angle,Distance;
+float yawAngle=170,T=0.25,v=1000,angle,Distance;
 int status,throwFlag=0,R=600;
 extern float x,y;
 extern int time,Cnt;
 void WalkTask(void)
 {
-	static int flag=0,lastTime=0,errFlag=0,push_Ball_Count=0,yawAngleFlag,yawcompangle,errTime=0,statusFlag;
-	static float lastX=0,dLeft,dRight,lastY,changeAngle,rps=50,Vx,Vy,V,shootAngle;
+	static int flag=0,lastTime=0,errFlag=0,push_Ball_Count=0,yawAngleFlag,errTime=0,statusFlag;
+	static float lastX=0,dLeft,dRight,lastY,changeAngle,rps=50,Vx,Vy,V,shootAngle,yawcompangle;
 	do
 	{
 		//右ADC
@@ -125,7 +125,7 @@ void WalkTask(void)
 			CirclePID(0,2400,R,v,status);
 			if(status==0)
 			{					
-				if(x>-200&&lastX<-200&&R<1500&&y<2400)		
+				if(x>-200&&lastX<-200&&R<1000&&y<2400)		
 					R+=500;
 			}	
 			else
@@ -238,24 +238,26 @@ void WalkTask(void)
 			shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		YawPosCtrl(shootAngle);
 		rps=(sqrtf(V*V+Vy*Vy)-168.94)/39.56;
+		if(R>1500)
+			rps=(sqrtf(V*V+Vy*Vy)-168.94)/39.56+1;
 		if(rps>80)
 			rps=80;
 		USART_OUT(UART4,(uint8_t *)"%d\r\n",(int)rps);
 		ShooterVelCtrl(rps);
 		if(R>1000)
 		{
-			if(throwFlag==1)
+//			if(throwFlag==1)
 			{
-				if(push_Ball_Count==500)
+				if(push_Ball_Count==50)
 					PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);		
-				if(push_Ball_Count==600)
+				if(push_Ball_Count>=100)
 				{
 					PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
 					push_Ball_Count=0;
 				}
 			}
-			else
-				push_Ball_Count=495;
+//			else
+//				push_Ball_Count=495;
 		}
 		push_Ball_Count++;
 		lastX=x;

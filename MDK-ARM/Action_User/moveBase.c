@@ -189,8 +189,8 @@ void GetYawangle(float x1,float y1)
 	if(status==0)
 	{	
 		//预判Ts后的坐标（适用于走圆形）
-		x=R*cos((angle-90+antiRad)*pi/180);
-		y=R*sin((angle-90+antiRad)*pi/180)+2400;
+		x=R*cos((angle-90)*pi/180+antiRad);
+		y=R*sin((angle-90)*pi/180+antiRad)+2400;
 		//预判Ts后炮台坐标
 		x=x-65*sin(GetAngle()*pi/180);
 		y=y+65*cos(GetAngle()*pi/180);
@@ -202,8 +202,8 @@ void GetYawangle(float x1,float y1)
 	}
 	else
 	{
-		x=R*cos((angle+90-antiRad)*pi/180);
-		y=R*sin((angle+90-antiRad)*pi/180)+2400;
+		x=R*cos((angle+90)*pi/180-antiRad);
+		y=R*sin((angle+90)*pi/180-antiRad)+2400;
 		//预判Ts后炮台坐标
 		x=x-65*sin(GetAngle()*pi/180);
 		y=y+65*cos(GetAngle()*pi/180);
@@ -223,17 +223,18 @@ void GetDistance(float x1,float y1)
 	R=sqrtf(GetX()*GetX()+(GetY()-2400)*(GetY()-2400));
 	if(status==0)
 	{	
-		x=R*cos((angle-90+antiRad)*pi/180);
-		y=R*sin((angle-90+antiRad)*pi/180)+2400;
+		x=R*cos((angle-90)*pi/180+antiRad);
+		y=R*sin((angle-90)*pi/180+antiRad)+2400;
+		x=x-65*sin(GetAngle()*pi/180+antiRad);
+		y=y+65*cos(GetAngle()*pi/180+antiRad);
 	}	
 	else
 	{
-		x=R*cos((angle+90-antiRad)*pi/180);
-		y=R*sin((angle+90-antiRad)*pi/180)+2400;
+		x=R*cos((angle+90)*pi/180-antiRad);
+		y=R*sin((angle+90)*pi/180-antiRad)+2400;
+		x=x-65*sin(GetAngle()*pi/180-antiRad);
+		y=y+65*cos(GetAngle()*pi/180-antiRad);
 	}
-	//炮台坐标
-	x=x-65*sin(GetAngle()*pi/180);
-	y=y+65*cos(GetAngle()*pi/180);
 	Distance=sqrtf((x-x1)*(x-x1)+(y-y1)*(y-y1));
 	USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t",(int)Distance,(int)x,(int)y,(int)GetX(),(int)GetY(),(int)x1,(int)y1,(int)GetAngle());
 }	
