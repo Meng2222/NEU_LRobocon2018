@@ -544,7 +544,7 @@ void PID_Control(PID_Value *p)                                               //P
 		p->kd = 50;
 		p->ki = 0;
 	}
-	if(p->V_Set < 100 && p->V_Set > -100) p->kp = 10;
+	if(p->V_Set < 100 && p->V_Set > -100) p->kp = 15;
 	p->ITerm += p->ki * p->Error;
 	p->ITerm = constrain(p->ITerm,2000.0f,-2000.0f);
 	p->DTerm = p->Angle_Last - p->Angle;
@@ -786,21 +786,26 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ğ
 			}
 			else
 			{
-				switch (pid->err_line_num)
-				{
-					case 0:
-						break;
-					case 1:
-						break;
-					case 2:
-						break;
-					case 3:
-						break;
-					case 4:
-						break;
-					default:
-						break;
-				}
+				error->flag = 0;
+				flag1 = 0;
+				flag2 = 0;
+				timeCnt = 0;
+				pid->V_Set = 2000;
+//				switch (pid->err_line_num)
+//				{
+//					case 0:
+//						break;
+//					case 1:
+//						break;
+//					case 2:
+//						break;
+//					case 3:
+//						break;
+//					case 4:
+//						break;
+//					default:
+//						break;
+//				}
 			}
 		}
 	}
@@ -879,21 +884,26 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ğ
 			}
 			else
 			{
-				switch (pid->err_line_num)
-				{
-					case 0:
-						break;
-					case 1:
-						break;
-					case 2:
-						break;
-					case 3:
-						break;
-					case 4:
-						break;
-					default:
-						break;
-				}
+				error->flag = 0;
+				flag1 = 0;
+				flag2 = 0;
+				timeCnt = 0;
+				pid->V_Set = 2000;	
+//				switch (pid->err_line_num)
+//				{			
+//					case 0:
+//						break;
+//					case 1:
+//						break;
+//					case 2:
+//						break;
+//					case 3:
+//						break;
+//					case 4:
+//						break;
+//					default:
+//						break;
+//				}
 			}
 		}
 	}
@@ -924,7 +934,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		if(error->distance < error->err_distance) 
 		{
 			error->flag = 1;
-			pid->err_line_num = pid->Line_Num;
+			pid->err_line_num = pid->Line_Cnt;
 			if(pid->Line_Num < 8) pid->Line_Num += 8;
 			if(pid->Line_Num > 7 && pid->Line_Num < 17) pid->Line_Num -= 8;
 			if(pid->Line_Num > 16 && pid->Line_Num < 25) pid->Line_Num += 8;

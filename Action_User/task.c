@@ -88,7 +88,8 @@ void ConfigTask(void)
 	YawPosCtrl(170);
 	
 	static float error1 = 0;                                         //用激光传感器矫正定位系统偏移
-	error1 = ((Get_Adc_Average(15,100) - Get_Adc_Average(14,100))/2)*0.922854f;
+	//error1 = ((Get_Adc_Average(15,100) - Get_Adc_Average(14,100))/2)*0.922854f;
+	error1 = 0;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL();                                             /*互斥访问*/
 	error = &error1;
@@ -100,7 +101,7 @@ void ConfigTask(void)
 		ADC_Right = Get_Adc_Average(14,10);                         //右ADC
 		if(ADC_Left<100)
 		{
-			OSMboxPost(adc_msg,(void *)Left);
+			OSMboxPost(adc_msg,(void *)Right);                     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
 		}
 		else if(ADC_Right<100)
@@ -134,9 +135,9 @@ void WalkTask(void)
 		PID_Competition(PID_x,direction,Error_x);
 		
 		gundata.detVel = sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY());		   //检测到的当前车速
-		gundata.Distance_Accuracy = 30;    //距离精度
-		gundata.Yaw_Angle_Offset = GetYawPosCommand();      //航向角偏差
-		gundata.Shooter_Vel_Offset = GetShooterVelCommand();    //射球转速补偿
+		gundata.Distance_Accuracy = 50;                                                                          //距离精度
+		gundata.Yaw_Angle_Offset = GetYawPosCommand();                                             //航向角偏差
+		gundata.Shooter_Vel_Offset = GetShooterVelCommand();                                       //射球转速补偿
 		gundata.BucketNum = PID_A.target_Num;
 		GunneryData_Operation(PID_x,&gundata);
 		YawPosCtrl(gundata.YawPosTarActAngle);
