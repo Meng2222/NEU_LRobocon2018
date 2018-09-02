@@ -107,7 +107,7 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
-int Cnt,time,push_Ball_Count;
+int Cnt,time,push_Ball_Count,l=0;
 void TIM2_IRQHandler(void)
 {
 #define PERIOD_COUNTER 10
@@ -121,7 +121,7 @@ void TIM2_IRQHandler(void)
 
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-		Cnt++;
+		Cnt++,l++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
