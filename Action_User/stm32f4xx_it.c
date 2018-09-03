@@ -464,15 +464,17 @@ float GetAngle(void)
 }
 
 extern float axis_Xerr;
-
+extern float posXAdd;
+extern float posYAdd;
 float GetPosX(void)
 {
 	
-	return posX-(axis_Xerr/2);
+//	return posX-(axis_Xerr/2);
+	return posX+posXAdd;
 }
 float GetPosY(void)
 {
-	return posY;
+	return posY+posYAdd;
 }
 float GetSpeeedX(void)
 {

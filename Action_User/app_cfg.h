@@ -56,9 +56,6 @@ static 	void  ConfigTask(void);
 static 	void  WalkTask(void);
 static	void  Init(void);
 static	void  PosConfig(void);
-void SendUint8(void);
-float YawTransform(float yawAngle);
-void YawAngleCtr(float yawAngle);
 
 /*
 *********************************************************************************************************
@@ -80,8 +77,8 @@ void YawAngleCtr(float yawAngle);
 *********************************************************************************************************
 */
 #define  APP_TASK_START_STK_SIZE					256u
-#define  Config_TASK_START_STK_SIZE					256u
-#define  Walk_TASK_STK_SIZE							4096u
+#define  Config_TASK_START_STK_SIZE					1024u
+#define  Walk_TASK_STK_SIZE							2048u
 
 /*
 *********************************************************************************************************

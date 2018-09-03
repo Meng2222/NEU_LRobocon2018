@@ -11,6 +11,7 @@
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
 #include "fort.h"
+#include "math.h"
 
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
 #define BaseVelocity (0.5 * One_Meter_Per_Second) //基础速度               0.5m/s                         //四号车编号             4
@@ -48,6 +49,7 @@ struct usartValue_{
 	float turnAngleValue;//
 	uint8_t flagValue;
 	float shootangle;
+	float shootSp;
 }usartValue;
 
 
@@ -108,16 +110,21 @@ void ConfigTask(void)
 
 //炮台发回的值
 extern FortType fort;
+extern uint8_t notShoot[2];
+extern float posXAdd;
+extern float posYAdd;
 
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
 	
-	
+	uint16_t Cnt=0;
+	float DD=0;
+	float SS=0;
 	//PID参数
-	Angle_PidPara(20,0,600);
-	Distance_PidPara(0.09,0,1); 
+	Angle_PidPara(20,0,1500);
+	Distance_PidPara(0.09,0,0); 
 	Speed_PidPara(2,0,0);
 	
 	OSSemSet(PeriodSem, 0, &os_err);
@@ -126,10 +133,25 @@ void WalkTask(void)
 		OSSemPend(PeriodSem, 0, &os_err);
 		
 		//走位
-		Walk(&adcFlag);
+		Walk(adcFlag);
 		//发球
 		Shoot(adcFlag,250); 
-		//USART_OUT(UART4, " %d\t", (int)GetSpeeedX());
+//		DD=sqrt(((GetPosY()-105)*(GetPosY()-105))+((GetPosX()+2200)*(GetPosX()+2200)));
+//		SS=DD*0.012+35.7;
+//		Cnt++;
+//		ShooterVelCtrl(SS);
+//		if(Cnt == 150)
+//		{
+//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+//		}
+//		else if(Cnt == 300)
+//		{
+//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+//			Cnt=0;
+//		}
+		
+		USART_OUT(UART4, " %d\t", (int)posXAdd);
+		USART_OUT(UART4, " %d\r\n", (int)posYAdd);
 		//USART_OUT(UART4, " %d\r\n", (int)GetSpeeedY());		
 	}
 }
@@ -153,7 +175,7 @@ void Init(void)
 	VelLoopCfg(CAN2, RIGHT_ID, 20000000, 20000000);
 	
 	//收球电机初始化
-	VelLoopCfg(CAN1, COLLECT_BALL_ID, 50000, 500000);
+	VelLoopCfg(CAN1, COLLECT_BALL_ID, 500000, 500000);
 //	
 	//推球电机初始化
 	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,200000);
@@ -165,10 +187,12 @@ void Init(void)
 	delay_ms(5000);
 	PosConfig();
 	
-	//收球电机
-	VelCrl(CAN1,COLLECT_BALL_ID,10*60*4096); 
-	
 	GetDirection(&adcFlag);
+	
+	//收球电机
+	VelCrl(CAN1,COLLECT_BALL_ID,5*60*4096); 
+	
+	
 }
 
 

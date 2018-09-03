@@ -35,6 +35,10 @@ FortType fort;
 
 int bufferI = 0;
 char buffer[20] = {0};
+
+//未发射的桶
+uint8_t notShoot[2]={0};
+
 extern struct usartValue_{
 	uint32_t cnt;//用于检测是否数据丢失
 	float xValue;//串口输出x坐标
@@ -45,7 +49,9 @@ extern struct usartValue_{
 	float turnAngleValue;//
 	uint8_t flagValue;
 	float shootangle;
+	float shootSp;
 }usartValue;
+
 
 /**
 * @brief 炮台航向控制
@@ -144,226 +150,75 @@ void GetValueFromFort(uint8_t data)
 	}
 }
 
+static uint16_t shootCnt=0;
+static uint8_t shootFlag=0;	
+static uint8_t shootFlag2=0;
+
 extern uint8_t flagOne;
-extern uint8_t flag;
+extern uint8_t errFlg;
+
 void Shoot(uint8_t flg,uint16_t pushTime)
 {
 	static float bucketPosX[4]={BUCKET_ONE_X,BUCKET_TWO_X,BUCKET_THR_X,BUCKET_FOR_X};
 	static float bucketPosY[4]={BUCKET_ONE_Y,BUCKET_TWO_Y,BUCKET_THR_Y,BUCKET_FOR_Y};	
-	static uint8_t shootFlag=0;
-	static uint8_t shootFlagLast=0;
-	static uint16_t shootCnt=0;
-	static uint8_t shootFlag2=0;
 	
+	static uint8_t shootFlagLast=0;
+
+	static uint16_t judgeCnt=0;
+
+	
+	static uint8_t i=0;
+	static float shootSpeed=0;
+	static uint8_t judgeFlg=0;
+		
 	float shootX=GetPosX();
 	float shootY=GetPosY();
 	float getAngle=GetAngle();
 	float shootDistance=0;
-	float shootSpeed=0;
 	float shootAngle=0;
 	float shootTurnAngle=0;
 
 	shootCnt++;
+	//判断是否发出球
+	if( shootCnt == pushTime)
+	{
+		judgeFlg=1;
+	}
+	else;
+	
+	//判断车所在区域
 	if(flg == 0)
 	{
-		if(flag >= 3)
+		//完全卡住
+		if(errFlg >= 3)
 		{
-			shootCnt++;
-			if(shootCnt == 150)
-			{
-				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-			}
-			else if(shootCnt == 300)
-			{
-				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-			}
-			else if(shootCnt > 450)
-			{
-				shootCnt=0;
-				
-				if(shootFlag2 < 4)
-				{
-					shootFlag=shootFlag2;
-					shootFlag2++;
-				}
-				else if(shootFlag2 < 8)
-				{
-					shootFlag=7-shootFlag2;
-					shootFlag2++;
-				}
-				else
-				{
-					shootFlag2=0;
-				}
-			}
+			CarStuck();
 		}
+		
+		//正常发射
 		else
 		{
-			if(flagOne == 7 || flagOne == 11)
-			{
-				shootFlag=0;
-				
-				if(flagOne == 7)
-					pushTime=pushTime-100;
-				else;
-				
-				if(shootCnt == pushTime)
-				{
-					// 推球	
-					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-					shootCnt=0;
-				}
-				
-			}
-			else if(flagOne == 4 || flagOne == 8 || flagOne == 12)
-			{
-				shootFlag=1;
-				
-				if(flagOne == 4)
-					pushTime=pushTime-100;
-				else;
-				
-				if(shootCnt == pushTime)
-				{
-					// 推球	
-					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-					shootCnt=0;
-				}
-			}
-			else if(flagOne == 5 || flagOne == 9)
-			{
-				shootFlag=2;
-				
-				if(flagOne == 5)
-					pushTime=pushTime-100;
-				else;
-				
-				if(shootCnt == pushTime)
-				{
-					// 推球	
-					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-					shootCnt=0;
-				}
-			}
-			else if(flagOne == 6 || flagOne == 10)
-			{
-				shootFlag=3;
-				
-				if(flagOne == 6)
-					pushTime=pushTime-100;
-				
-				if(shootCnt == pushTime)
-				{
-					// 推球	
-					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-					shootCnt=0;
-				}
-			}
+			NormalShootOne(pushTime);
 		}		
 	}
 
 	if(flg == 1)
 	{
-		if(flag >= 3)
+		//完全卡住
+		if(errFlg >= 3)
 		{
-			shootCnt++;
-			if(shootCnt == 150)
-			{
-				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-			}
-			else if(shootCnt == 300)
-			{
-				PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-			}
-			else if(shootCnt > 450)
-			{
-				shootCnt=0;
-				if(shootFlag2 < 4)
-				{
-					shootFlag=shootFlag2;
-					shootFlag2++;
-				}
-				else if(shootFlag2 < 8)
-				{
-					shootFlag=7-shootFlag2;
-					shootFlag2++;
-				}
-				else
-				{
-					shootFlag2=0;
-				}
-			}
+			CarStuck();
 		}
+		
+		//正常发射
 		else
 		{
-			if(flagOne == 6 || flagOne == 10)
-			{ 
-				shootFlag=0;
-				if(flagOne == 6)
-					pushTime=pushTime-100;
-				else;
-				
-				if(shootCnt == pushTime)
-				{
-					// 推球	
-					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-					shootCnt=0;
-				}
-				
-			}
-			else if(flagOne == 5 || flagOne == 9)
-			{
-				shootFlag=1;
-				if(flagOne == 5)
-					pushTime=pushTime-100;
-				else;
-				
-				if(shootCnt == pushTime)
-				{
-					// 推球	
-					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-					shootCnt=0;
-				}
-			}
-			else if(flagOne == 4 || flagOne == 8 || flagOne == 12)
-			{
-				shootFlag=2;
-				
-				if(flagOne == 4)
-					pushTime=pushTime-100;
-				else;
-				
-				if(shootCnt == pushTime)
-				{
-					// 推球	
-					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-					shootCnt=0;
-				}
-			}
-			else if(flagOne == 7 || flagOne == 11)
-			{
-				shootFlag=3;
-				
-				if(flagOne == 7)
-					pushTime=pushTime-100;
-				else;
-				
-				if(shootCnt == pushTime)
-				{
-		 			// 推球	
-					PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-					shootCnt=0;
-				}
-			}
+			NormalShootTwo(pushTime);
 		}			
 	}
 	
-	if(shootFlagLast != shootFlag)
-	{
-		shootCnt=0;
-		shootFlagLast=shootFlag;
-	}
-		
+
+	//枪定位桶角度
 	if(shootFlag == 2 || shootFlag == 3)
 	{
 		shootAngle=260-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
@@ -382,6 +237,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 		}
 	}
 	else if(shootFlag == 0 || shootFlag == 1)
+	
 	{
 		shootAngle=80-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
 		shootTurnAngle=getAngle+shootAngle;
@@ -398,28 +254,287 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 			shootTurnAngle=0;
 		}
 	}
-	if(flg == 0)
-	{
-		if(flagOne < 8)
-			YawPosCtrl(shootTurnAngle-5);
-		else
-			YawPosCtrl(shootTurnAngle-3);
-	}
-	else
-	{
-		if(flagOne < 8)
-			YawPosCtrl(shootTurnAngle+8);
-		else
-			YawPosCtrl(shootTurnAngle+6);
-	}
 	
-	shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
-	
-	if(shootDistance < 4000 && shootDistance > 2300)
+	//区域改变，计数清0
+	if(shootFlagLast != shootFlag)
 	{
-		shootSpeed=(SHOOOT_KP*shootDistance)+20;
+		if(errFlg >= 3)
+			YawPosCtrl(shootAngle);	
 		
+		shootCnt=0;
+		judgeCnt=0;
+		shootFlagLast=shootFlag;
+	}
+	
+	//完全卡住发射
+	if(errFlg >= 3)
+	{
+		YawPosCtrl(shootTurnAngle);
+		shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
+		shootSpeed=(SHOOOT_KP*shootDistance)+35.7;
 		ShooterVelCtrl(shootSpeed);
 	}
+	
+	
+	//正常发射
+	else
+	{
+		if(flg == 0)
+		{
+			if(flagOne < 8)
+				YawPosCtrl(shootTurnAngle-2);
+			else
+				YawPosCtrl(shootTurnAngle);
+		}
+		else
+		{
+			if(flagOne < 8)
+				YawPosCtrl(shootTurnAngle+4);
+			else
+				YawPosCtrl(shootTurnAngle+6);
+		}
+		
+		shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
+		
+		//激光校准
+		LaserCalibration(shootDistance);
+		
+		if(shootDistance < 4000 && shootDistance > 2300)
+		{
+			if(flagOne < 8)
+				shootSpeed=(SHOOOT_KP*shootDistance)+18;
+			else
+				shootSpeed=(SHOOOT_KP*shootDistance)+19;
+			
+			ShooterVelCtrl(shootSpeed);
+			usartValue.shootSp=shootSpeed;
+		}
+	}
+	
+	
+	
+	//检测是否打出球
+	if(judgeFlg == 1)
+	{
+		
+		if(judgeCnt < 100)
+		{
+			judgeCnt++;
+			if(fort.shooterVelReceive < (shootSpeed-5));
+			else 
+			{
+				notShoot[i]=shootFlag;
+				i=!i;
+			}
+		}
+		else
+		{
+			judgeFlg=0;
+			judgeCnt=0;
+		}
+	}
+	
+}
+
+//车卡住处理
+void CarStuck(void)
+{
+	if(shootCnt == 150)
+	{
+		PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+	}
+	else if(shootCnt == 300)
+	{
+		PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+	}
+	else if(shootCnt > 450)
+	{
+		shootCnt=0;
+		if(notShoot[0] == 0 && notShoot[1] == 0)
+		{
+			if(shootFlag2 < 3)
+			{
+				shootFlag=shootFlag2+1;
+				shootFlag2++;
+			}
+			else if(shootFlag2 < 5)
+			{
+				shootFlag=5-shootFlag2;
+				shootFlag2++;
+			}
+			else
+			{
+				shootFlag2=0;
+				shootFlag=0;
+			}
+		}
+		else if(notShoot[0] > 0)
+		{
+			shootFlag=notShoot[0];
+			notShoot[0]=0;
+		}
+		else if(notShoot[1] > 0)
+		{
+			shootFlag=notShoot[1];
+			notShoot[1]=0;
+		}
+		
+	}
+}
+
+//正常发射1
+void NormalShootOne(uint16_t getPushTime)
+{
+	if(flagOne == 7 || flagOne == 11)
+	{
+		shootFlag=0;
+		
+		if(flagOne == 7)
+			getPushTime=getPushTime-TIME_DIFF_1_ONE;
+		else;
+		
+		if(shootCnt == getPushTime)
+		{
+			// 推球	
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+			shootCnt=0;
+		}
+		
+	}
+	else if(flagOne == 4 || flagOne == 8 || flagOne == 12)
+	{
+		shootFlag=1;
+		
+		if(flagOne == 4)
+			getPushTime=getPushTime-TIME_DIFF_1_TWO;
+		else 
+			getPushTime=getPushTime;
+		
+		if(shootCnt == getPushTime)
+		{
+			// 推球	
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			shootCnt=0;
+		}
+	}
+	else if(flagOne == 5 || flagOne == 9)
+	{
+		shootFlag=2;
+		
+		if(flagOne == 5)
+			getPushTime=getPushTime-TIME_DIFF_1_THR;
+		else;
+		
+		if(shootCnt == getPushTime)
+		{
+			// 推球	
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+			shootCnt=0;
+		}
+	}
+	else if(flagOne == 6 || flagOne == 10)
+	{
+		shootFlag=3;
+		
+		if(flagOne == 6)
+			getPushTime=getPushTime-TIME_DIFF_1_FOR;
+		
+		if(shootCnt == getPushTime)
+		{
+			// 推球	
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			shootCnt=0;
+		}
+	}
+}
+
+//正常发射2
+void NormalShootTwo(uint16_t getPushTime)
+{
+	if(flagOne == 6 || flagOne == 10)
+	{ 
+		shootFlag=0;
+		if(flagOne == 6)
+			getPushTime=getPushTime-TIME_DIFF_2_ONE;
+		else;
+		
+		if(shootCnt == getPushTime)
+		{
+			// 推球	
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+			shootCnt=0;
+		}
+		
+	}
+	else if(flagOne == 5 || flagOne == 9)
+	{ 
+		shootFlag=1;
+		if(flagOne == 5)
+			getPushTime=getPushTime-TIME_DIFF_2_TWO;
+		else;
+		
+		if(shootCnt == getPushTime)
+		{
+			// 推球	
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			shootCnt=0;
+		}
+	}
+	else if(flagOne == 4 || flagOne == 8 || flagOne == 12)
+	{
+		shootFlag=2;
+		
+		if(flagOne == 4)
+			getPushTime=getPushTime-TIME_DIFF_2_THR;
+		else;
+		
+		if(shootCnt == getPushTime)
+		{
+			// 推球	
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+			shootCnt=0;
+		}
+	}
+	else if(flagOne == 7 || flagOne == 11)
+	{
+		shootFlag=3;
+		
+		if(flagOne == 7)
+			getPushTime=getPushTime-TIME_DIFF_2_FOR;
+		else;
+		
+		if(shootCnt == getPushTime)
+		{
+			// 推球	
+			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			shootCnt=0;
+		}
+	}
+}
+
+//激光校准
+float posXAdd=0;
+float posYAdd=0;
+void LaserCalibration(float getreferenceDistance)
+{
+	float laserdistance=0; 
+	laserdistance=(((fort.laserAValueReceive+fort.laserBValueReceive)/2)*LASER_SCALE)-200;
+	
+	if(getreferenceDistance < 3800 && getreferenceDistance > 2300)
+	{
+		if((laserdistance+100) < getreferenceDistance || (laserdistance-100) > getreferenceDistance)
+		{
+			if(flagOne == 10 || flagOne == 12)
+			{
+				posXAdd=laserdistance-getreferenceDistance;
+			}
+			else if(flagOne == 9 || flagOne == 11)
+			{
+				posYAdd=laserdistance-getreferenceDistance;
+			}
+		}
+	}
+		
 
 }
+

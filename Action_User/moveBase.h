@@ -100,7 +100,7 @@ void BiggerSquareOne(void);
 void BiggerSquareTwo(void);
 float Speed_X(void);
 float Speed_Y(void);
-void Walk(uint8_t *getAdcFlag);
+void Walk(uint8_t getAdcFlag);
 #endif /* ___H */
 
 
