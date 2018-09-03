@@ -117,9 +117,15 @@ void WalkTask(void)
 	
 	
 	//PID参数
+<<<<<<< HEAD
 	Distance_PidPara(0.09,0,0);
   Angle_PidPara(20,0,1500);	
 	Speed_PidPara(2,0,0); 
+=======
+	Angle_PidPara(20,0,600);
+	Distance_PidPara(0.09,0,1); 
+	Speed_PidPara(2,0,0);
+>>>>>>> 49a2b8cae0328bb950874b559bdde6ff7695981f
 	
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
@@ -128,11 +134,15 @@ void WalkTask(void)
 		//走位
 		Walk(&adcFlag);
 		//发球
-		Shoot(adcFlag,200); 
+		Shoot(adcFlag,250); 
 		//USART_OUT(UART4, " %d\t", (int)GetSpeeedX());
+<<<<<<< HEAD
 		//USART_OUT(UART4, " %d\r\n", (int)GetSpeeedY());
 		USART_OUT(UART4, "%d\t%d\t%d\t%d\t%d\r\n",usartValue.flagOnevalue,(int)(GetPosX()),(int)(GetPosY()),(int)(GetSpeeedX()),(int)GetSpeeedY());
 		
+=======
+		//USART_OUT(UART4, " %d\r\n", (int)GetSpeeedY());		
+>>>>>>> 49a2b8cae0328bb950874b559bdde6ff7695981f
 	}
 }
  
@@ -168,7 +178,12 @@ void Init(void)
 	PosConfig();
 	
 	//收球电机
+<<<<<<< HEAD
 	VelCrl(CAN1,COLLECT_BALL_ID,400*4096); 
+=======
+	VelCrl(CAN1,COLLECT_BALL_ID,10*60*4096); 
+	
+>>>>>>> 49a2b8cae0328bb950874b559bdde6ff7695981f
 	GetDirection(&adcFlag);
 }
 
