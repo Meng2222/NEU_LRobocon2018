@@ -469,8 +469,12 @@ extern float posYAdd;
 float GetPosX(void)
 {
 	
+<<<<<<< HEAD
 //	return posX-(axis_Xerr/2);
 	return posX+posXAdd;
+=======
+	return posX;
+>>>>>>> 275ae48204ff85701c5040e90d415b3c256a3188
 }
 float GetPosY(void)
 {
