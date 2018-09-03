@@ -468,7 +468,7 @@ extern float axis_Xerr;
 float GetPosX(void)
 {
 	
-	return posX-(axis_Xerr/2);
+	return posX;
 }
 float GetPosY(void)
 {

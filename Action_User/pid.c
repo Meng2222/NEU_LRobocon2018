@@ -6,7 +6,7 @@ float outMax2=90;
 float outMin2=-90;
 
 static float outMax3=2000;
-static float outMin3=1300; 
+static float outMin3=1500; 
 
 static struct PIDPara_{
 	float aKp;
@@ -30,7 +30,6 @@ float AnglePid(float valueSet,float valueNow)
 	float valueOut=0;
 	static float errLast=0;
 	static float iTerm=0;
-
 	err=valueSet-valueNow;
 	if(err > 180)
 	{
