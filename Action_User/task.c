@@ -87,7 +87,7 @@ void ConfigTask(void)
 	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
 	WaitOpsPrepare();                                                //等待定位系统准备完成
 	PID_Init(PID_x);                                                 //PID参数初始化
-	VelCrl(CAN1,COLLECT_BALL_ID,400*4096);
+	VelCrl(CAN1,COLLECT_BALL_ID,300*4096);
 	YawPosCtrl(170);
 	
 	static float error1 = 0;                                         //用激光传感器矫正定位系统偏移
@@ -112,7 +112,7 @@ void ConfigTask(void)
 			OSMboxPost(adc_msg,(void *)Right);
 			OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
 		}
-//		else USART_OUT(UART4,(uint8_t*)"%s","wait for adc data\r\n");
+//		lse USART_OUT(UART4,(uint8_t*)"%s","wait for adc data\r\n");
 	}
 }
 
@@ -195,20 +195,7 @@ void WalkTask(void)
 //		上位机控制炮台航向，射速函数
 //		YawPosCtrl(GetYawPosCommand());
 //		ShooterVelCtrl(GetShooterVelCommand());
-//		UART4_OUT(PID_x)
-//		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.YawPos);
-//		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.YawPosTarActAngle);
-//		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVel);
-//		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVelSet);
-		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.CarVel_X);
-		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.CarVel_Y);
-		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterTime);		
-		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVel);	
-		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVelSet);		
-		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.Angle_Deviation);
-		USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.cntIteration);
-		USART_SendData(UART4,'\r');
-		USART_SendData(UART4,'\n');
+//		UART4_OUT(PID_x);
 	}
 }
 

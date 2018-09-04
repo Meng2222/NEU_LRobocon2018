@@ -1223,3 +1223,227 @@ void vel_radious(float vel,float radious)
 ////		if(coordinateCnt == 6) coordinateCnt=0;
 //*/
 
+
+
+
+static u8 flag1 = 0;
+			static u8 flag2 = 0;
+			static int timeCnt = 0;
+			timeCnt++;
+			if(timeCnt < 200)
+			{
+				if(flag1 == 0)
+				{
+					pid->Angle += 180;
+					pid->V_Set = -2000;
+					PID_Control(pid);
+				}
+				if((ABS(pid->l->line_Error) < 400) || flag1)
+				{
+					if(flag1 == 0)
+					{
+						flag1 = 1;
+						pid->Angle -= 180;
+					}
+					if(flag2 == 0)
+					{
+						pid->V_Set = 0;
+						pid->Line_Cnt += 1;
+						if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
+						pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+						PID_Pre(pid);
+						if(pid->Line_Num<4 && pid->l->line_Error>800) pid->Line_Cnt -= 1;
+						if(pid->Line_Num>3 && pid->l->line_Error>1200) pid->Line_Cnt -= 1;
+						if(pid->Line_Cnt == -1) pid->Line_Cnt = 35;
+						pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+						PID_Control(pid);
+					}
+					if((ABS(pid->Error) < 10) || flag2)
+					{
+						flag2 = 1;
+						pid->V_Set = 2000;
+						pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+						PID_Control(pid);
+						if((ABS(pid->Error) < 10))
+						{
+							error->flag = 0;
+							flag1 = 0;
+							flag2 = 0;
+							timeCnt = 0;
+							pid->V_Set = 2000;
+						}
+					}
+				}
+				GO(pid);
+				USART_OUT(UART4,(uint8_t*)"%d	", (int)timeCnt);
+				USART_OUT(UART4,(uint8_t*)"%d	", (int)flag1);
+				USART_OUT(UART4,(uint8_t*)"%d	", (int)flag2);
+				USART_OUT(UART4,(uint8_t*)"%d	", (int)pid->Line_Num);
+				USART_SendData(UART4,'\r');
+				USART_SendData(UART4,'\n');
+			}
+			else
+			{
+				error->flag = 0;
+				flag1 = 0;
+				flag2 = 0;
+				timeCnt = 0;
+				pid->V_Set = 2000;
+				pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+				switch (pid->err_line_num)
+				{
+					case 0:
+						break;
+					case 1:
+						break;
+					case 2:
+						break;
+					case 3:
+						break;
+					case 4:
+						break;
+					default:
+						break;
+				}
+			}
+			
+void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //新版走线
+{
+	static u8 flag = 0;
+	if(flag == 0 && dir == Right)
+	{
+		for(int i = 0;i < 36;i++) pid->Line_Order[i] = line_order3[i];
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		flag = 1;
+	}
+	if(flag == 0 && dir == Left)
+	{
+		for(int i = 0;i < 36;i++) pid->Line_Order[i] = line_order4[i];
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		flag = 1;
+	}
+	if(pid->Line_Num < 17)
+	{
+		if(error->flag == 0)
+		{
+			pid->direction = ACW;
+			pid->Mode = Line;
+			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+			PID_Control(pid);
+			GO(pid);
+			pid->Line_Cnt += 1;
+			if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
+			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+			PID_Pre(pid);
+			if(pid->Line_Num<4 && pid->l->line_Error>800) pid->Line_Cnt -= 1;
+			if(pid->Line_Num>3 && pid->l->line_Error>1200) pid->Line_Cnt -= 1;
+			if(pid->Line_Cnt == -1) pid->Line_Cnt = 35;
+			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+			pid->target_Num = pid->Line_Num % 4 + 1;
+			if(pid->target_Num == 4) pid->target_Num = 0;
+		}
+		else
+		{
+			static int timeCnt = 0;
+			timeCnt++;
+			if(timeCnt < 200)
+			{
+				pid->Angle += 180;
+				pid->V_Set = -2000;
+				PID_Control(pid);
+				GO(pid);
+			}
+			else
+			{
+				
+			}
+		}
+	}
+	else if(pid->Line_Num > 16)
+	{
+		if(error->flag == 0)
+		{
+			pid->direction = CW;
+			pid->Mode = Line;
+			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+			PID_Control(pid);
+			GO(pid);
+			pid->Line_Cnt += 1;
+			if(pid->Line_Cnt == 36) pid->Line_Cnt = 0;
+			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+			PID_Pre(pid);
+			if(pid->Line_Num<21 && pid->l->line_Error<-800) pid->Line_Cnt -= 1;
+			if(pid->Line_Num>20 && pid->l->line_Error<-1200) pid->Line_Cnt -= 1;
+			if(pid->Line_Cnt == -1) pid->Line_Cnt = 35;
+			pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+			pid->target_Num = pid->Line_Num % 4 - 1;
+			if(pid->target_Num == -1) pid->target_Num = 3;
+		}
+		else
+		{
+			static int timeCnt = 0;
+			timeCnt++;
+			if(timeCnt < 200)
+			{
+				pid->Angle += 180;
+				pid->V_Set = -2000;
+				PID_Control(pid);
+				GO(pid);
+			}
+			else
+			{
+				
+			}
+		}
+	}
+}
+
+void PID_Competition_testVersion(PID_Value *pid, u8 dir)                     //test版走线
+{
+	static u8 flag = 0;
+	if(flag == 0 && dir == Right)
+	{
+		for(int i = 0;i < 24;i++) pid->Line_Order[i] = line_order1[i];
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		flag = 1;
+	}
+	if(flag == 0 && dir == Left)
+	{
+		for(int i = 0;i < 24;i++) pid->Line_Order[i] = line_order2[i];
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		flag = 1;
+	}
+	if(pid->Line_Num < 17)
+	{
+		pid->direction = ACW;
+		pid->Mode = Line;
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		PID_Control(pid);
+		GO(pid);
+		pid->Line_Cnt += 1;
+		if(pid->Line_Cnt == 24) pid->Line_Cnt = 0;
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		PID_Pre(pid);
+		if(pid->l->line_Error>1000) pid->Line_Cnt -= 1;
+		if(pid->Line_Cnt == -1) pid->Line_Cnt = 23;
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		pid->target_Num = pid->Line_Num % 4 +1;
+		if(pid->target_Num == 4) pid->target_Num = 0;
+	}
+	else if(pid->Line_Num > 16)
+	{
+		pid->direction = CW;
+		pid->Mode = Line;
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		PID_Control(pid);
+		GO(pid);
+		pid->Line_Cnt += 1;
+		if(pid->Line_Cnt == 24) pid->Line_Cnt = 0;
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		PID_Pre(pid);
+		if(pid->l->line_Error<-1000) pid->Line_Cnt -= 1;
+		if(pid->Line_Cnt == -1) pid->Line_Cnt = 23;
+		pid->Line_Num = pid->Line_Order[pid->Line_Cnt];
+		pid->target_Num = 3 - pid->Line_Num % 4;
+	}
+}

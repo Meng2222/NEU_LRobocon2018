@@ -296,7 +296,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value *pos)
 	//当差值大于精度要求时，继续迭代
 	while((Gun->Distance_Deviation_X > Gun->Distance_Accuracy) || (Gun->Distance_Deviation_Y > Gun->Distance_Accuracy));
     //根据射球电机转速与静止炮台到桶距离经验公式计算
-	Gun->ShooterVelSet = 0.0118 * Gun->Distance_Shoot + 39.915 + Gun->Shooter_Vel_Offset;
+	Gun->ShooterVelSet = 0.0123 * Gun->Distance_Shoot + 35.224 + Gun->Shooter_Vel_Offset;
 	Gun->YawPosTarAngle = Gun->YawPosTarAngle + Gun->Yaw_Angle_Offset;
 	
 	//顺时针时炮台偏向角取反，往左偏

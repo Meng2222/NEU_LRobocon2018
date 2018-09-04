@@ -68,7 +68,8 @@ typedef struct line
 	float line_C;
 	float line_kp;
 	float line_Angle;
-	float line_Error;	
+	float line_Error;
+	float line_Priority;
 }Line_Value;
 
 typedef struct arc
@@ -110,10 +111,9 @@ typedef struct PID
 	float V;
 	float V_Set;
 	int Line_Num;
+	int Line_Num_Last;
 	int Arc_Num;
 	int Coordinate_Num;
-	int Line_Cnt;
-	int Line_Order[36];
 	int target_Num;
 	int err_line_num;
 	Line_Value *l;

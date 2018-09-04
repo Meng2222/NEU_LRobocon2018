@@ -348,11 +348,15 @@ void GetValueFromPC(u8 data)
 	{
 		if(buffer2 > 2 &&  strncmp(buffer1,"PO",2) == 0)//接收航向位置
 		{
-			commandRecieveData.yawPosReceive1 = (float)((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[4]-0x30));
+			commandRecieveData.yawPosReceive1 = (float)(((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[5]-0x30)));
 		}
 		else if(buffer2 > 2 &&  strncmp(buffer1,"VE",2) == 0)//接收发射电机转速
 		{
-			commandRecieveData.shooterVelReceive1 = (float)((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[4]-0x30));
+			commandRecieveData.shooterVelReceive1 = (float)(((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[5]-0x30)));
+		}
+		else if(buffer2 > 2 &&  strncmp(buffer1,"BN",2) == 0)//接收球筐号
+		{
+			commandRecieveData.targetNumber1 = (float)(((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[5]-0x30)));
 		}
 		bufferInit1();
 	}
@@ -360,10 +364,15 @@ void GetValueFromPC(u8 data)
 
 float GetYawPosCommand(void)
 {
-	return ((commandRecieveData.yawPosReceive1)/10);
+	return ((commandRecieveData.yawPosReceive1)/1);
 }
 
 float GetShooterVelCommand(void)
 {
-	return ((commandRecieveData.shooterVelReceive1)/10);
+	return ((commandRecieveData.shooterVelReceive1)/1);
+}
+
+float GetTargetNumberCommand(void)
+{
+	return ((commandRecieveData.targetNumber1)/1);
 }

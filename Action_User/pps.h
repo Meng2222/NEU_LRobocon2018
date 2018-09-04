@@ -34,6 +34,7 @@ typedef struct
 {
 	float yawPosReceive1;
 	float shooterVelReceive1;
+	float targetNumber1;
 }command;
 
 void TalkOpsToGetReady(void);
@@ -66,6 +67,7 @@ void UART4_OUT(PID_Value *pid_out);
 void GetValueFromPC(u8 data);
 float GetYawPosCommand(void);
 float GetShooterVelCommand(void);
+float GetTargetNumberCommand(void);
 
 
 #endif 
