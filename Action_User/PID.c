@@ -1,12 +1,11 @@
 #include "PID.h"
 #include "fort.h"
+u8 GetBallColor(void);
+extern FortType fort;
+extern GunneryData gundata;
 Line_Value Line_N[34];
 Arc_Value Arc_N[12];
 Coordinate_Value Coordinate_N[12];
-int line_order1[24] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,8,9,10,11,4,5,6,7};
-int line_order2[24] = {17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,25,26,27,28,21,22,23,24};
-int line_order3[36] = {0,5,14,15,12,13,10,11,8,9,6,7,12,13,14,15,12,13,14,15,12,13,14,15,12,13,14,15,12,13,14,15,12,13,14,15};
-int line_order4[36] = {19,22,29,32,31,30,25,28,27,26,21,24,27,30,29,32,31,30,29,32,31,30,29,32,31,30,29,32,31,30,29,32,31,30,29,32};
 float ABS(float thing)                                                       //¸¡µã¾ø¶ÔÖµº¯Êý
 {
 	if(thing > 0) return thing;
@@ -498,6 +497,10 @@ void PID_Init(PID_Value *PID_a)                                              //P
 	PID_a->V_Set = 2000;
 	PID_a->vel = 0;
 	PID_a->err_line_num = 0;
+	PID_a->push_pos_up = -16384;
+	PID_a->push_pos_down = 16384;
+	PID_a->fire_request = 0;
+	PID_a->fire_command = 0;
 		
 	PID_Line_Init();
 	PID_a->l = &Line_N[PID_a->Line_Num];
@@ -638,21 +641,33 @@ void PID_Pre(PID_Value *p)                                                   //È
 
 void GO(PID_Value *p_GO)                                                     //µç»ú¿ØÖÆº¯Êý
 {
-	VelCrl(CAN2,1,(int)(((4096/378)*(p_GO->vel))+(4096/378)*(p_GO->V)));
-	VelCrl(CAN2,2,(int)(((4096/378)*(p_GO->vel))-(4096/378)*(p_GO->V)));
+	VelCrl(CAN2,1,(int)((0-((4096/378)*(p_GO->vel)))-(4096/378)*(p_GO->V)));
+	VelCrl(CAN2,2,(int)((0-((4096/378)*(p_GO->vel)))+(4096/378)*(p_GO->V)));
 }
 
-void shoot(void)                                                             //ÉäÇòº¯Êý
+void shoot(PID_Value *p_gun)                                                  //ÉäÇòº¯Êý
 {
 	static int cnt = 0;
-	cnt++;
-	if(cnt == 100) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_RESET_POSITION);
-	if(cnt == 200) PosCrl(CAN1, PUSH_BALL_ID,ABSOLUTE_MODE,PUSH_POSITION);
-	if(cnt == 200) cnt = 0;
+	if (p_gun->fire_request)
+	{
+		if(!p_gun->fire_command) return;
+		PosCrl(CAN2,7,RELATIVE_MODE,p_gun->push_pos_up);
+		p_gun->fire_request = 0;
+		p_gun->fire_command = 0;
+	}
+	else
+	{
+		cnt++;
+		if(cnt == 100)
+		{
+			if(GetBallColor() == 2) PosCrl(CAN2,7,RELATIVE_MODE,p_gun->push_pos_down);
+			else if(GetBallColor() == 0) PosCrl(CAN2,7,RELATIVE_MODE,p_gun->push_pos_down);
+			else if(GetBallColor() == 1) p_gun->fire_request = 1;
+		}
+		if(cnt == 100) cnt = 0;
+	}
 }
 
-extern FortType fort;
-extern GunneryData gundata;
 void UART4_OUT(PID_Value *pid_out)                                           //´®¿ÚÊä³öº¯Êý
 {
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
@@ -740,24 +755,23 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				{
 					Line_N[4*i+pid->target_Num].line_Priority--;
 					if(Line_N[4*i+pid->target_Num].line_Priority == -1) Line_N[4*i+pid->target_Num].line_Priority = 3;
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+pid->target_Num));
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+pid->target_Num].line_Priority));
-					USART_SendData(UART4,'\r');
-					USART_SendData(UART4,'\n');
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+pid->target_Num));
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+pid->target_Num].line_Priority));
+//					USART_SendData(UART4,'\r');
+//					USART_SendData(UART4,'\n');
 				}
-				USART_OUT(UART4,(uint8_t*)"%d	", (int)(pid->Line_Num));
-				USART_SendData(UART4,'\r');
-				USART_SendData(UART4,'\n');
-				USART_SendData(UART4,'\r');
-				USART_SendData(UART4,'\n');
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)(pid->Line_Num));
+//				USART_SendData(UART4,'\r');
+//				USART_SendData(UART4,'\n');
+//				USART_SendData(UART4,'\r');
+//				USART_SendData(UART4,'\n');
 			}
-			
 		}
 		else
 		{
 			static int timeCnt = 0;
 			timeCnt++;
-			if(timeCnt < 300)
+			if(timeCnt < 250)
 			{
 				pid->Angle += 180;
 //				pid->V_Set = -1000;
@@ -777,14 +791,14 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				for(i=0;i<17;i++)
 				{
 					Line_N[i+17].line_Priority = Line_N[i].line_Priority;
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
-					USART_SendData(UART4,'\r');
-					USART_SendData(UART4,'\n');
-					USART_SendData(UART4,'\r');
-					USART_SendData(UART4,'\n');
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
+//					USART_SendData(UART4,'\r');
+//					USART_SendData(UART4,'\n');
+//					USART_SendData(UART4,'\r');
+//					USART_SendData(UART4,'\n');
 				}
 				GO(pid);
 			}
@@ -830,10 +844,10 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					{
 						Line_N[4*i+pid->target_Num].line_Priority--;
 						if(Line_N[4*i+pid->target_Num].line_Priority == -1) Line_N[4*i+pid->target_Num].line_Priority = 3;
-						USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+pid->target_Num));
-						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+pid->target_Num].line_Priority));
-						USART_SendData(UART4,'\r');
-						USART_SendData(UART4,'\n');
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+pid->target_Num));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+pid->target_Num].line_Priority));
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
 					}
 				}
 				else if(pid->target_Num == 0)
@@ -842,24 +856,24 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					{
 						Line_N[4*i+4].line_Priority--;
 						if(Line_N[4*i+4].line_Priority == -1) Line_N[4*i+4].line_Priority = 3;
-						USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+4));
-						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+4].line_Priority));
-						USART_SendData(UART4,'\r');
-						USART_SendData(UART4,'\n');
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+4));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+4].line_Priority));
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
 					}
 				}
-				USART_OUT(UART4,(uint8_t*)"%d	", (int)(pid->Line_Num));
-				USART_SendData(UART4,'\r');
-				USART_SendData(UART4,'\n');
-				USART_SendData(UART4,'\r');
-				USART_SendData(UART4,'\n');
+//				USART_OUT(UART4,(uint8_t*)"%d	", (int)(pid->Line_Num));
+//				USART_SendData(UART4,'\r');
+//				USART_SendData(UART4,'\n');
+//				USART_SendData(UART4,'\r');
+//				USART_SendData(UART4,'\n');
 			}
 		}
 		else
 		{
 			static int timeCnt = 0;
 			timeCnt++;
-			if(timeCnt < 300)
+			if(timeCnt < 250)
 			{
 				pid->Angle += 180;
 //				pid->V_Set = -1000;
@@ -879,14 +893,14 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				for(i=0;i<17;i++)
 				{
 					Line_N[i].line_Priority = Line_N[i+17].line_Priority;
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
-					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
-					USART_SendData(UART4,'\r');
-					USART_SendData(UART4,'\n');
-					USART_SendData(UART4,'\r');
-					USART_SendData(UART4,'\n');
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
+//					USART_SendData(UART4,'\r');
+//					USART_SendData(UART4,'\n');
+//					USART_SendData(UART4,'\r');
+//					USART_SendData(UART4,'\n');
 				}
 				GO(pid);
 			}
@@ -897,8 +911,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 void GetData(PID_Value *p)                                                   //¶ÁÊý
 {
 	p->Angle = GetAngle();
-	p->X = GetX();
-	p->Y = GetY() + 95;
+	p->X = GetX()+170.68f*sin(p->Angle);
+	p->Y = GetY() + 95.f + 170.68f - 170.68f*cos(p->Angle);
 	p->X_Speed = GetSpeedX();
 	p->Y_Speed = GetSpeedY();
 }

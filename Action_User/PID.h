@@ -48,14 +48,14 @@ float GetSpeedX(void);
 float GetSpeedY(void);
 /*返回定位系统的Z轴角速度值*/
 
-#define manual 1
-#define Arc 2
-#define Line 3
-#define Coordinate 4
-#define ACW 5
-#define CW 6
-#define Left 7
-#define Right 8
+#define manual (1)
+#define Arc (2)
+#define Line (3)
+#define Coordinate (4)
+#define ACW (5)
+#define CW (6)
+#define Left (7)
+#define Right (8)
 
 typedef struct line
 {
@@ -93,6 +93,8 @@ typedef struct coordinate
 typedef struct PID
 {
 	u8 direction;
+	u8 fire_request;
+	u8 fire_command;
 	int Mode;
 	int Mode_Last;
 	float Angle_Set;
@@ -116,6 +118,8 @@ typedef struct PID
 	int Coordinate_Num;
 	int target_Num;
 	int err_line_num;
+	int push_pos_up;
+	int push_pos_down;
 	Line_Value *l;
 	Arc_Value *r;
 	Coordinate_Value *c;
@@ -150,5 +154,5 @@ void PID_Competition_testVersion(PID_Value *pid, u8 dir);
 void PID_Competition(PID_Value *pid, u8 dir, Err *error);
 void ErrorDisposal(PID_Value *pid,Err *error);
 void GetData(PID_Value *p);
-void shoot(void);
+void shoot(PID_Value *p_GO);
 #endif

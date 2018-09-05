@@ -38,7 +38,7 @@
 //对应的收发串口
 #define USARTX UART5
 
-#define Yaw_Zero_Offset (170.0f)                                //炮台角度指向车头方向置零    170°
+#define Yaw_Zero_Offset (0.0f)                                //炮台角度指向车头方向置零    170°
 #define Fort_TO_BACK_WHEEL (65.0f)                              //炮台到车轴中点距离          65.0mm
 #define BACK_WHEEL_TO_WALL (95.0f)                              //车轴中点到墙面距离          95.0mm
 #define G (9800.0f)                                             //重力加速度                  9800mm/s2

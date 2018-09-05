@@ -53,6 +53,7 @@ PID_Value PID_A;
 Err *Error_x;
 Err Error_A;
 float *error = NULL;
+extern FortType fort;
 void ConfigTask(void)
 {
 	PID_x = &PID_A;
@@ -63,23 +64,25 @@ void ConfigTask(void)
 	Error_A.timeCnt = 0;
 	Error_A.distance = 0;
 	Error_A.err_distance = 100;
-	int ADC_Left = 0;
-	int ADC_Right = 0;
+	int Laser_Left = 0;
+	int Laser_Right = 0;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
 	TIM_Init(TIM2,999,83,0,0);                                       //时钟2初始化，1ms周期
-	Adc_Init();                                                      //adc_init
+//	Adc_Init();                                                      //adc_init
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);                //can1初始化
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);                //can2初始化
 	ElmoInit(CAN2);                                                  //驱动器初始化
 	ElmoInit(CAN1);                                                  //驱动器初始化
-	VelLoopCfg(CAN2,2,8000000,8000000);                              //左电机速度环初始化
-	VelLoopCfg(CAN2,1,8000000,8000000);                              //右电机速度环初始化
-	VelLoopCfg(CAN1, 8, 40000000, 40000000);                               //收球电机
-	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,200000);
-	MotorOn(CAN2,1);                                                 //右电机使能
-	MotorOn(CAN2,2);                                                 //左电机使能
-	MotorOn(CAN1,8); 
-	MotorOn(CAN1,6); 
+	VelLoopCfg(CAN1,2,8000000,8000000);                              //左电机速度环初始化
+	VelLoopCfg(CAN1,1,8000000,8000000);                              //右电机速度环初始化
+	VelLoopCfg(CAN2, 5, 40000000, 40000000);                               //收球电机
+	VelLoopCfg(CAN2, 6, 40000000, 40000000);                               //收球电机
+	PosLoopCfg(CAN2, 7, 5000000,5000000,200000);
+	MotorOn(CAN1,1);                                                 //右电机使能
+	MotorOn(CAN1,2);                                                 //左电机使能
+	MotorOn(CAN2,5); 
+	MotorOn(CAN2,6); 
+	MotorOn(CAN2,7); 
 	USART3_Init(115200);                                             //串口3初始化，定位系统用
 	UART4_Init(921600);                                              //串口4初始化，与上位机通信用
 	UART5_Init(921600);
@@ -87,27 +90,28 @@ void ConfigTask(void)
 	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
 	WaitOpsPrepare();                                                //等待定位系统准备完成
 	PID_Init(PID_x);                                                 //PID参数初始化
-	VelCrl(CAN1,COLLECT_BALL_ID,300*4096);
-	YawPosCtrl(170);
+	VelCrl(CAN2,5,0-60*32768);
+	VelCrl(CAN2,6,0-60*32768);
+	YawPosCtrl(0);
 	
-	static float error1 = 0;                                         //用激光传感器矫正定位系统偏移
-	//error1 = ((Get_Adc_Average(15,100) - Get_Adc_Average(14,100))/2)*0.922854f;
-	error1 = 0;
-	OS_CPU_SR cpu_sr;
-	OS_ENTER_CRITICAL();                                             /*互斥访问*/
-	error = &error1;
-	OS_EXIT_CRITICAL();
+//	static float error1 = 0;                                         //用激光传感器矫正定位系统偏移
+//	//error1 = ((Get_Adc_Average(15,100) - Get_Adc_Average(14,100))/2)*0.922854f;
+//	error1 = 0;
+//	OS_CPU_SR cpu_sr;
+//	OS_ENTER_CRITICAL();                                             /*互斥访问*/
+//	error = &error1;
+//	OS_EXIT_CRITICAL();
 	
 	while(1)
 	{
-		ADC_Left = Get_Adc_Average(15,10);                           //左ADC
-		ADC_Right = Get_Adc_Average(14,10);                          //右ADC
-		if(ADC_Left<100)
+		Laser_Left = fort.laserAValueReceive;                           //左ADC
+		Laser_Right = fort.laserBValueReceive;                          //右ADC
+		if(Laser_Left<100)
 		{
 			OSMboxPost(adc_msg,(void *)Left);                     
 			OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
 		}
-		else if(ADC_Right<100)
+		else if(Laser_Right<100)
 		{
 			OSMboxPost(adc_msg,(void *)Right);
 			OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
@@ -121,6 +125,7 @@ void ConfigTask(void)
                                   WalkTask      初始化后执行
 ===============================================================
 */
+
 extern GunneryData gundata;
 void WalkTask(void)
 {
@@ -182,20 +187,15 @@ void WalkTask(void)
 					gundata.Shooter_Vel_Offset = -3.0;	
 					break;
 			}
-		}		
+		}
+		
 		gundata.Distance_Accuracy = 10.0;         //设定距离精度
 		GunneryData_Operation(&gundata,PID_x);    //计算射击诸元
 		YawPosCtrl(gundata.YawPosTarActAngle);    //设定航向角
 		ShooterVelCtrl(gundata.ShooterVelSet);    //设定射球转速
+		if((gundata.Angle_Deviation < 10.0) && (fabs(gundata.ShooterVel - gundata.ShooterVelSet) < 10.0)) PID_A.fire_command = 1;
+		shoot(PID_x);
 		
-		//当车头方向与目标直线方向偏差角度10°内 && 射球电机转速检测值与设定值误差小于10转时 进行推球
-		if((gundata.Angle_Deviation < 10.0) && (fabs(gundata.ShooterVel - gundata.ShooterVelSet) < 10.0)) shoot();
-		
-//		shoot();
-//		上位机控制炮台航向，射速函数
-//		YawPosCtrl(GetYawPosCommand());
-//		ShooterVelCtrl(GetShooterVelCommand());
-//		UART4_OUT(PID_x);
+		UART4_OUT(PID_x);
 	}
 }
-

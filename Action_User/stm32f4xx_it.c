@@ -45,6 +45,14 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
+uint32_t StdId = 0;
+uint8_t CAN1Buffer[8] = {0};
+uint8_t receiveLength = 8;
+
+u8 GetBallColor(void)
+{
+	return CAN1Buffer[2];
+}
 
 void CAN1_RX0_IRQHandler(void)
 {
@@ -54,12 +62,9 @@ void CAN1_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	//CAN1口接受任意数据以通过标志位中断
-	uint32_t StdId = 0;
-	uint8_t CAN1Buffer[8] = {0};
-	uint8_t receiveLength = 8;
+
 //	CanRxMsg RxMessage;
     CAN_RxMsg(CAN1, &StdId, CAN1Buffer, &receiveLength);
-	
 
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
