@@ -212,22 +212,22 @@ float GetAngle(void)
 /*返回定位系统的X值*/
 float GetX(void)
 {
-	return (0-ppsReturn.ppsX+*error);
+	return (ppsReturn.ppsX+*error);
 }
 /*返回定位系统的Y值*/
 float GetY(void)
 {
-	return (0-ppsReturn.ppsY);
+	return (ppsReturn.ppsY);
 }
 /*返回定位系统的X轴的速度*/
 float GetSpeedX(void)
 {
-	return (0-ppsReturn.ppsSpeedX);
+	return (ppsReturn.ppsSpeedX);
 }
 /*返回定位系统的Y轴的速度*/
 float GetSpeedY(void)
 {
-	return (0-ppsReturn.ppsSpeedY);
+	return (ppsReturn.ppsSpeedY);
 }
 /*返回定位系统的Z轴角速度值*/
 float GetWZ(void)

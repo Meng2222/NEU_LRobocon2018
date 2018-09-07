@@ -68,30 +68,29 @@ void ConfigTask(void)
 	int Laser_Right = 0;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
 	TIM_Init(TIM2,999,83,0,0);                                       //时钟2初始化，1ms周期
-//	Adc_Init();                                                      //adc_init
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);                //can1初始化
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);                //can2初始化
-	ElmoInit(CAN2);                                                  //驱动器初始化
+//	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);                //can2初始化
+	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
+//	ElmoInit(CAN2);                                                  //驱动器初始化
 	ElmoInit(CAN1);                                                  //驱动器初始化
-	VelLoopCfg(CAN1,2,8000000,8000000);                              //左电机速度环初始化
-	VelLoopCfg(CAN1,1,8000000,8000000);                              //右电机速度环初始化
-	VelLoopCfg(CAN2, 5, 40000000, 40000000);                               //收球电机
-	VelLoopCfg(CAN2, 6, 40000000, 40000000);                               //收球电机
-	PosLoopCfg(CAN2, 7, 5000000,5000000,200000);
+	VelLoopCfg(CAN1,2,16384000,16384000);                              //左电机速度环初始化
+	VelLoopCfg(CAN1,1,16384000,16384000);                              //右电机速度环初始化
+//	VelLoopCfg(CAN2,5, 1638400, 1638400);                               //收球电机
+//	VelLoopCfg(CAN2,6, 1638400, 1638400);                               //收球电机
+//	PosLoopCfg(CAN2,7, 1638400,1638400,200000);
 	MotorOn(CAN1,1);                                                 //右电机使能
 	MotorOn(CAN1,2);                                                 //左电机使能
-	MotorOn(CAN2,5); 
-	MotorOn(CAN2,6); 
-	MotorOn(CAN2,7); 
+//	MotorOn(CAN2,5); 
+//	MotorOn(CAN2,6); 
+//	MotorOn(CAN2,7); 
 	USART3_Init(115200);                                             //串口3初始化，定位系统用
 	UART4_Init(921600);                                              //串口4初始化，与上位机通信用
 	UART5_Init(921600);
 	USART1_Init(921600);
-	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
 	WaitOpsPrepare();                                                //等待定位系统准备完成
 	PID_Init(PID_x);                                                 //PID参数初始化
-	VelCrl(CAN2,5,0-60*32768);
-	VelCrl(CAN2,6,0-60*32768);
+//	VelCrl(CAN2,5,60*32768);
+//	VelCrl(CAN2,6,0-60*32768);
 	YawPosCtrl(0);
 	
 //	static float error1 = 0;                                         //用激光传感器矫正定位系统偏移
@@ -104,8 +103,8 @@ void ConfigTask(void)
 	
 	while(1)
 	{
-		Laser_Left = fort.laserAValueReceive;                           //左ADC
-		Laser_Right = fort.laserBValueReceive;                          //右ADC
+		Laser_Right = fort.laserAValueReceive;                           //左ADC
+		Laser_Left = fort.laserBValueReceive;                          //右ADC
 		if(Laser_Left<100)
 		{
 			OSMboxPost(adc_msg,(void *)Left);                     
@@ -142,59 +141,61 @@ void WalkTask(void)
 		ErrorDisposal(PID_x,Error_x);
 		PID_Competition(PID_x,direction,Error_x);
 
-		gundata.BucketNum = PID_A.target_Num;
-		//顺逆时针各桶航向角补偿和射球转速补偿
-		if(PID_x->direction == ACW)
-		{
-			switch(gundata.BucketNum)
-			{
-				case 0:
-					gundata.Yaw_Angle_Offset = 4.5;
-					gundata.Shooter_Vel_Offset = -3.0;
-					break;
-				case 1:
-					gundata.Yaw_Angle_Offset = 5.0;
-					gundata.Shooter_Vel_Offset = -1.5;
-					break;
-				case 2:
-					gundata.Yaw_Angle_Offset = 12.0;
-					gundata.Shooter_Vel_Offset = -2.0;
-					break;
-				case 3:
-					gundata.Yaw_Angle_Offset = 8.0;
-					gundata.Shooter_Vel_Offset = -3.0;
-					break;
-			}
-		}
-		if(PID_x->direction == CW)
-		{
-			switch(gundata.BucketNum)
-			{
-				case 0:
-					gundata.Yaw_Angle_Offset = 1.0;
-					gundata.Shooter_Vel_Offset = -3.5;
-					break;
-				case 1:
-					gundata.Yaw_Angle_Offset = 2.0;
-					gundata.Shooter_Vel_Offset = -5.0;
-					break;
-				case 2:
-					gundata.Yaw_Angle_Offset = 2.0;
-					gundata.Shooter_Vel_Offset = -3.0;
-					break;
-				case 3:
-					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = -3.0;	
-					break;
-			}
-		}
-		
-		gundata.Distance_Accuracy = 10.0;         //设定距离精度
-		GunneryData_Operation(&gundata,PID_x);    //计算射击诸元
-		YawPosCtrl(gundata.YawPosTarActAngle);    //设定航向角
-		ShooterVelCtrl(gundata.ShooterVelSet);    //设定射球转速
-		if((gundata.Angle_Deviation < 10.0) && (fabs(gundata.ShooterVel - gundata.ShooterVelSet) < 10.0)) PID_A.fire_command = 1;
-		shoot(PID_x);
+//		gundata.BucketNum = PID_A.target_Num;
+//		//顺逆时针各桶航向角补偿和射球转速补偿
+//		if(PID_x->direction == ACW)
+//		{
+//			switch(gundata.BucketNum)
+//			{
+//				case 0:
+//					gundata.Yaw_Angle_Offset = 4.5;
+//					gundata.Shooter_Vel_Offset = -3.0;
+//					break;
+//				case 1:
+//					gundata.Yaw_Angle_Offset = 5.0;
+//					gundata.Shooter_Vel_Offset = -1.5;
+//					break;
+//				case 2:
+//					gundata.Yaw_Angle_Offset = 12.0;
+//					gundata.Shooter_Vel_Offset = -2.0;
+//					break;
+//				case 3:
+//					gundata.Yaw_Angle_Offset = 8.0;
+//					gundata.Shooter_Vel_Offset = -3.0;
+//					break;
+//			}
+//		}
+//		if(PID_x->direction == CW)
+//		{
+//			switch(gundata.BucketNum)
+//			{
+//				case 0:
+//					gundata.Yaw_Angle_Offset = 1.0;
+//					gundata.Shooter_Vel_Offset = -3.5;
+//					break;
+//				case 1:
+//					gundata.Yaw_Angle_Offset = 2.0;
+//					gundata.Shooter_Vel_Offset = -5.0;
+//					break;
+//				case 2:
+//					gundata.Yaw_Angle_Offset = 2.0;
+//					gundata.Shooter_Vel_Offset = -3.0;
+//					break;
+//				case 3:
+//					gundata.Yaw_Angle_Offset = 0.0;
+//					gundata.Shooter_Vel_Offset = -3.0;	
+//					break;
+//			}离精度
+//		GunneryData_Operation(&gundata,PID_x);    //计算射击诸元
+//		YawPosCtrl(gundata.YawPosTarActAngle);    //设定航向角
+//		ShooterVelCtrl(gundata.ShooterVelSet);    //设定射球转速
+		//if((gundata.Angle_Deviation < 10.0) && (fabs(gundata.ShooterVel -
+//		}
+//		
+//		gundata.Distance_Accuracy = 10.0;         //设定距 gundata.ShooterVelSet) < 10.0)) 
+		ShooterVelCtrl(40);    //设定射球转速
+//		PID_A.fire_command = 1;
+//		shoot(PID_x);
 		
 		UART4_OUT(PID_x);
 	}
