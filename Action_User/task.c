@@ -1,6 +1,7 @@
 #include "PID.h"
 #include "pps.h"
 #include "fort.h"
+#include "other.h"
 #define COLLECT_BALL_ID (8)
 #define CarNum One
 #define One 1
@@ -26,12 +27,12 @@ void App_Task(void)
 	CPU_INT08U os_err;
 	os_err = os_err; /*防止警告...*/
 
-	/*创建信号量*/
+	/*创建信号量**/
 	PeriodSem = OSSemCreate(0);
 	adc_msg = OSMboxCreate(NULL); 
 
 	/*创建任务*/
-	os_err = OSTaskCreate((void (*)(void *))ConfigTask, /*初始化任务*/
+	os_err = OSTaskCreate((void (*)(void *))ConfigTask, /*初始化任务**/
 						  (void *)0,
 						  (OS_STK *)&App_ConfigStk[Config_TASK_START_STK_SIZE - 1],
 						  (INT8U)Config_TASK_START_PRIO);
@@ -115,7 +116,6 @@ void ConfigTask(void)
 			OSMboxPost(adc_msg,(void *)Right);
 			OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
 		}
-//		lse USART_OUT(UART4,(uint8_t*)"%s","wait for adc data\r\n");
 	}
 }
 
@@ -140,7 +140,6 @@ void WalkTask(void)
 		GetData(PID_x);
 //		ErrorDisposal(PID_x,Error_x);
 //		PID_Competition(PID_x,direction,Error_x);
-
 		gundata.BucketNum = PID_A.target_Num;
 		//顺逆时针各桶航向角补偿和射球转速补偿
 		if(PID_x->direction == ACW)
@@ -193,6 +192,20 @@ void WalkTask(void)
 		}
 //		ShooterVelCtrl(40);    //设定射球转速
 //		PID_A.fire_command = 1;
+		//新车激光拟合
+		GetPositionValue2(PID_x);//Get坐标读数
+		GetLaserData2();         //Get激光读数
+		
+		//新车发球检测
+		/*
+		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "B","N","m",":",(int)gundata.BucketNum);	
+		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "V","e","l",":",(int)gundata.ShooterVel);	
+		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "S","e","t",":",(int)gundata.ShooterVelSet);		
+		{+}发球检测函数
+		*/
+		
+		USART_SendData(UART4,'\r');
+		USART_SendData(UART4,'\n');
 //		shoot(PID_x);
 		
 		UART4_OUT(PID_x);
