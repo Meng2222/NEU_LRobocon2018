@@ -32,9 +32,10 @@ typedef struct{
 
 typedef struct
 {
-	float yawPosReceive1;
-	float shooterVelReceive1;
-	float targetNumber1;
+	float YawPosReceive_cmd;
+	float ShooterVelReceive_cmd;
+	float TargetNumber_cmd;
+	int FireFlag;
 }command;
 
 void TalkOpsToGetReady(void);

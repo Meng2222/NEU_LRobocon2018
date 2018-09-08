@@ -256,7 +256,7 @@ void ShooterVel_Record(void)//¼ÇÂ¼Êý¾Ý
 	shooterVel.p30=shooterVel.p20;
 	shooterVel.p20=shooterVel.p10;
 	shooterVel.p10=shooterVel.now;
-	shooterVel.now=gundata.ShooterVel;
+	shooterVel.now=gundata.ShooterVelRec;
 }
 
 int ifShootFlag=0;

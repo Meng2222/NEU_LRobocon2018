@@ -104,7 +104,7 @@ void ConfigTask(void)
 	
 	while(1)
 	{
-		Laser_Right = fort.laserAValueReceive;                           //左ADC
+		Laser_Right = fort.laserAValueReceive;                         //左ADC
 		Laser_Left = fort.laserBValueReceive;                          //右ADC
 		if(Laser_Left<100)
 		{
@@ -126,11 +126,14 @@ void ConfigTask(void)
 */
 
 extern GunneryData gundata;
+extern command commandRecieveData;
+extern int cntRoundAngle;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;                                                 //防报错
 	static u32 direction = 0;
+	int cntSendTime = 0;
 	if(direction == 0) direction = (u32)OSMboxPend(adc_msg,0,&os_err);
 	OSSemSet(PeriodSem, 0, &os_err);                 	             //信号量归零
 	while (1)
@@ -140,27 +143,28 @@ void WalkTask(void)
 		GetData(PID_x);
 //		ErrorDisposal(PID_x,Error_x);
 //		PID_Competition(PID_x,direction,Error_x);
-		gundata.BucketNum = PID_A.target_Num;
-		//顺逆时针各桶航向角补偿和射球转速补偿
+		
+		//设定目标桶号和顺逆时针各桶航向角补偿和射球转速补偿
+		gundata.BucketNum = commandRecieveData.TargetNumber_cmd;
 		if(PID_x->direction == ACW)
 		{
 			switch(gundata.BucketNum)
 			{
 				case 0:
-					gundata.Yaw_Angle_Offset = 4.5;
-					gundata.Shooter_Vel_Offset = -3.0;
+					gundata.Yaw_Angle_Offset = 0.0;
+					gundata.Shooter_Vel_Offset = 0.0;
 					break;
 				case 1:
-					gundata.Yaw_Angle_Offset = 5.0;
-					gundata.Shooter_Vel_Offset = -1.5;
+					gundata.Yaw_Angle_Offset = 0.0;
+					gundata.Shooter_Vel_Offset = 0.0;
 					break;
 				case 2:
-					gundata.Yaw_Angle_Offset = 12.0;
-					gundata.Shooter_Vel_Offset = -2.0;
+					gundata.Yaw_Angle_Offset = 0.0;
+					gundata.Shooter_Vel_Offset = 0.0;
 					break;
 				case 3:
-					gundata.Yaw_Angle_Offset = 8.0;
-					gundata.Shooter_Vel_Offset = -3.0;
+					gundata.Yaw_Angle_Offset = 0.0;
+					gundata.Shooter_Vel_Offset = 0.0;
 					break;
 			}
 		}
@@ -169,32 +173,47 @@ void WalkTask(void)
 			switch(gundata.BucketNum)
 			{
 				case 0:
-					gundata.Yaw_Angle_Offset = 1.0;
-					gundata.Shooter_Vel_Offset = -3.5;
+					gundata.Yaw_Angle_Offset = 0.0;
+					gundata.Shooter_Vel_Offset = 0.0;
 					break;
 				case 1:
-					gundata.Yaw_Angle_Offset = 2.0;
-					gundata.Shooter_Vel_Offset = -5.0;
+					gundata.Yaw_Angle_Offset = 0.0;
+					gundata.Shooter_Vel_Offset = 0.0;
 					break;
 				case 2:
-					gundata.Yaw_Angle_Offset = 2.0;
-					gundata.Shooter_Vel_Offset = -3.0;
+					gundata.Yaw_Angle_Offset = 0.0;
+					gundata.Shooter_Vel_Offset = 0.0;
 					break;
 				case 3:
 					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = -3.0;	
+					gundata.Shooter_Vel_Offset = 0.0;	
 					break;
 			}
-		gundata.Distance_Accuracy = 10.0;         //设定距 gundata.ShooterVelSet) < 10.0)) 
+		}		
+
+		gundata.Distance_Accuracy = 10.0;         //设定距离精度
 		GunneryData_Operation(&gundata,PID_x);    //计算射击诸元
-		YawPosCtrl(gundata.YawPosTarActAngle);    //设定航向角
-//		ShooterVelCtrl(gundata.ShooterVelSet);    //设定射球转速
+		YawPosCtrl(gundata.YawPosAngleSet);       //设定航向角
+		ShooterVelCtrl(gundata.ShooterVelSet);    //设定射球转速
+		
+		//以20 * 10ms为间隔发送数据
+		cntSendTime++;
+		cntSendTime = cntSendTime % 5;
+		if(cntSendTime == 1)
+		{
+			USART_OUT(UART4, (uint8_t*)"PosAng=%d,YawTar=%d,YawSet=%d\r\n",\
+			(int)PID_A.Angle, (int)gundata.YawPosAngleTar, (int)gundata.YawPosAngleSet);
 		}
-//		ShooterVelCtrl(40);    //设定射球转速
-//		PID_A.fire_command = 1;
+		OSSemSet(PeriodSem, 0, &os_err);
+		
+		//当射球电机转速检测值与设定值误差小于5.0转 && 射球电机设定值小于75.0转 && FireFlag == 1时 进行推球
+		//if(fabs(gundata.ShooterVel - gundata.ShooterVelSet) < 5.0 && gundata.ShooterVelSet < 75.0 && commandRecieveData.FireFlag == 1) shoot();
+		
+
+		//PID_A.fire_command = 1;
 		//新车激光拟合
-		GetPositionValue2(PID_x);//Get坐标读数
-		GetLaserData2();         //Get激光读数
+		//GetPositionValue2(PID_x);//Get坐标读数
+		//GetLaserData2();         //Get激光读数
 		
 		//新车发球检测
 		/*
@@ -204,10 +223,10 @@ void WalkTask(void)
 		{+}发球检测函数
 		*/
 		
-		USART_SendData(UART4,'\r');
-		USART_SendData(UART4,'\n');
-//		shoot(PID_x);
+		//USART_SendData(UART4,'\r');
+		//USART_SendData(UART4,'\n');
+		//shoot(PID_x);
 		
-		UART4_OUT(PID_x);
+		//UART4_OUT(PID_x);
 	}
 }
