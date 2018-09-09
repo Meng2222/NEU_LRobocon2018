@@ -325,54 +325,69 @@ void CorrectAngle(float value)
 /************************ (C) COPYRIGHT 2016 ACTION *****END OF FILE****/
 
 command commandRecieveData;
-int buffer2 = 0;
-char buffer1[10] = {0};
-void bufferInit1()
+int bufferI_cmd = 0;
+char buffer_cmd[10] = {0};
+void bufferInit_cmd()
 {
-	for(int i = 0; i < 20; i++)
+	for(int i = 0; i < 10; i++)
 	{
-		buffer1[i] = 0;
+		buffer_cmd[i] = 0;
 	}
-	buffer2 = 0;
+	bufferI_cmd = 0;
 }
 
+/**
+* @brief 接收蓝牙返回的命令数据
+* @param data：串口每次中断接收到的一字节数据
+* @retval none
+* @attention 该函数请插入到对应的串口中断中
+							 注意清除标志位
+*/
 void GetValueFromPC(u8 data)
 {
-	buffer1[buffer2] = data;
-	buffer2++;
-	if(buffer2 >= 10)
+	buffer_cmd[bufferI_cmd] = data;
+	bufferI_cmd++;
+	if(bufferI_cmd >= 10)
 	{
-		bufferInit1();
+		bufferInit_cmd();
 	}
-	if(buffer1[buffer2 - 2] == '\r' && buffer1[buffer2 - 1] == '\n')
+	if(buffer_cmd[bufferI_cmd - 2] == '\r' && buffer_cmd[bufferI_cmd - 1] == '\n')
 	{
-		if(buffer2 > 2 &&  strncmp(buffer1,"PO",2) == 0)//接收航向位置
+		if(bufferI_cmd > 2 && strncmp(buffer_cmd, "PO", 2) == 0)//接收航向位置
 		{
-			commandRecieveData.yawPosReceive1 = (float)(((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[5]-0x30)));
+			commandRecieveData.YawPosReceive_cmd = (float)((int)(buffer_cmd[2] - 0x30)) * 1000 + ((int)(buffer_cmd[3] - 0x30)) * 100 + ((int)(buffer_cmd[4] - 0x30)) * 10 + ((int)(buffer_cmd[5] - 0x30));
 		}
-		else if(buffer2 > 2 &&  strncmp(buffer1,"VE",2) == 0)//接收发射电机转速
+		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "VE", 2) == 0)//接收发射电机转速
 		{
-			commandRecieveData.shooterVelReceive1 = (float)(((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[5]-0x30)));
+			commandRecieveData.ShooterVelReceive_cmd = (float)((int)(buffer_cmd[2] - 0x30)) * 1000+ ((int)(buffer_cmd[3] - 0x30)) * 100 + ((int)(buffer_cmd[4] - 0x30)) * 10 + ((int)(buffer_cmd[5] - 0x30));
 		}
-		else if(buffer2 > 2 &&  strncmp(buffer1,"BN",2) == 0)//接收球筐号
+		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "BN", 2) == 0)//接收目标桶编号
 		{
-			commandRecieveData.targetNumber1 = (float)(((int)(buffer1[2]-0x30))*1000+((int)(buffer1[3]-0x30))*100+((int)(buffer1[4]-0x30))*10+((int)(buffer1[5]-0x30)));
+			commandRecieveData.TargetNumber_cmd = (float)((int)(buffer_cmd[2] - 0x30)) * 1000 + ((int)(buffer_cmd[3] - 0x30)) * 100 + ((int)(buffer_cmd[4] - 0x30)) * 10 + ((int)(buffer_cmd[5] - 0x30));
 		}
-		bufferInit1();
+		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "ON", 2) == 0)//开火
+		{
+			commandRecieveData.FireFlag = 1;
+		}
+		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "OF", 2) == 0)//停火
+		{
+			commandRecieveData.FireFlag = 0;
+		}
+		bufferInit_cmd();
 	}
 }
 
 float GetYawPosCommand(void)
 {
-	return ((commandRecieveData.yawPosReceive1)/1);
+	return ((commandRecieveData.YawPosReceive_cmd)/1);
 }
 
 float GetShooterVelCommand(void)
 {
-	return ((commandRecieveData.shooterVelReceive1)/1);
+	return ((commandRecieveData.ShooterVelReceive_cmd)/1);
 }
 
 float GetTargetNumberCommand(void)
 {
-	return ((commandRecieveData.targetNumber1)/1);
+	return ((commandRecieveData.TargetNumber_cmd)/1);
 }
