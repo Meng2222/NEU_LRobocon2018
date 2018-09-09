@@ -705,7 +705,6 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 	USART_SendData(UART4,'\r');
 	USART_SendData(UART4,'\n');
 }
-
 void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //ÐÂ°æ×ßÏß
 {
 	static u8 flag = 0;
@@ -749,8 +748,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			}
 			PID_Pre(pid);
 			if(pid->Line_Num<4 && pid->l->line_Error>600) pid->Line_Num = pid->Line_Num_Last;
-			else if(pid->Line_Num>3 && pid->l->line_Error>1000) pid->Line_Num = pid->Line_Num_Last;
-			else if((pid->Line_Num>3 && pid->l->line_Error<=1000) || (pid->Line_Num<4 && pid->l->line_Error<=600))
+			else if(pid->Line_Num>3 && pid->l->line_Error>1200) pid->Line_Num = pid->Line_Num_Last;
+			else if((pid->Line_Num>3 && pid->l->line_Error<=1200) || (pid->Line_Num<4 && pid->l->line_Error<=600))
 			{
 				for(i=0;i<4;i++)
 				{
@@ -836,8 +835,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			}
 			PID_Pre(pid);
 			if(pid->Line_Num<21 && pid->l->line_Error<-600) pid->Line_Num = pid->Line_Num_Last;
-			else if(pid->Line_Num>20 && pid->l->line_Error<-1000) pid->Line_Num = pid->Line_Num_Last;
-			else if((pid->Line_Num<21 && pid->l->line_Error>=-600) || (pid->Line_Num>20 && pid->l->line_Error>=-1000))
+			else if(pid->Line_Num>20 && pid->l->line_Error<-1200) pid->Line_Num = pid->Line_Num_Last;
+			else if((pid->Line_Num<21 && pid->l->line_Error>=-600) || (pid->Line_Num>20 && pid->l->line_Error>=-1200))
 			{
 				if(pid->target_Num != 0)
 				{

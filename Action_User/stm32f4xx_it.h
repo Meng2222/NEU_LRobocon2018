@@ -50,7 +50,8 @@ void SVC_Handler(void);
 void DebugMon_Handler(void);
 u8 isOKSend(void);
 void resetOK(void);
-
+float GetMotor1Speed(void);
+float GetMotor2Speed(void);
 #ifdef __cplusplus
 }
 #endif

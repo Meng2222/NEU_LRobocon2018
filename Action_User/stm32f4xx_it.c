@@ -45,13 +45,29 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
+typedef union
+{
+	u8 u8data[4];
+	float data;
+}Can_recieve_data;
+
+Can_recieve_data motor1Speed;
+Can_recieve_data motor2Speed;
 uint32_t StdId = 0;
 uint8_t CAN1Buffer[8] = {0};
 uint8_t receiveLength = 8;
-
+u8 ballcolor = 0;
 u8 GetBallColor(void)
 {
-	return CAN1Buffer[2];
+	return ballcolor;
+}
+float GetMotor1Speed(void)
+{
+	return motor1Speed.data;
+}
+float GetMotor2Speed(void)
+{
+	return motor2Speed.data;
 }
 
 void CAN1_RX0_IRQHandler(void)
@@ -64,7 +80,17 @@ void CAN1_RX0_IRQHandler(void)
 	//CAN1口接受任意数据以通过标志位中断
 
 //	CanRxMsg RxMessage;
+	int i = 0;
     CAN_RxMsg(CAN1, &StdId, CAN1Buffer, &receiveLength);
+	if(StdId == 0x01) ballcolor = CAN1Buffer[2];
+	else if(StdId == 0x0281 && (CAN1Buffer[0] == 0x56 && CAN1Buffer[1] == 0x58))
+	{
+		for(i=0;i<4;i++) motor1Speed.u8data[i] = CAN1Buffer[i+4];
+	}
+	else if(StdId == 0x0282 && (CAN1Buffer[0] == 0x56 && CAN1Buffer[1] == 0x58))
+	{
+		for(i=0;i<4;i++) motor2Speed.u8data[i] = CAN1Buffer[i+4];
+	}
 
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);

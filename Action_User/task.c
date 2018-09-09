@@ -137,9 +137,11 @@ void WalkTask(void)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
 		
+		ReadActualVel(CAN1,1);
+		ReadActualVel(CAN1,2);
 		GetData(PID_x);
-//		ErrorDisposal(PID_x,Error_x);
-//		PID_Competition(PID_x,direction,Error_x);
+		ErrorDisposal(PID_x,Error_x);
+		PID_Competition(PID_x,direction,Error_x);
 		gundata.BucketNum = PID_A.target_Num;
 		//顺逆时针各桶航向角补偿和射球转速补偿
 		if(PID_x->direction == ACW)
@@ -193,19 +195,19 @@ void WalkTask(void)
 //		ShooterVelCtrl(40);    //设定射球转速
 //		PID_A.fire_command = 1;
 		//新车激光拟合
-		GetPositionValue2(PID_x);//Get坐标读数
-		GetLaserData2();         //Get激光读数
+//		GetPositionValue2(PID_x);//Get坐标读数
+//		GetLaserData2();         //Get激光读数
 		
 		//新车发球检测
 		/*
 		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "B","N","m",":",(int)gundata.BucketNum);	
 		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "V","e","l",":",(int)gundata.ShooterVel);	
-		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "S","e","t",":",(int)gundata.ShooterVelSet);		
+		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "S","e","t",":",(int)gundata.ShooterVelSet);
 		{+}发球检测函数
 		*/
 		
-		USART_SendData(UART4,'\r');
-		USART_SendData(UART4,'\n');
+//		USART_SendData(UART4,'\r');
+//		USART_SendData(UART4,'\n');
 //		shoot(PID_x);
 		
 		UART4_OUT(PID_x);
