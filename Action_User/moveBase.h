@@ -76,11 +76,11 @@
 #define TURN_AROUND_WHEEL_TO_BACK_WHEEL                               (286.f)
 
 //定位系统到后轮两轮轴中心间距
-#define OPS_TO_BACK_WHEEL                                             (116.5f)
+#define OPS_TO_BACK_WHEEL                                             (180.47f)
 //前轮后轮都是3508转一周脉冲都为8192
 #define NEW_CAR_COUNTS_PER_ROUND                                      (8192)
 //转向轮子直径
-#define TURN_AROUND_WHEEL_DIAMETER                                    (50.8f)
+#define TURN_AROUND_WHEEL_DIAMETER                                    (50.72f)
 //3508电机减速比，相当于给出去的脉冲要多乘上减速比
 #define REDUCTION_RATIO                                               (19.2f)
 //
@@ -101,6 +101,10 @@ void BiggerSquareTwo(void);
 float Speed_X(void);
 float Speed_Y(void);
 void Walk(uint8_t getAdcFlag);
+void Transformation(void);
+void N_Strght_Walk (float a,float b,float c,int F_B,float backspeed);
+void N_Back_Strght_Walk (float a,float b,float c,int F_B,float backspeed);
+void The_Second_Round(void);
 #endif /* ___H */
 
 

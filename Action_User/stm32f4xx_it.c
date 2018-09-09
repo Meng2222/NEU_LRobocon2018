@@ -42,10 +42,12 @@
 #include "app_cfg.h"
 #include "fort.h"
 
+
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
 
+Msg_t speedBuffer;
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -56,11 +58,15 @@ void CAN1_RX0_IRQHandler(void)
 	
 	//CAN1口接受任意数据以通过标志位中断
 	uint32_t StdId = 0;
-	uint8_t CAN1Buffer[8] = {0};
+  uint8_t CAN1Buffer[8] = {0};
 	uint8_t receiveLength = 8;
 	CanRxMsg RxMessage;
-    CAN_RxMsg(CAN1, 0x00, CAN1Buffer, &receiveLength);
-	
+    CAN_RxMsg(CAN1, &StdId, CAN1Buffer, &receiveLength);
+	if(StdId==0x282)
+	{
+		for(int i=0;i<8;i++)
+		  speedBuffer.data8[i]=CAN1Buffer[i];
+	}
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -427,10 +433,10 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 
 					 sendFlag=1;
 					 angle = posture.ActVal[0] ;//角度 
-					 speed_X = -posture.ActVal[1]; 
-					 speed_Y = -posture.ActVal[2]; 
-					 posX = -posture.ActVal[3];//x 
-					 posY = -posture.ActVal[4];//y 
+					 speed_X = posture.ActVal[1]; 
+					 speed_Y = posture.ActVal[2]; 
+					 posX = posture.ActVal[3];//x 
+					 posY = posture.ActVal[4];//y 
 					 posture.ActVal[5] = posture.ActVal[5];
 				 } 
 				 count = 0; 
@@ -468,17 +474,16 @@ extern float posXAdd;
 extern float posYAdd;
 float GetPosX(void)
 {
-	
-<<<<<<< HEAD
-//	return posX-(axis_Xerr/2);
-	return posX+posXAdd;
-=======
-	return posX;
->>>>>>> 275ae48204ff85701c5040e90d415b3c256a3188
+	float newPosX;
+	newPosX=posX+(OPS_TO_BACK_WHEEL*sin(angle*PI/180));
+	return newPosX;
+
 }
 float GetPosY(void)
 {
-	return posY+posYAdd;
+	float newPosY;
+	newPosY=posY+OPS_TO_BACK_WHEEL-(OPS_TO_BACK_WHEEL*cos(angle*PI/180));
+	return newPosY;
 }
 float GetSpeeedX(void)
 {

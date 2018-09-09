@@ -5,13 +5,8 @@ static float outMin=-800;
 float outMax2=90;
 float outMin2=-90;
 
-<<<<<<< HEAD
 float outMax3=2000;
-float outMin3=1300; 
-=======
-static float outMax3=2000;
-static float outMin3=1500; 
->>>>>>> 275ae48204ff85701c5040e90d415b3c256a3188
+float outMin3=1000; 
 
 static struct PIDPara_{
 	float aKp;
@@ -25,7 +20,6 @@ static struct PIDPara_{
 	float sKd;
 
 }pid_Para;
-
 
 //角度pid
 float AnglePid(float valueSet,float valueNow)
@@ -46,13 +40,13 @@ float AnglePid(float valueSet,float valueNow)
 	}
 	iTerm+=(pid_Para.aKi*err);
 
-	if(iTerm > outMax) iTerm=outMax;
-	if(iTerm < outMin) iTerm=outMin;
+	//if(iTerm > outMax) iTerm=outMax;
+	//if(iTerm < outMin) iTerm=outMin;
 	
 	valueOut=(pid_Para.aKp*err)+iTerm+(pid_Para.aKd*(err-errLast));
 	
-	if(valueOut > outMax) valueOut=outMax;
-	if(valueOut < outMin) valueOut=outMin;
+	//if(valueOut > outMax) valueOut=outMax;
+	//if(valueOut < outMin) valueOut=outMin;
 	errLast=err;
 	return valueOut;
 }

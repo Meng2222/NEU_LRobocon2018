@@ -33,6 +33,8 @@
 extern "C" {
 #endif
 
+#include "stdint.h"
+
 /* Includes ------------------------------------------------------------------*/
 
 /* Exported types ------------------------------------------------------------*/
@@ -64,6 +66,13 @@ typedef struct
 	float angle;
 	
 }Pos_t;
+typedef union
+{
+	uint8_t data8[8] ;
+	int 		data32[2];
+}Msg_t;
+
+
 #ifdef __cplusplus
 }
 #endif

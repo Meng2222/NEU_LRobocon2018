@@ -187,6 +187,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 	else;
 	
 	//判断车所在区域
+	
 	if(flg == 0)
 	{
 		//完全卡住
@@ -264,6 +265,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 		shootCnt=0;
 		judgeCnt=0;
 		shootFlagLast=shootFlag;
+		i=!i;
 	}
 	
 	//完全卡住发射
@@ -316,7 +318,6 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 	//检测是否打出球
 	if(judgeFlg == 1)
 	{
-		
 		if(judgeCnt < 100)
 		{
 			judgeCnt++;
@@ -324,7 +325,6 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 			else 
 			{
 				notShoot[i]=shootFlag;
-				i=!i;
 			}
 		}
 		else
@@ -341,11 +341,11 @@ void CarStuck(void)
 {
 	if(shootCnt == 150)
 	{
-		PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+		PosCrl(CAN2, 7,ABSOLUTE_MODE,4500);
 	}
 	else if(shootCnt == 300)
 	{
-		PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+		PosCrl(CAN2, 7,ABSOLUTE_MODE,5);
 	}
 	else if(shootCnt > 450)
 	{
@@ -400,7 +400,7 @@ void NormalShootOne(uint16_t getPushTime)
 			shootCnt=0;
 		}
 		
-	}
+	 }
 	else if(flagOne == 4 || flagOne == 8 || flagOne == 12)
 	{
 		shootFlag=1;
