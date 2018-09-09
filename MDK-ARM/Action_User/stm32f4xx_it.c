@@ -76,20 +76,18 @@ void CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
-	
+int ballColor=1;
 void CAN2_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
+	uint32_t StdId=1;
 	uint8_t buffer2[8];
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	CanRxMsg RxMessage;
-	CAN_Receive(CAN2, CAN_FIFO0, &RxMessage); //reveive data
-	for (i=0;i<8; i++)
-	{
-		buffer2[i] = RxMessage.Data[i];
-	}
+	CAN_RxMsg(CAN2,&StdId,buffer2,5); //reveive data
+//	if(StdId==0x01)
+		ballColor=buffer2[2];
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -107,7 +105,7 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
-int Cnt,time,push_Ball_Count,l=0;
+int Cnt,time,count=0;
 void TIM2_IRQHandler(void)
 {
 #define PERIOD_COUNTER 10
@@ -121,7 +119,8 @@ void TIM2_IRQHandler(void)
 
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-		Cnt++,l++;
+		Cnt++;
+		count++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
@@ -139,6 +138,16 @@ int Get_Time_Flag(void)
 	if(Cnt>=1000)
 	{
 		Cnt=0;
+		return 1;
+	}
+	else
+		return 0;		
+}	
+int DropBall_Time_Flag(void)
+{
+	if(count>=300)
+	{
+		count=0;
 		return 1;
 	}
 	else

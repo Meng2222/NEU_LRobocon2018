@@ -20,7 +20,8 @@
 #include  <ucos_ii.h>
 #include "timer.h"
 #include "pps.h"
-
+#include "math.h"
+#include "moveBase.h"
 /*告诉定位系统准备开始积分*/
 static uint8_t ppsTalkOk = 0;
 /*定位系统准备完毕开始发数*/
@@ -92,10 +93,10 @@ void USART3_IRQHandler(void)
 						SetOpsReady(1);
 						/*传入定位系统返回的值*/
 						SetAngle( posture.value[0]);
-						SetSpeedX(-posture.value[1]);
-						SetSpeedY(-posture.value[2]);
-						SetX(-posture.value[3]);
-						SetY(-posture.value[4]+95);
+						SetSpeedX(posture.value[1]);
+						SetSpeedY(posture.value[2]);
+						SetX(posture.value[3]);
+						SetY(posture.value[4]);
 						SetWZ(posture.value[5]);
 
 						/*定义的全局结构体变量可以在这里赋值*/
@@ -212,12 +213,12 @@ float GetAngle(void)
 /*返回定位系统的X值*/
 float GetX(void)
 {
-	return ppsReturn.ppsX;
+	return ppsReturn.ppsX+OPS_TO_BACK_WHEEL*sin(GetAngle()*pi/180);
 }
 /*返回定位系统的Y值*/
 float GetY(void)
 {
-	return ppsReturn.ppsY;
+	return ppsReturn.ppsY+245.61-OPS_TO_BACK_WHEEL*cos(GetAngle()*pi/180);
 }
 /*返回定位系统的X轴的速度*/
 float GetSpeedX(void)

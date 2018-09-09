@@ -39,11 +39,12 @@
   * @retval None
   */
 
-float Kp=200,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1,Vkl=0,Sumli=0;
+float Kp=33,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1;
+extern int R;
 void Straight(float v)
 {
-	VelCrl(CAN2,1,v*4096/(pi*WHEEL_DIAMETER)+Vk);
-	VelCrl(CAN2,2,-v*4096/(pi*WHEEL_DIAMETER)+Vk);
+	VelCrl(CAN1,1,-v*CAR_WHEEL_COUNTS_PER_ROUND/(pi*WHEEL_DIAMETER)*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO);
+	VelCrl(CAN1,2,-Vk*CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO/(pi*TURN_AROUND_WHEEL_DIAMETER));
 }	
 void Spin(float R,float v)
 {
@@ -61,11 +62,10 @@ void AnglePID(float setAngle,float feedbackAngle)
 	if(err>180)
 		err=-(360-err);
 	if(err<-180)
-		
 		err=360+err;
 	Sumi+=Ki*err;
 	Vk=Kp*err+Sumi+Kd*(err-lastErr);
-	lastErr=err;
+	lastErr=err;																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																									
 }	
 float k,b,lAngle,setAngle,x,y,d;
 int flag;
@@ -113,8 +113,6 @@ void linePID(float x1,float y1,float x2,float y2,float v)
 {
 		
 		GetFunction(x1,y1,x2,y2);
-		x=GetX();
-		y=GetY();
 		if(flag)
 		{
 			if(k>0)
@@ -156,23 +154,25 @@ void linePID(float x1,float y1,float x2,float y2,float v)
 }	
 void CirclePID(float x0,float y0,float R,float v,int status)
 {
+	x=GetX();
+	y=GetY();
 	GetFunction(x,y,x0,y0);
 	d=(x-x0)*(x-x0)+(y-y0)*(y-y0);
 	//逆时针
 	if(status==0)
 	{	
-		if(sqrt(d)>R)
-			setAngle=lAngle-90*(500/(fabs(sqrt(d)-R)+500));	
+		if(sqrtf(d)>R)
+			setAngle=lAngle-90*(500/(fabs(sqrtf(d)-R)+500));	
 		else
-			setAngle=lAngle-180+90*(500/(fabs(sqrt(d)-R)+500));		
-	}	
+			setAngle=lAngle-180+90*(500/(fabs(sqrtf(d)-R)+500));		
+	}	 
 	//顺时针
 	if(status==1)
 	{	
-		if(sqrt(d)>R)
-			setAngle=lAngle+90*(500/(fabs(sqrt(d)-R)+500));
+		if(sqrtf(d)>R)
+			setAngle=lAngle+90*(500/(fabs(sqrtf(d)-R)+500));
 		else
-			setAngle=lAngle+180-90*(500/(fabs(sqrt(d)-R)+500));
+			setAngle=lAngle+180-90*(500/(fabs(sqrtf(d)-R)+500));
 	}	
 	AnglePID(setAngle,GetAngle());
 	Straight(v);
@@ -192,26 +192,26 @@ void GetYawangle(float x1,float y1)
 		x=R*cos((angle-90)*pi/180+antiRad);
 		y=R*sin((angle-90)*pi/180+antiRad)+2400;
 		//预判Ts后炮台坐标
-		x=x-65*sin(GetAngle()*pi/180);
-		y=y+65*cos(GetAngle()*pi/180);
+		x=x-68*sin(GetAngle()*pi/180);
+		y=y+68*cos(GetAngle()*pi/180);
 		GetFunction(x,y,x1,y1);
 		if(GetAngle()<-90&&lAngle>90)
-			yawAngle=170+360+GetAngle()-lAngle;
+			yawAngle=360+GetAngle()-lAngle;
 		else
-			yawAngle=170+(GetAngle()-lAngle);		
+			yawAngle=GetAngle()-lAngle;		
 	}
 	else
 	{
 		x=R*cos((angle+90)*pi/180-antiRad);
 		y=R*sin((angle+90)*pi/180-antiRad)+2400;
 		//预判Ts后炮台坐标
-		x=x-65*sin(GetAngle()*pi/180);
-		y=y+65*cos(GetAngle()*pi/180);
+		x=x-68*sin(GetAngle()*pi/180);
+		y=y+68*cos(GetAngle()*pi/180);
 		GetFunction(x,y,x1,y1);
 		if(lAngle<-90&&GetAngle()>90)
-			yawAngle=170-360+GetAngle()-lAngle;
+			yawAngle=-360+GetAngle()-lAngle;
 		else
-			yawAngle=170+(GetAngle()-lAngle);	
+			yawAngle=GetAngle()-lAngle;	
 	}	
 }
 void GetDistance(float x1,float y1)
@@ -225,16 +225,15 @@ void GetDistance(float x1,float y1)
 	{	
 		x=R*cos((angle-90)*pi/180+antiRad);
 		y=R*sin((angle-90)*pi/180+antiRad)+2400;
-		x=x-65*sin(GetAngle()*pi/180+antiRad);
-		y=y+65*cos(GetAngle()*pi/180+antiRad);
+		x=x-68*sin(GetAngle()*pi/180+antiRad);
+		y=y+68*cos(GetAngle()*pi/180+antiRad);
 	}	
 	else
 	{
 		x=R*cos((angle+90)*pi/180-antiRad);
 		y=R*sin((angle+90)*pi/180-antiRad)+2400;
-		x=x-65*sin(GetAngle()*pi/180-antiRad);
-		y=y+65*cos(GetAngle()*pi/180-antiRad);
+		x=x-68*sin(GetAngle()*pi/180-antiRad);
+		y=y+68*cos(GetAngle()*pi/180-antiRad);
 	}
 	Distance=sqrtf((x-x1)*(x-x1)+(y-y1)*(y-y1));
-	USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t",(int)Distance,(int)x,(int)y,(int)GetX(),(int)GetY(),(int)x1,(int)y1,(int)GetAngle());
 }	
