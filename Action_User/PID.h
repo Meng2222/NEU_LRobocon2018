@@ -92,6 +92,7 @@ typedef struct coordinate
 
 typedef struct PID
 {
+	u8 corner;
 	u8 direction;
 	u8 fire_request;
 	u8 fire_command;
@@ -113,6 +114,7 @@ typedef struct PID
 	float V;
 	float V_Set;
 	int Line_Num;
+	int Line_Num_Next;
 	int Line_Num_Last;
 	int Arc_Num;
 	int Coordinate_Num;

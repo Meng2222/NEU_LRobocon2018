@@ -61,6 +61,7 @@ u8 GetBallColor(void)
 {
 	return ballcolor;
 }
+
 float GetMotor1Speed(void)
 {
 	return motor1Speed.data;
@@ -82,8 +83,7 @@ void CAN1_RX0_IRQHandler(void)
 //	CanRxMsg RxMessage;
 	int i = 0;
     CAN_RxMsg(CAN1, &StdId, CAN1Buffer, &receiveLength);
-	if(StdId == 0x01) ballcolor = CAN1Buffer[2];
-	else if(StdId == 0x0281 && (CAN1Buffer[0] == 0x56 && CAN1Buffer[1] == 0x58))
+	if(StdId == 0x0281 && (CAN1Buffer[0] == 0x56 && CAN1Buffer[1] == 0x58))
 	{
 		for(i=0;i<4;i++) motor1Speed.u8data[i] = CAN1Buffer[i+4];
 	}
@@ -124,7 +124,7 @@ void CAN2_RX0_IRQHandler(void)
 	uint8_t receiveLength = 8;
 //	CanRxMsg RxMessage;
     CAN_RxMsg(CAN2, &StdId, CAN2Buffer, &receiveLength);
-	
+	if(StdId == 0x01) ballcolor = CAN2Buffer[2];
 
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
