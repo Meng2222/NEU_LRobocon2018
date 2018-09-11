@@ -39,7 +39,7 @@
   * @retval None
   */
 
-float Kp=33,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1;
+float Kp=38,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1;
 extern int R;
 void Straight(float v)
 {

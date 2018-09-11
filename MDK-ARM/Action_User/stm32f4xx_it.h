@@ -48,7 +48,6 @@ void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
 int Get_Time_Flag(void);
-int DropBall_Time_Flag(void);
 #define NEW (0)
 #ifdef __cplusplus
 }

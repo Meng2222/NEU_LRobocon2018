@@ -143,16 +143,6 @@ int Get_Time_Flag(void)
 	else
 		return 0;		
 }	
-int DropBall_Time_Flag(void)
-{
-	if(count>=300)
-	{
-		count=0;
-		return 1;
-	}
-	else
-		return 0;		
-}	
 void TIM1_UP_TIM10_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
