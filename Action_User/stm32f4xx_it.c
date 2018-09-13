@@ -47,7 +47,8 @@
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
 
-Msg_t speedBuffer;
+Msg_t frontspeedBuffer;
+Msg_t backspeedBuffer;
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -65,7 +66,12 @@ void CAN1_RX0_IRQHandler(void)
 	if(StdId==0x282)
 	{
 		for(int i=0;i<8;i++)
-		  speedBuffer.data8[i]=CAN1Buffer[i];
+		  frontspeedBuffer.data8[i]=CAN1Buffer[i];
+	}
+	if(StdId==0x281)
+	{
+		for(int j=0;j<8;j++)
+			backspeedBuffer.data8[j]=CAN1Buffer[j];
 	}
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);

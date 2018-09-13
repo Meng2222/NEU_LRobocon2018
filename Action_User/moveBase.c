@@ -1158,6 +1158,70 @@ void The_Second_Round(void)
 	 }
 }
 
-
-
-
+void N_SET_closeRound(float x,float y,float R,float clock,float backspeed)
+{
+	float Distance=0;
+	float k=0;
+	float setangle=0,Agl=0,frontspeed=0;
+	Distance=sqrt(pow(GetPosX()-x,2)+pow(GetPosY()-y,2))-R;
+	k=(GetPosX()-x)/(y-GetPosY());
+	//顺1逆2
+	if(clock==1)
+	{
+		if(GetPosY()>y)
+		  Agl=-90+atan(k)*180/PI;
+	  else if(GetPosY()<y)
+		  Agl=90+atan(k)*180/PI;
+	  else if(GetPosY()==y&&GetPosX()>=x)
+		  Agl=180;
+	  else if(GetPosY()==y&&GetPosX()<x)
+		  Agl=0;
+		setangle=Agl-DistancePid(Distance,0);
+		frontspeed=AnglePid(setangle,GetAngle());
+	}
+	else if(clock==2)
+	{
+		if(GetPosY()>y)
+		  Agl=90+atan(k)*180/PI;
+	  else if(GetPosY()<y)
+		  Agl=-90+atan(k)*180/PI;
+	  else if(GetPosY()==y&&GetPosX()>=x)
+		  Agl=0;
+	  else if(GetPosY()==y&&GetPosX()<x)
+		  Agl=180;
+		setangle=Agl+DistancePid(Distance,0);
+		frontspeed=AnglePid(setangle,GetAngle());
+	}
+	VelCrl(CAN1,1,-backspeed*REDUCTION_RATIO*NEW_CAR_COUNTS_PER_ROUND/(PI*WHEEL_DIAMETER));//后轮
+	VelCrl(CAN1,2,-frontspeed*REDUCTION_RATIO*NEW_CAR_COUNTS_PER_ROUND/(PI*TURN_AROUND_WHEEL_DIAMETER));//前轮
+}
+void Tangencystraightline()
+{
+	static int flagflag=0,Tangencyflag=0,Tangencyflag2=0,lastTangencyflag=0,sureflag=0;
+	switch(flagflag)
+		{
+			case 0:
+				Angle_PidPara(100,0,0);
+        Distance_PidPara(0.07,0,0);
+				N_SET_closeRound(0,2300,500,1,1500);
+			  if(GetPosX()>100&&GetPosY()<2000)  
+					Tangencyflag2=1;
+				if(GetAngle()>88&&GetAngle()<92)
+					Tangencyflag=1;
+		    else Tangencyflag=0;
+		    if(GetPosY()>2300)
+			    sureflag=1;
+		    if(Tangencyflag==1&&lastTangencyflag==0&&sureflag&&Tangencyflag2)
+			    flagflag=1;
+		    lastTangencyflag=Tangencyflag;
+			  break;
+			case 1:
+				Angle_PidPara(30,0,0);
+        Distance_PidPara(0.1,0,0);
+				if(GetPosY()<3500)
+				  N_Strght_Walk(1,0,1200,1,1300);
+				else 
+					N_Strght_Walk(1,0,1200,1,0);
+			  break;
+		}
+}

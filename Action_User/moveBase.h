@@ -73,7 +73,7 @@
 #define TURN_AROUND_WHEEL_ID      6
 
 //新三轮底盘  前轮转向电机到后轮两轮轴中心间距
-#define TURN_AROUND_WHEEL_TO_BACK_WHEEL                               (286.f)
+#define TURN_AROUND_WHEEL_TO_BACK_WHEEL                               (266.55f)
 
 //定位系统到后轮两轮轴中心间距
 #define OPS_TO_BACK_WHEEL                                             (180.47f)
@@ -105,6 +105,8 @@ void Transformation(void);
 void N_Strght_Walk (float a,float b,float c,int F_B,float backspeed);
 void N_Back_Strght_Walk (float a,float b,float c,int F_B,float backspeed);
 void The_Second_Round(void);
+void N_SET_closeRound(float x,float y,float R,float clock,float backspeed);
+void Tangencystraightline();
 #endif /* ___H */
 
 

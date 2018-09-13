@@ -116,58 +116,37 @@ extern FortType fort;
 extern uint8_t notShoot[2];
 extern float posXAdd;
 extern float posYAdd;
-extern Msg_t speedBuffer;
+extern Msg_t frontspeedBuffer;
+extern Msg_t backspeedBuffer;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
 	
 	uint16_t Cnt=0;
-	float DD=0;
-	float SS=0;
-	float speed=0;
+//	float DD=0;
+//	float SS=0;
+	float speedup=0;
 	//PID参数
-	Angle_PidPara(30,0,0);
-	Distance_PidPara(0.1,0,0);
-	Speed_PidPara(2.5,0,0);
+//	Angle_PidPara(30,0,0);
+//	Distance_PidPara(0.1,0,0);
+//	Speed_PidPara(2.5,0,0);
 	uint32_t CNT=0;
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
 		ReadActualVel(CAN1,Front_ID);
-		CNT++;
+		ReadActualVel(CAN1,Behind_ID);		
+		Tangencystraightline();
 		//The_Second_Round();
 		//N_Back_Strght_Walk(1,0,-600,2,800);
 		//BiggerSquareOne();
-		//N_Strght_Walk(0,1,-3500,2,1300);
-		//speed=SpeedPid(1800,GetPosY());
-		if(GetPosY()<3300) speed=3000;
-		else speed=0;
-		N_Strght_Walk(1,0,0,1,speed);
-		USART_OUT(UART4,"%d\t%d\t%d\t%d\t%d\r\n",(int)GetPosX(),(int)GetPosY(),(int)(speed),(int)(sqrt(pow(GetSpeeedX(),2)+pow(GetSpeeedY(),2))),CNT);
 		//走位
 		//Walk(adcFlag);
 		//发球
 		//Shoot(adcFlag,250);  
-//		DD=sqrt(((GetPosY()-105)*(GetPosY()-105))+((GetPosX()+2200)*(GetPosX()+2200)));
-//		SS=DD*0.012+35.7;
-//		Cnt++;
-//		ShooterVelCtrl(SS);
-//		if(Cnt == 150)
-//		{
-//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-//		}
-//		else if(Cnt == 300)
-//		{
-//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-//			Cnt=0;
-//		}
-		
-		//USART_OUT(UART4, " %d\t", (int)posXAdd);
-		//USART_OUT(UART4, " %d\r\n", (int)posYAdd);
-		
-		//USART_OUT(UART4, " %d\t%d\t%d\t%d\r\n", (int)(GetPosX()),(int)(GetPosY()),(int)(usartValue.V),(int)(((speedBuffer.data32[1]/8192.0f)/REDUCTION_RATIO)*PI*TURN_AROUND_WHEEL_DIAMETER));		
+		USART_OUT(UART4, " %d\t%d\t%d\t%d\r\n", (int)(GetPosX()),(int)(GetPosY()),(int)(((frontspeedBuffer.data32[1]/8192.0f)/REDUCTION_RATIO)*PI*TURN_AROUND_WHEEL_DIAMETER),(int)(((backspeedBuffer.data32[1]/8192.0f)/REDUCTION_RATIO)*PI*WHEEL_DIAMETER));		
 	}
 }
  
