@@ -3,6 +3,7 @@
 u8 GetBallColor(void);
 extern FortType fort;
 extern GunneryData gundata;
+extern u8 ballcolor;
 Line_Value Line_N[34];
 Arc_Value Arc_N[12];
 Coordinate_Value Coordinate_N[12];
@@ -646,7 +647,7 @@ void GO(PID_Value *p_GO)                                                     //µ
 	VelCrl(CAN1,2,(int)((0+(32768/(120*Pi))*(p_GO->vel))+(32768/(120*Pi))*(p_GO->V)));
 	VelCrl(CAN1,1,(int)((0+(32768/(120*Pi))*(p_GO->vel))-(32768/(120*Pi))*(p_GO->V)));
 }
-extern u8 ballcolor;
+
 void shoot(PID_Value *p_gun)                                                  //ÉäÇòº¯Êý
 {
 	static int cnt = 0;
@@ -760,16 +761,17 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					if(pid->l->line_Priority == 0) break;
 				}
 				PID_Pre(pid);
-				if(pid->l->line_Error>1400) 
+				if(pid->l->line_Error>1600) 
 				{
 					pid->Line_Num = pid->Line_Num_Last;
-					pid->V += 50;
-					pid->V = constrain(pid->V,3000,1000);
+					pid->V += 25;
+					if(pid->Line_Num < 8) pid->V = constrain(pid->V,2000,1200);
+					else pid->V = constrain(pid->V,2500,1200);
 				}
 	//			pid->V = (pid->V_Set)/(ABS(GetWZ())/150.f + 1);
 	//			if(pid->Line_Num<4 && pid->l->line_Error>600) pid->Line_Num = pid->Line_Num_Last;
 	//			else if(pid->Line_Num>3 && pid->l->line_Error>1200) pid->Line_Num = pid->Line_Num_Last;
-				else if(pid->l->line_Error<=1400)
+				else if(pid->l->line_Error<=1600)
 				{
 					pid->corner = 1;
 					pid->Line_Num_Next = pid->Line_Num;
@@ -793,7 +795,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			{
 				static int timeCnt = 0;
 				timeCnt++;
-				if(timeCnt < 250)
+				if(timeCnt < 150)
 				{
 					pid->Angle += 180;
 					pid->kp = 3;
@@ -805,7 +807,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					timeCnt = 0;
 					error->flag = 0;
 					pid->V = 1200;
-					pid->kp = 10;
+					pid->kp = 20;
 					pid->Line_Num += 17;
 					pid->l = &Line_N[pid->Line_Num];
 					for(i=0;i<17;i++)
@@ -827,12 +829,12 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 10;
+				pid->kp = 15;
 				pid->Line_Num = pid->Line_Num_Next;
 				PID_Pre(pid);
 				if(pid->l->line_Error > 800)
 				{
-					pid->V = 600 + (ABS(pid->l->line_Error));
+					pid->V = 1200;
 					pid->Line_Num = pid->Line_Num_Last;
 					PID_Control(pid);
 				}
@@ -840,7 +842,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				{
 					pid->Line_Num = pid->Line_Num_Next;
 					PID_Control(pid);
-					if(ABS(pid->Error) < 5)
+					pid->V += 0;
+					if(ABS(pid->Error) < 10)
 					{
 						pid->corner = 0;
 					}
@@ -852,7 +855,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			{
 				static int timeCnt = 0;
 				timeCnt++;
-				if(timeCnt < 200)
+				if(timeCnt < 150)
 				{
 					pid->Angle += 180;
 					pid->kp = 3;
@@ -864,7 +867,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					pid->corner = 0;
 					timeCnt = 0;
 					error->flag = 0;
-					pid->V_Set = 2000;
+					pid->V = 1200;
 					pid->kp = 20;
 					pid->Line_Num += 17;
 					pid->l = &Line_N[pid->Line_Num];
@@ -918,13 +921,14 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				PID_Pre(pid);
 //				if(pid->Line_Num<21 && pid->l->line_Error<-600) pid->Line_Num = pid->Line_Num_Last;
 //				else if(pid->Line_Num>20 && pid->l->line_Error<-1200) pid->Line_Num = pid->Line_Num_Last;
-				if(pid->l->line_Error <-1400)
+				if(pid->l->line_Error <-1600)
 				{
 					pid->Line_Num = pid->Line_Num_Last;
-					pid->V += 50;
-					pid->V = constrain(pid->V,3000,1000);
+					pid->V += 25;
+					if(pid->Line_Num < 25) pid->V = constrain(pid->V,2000,1200);
+					else pid->V = constrain(pid->V,2500,1200);
 				}
-				else if(pid->l->line_Error>=-1400)
+				else if(pid->l->line_Error>=-1600)
 				{
 					pid->corner = 1;
 					pid->Line_Num_Next = pid->Line_Num;
@@ -963,7 +967,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			{
 				static int timeCnt = 0;
 				timeCnt++;
-				if(timeCnt < 200)
+				if(timeCnt < 150)
 				{
 					pid->Angle += 180;
 					pid->kp = 3;
@@ -999,10 +1003,10 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			{
 				pid->Line_Num = pid->Line_Num_Next;
 				PID_Pre(pid);
-				pid->kp = 10;
+				pid->kp = 15;
 				if(pid->l->line_Error < -800)
 				{
-					pid->V = 600 + (ABS(pid->l->line_Error));
+					pid->V = 1200;
 					pid->Line_Num = pid->Line_Num_Last;
 					PID_Control(pid);
 				}
@@ -1010,7 +1014,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				{
 					pid->Line_Num = pid->Line_Num_Next;
 					PID_Control(pid);
-					if(ABS(pid->Error) < 5)
+					pid->V += 0;
+					if(ABS(pid->Error) < 10)
 					{
 						pid->corner = 0;
 					}
@@ -1022,7 +1027,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			{
 				static int timeCnt = 0;
 				timeCnt++;
-				if(timeCnt < 200)
+				if(timeCnt < 150)
 				{
 					pid->Angle += 180;
 					pid->kp = 3;
