@@ -46,6 +46,13 @@
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
 
+union Translate
+{
+	int32_t data32[2];
+	uint8_t data8[8];
+
+}translation;
+	
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -55,12 +62,11 @@ void CAN1_RX0_IRQHandler(void)
 	OS_EXIT_CRITICAL();
 	
 	//CAN1口接受任意数据以通过标志位中断
-	uint32_t StdId = 0;
+	uint32_t StdId = 0x00;
 	uint8_t CAN1Buffer[8] = {0};
 	uint8_t receiveLength = 8;
 	CanRxMsg RxMessage;
-    CAN_RxMsg(CAN1, 0x00, CAN1Buffer, &receiveLength);
-	
+    CAN_RxMsg(CAN1, &StdId, CAN1Buffer, &receiveLength);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -80,24 +86,43 @@ void CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
+uint8_t ballColor=0;
+int32_t pushPos=0;
 void CAN2_RX0_IRQHandler(void)
 {
-	uint8_t CAN2Buffer[4];
-	uint8_t length=4;
 	OS_CPU_SR cpu_sr;
 
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	CAN_RxMsg(CAN2,0,CAN2Buffer,&length);
 
 	
 	//CAN2口接受任意数据以通过标志位中断
-	uint32_t StdId = 0;
+	uint32_t StdId = 0x00;
 	uint8_t CAN2Buffer2[8] = {0};
 	uint8_t receiveLength = 8;
+	uint8_t receiveBuffer[5]={0};
 	CanRxMsg RxMessage;
-    CAN_RxMsg(CAN1, 0x00, CAN2Buffer, &receiveLength);
+	
+    CAN_RxMsg(CAN2, &StdId, CAN2Buffer2, &receiveLength);
+	
+	if(StdId == 0x01)
+	{
+		for(int i=0;i<5;i++)
+		{
+				receiveBuffer[i]=CAN2Buffer2[i];
+		}
+		
+		if(receiveBuffer[0] == 'O' && receiveBuffer[1] == 'V' && receiveBuffer[3] == '\r' && receiveBuffer[4] == '\n')
+			ballColor=receiveBuffer[2];
+		else;
+	}
+	else if(StdId == 0x287)
+	{
+		for(int i=0;i<8;i++)
+		translation.data8[i]=CAN2Buffer2[i];
+		pushPos=translation.data32[1];
+	}
 	
 
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
@@ -220,8 +245,7 @@ void UART4_IRQHandler(void)
 
 	if (USART_GetITStatus(UART4, USART_IT_RXNE) == SET)
 	{
-
-		USART_ClearITPendingBit(UART4, USART_IT_RXNE);
+		USART_ClearITPendingBit(UART4, USART_IT_RXNE);	
 	}
 	OSIntExit();
 }
@@ -378,6 +402,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 	 { 
 		 USART_ClearITPendingBit(USART3, USART_IT_RXNE); 
 		 ch = USART_ReceiveData(USART3); 
+
 		 switch (count) 
 		 { 
 			 case 0: 
@@ -427,10 +452,10 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 
 					 sendFlag=1;
 					 angle = posture.ActVal[0] ;//角度 
-					 speed_X = -posture.ActVal[1]; 
-					 speed_Y = -posture.ActVal[2]; 
-					 posX = -posture.ActVal[3];//x 
-					 posY = -posture.ActVal[4];//y 
+					 speed_X = posture.ActVal[1]; 
+					 speed_Y = posture.ActVal[2]; 
+					 posX = posture.ActVal[3];//x 
+					 posY = posture.ActVal[4];//y 
 					 posture.ActVal[5] = posture.ActVal[5];
 				 } 
 				 count = 0; 
@@ -468,17 +493,16 @@ extern float posXAdd;
 extern float posYAdd;
 float GetPosX(void)
 {
-	
-<<<<<<< HEAD
-//	return posX-(axis_Xerr/2);
-	return posX+posXAdd;
-=======
-	return posX;
->>>>>>> 275ae48204ff85701c5040e90d415b3c256a3188
+	float newPosX;
+	newPosX=posX+(OPS_TO_BACK_WHEEL*sin(angle*PI/180))+posXAdd;
+	return newPosX;
+
 }
 float GetPosY(void)
 {
-	return posY+posYAdd;
+	float newPosY;
+	newPosY=posY+OPS_TO_BACK_WHEEL-(OPS_TO_BACK_WHEEL*cos(angle*PI/180))+posYAdd;
+	return newPosY;
 }
 float GetSpeeedX(void)
 {

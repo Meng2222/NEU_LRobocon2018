@@ -16,24 +16,15 @@
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
 #define BaseVelocity (0.5 * One_Meter_Per_Second) //基础速度               0.5m/s                         //四号车编号             4
 #define Side_Length (2000)                        //方形边长               2m
-#define Angle_Error_Range (3)                     //角度误差范围           3 
+#define Angle_Error_Range (3)					  //角度误差范围           3 
 
-#define Pulse2mm COUNTS_PER_ROUND/(WHEEL_DIAMETER*PI)
 
-// 宏定义棍子收球电机ID
-#define COLLECT_BALL_ID (8)
+// 宏定义棍子收球电机1ID
+#define COLLECT_BALL_1_ID (5)
+// 宏定义棍子收球电机2ID
+#define COLLECT_BALL_2_ID (6)
 // 宏定义推球电机ID
-#define PUSH_BALL_ID (6)
-//宏定义左轮电机ID
-#define LEFT_ID (1)
-//宏定义右轮电机ID
-#define RIGHT_ID (2)
-// 电机旋转一周的脉冲数
-#define COUNT_PER_ROUND (4096.0f)
-// 宏定义每度对应脉冲数
-#define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
-// 宏定义航向角减速比
-#define YAW_REDUCTION_RATIO (4.0f)
+#define PUSH_BALL_ID (7)
 
 
 
@@ -113,85 +104,97 @@ extern FortType fort;
 extern uint8_t notShoot[2];
 extern float posXAdd;
 extern float posYAdd;
-
+extern uint8_t ballColor;
+extern int32_t pushPos;
+extern int32_t pushPulse;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-	
 	uint16_t Cnt=0;
-	float DD=0;
-	float SS=0;
+
 	//PID参数
-	Angle_PidPara(20,0,1500);
-	Distance_PidPara(0.09,0,0); 
-	Speed_PidPara(2,0,0);
+	Angle_PidPara((600*KP_A),0,2);
+	Distance_PidPara(KP_D,0,15); 
+	Speed_PidPara(3,0,0);
 	
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
 		
-		//走位
-		Walk(adcFlag);
+
+	ReadActualPos(CAN2, PUSH_BALL_ID);
+			
+//		BallColorRecognition();
+//		Turn(90,600);
+//		straightLine(1,0,0,0,800);
+//		Squre();
+//		Squre2();
+//		BiggerSquareOne();
+
+////		//收球电机1
+//		VelCrl(CAN2,COLLECT_BALL_1_ID,60*OTHER_COUNTS_PER_ROUND); 
+//	
+//		//收球电机1
+//		VelCrl(CAN2,COLLECT_BALL_2_ID,-60*OTHER_COUNTS_PER_ROUND); 
+//		//走位
+//		Walk(adcFlag);
 		//发球
-		Shoot(adcFlag,250); 
-//		DD=sqrt(((GetPosY()-105)*(GetPosY()-105))+((GetPosX()+2200)*(GetPosX()+2200)));
-//		SS=DD*0.012+35.7;
-//		Cnt++;
-//		ShooterVelCtrl(SS);
-//		if(Cnt == 150)
-//		{
-//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
-//		}
-//		else if(Cnt == 300)
-//		{
-//			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
-//			Cnt=0;
-//		}
+//		Shoot(adcFlag,200); 
+
+
+		USART_OUT(UART4, " %d\t", pushPos);
+		USART_OUT(UART4, " %d\t", pushPulse);
 		
-		USART_OUT(UART4, " %d\t", (int)posXAdd);
-		USART_OUT(UART4, " %d\r\n", (int)posYAdd);
-		//USART_OUT(UART4, " %d\r\n", (int)GetSpeeedY());		
+		USART_OUT(UART4, " %d\r\n", (int)ballColor);
+//		USART_OUT(UART4, " %d\t", (int)usartValue.d);
+//		USART_OUT(UART4, " %d\t", (int)usartValue.turnAngleValue);
+//		USART_OUT(UART4, " %d\t", (int)GetAngle());
+//		USART_OUT(UART4, " %d\t", (int)GetPosX());
+//		USART_OUT(UART4, " %d\r\n", (int)GetPosY());		
 	}
 }
  
 //初始化函数
 void Init(void)
 {
+
 	TIM_Init(TIM2, 999, 84, 0x01, 0x03);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	UART5_Init(921600);
-	Adc_Init();
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	ElmoInit(CAN1);
 	ElmoInit(CAN2);
 	
-//	//右轮电机初始化
-	VelLoopCfg(CAN2, LEFT_ID, 20000000, 20000000);
+	//后轮电机初始化
+	VelLoopCfg(CAN1, BACK_WHEEL_ID, 40000000, 40000000);
 	
-	//左轮电机初始化
-	VelLoopCfg(CAN2, RIGHT_ID, 20000000, 20000000);
+	//前轮电机初始化
+	VelLoopCfg(CAN1, TURN_AROUND_WHEEL_ID, 40000000, 40000000);
 	
 	//收球电机初始化
-	VelLoopCfg(CAN1, COLLECT_BALL_ID, 500000, 500000);
-//	
-	//推球电机初始化
-	PosLoopCfg(CAN1, PUSH_BALL_ID, 5000000,5000000,200000);
+	VelLoopCfg(CAN2, COLLECT_BALL_1_ID, 500000, 500000);
 	
-	MotorOn(CAN2, LEFT_ID);
-	MotorOn(CAN2, RIGHT_ID);
-	MotorOn(CAN1, COLLECT_BALL_ID);
-	MotorOn(CAN1, PUSH_BALL_ID);
+	//收球电机初始化
+	VelLoopCfg(CAN2, COLLECT_BALL_2_ID, 500000, 500000);
+
+	//推球电机初始化
+	PosLoopCfg(CAN2, PUSH_BALL_ID, 5000000,5000000,200000);
+	
+	MotorOn(CAN1, BACK_WHEEL_ID);
+	MotorOn(CAN1, TURN_AROUND_WHEEL_ID);
+	MotorOn(CAN2, COLLECT_BALL_1_ID);
+	MotorOn(CAN2, COLLECT_BALL_2_ID);
+//	MotorOn(CAN2, PUSH_BALL_ID);
 	delay_ms(5000);
 	PosConfig();
-	
+
 	GetDirection(&adcFlag);
 	
-	//收球电机
-	VelCrl(CAN1,COLLECT_BALL_ID,5*60*4096); 
-	
+
 	
 }
 
@@ -217,5 +220,27 @@ void PosConfig(void)
 }
 
 
-
+void GetDirection(uint8_t *getFlag)
+{
+	uint16_t Laser_A=0;
+	uint16_t Laser_B=0;
+	
+	while(1)
+	{
+		Laser_A=fort.laserAValueReceive;
+		Laser_B=fort.laserBValueReceive;
+		if(Laser_A < 70)
+		{
+			(*getFlag)=0;
+			break;
+		}
+		else if(Laser_B < 70)
+		{
+			(*getFlag)=1;
+			break;
+		}
+		else;
+		USART_OUT(UART4, "Laser Ready\r\n");
+	}
+}
 

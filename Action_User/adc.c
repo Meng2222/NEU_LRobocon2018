@@ -75,28 +75,5 @@ u16 Get_Adc_Average(u8 ch,u8 times)
 	return temp_val/times;
 } 
 	 
-void GetDirection(uint8_t *getFlag)
-{
-	uint16_t Laser_A=0;
-	uint16_t Laser_B=0;
-	axis_Xerr=(Get_Adc_Average(ADC_Channel_14,50)-Get_Adc_Average(ADC_Channel_15,50))*0.92;
-	
-	while(1)
-	{
-		Laser_A=Get_Adc_Average(ADC_Channel_14,10);
-		Laser_B=Get_Adc_Average(ADC_Channel_15,10);
-		if(Laser_A < 50)
-		{
-			(*getFlag)=1;
-			break;
-		}
-		else if(Laser_B < 50)
-		{
-			(*getFlag)=0;
-			break;
-		}
-		else;
-//		USART_OUT(UART4, "Laser Ready\r\n");
-	}
-}
+
 

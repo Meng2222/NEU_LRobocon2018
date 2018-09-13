@@ -432,11 +432,6 @@
               <FilePath>..\Action_User\pid.c</FilePath>
             </File>
             <File>
-              <FileName>adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\Action_User\adc.c</FilePath>
-            </File>
-            <File>
               <FileName>fort.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Action_User\fort.c</FilePath>
