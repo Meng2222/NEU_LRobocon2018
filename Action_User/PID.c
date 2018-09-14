@@ -652,9 +652,12 @@ void shoot(PID_Value *p_gun)                                                  //
 {
 	static int cnt = 0;
 	static int pos = 0;
+	static int posLast = 0;
+	int posError = 0;
 	if (p_gun->fire_request)
 	{
 		if(!p_gun->fire_command) return;
+		posLast = pos;
 		pos += p_gun->push_pos_up;
 		PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 		p_gun->fire_request = 0;
@@ -665,13 +668,21 @@ void shoot(PID_Value *p_gun)                                                  //
 		cnt++;
 		if(cnt == 150)
 		{
+			posError = ABS(GetMotor7Pos() - pos);
+			if(posError > 1000)
+			{
+				PosCrl(CAN2,7,ABSOLUTE_MODE,posLast);
+				return;
+			}
 			if(ballcolor == 2)
 			{
+				posLast = pos;
 				pos += p_gun->push_pos_down;
 				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 			}
 			else if(ballcolor == 0)
 			{
+				posLast = pos;
 				pos += p_gun->push_pos_down;
 				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 			}
@@ -761,12 +772,12 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					if(pid->l->line_Priority == 0) break;
 				}
 				PID_Pre(pid);
-				if(pid->l->line_Error>1600) 
+				if(pid->l->line_Error>1600)
 				{
 					pid->Line_Num = pid->Line_Num_Last;
 					pid->V += 25;
 					if(pid->Line_Num < 8) pid->V = constrain(pid->V,2000,1200);
-					else pid->V = constrain(pid->V,2500,1200);
+					else pid->V = constrain(pid->V,2000,1200);
 				}
 	//			pid->V = (pid->V_Set)/(ABS(GetWZ())/150.f + 1);
 	//			if(pid->Line_Num<4 && pid->l->line_Error>600) pid->Line_Num = pid->Line_Num_Last;
@@ -832,7 +843,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				pid->kp = 15;
 				pid->Line_Num = pid->Line_Num_Next;
 				PID_Pre(pid);
-				if(pid->l->line_Error > 800)
+				if(pid->l->line_Error > 700)
 				{
 					pid->V = 1200;
 					pid->Line_Num = pid->Line_Num_Last;
@@ -843,7 +854,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					pid->Line_Num = pid->Line_Num_Next;
 					PID_Control(pid);
 					pid->V += 0;
-					if(ABS(pid->Error) < 10)
+					if(ABS(pid->Error) < 8)
 					{
 						pid->corner = 0;
 					}
@@ -926,7 +937,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					pid->Line_Num = pid->Line_Num_Last;
 					pid->V += 25;
 					if(pid->Line_Num < 25) pid->V = constrain(pid->V,2000,1200);
-					else pid->V = constrain(pid->V,2500,1200);
+					else pid->V = constrain(pid->V,2000,1200);
 				}
 				else if(pid->l->line_Error>=-1600)
 				{
@@ -1004,7 +1015,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				pid->Line_Num = pid->Line_Num_Next;
 				PID_Pre(pid);
 				pid->kp = 15;
-				if(pid->l->line_Error < -800)
+				if(pid->l->line_Error < -700)
 				{
 					pid->V = 1200;
 					pid->Line_Num = pid->Line_Num_Last;
@@ -1015,7 +1026,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					pid->Line_Num = pid->Line_Num_Next;
 					PID_Control(pid);
 					pid->V += 0;
-					if(ABS(pid->Error) < 10)
+					if(ABS(pid->Error) < 8)
 					{
 						pid->corner = 0;
 					}

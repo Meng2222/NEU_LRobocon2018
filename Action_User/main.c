@@ -29,7 +29,7 @@ INT32S main (void)
 }
 
 static  void  App_TaskStart ()
-{   
+{
 	  OS_CPU_SysTickInit(SystemCoreClock/OS_TICKS_PER_SEC);                 /* 10ms，已仿真测试     */
 	
 #if (OS_TASK_STAT_EN > 0)

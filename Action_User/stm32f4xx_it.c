@@ -53,6 +53,7 @@ typedef union
 
 Can_recieve_data motor1Speed;
 Can_recieve_data motor2Speed;
+Can_recieve_data motor7Pos;
 uint32_t StdId = 0;
 uint8_t CAN1Buffer[8] = {0};
 uint8_t receiveLength = 8;
@@ -70,12 +71,16 @@ float GetMotor2Speed(void)
 {
 	return motor2Speed.data;
 }
+float GetMotor7Pos(void)
+{
+	return motor7Pos.data;
+}
 
 void CAN1_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
 
-	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
+	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	//CAN1口接受任意数据以通过标志位中断
@@ -91,7 +96,11 @@ void CAN1_RX0_IRQHandler(void)
 	{
 		for(i=0;i<4;i++) motor2Speed.u8data[i] = CAN1Buffer[i+4];
 	}
-
+	else if(StdId == 0x0287 && (CAN1Buffer[0] == 0x50 && CAN1Buffer[1] == 0x58))
+	{
+		for(i=0;i<4;i++) motor7Pos.u8data[i] = CAN1Buffer[i+4];
+	}
+	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
