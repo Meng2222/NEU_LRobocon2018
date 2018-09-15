@@ -648,8 +648,6 @@ void PID_Pre(PID_Value *p)                                                   //È
 		default:
 			break;
 	}
-//	p->V_Set = constrain(2*ABS(p->l->line_Error),1500,1000);
-//	p->V = (p->V_Set)/(GetWZ()/150.f + 1.f);
 }
 
 void GO(PID_Value *p_GO)                                                     //µç»ú¿ØÖÆº¯Êý
@@ -722,11 +720,11 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Line_Num);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Line_Num);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)(sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())));
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)fort.shooterVelReceive);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
@@ -748,8 +746,8 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVelSet);		
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.Angle_Deviation);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.cntIteration);
-	USART_SendData(UART4,'\r');
-	USART_SendData(UART4,'\n');
+//	USART_SendData(UART4,'\r');
+//	USART_SendData(UART4,'\n');
 }
 void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //ÐÂ°æ×ßÏß
 {
@@ -802,9 +800,6 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					if(pid->Line_Num < 8) pid->V = constrain(pid->V,2000,1200);
 					else pid->V = constrain(pid->V,2000,1200);
 				}
-	//			pid->V = (pid->V_Set)/(ABS(GetWZ())/150.f + 1);
-	//			if(pid->Line_Num<4 && pid->l->line_Error>600) pid->Line_Num = pid->Line_Num_Last;
-	//			else if(pid->Line_Num>3 && pid->l->line_Error>1200) pid->Line_Num = pid->Line_Num_Last;
 				else if(pid->l->line_Error<=1600)
 				{
 					pid->corner = 1;
@@ -957,8 +952,6 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					}
 				}
 				PID_Pre(pid);
-//				if(pid->Line_Num<21 && pid->l->line_Error<-600) pid->Line_Num = pid->Line_Num_Last;
-//				else if(pid->Line_Num>20 && pid->l->line_Error<-1200) pid->Line_Num = pid->Line_Num_Last;
 				if(pid->l->line_Error <-1600)
 				{
 					pid->Line_Num = pid->Line_Num_Last;

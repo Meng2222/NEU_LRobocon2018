@@ -60,11 +60,11 @@ u8 GetBallColor(void)
 	return ballcolor;
 }
 
-float GetMotor1Speed(void)
+int GetMotor1Speed(void)
 {
 	return motor1Speed.data;
 }
-float GetMotor2Speed(void)
+int GetMotor2Speed(void)
 {
 	return motor2Speed.data;
 }
