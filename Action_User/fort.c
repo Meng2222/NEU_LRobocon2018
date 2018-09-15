@@ -38,17 +38,16 @@
 //对应的收发串口
 #define USARTX UART5
 
-#define Fort_TO_BACK_WHEEL (65.0f)                              //炮台到车轴中点距离          65.0mm
-#define BACK_WHEEL_TO_WALL (95.0f)                              //车轴中点到墙面距离          95.0mm
+#define FORT_TO_BACK_WHEEL (10.5f)                              //炮台到后轮两轮轴中点距离    10.5mm
 #define G (9800.0f)                                             //重力加速度                  9800mm/s2
-#define Fort_Elevation_Deg (60.0f)                              //炮台仰角                    60°
-#define Fort_Elevation_Rad (Fort_Elevation_Deg * Pi / 180.0)    //炮台仰角                    1/3πrad
-#define Fort_Height (150.0f)                                    //炮台高度                    150.0mm
-#define Bucket_Height (800.0f)                                  //桶高度                      800.0mm
-#define Fort_To_Bucket_Height (Bucket_Height - Fort_Height)     //炮台到桶高度差              (800.0 - 150.0)mm
+#define FORT_ELEVATION_DEG (60.0f)                              //炮台仰角                    60°
+#define FORT_ELEVATION_RAD (FORT_ELEVATION_DEG * Pi / 180.0)    //炮台仰角                    1/3πrad
+#define FORT_HEIGHT (128.0f + 60.0f)                            //炮台高度                    188.0mm
+#define BUCKET_HEIGHT (800.0f)                                  //桶高度                      800.0mm
+#define FORT_TO_BUCKET_HEIGHT (BUCKET_HEIGHT - FORT_HEIGHT)     //炮台到桶高度差              (800.0 - 188.0)mm
 
 FortType fort;
-GunneryData gundata;
+GunneryData Gundata;
 int bufferI = 0;
 char buffer[20] = {0};
 /**
@@ -119,13 +118,13 @@ void GetValueFromFort(uint8_t data)
 	}
 	if(buffer[bufferI - 2] == '\r' && buffer[bufferI - 1] == '\n')
 	{ 
-		if(bufferI > 2 &&  strncmp(buffer,"PO",2) == 0)//接收航向位置
+		if(bufferI > 2 && strncmp(buffer,"PO",2) == 0)//接收航向位置
 		{
 				for(int i = 0; i < 4; i++)
 					fort.usartReceiveData.data8[i] = buffer[i + 2];
 				fort.yawPosReceive = fort.usartReceiveData.dataFloat;
 		}
-		else if(bufferI > 2 &&  strncmp(buffer,"VE",2) == 0)//接收发射电机转速
+		else if(bufferI > 2 && strncmp(buffer,"VE",2) == 0)//接收发射电机转速
 		{
 				for(int i = 0; i < 4; i++)
 					fort.usartReceiveData.data8[i] = buffer[i + 2];
@@ -167,49 +166,35 @@ float Constrain_float_Angle(float angle)
 
 /**
 * @brief  计算射击诸元
-* @param  GunneryData *Gun：射击诸元结构体指针
-* @param  pos_t *pos: 定位系统数据结构体指针
+* @param  Square_Mode：        方形闭环方向
+          Square_Mode = 1时    顺时针
+          Square_Mode = 0时    逆时针
+* @param  *Gun：               射击诸元结构体指针
+* @param  *Pos:                定位系统数据结构体指针
 * @author 陈昕炜
 * @note   
 */
-void GunneryData_Operation(GunneryData *Gun, PID_Value *pos)
+void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos)
 {
 	//读取炮台航向角和射球电机转速	
 	Gun->YawPosAngleRec = fort.yawPosReceive;
 	Gun->ShooterVelRec = fort.shooterVelReceive;
+	
+	if(Pos->direction == ACW){Gun->Square_Mode = 0;}
+	if(Pos->direction == CW){Gun->Square_Mode = 1;}
 	
 	//读取炮台激光探测到的距离值
 	Gun->Distance_LaserA = 2.5114 * fort.laserAValueReceive + 51.623;
 	Gun->Distance_LaserB = 2.4269 * fort.laserBValueReceive + 371.39;
 	
 	//炮台坐标系补偿
-	Gun->Fort_X = pos->X - (Fort_TO_BACK_WHEEL) * sin(pos->Angle * Pi / 180.0);
-	Gun->Fort_Y = pos->Y + (Fort_TO_BACK_WHEEL) * cos(pos->Angle * Pi / 180.0) + BACK_WHEEL_TO_WALL;
-	Gun->Fort_Angle = Constrain_float_Angle(pos->Angle - fort.yawPosReceive);
-
-	//设定各桶编号及坐标
-	switch(Gun->BucketNum)
-	{
-		case 0:
-			Gun->Bucket_X = 2200.0;
-			Gun->Bucket_Y = 200.0;
-			break;
-		case 1:
-			Gun->Bucket_X = 2200.0;
-			Gun->Bucket_Y = 4600.0;
-			break;		
-		case 2:
-			Gun->Bucket_X = -2200.0;
-			Gun->Bucket_Y = 4600.0;
-			break;		
-		case 3:
-			Gun->Bucket_X = -2200.0;
-			Gun->Bucket_Y = 200.0;
-			break;
-	}
+	Gun->Fort_X = Pos->X - (FORT_TO_BACK_WHEEL) * sin(Pos->Angle * Pi / 180.0);
+	Gun->Fort_Y = Pos->Y + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0);
+	Gun->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive + Gun->Yaw_Zero_Offset);
+	
 	//初始化目标桶到炮台坐标的横纵轴距离和距离值
-	Gun->Distance_Fort_X = Gun->Bucket_X - Gun->Fort_X;
-	Gun->Distance_Fort_Y = Gun->Bucket_Y - Gun->Fort_Y;
+	Gun->Distance_Fort_X = Gun->Bucket_X[Gun->BucketNum] - Gun->Fort_X;
+	Gun->Distance_Fort_Y = Gun->Bucket_Y[Gun->BucketNum] - Gun->Fort_Y;
 	Gun->Distance_Fort = sqrt(Gun->Distance_Fort_X * Gun->Distance_Fort_X + Gun->Distance_Fort_Y * Gun->Distance_Fort_Y);
 	
 	//初始化车移动的横纵轴距离
@@ -235,12 +220,12 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value *pos)
 		Gun->Distance_Shoot = sqrt(Gun->Distance_Shoot_X * Gun->Distance_Shoot_X + Gun->Distance_Shoot_Y * Gun->Distance_Shoot_Y);
 		
 		//计算射球水平速度和飞行时间
-		Gun->ShooterVelSet_H = sqrt((Gun->Distance_Shoot * Gun->Distance_Shoot * G) / (2.0 * (Gun->Distance_Shoot * tan(Fort_Elevation_Rad) - Fort_To_Bucket_Height)));
+		Gun->ShooterVelSet_H = sqrt((Gun->Distance_Shoot * Gun->Distance_Shoot * G) / (2.0 * (Gun->Distance_Shoot * tan(FORT_ELEVATION_RAD) - FORT_TO_BUCKET_HEIGHT)));
 		Gun->ShooterTime = Gun->Distance_Shoot / Gun->ShooterVelSet_H;
 		
 		//计算射球飞行时间中车移动的横轴轴距离和距离
-		Gun->Distance_Car_X = pos->X_Speed * Gun->ShooterTime;		
-		Gun->Distance_Car_Y = pos->Y_Speed * Gun->ShooterTime;
+		Gun->Distance_Car_X = Pos->X_Speed * Gun->ShooterTime;		
+		Gun->Distance_Car_Y = Pos->Y_Speed * Gun->ShooterTime;
 		Gun->Distance_Car = sqrt(Gun->Distance_Car_X * Gun->Distance_Car_X + Gun->Distance_Car_Y * Gun->Distance_Car_Y);
 
 		//计算当前计算值与目标桶的在横轴轴上偏差值
@@ -252,8 +237,8 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value *pos)
 	while((Gun->Distance_Deviation_X > Gun->Distance_Accuracy) || (Gun->Distance_Deviation_Y > Gun->Distance_Accuracy));
 	
     //根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
-	Gun->ShooterVelSet = 0.0123 * Gun->Distance_Shoot + 35.224 + Gun->Shooter_Vel_Offset;
-	Gun->No_Offset_ShooterVel = 0.0123 * Gun->Distance_Fort + 35.224 + Gun->Shooter_Vel_Offset;
+	Gun->ShooterVelSet = 0.0133 * Gun->Distance_Shoot + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+	Gun->No_Offset_ShooterVel = 0.0133 * Gun->Distance_Fort + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
 	
 	//计算炮台偏向角 = arctan(射球实际移动的横轴距离 / 射球实际移动的纵轴距离)
 	Gun->YawPosAngleTar = atan(Gun->Distance_Shoot_X / Gun->Distance_Shoot_Y) * 180.0 / Pi;
@@ -280,7 +265,70 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value *pos)
 			break;
 	}
 	
-
 	//计算炮台航向角实际值
-	Gun->YawPosAngleSet = Constrain_float_Angle(Constrain_float_Angle(pos->Angle - Gun->YawPosAngleTar) - (int)Gun->YawPosAngleRec % 360) + Gun->YawPosAngleRec;
+	Gun->YawPosAngleSet = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Gun->YawPosAngleTar + Gun->Yaw_Angle_Offset[Gun->BucketNum + Gun->Square_Mode * 4] + Gun->Yaw_Zero_Offset)\
+						- (int)Gun->YawPosAngleRec % 360) + Gun->YawPosAngleRec;
+	
+	
+//	Gun->YawPosAngleSet = Gun->YawPosAngleSet + YawPos_Angle_PID_Operation(Gun->YawPosAngleSet, Gun->YawPosAngleRec, &PID_YawPos_Angle);
+//	Gun->ShooterVelSet = Gun->ShooterVelSet + Shooter_Vel_PID_Operation(Gun->ShooterVelSet, Gun->ShooterVelRec, &PID_Shooter_Vel);
+}
+
+/**
+* @brief  PID控制器
+* @param  *PID：    PID参数结构体指针
+* @author 陈昕炜
+* @note   用于PID控制
+*/
+float PID_Operation(PID_Value_Fort *PID)
+{
+	PID->setValue = Constrain_float_Angle(PID->setValue);
+	
+	PID->error = PID->setValue - PID->feedbackValue;
+	PID->error = Constrain_float_Angle(PID->error);
+	
+	PID->error_sum = PID->error_sum + PID->error;	
+	PID->error_def = PID->error - PID->error_pre;	
+	PID->error_pre = PID->error;
+	
+	PID->output = PID->Kp * PID->error + PID->Ki * PID->error_sum + PID->Kd * PID->error_def;
+	return PID->output;
+}
+
+/**
+* @brief  航向电机位置闭环
+* @param  YawPosAngle_Tar：    目标航向角度
+* @param  YawPosAngle_Rec：    当前航向角度
+* @param  *PID：               PID参数结构体指针
+* @author 陈昕炜
+* @note   用于Fort中
+*/
+float YawPos_Angle_PID_Operation(float YawPosAngle_Tar, float YawPosAngle_Rec, PID_Value_Fort *PID)
+{
+	PID->Kp = 1;
+	PID->Ki = 0;
+	PID->Kd = 0;
+	
+	PID->setValue = YawPosAngle_Tar;
+	PID->feedbackValue = YawPosAngle_Rec;
+	return PID_Operation(PID);
+}
+
+/**
+* @brief  射球电机转速闭环
+* @param  Shooter_Vel_Tar：    目标电机转速
+* @param  Shooter_Vel_Rec：    当前电机转速
+* @param  *PID：               PID参数结构体指针
+* @author 陈昕炜
+* @note   用于Fort中
+*/
+float Shooter_Vel_PID_Operation(float Shooter_Vel_Tar, float Shooter_Vel_Rec, PID_Value_Fort *PID)
+{
+	PID->Kp = 1;
+	PID->Ki = 0;
+	PID->Kd = 0;
+	
+	PID->setValue = Shooter_Vel_Tar;
+	PID->feedbackValue = Shooter_Vel_Rec;
+	return PID_Operation(PID);
 }

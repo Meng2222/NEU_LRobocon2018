@@ -32,11 +32,14 @@ typedef struct{
 
 typedef struct
 {
-	float YawPosReceive_cmd;
-	float ShooterVelReceive_cmd;
-	float TargetNumber_cmd;
-	int FireFlag;
-}command;
+	int MoveFlag_cmd;           //设置是否运动
+	int FireFlag_cmd;           //设置是否射球
+	int TarBucketNum_cmd;       //设置目标桶编号	
+	
+	float YawZeroOffset_cmd;    //设置航向电机归零角度
+	float YawPosSet_cmd;        //设置航向电机角度
+	float ShooterVelSet_cmd;    //设置射球电机转速
+}Command;
 
 void TalkOpsToGetReady(void);
 /*初始化并且让程序等待定位系统发数*/

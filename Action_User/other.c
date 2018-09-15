@@ -1,5 +1,5 @@
 #include "other.h"
-extern GunneryData gundata;
+extern GunneryData Gundata;
 //====================================================================================
 //                                     数据处理
 //====================================================================================
@@ -147,10 +147,10 @@ void Target_Lock(GunneryData *Gun,PID_Value *pos)
 	if(t_Breakdown>=3){ifBreakdownFlag=1;}
 	if(!ifBreakdownFlag)//定位系统正常
 	{
-		if(gundata.BucketNum==0){}
-		if(gundata.BucketNum==1){}
-		if(gundata.BucketNum==2){}
-		if(gundata.BucketNum==3){}
+		if(Gundata.BucketNum==0){}
+		if(Gundata.BucketNum==1){}
+		if(Gundata.BucketNum==2){}
+		if(Gundata.BucketNum==3){}
 	}
 	if(ifBreakdownFlag)//定位系统异常
 	{
@@ -256,7 +256,7 @@ void ShooterVel_Record(void)//记录数据
 	shooterVel.p30=shooterVel.p20;
 	shooterVel.p20=shooterVel.p10;
 	shooterVel.p10=shooterVel.now;
-	shooterVel.now=gundata.ShooterVelRec;
+	shooterVel.now=Gundata.ShooterVelRec;
 }
 
 int ifShootFlag=0;
@@ -312,10 +312,10 @@ void Shoot_Judge(void)//发球检测
 	{
 		ifPushFlag_remain=0;
 		t_ifpushflag=0;
-		if(gundata.BucketNum==0){Bucket_0_ShootNum++;}
-		if(gundata.BucketNum==1){Bucket_1_ShootNum++;}	
-		if(gundata.BucketNum==2){Bucket_2_ShootNum++;}
-		if(gundata.BucketNum==3){Bucket_3_ShootNum++;}	
+		if(Gundata.BucketNum==0){Bucket_0_ShootNum++;}
+		if(Gundata.BucketNum==1){Bucket_1_ShootNum++;}	
+		if(Gundata.BucketNum==2){Bucket_2_ShootNum++;}
+		if(Gundata.BucketNum==3){Bucket_3_ShootNum++;}	
 		ifShootFlag=0;
 	}
 }

@@ -324,7 +324,8 @@ void CorrectAngle(float value)
 
 /************************ (C) COPYRIGHT 2016 ACTION *****END OF FILE****/
 
-command commandRecieveData;
+Command CmdRecData;
+extern GunneryData Gundata;
 int bufferI_cmd = 0;
 char buffer_cmd[10] = {0};
 void bufferInit_cmd()
@@ -347,47 +348,87 @@ void GetValueFromPC(u8 data)
 {
 	buffer_cmd[bufferI_cmd] = data;
 	bufferI_cmd++;
-	if(bufferI_cmd >= 10)
+	if(bufferI_cmd >= 20)
 	{
 		bufferInit_cmd();
 	}
 	if(buffer_cmd[bufferI_cmd - 2] == '\r' && buffer_cmd[bufferI_cmd - 1] == '\n')
 	{
-		if(bufferI_cmd > 2 && strncmp(buffer_cmd, "PO", 2) == 0)//接收航向位置
+		if(bufferI_cmd > 4 && strncmp(buffer_cmd, "YAO+", 4) == 0)//设置航向角度补偿
 		{
-			commandRecieveData.YawPosReceive_cmd = (float)((int)(buffer_cmd[2] - 0x30)) * 1000 + ((int)(buffer_cmd[3] - 0x30)) * 100 + ((int)(buffer_cmd[4] - 0x30)) * 10 + ((int)(buffer_cmd[5] - 0x30));
+			Gundata.Yaw_Angle_Offset[(int)(buffer_cmd[4] - 0x30)] = (float)(buffer_cmd[5] - 0x30) * 10.0 + (float)(buffer_cmd[6] - 0x30) * 1.0 + ((float)(buffer_cmd[7] - 0x30)) * 0.1;
 		}
-		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "VE", 2) == 0)//接收发射电机转速
+		else if(bufferI_cmd > 4 && strncmp(buffer_cmd, "YAO-", 4) == 0)
 		{
-			commandRecieveData.ShooterVelReceive_cmd = (float)((int)(buffer_cmd[2] - 0x30)) * 1000+ ((int)(buffer_cmd[3] - 0x30)) * 100 + ((int)(buffer_cmd[4] - 0x30)) * 10 + ((int)(buffer_cmd[5] - 0x30));
+			Gundata.Yaw_Angle_Offset[(int)(buffer_cmd[4] - 0x30)] = ((float)(buffer_cmd[5] - 0x30) * 10.0 + (float)(buffer_cmd[6] - 0x30) * 1.0 + ((float)(buffer_cmd[7] - 0x30)) * 0.1) * -1.0;
 		}
-		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "BN", 2) == 0)//接收目标桶编号
+		else if(bufferI_cmd > 4 && strncmp(buffer_cmd, "YZO+", 4) == 0)//设置航向电机归零补偿角度
 		{
-			commandRecieveData.TargetNumber_cmd = (float)((int)(buffer_cmd[2] - 0x30)) * 1000 + ((int)(buffer_cmd[3] - 0x30)) * 100 + ((int)(buffer_cmd[4] - 0x30)) * 10 + ((int)(buffer_cmd[5] - 0x30));
+			CmdRecData.YawZeroOffset_cmd = (float)(buffer_cmd[4] - 0x30) * 100.0 + (float)(buffer_cmd[5] - 0x30) * 10.0 + (float)(buffer_cmd[6] - 0x30) * 1.0 + (float)(buffer_cmd[7] - 0x30) * 0.1;
 		}
-		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "ON", 2) == 0)//开火
+		else if(bufferI_cmd > 4 && strncmp(buffer_cmd, "YZO-", 4) == 0)
 		{
-			commandRecieveData.FireFlag = 1;
+			CmdRecData.YawZeroOffset_cmd = ((float)(buffer_cmd[4] - 0x30) * 100.0 + (float)(buffer_cmd[5] - 0x30) * 10.0 + (float)(buffer_cmd[6] - 0x30) * 1.0 + (float)(buffer_cmd[7] - 0x30) * 0.1) * -1.0;
 		}
-		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "OF", 2) == 0)//停火
+		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "PO", 2) == 0)//设置航向位置
 		{
-			commandRecieveData.FireFlag = 0;
+			CmdRecData.YawPosSet_cmd = (float)(buffer_cmd[2] - 0x30) * 100.0 + (float)(buffer_cmd[3] - 0x30) * 10.0 + (float)(buffer_cmd[4] - 0x30) * 1.0 + (float)(buffer_cmd[5] - 0x30) * 0.1;
 		}
+
+		
+		
+		if(bufferI_cmd > 4 && strncmp(buffer_cmd, "SVO+", 4) == 0)//设置射球电机转速补偿
+		{
+			Gundata.Shooter_Vel_Offset[(int)(buffer_cmd[4] - 0x30)] = (float)(buffer_cmd[5] - 0x30) * 10.0 + (float)(buffer_cmd[6] - 0x30) * 1.0 + ((float)(buffer_cmd[7] - 0x30)) * 0.1;
+		}
+		else if(bufferI_cmd > 4 && strncmp(buffer_cmd, "SVO-", 4) == 0)
+		{
+			Gundata.Shooter_Vel_Offset[(int)(buffer_cmd[4] - 0x30)] = ((float)(buffer_cmd[5] - 0x30) * 10.0 + (float)(buffer_cmd[6] - 0x30) * 1.0 + ((float)(buffer_cmd[7] - 0x30)) * 0.1) * -1.0;
+		}		
+		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "VE", 2) == 0)//设置射球电机转速
+		{
+			CmdRecData.ShooterVelSet_cmd = (float)(buffer_cmd[2] - 0x30) * 100.0 + (float)(buffer_cmd[3] - 0x30) * 10.0 + (float)(buffer_cmd[4] - 0x30) * 1.0 + (float)(buffer_cmd[5] - 0x30) * 0.1;
+		}
+		
+
+		if(bufferI_cmd > 2 && strncmp(buffer_cmd, "BN", 2) == 0)//设置目标桶编号
+		{
+			CmdRecData.TarBucketNum_cmd = (int)(buffer_cmd[2] - 0x30) * 1000 + (int)(buffer_cmd[3] - 0x30) * 100 + (int)(buffer_cmd[4] - 0x30) * 10 + (int)(buffer_cmd[5] - 0x30) * 1;
+		}
+	
+		
+		if(bufferI_cmd > 4 && strncmp(buffer_cmd, "FIRE", 4) == 0)//开火
+		{
+			CmdRecData.FireFlag_cmd = 1;
+		}
+		else if(bufferI_cmd > 5 && strncmp(buffer_cmd, "CEASE", 5) == 0)//停火
+		{
+			CmdRecData.FireFlag_cmd = 0;
+		}
+		
+		if(bufferI_cmd > 2 && strncmp(buffer_cmd, "GO", 2) == 0)//启动
+		{
+			CmdRecData.MoveFlag_cmd = 1;
+		}	
+		else if(bufferI_cmd > 4 && strncmp(buffer_cmd, "STOP", 4) == 0)//停止
+		{
+			CmdRecData.MoveFlag_cmd = 0;
+		}				
 		bufferInit_cmd();
 	}
 }
 
 float GetYawPosCommand(void)
 {
-	return ((commandRecieveData.YawPosReceive_cmd)/1);
+	return ((CmdRecData.YawPosSet_cmd)/1);
 }
 
 float GetShooterVelCommand(void)
 {
-	return ((commandRecieveData.ShooterVelReceive_cmd)/1);
+	return ((CmdRecData.ShooterVelSet_cmd)/1);
 }
 
 float GetTargetNumberCommand(void)
 {
-	return ((commandRecieveData.TargetNumber_cmd)/1);
+	return ((CmdRecData.TarBucketNum_cmd)/1);
 }
