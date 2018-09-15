@@ -52,7 +52,7 @@ u8 isOKSend(void);
 void resetOK(void);
 float GetMotor1Speed(void);
 float GetMotor2Speed(void);
-float GetMotor7Pos(void);
+int GetMotor7Pos(void);
 #ifdef __cplusplus
 }
 #endif

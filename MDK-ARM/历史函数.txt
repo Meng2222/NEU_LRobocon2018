@@ -1451,3 +1451,29 @@ int line_order1[24] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,8,9,10,11,4,5,6,7};
 int line_order2[24] = {17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,25,26,27,28,21,22,23,24};
 int line_order3[36] = {0,5,14,15,12,13,10,11,8,9,6,7,12,13,14,15,12,13,14,15,12,13,14,15,12,13,14,15,12,13,14,15,12,13,14,15};
 int line_order4[36] = {19,22,29,32,31,30,25,28,27,26,21,24,27,30,29,32,31,30,29,32,31,30,29,32,31,30,29,32,31,30,29,32,31,30,29,32};
+
+//以20 * 10ms为间隔发送数据
+//		cntSendTime++;
+//		cntSendTime = cntSendTime % 5;
+//		if(cntSendTime == 1)
+//		{
+//			USART_OUT(UART4, (uint8_t*)"PosAng=%d,YawTar=%d,YawSet=%d\r\n",\
+//			(int)PID_A.Angle, (int)gundata.YawPosAngleTar, (int)gundata.YawPosAngleSet);
+//		}
+//		OSSemSet(PeriodSem, 0, &os_err);
+
+//		GetPositionValue2(PID_x);//Get坐标读数
+//		GetLaserData2();         //Get激光读数
+
+		//GetPositionValue2(PID_x);//Get坐标读数
+		//GetLaserData2();         //Get激光读数
+		
+		//新车发球检测
+		/*
+		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "B","N","m",":",(int)gundata.BucketNum);	
+		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "V","e","l",":",(int)gundata.ShooterVel);	
+		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "S","e","t",":",(int)gundata.ShooterVelSet);
+		USART_SendData(UART4,'\r');
+		USART_SendData(UART4,'\n');
+		{+}发球检测函数
+		*/

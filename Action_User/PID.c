@@ -19,6 +19,16 @@ float Compare(float a1,float b1)                                             //±
 	else return -1.0f;
 }
 
+u8 Max(u8 a1,u8 a2,u8 a3)
+{
+	u8 max = 0;
+	u8 flag = 0;
+	if(a1 >= a2) {max = a1; flag = 0;}
+	else {max = a2; flag = 1;}
+	if(max < a3) {max = a3; flag = 2;}
+	return flag;
+}
+
 float constrain(float amt, float high, float low)                            //¸¡µãÊýÏÞ·ùº¯Êý
 {
     return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
@@ -648,7 +658,7 @@ void GO(PID_Value *p_GO)                                                     //µ
 	VelCrl(CAN1,1,(int)((0+(32768/(120*Pi))*(p_GO->vel))-(32768/(120*Pi))*(p_GO->V)));
 }
 
-void shoot(PID_Value *p_gun)                                                  //ÉäÇòº¯Êý
+void shoot(PID_Value *p_gun)                                                 //ÉäÇòº¯Êý
 {
 	static int cnt = 0;
 	static int pos = 0;
@@ -668,37 +678,50 @@ void shoot(PID_Value *p_gun)                                                  //
 		cnt++;
 		if(cnt == 150)
 		{
-			posError = ABS(GetMotor7Pos() - pos);
-			if(posError > 1000)
+			USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
+			USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
+			USART_OUT(UART4,(uint8_t*)"%d	", (int)ballcolor);
+			posError = abs(GetMotor7Pos() - pos);
+			if(posError > 700)
 			{
 				PosCrl(CAN2,7,ABSOLUTE_MODE,posLast);
+				pos = posLast;
+				cnt = 0;
+				USART_OUT(UART4,(uint8_t*)"stuck");
+				USART_SendData(UART4,'\r');
+				USART_SendData(UART4,'\n');
 				return;
 			}
 			if(ballcolor == 2)
 			{
+				USART_OUT(UART4,(uint8_t*)"%d	", 2);
 				posLast = pos;
 				pos += p_gun->push_pos_down;
 				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 			}
 			else if(ballcolor == 0)
 			{
+				USART_OUT(UART4,(uint8_t*)"%d	", 0);
 				posLast = pos;
 				pos += p_gun->push_pos_down;
 				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 			}
-			else if(ballcolor == 1) p_gun->fire_request = 1;
+			else if(ballcolor == 1) {p_gun->fire_request = 1;
+				USART_OUT(UART4,(uint8_t*)"%d	", 1);}
+			cnt = 0;
+			USART_SendData(UART4,'\r');
+			USART_SendData(UART4,'\n');
 		}
-		if(cnt == 150) cnt = 0;
 	}
 }
 
 void UART4_OUT(PID_Value *pid_out)                                           //´®¿ÚÊä³öº¯Êý
 {
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
@@ -847,11 +870,15 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				{
 					pid->V = 1200;
 					pid->Line_Num = pid->Line_Num_Last;
+					pid->target_Num = pid->Line_Num % 4 + 1;
+					if(pid->target_Num == 4) pid->target_Num = 0;
 					PID_Control(pid);
 				}
 				else
 				{
 					pid->Line_Num = pid->Line_Num_Next;
+					pid->target_Num = pid->Line_Num % 4 + 1;
+					if(pid->target_Num == 4) pid->target_Num = 0;
 					PID_Control(pid);
 					pid->V += 0;
 					if(ABS(pid->Error) < 8)
@@ -1013,6 +1040,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			if(error->flag == 0)
 			{
 				pid->Line_Num = pid->Line_Num_Next;
+				pid->target_Num = pid->Line_Num % 4 - 1;
+				if(pid->target_Num == -1) pid->target_Num = 3;
 				PID_Pre(pid);
 				pid->kp = 15;
 				if(pid->l->line_Error < -700)
@@ -1024,6 +1053,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				else
 				{
 					pid->Line_Num = pid->Line_Num_Next;
+					pid->target_Num = pid->Line_Num % 4 - 1;
+					if(pid->target_Num == -1) pid->target_Num = 3;
 					PID_Control(pid);
 					pid->V += 0;
 					if(ABS(pid->Error) < 8)

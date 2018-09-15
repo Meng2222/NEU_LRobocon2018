@@ -142,98 +142,72 @@ void WalkTask(void)
 		
 //		ReadActualVel(CAN1,1);
 //		ReadActualVel(CAN1,2);
+		ReadActualPos(CAN2,7);
 		
 		GetData(PID_x);
-		ErrorDisposal(PID_x,Error_x);
-		PID_Competition(PID_x,direction,Error_x);
-		GO(PID_x);
-		
-		gundata.BucketNum = PID_A.target_Num;
-		//顺逆时针各桶航向角补偿和射球转速补偿
+//		ErrorDisposal(PID_x,Error_x);
+//		PID_Competition(PID_x,direction,Error_x);
+//		GO(PID_x);
+//		
+//		gundata.BucketNum = PID_A.target_Num;
+//		//顺逆时针各桶航向角补偿和射球转速补偿
 
-		ErrorDisposal(PID_x,Error_x);
-		PID_Competition(PID_x,direction,Error_x);
-
-		//设定目标桶号和顺逆时针各桶航向角补偿和射球转速补偿
-		gundata.BucketNum = commandRecieveData.TargetNumber_cmd;
-		if(PID_x->direction == ACW)
-		{
-			switch(gundata.BucketNum)
-			{
-				case 0:
-					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = 0.0;
-					break;
-				case 1:
-					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = 0.0;
-					break;
-				case 2:
-					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = 0.0;
-					break;
-				case 3:
-					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = 0.0;
-					break;
-			}
-		}
-		if(PID_x->direction == CW)
-		{
-			switch(gundata.BucketNum)
-			{
-				case 0:
-					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = 0.0;
-					break;
-				case 1:
-					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = 0.0;
-					break;
-				case 2:
-					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = 0.0;
-					break;
-				case 3:
-					gundata.Yaw_Angle_Offset = 0.0;
-					gundata.Shooter_Vel_Offset = 0.0;	
-					break;
-			}
-		}		
-
-		gundata.Distance_Accuracy = 10.0;         //设定距离精度
-		GunneryData_Operation(&gundata,PID_x);    //计算射击诸元
-		YawPosCtrl(gundata.YawPosAngleSet);       //设定航向角
-		ShooterVelCtrl(gundata.ShooterVelSet);    //设定射球转速
-		ShooterVelCtrl(20);    //设定射球转速
-		//以20 * 10ms为间隔发送数据
-//		cntSendTime++;
-//		cntSendTime = cntSendTime % 5;
-//		if(cntSendTime == 1)
+//		//设定目标桶号和顺逆时针各桶航向角补偿和射球转速补偿
+//		gundata.BucketNum = commandRecieveData.TargetNumber_cmd;
+//		if(PID_x->direction == ACW)
 //		{
-//			USART_OUT(UART4, (uint8_t*)"PosAng=%d,YawTar=%d,YawSet=%d\r\n",\
-//			(int)PID_A.Angle, (int)gundata.YawPosAngleTar, (int)gundata.YawPosAngleSet);
+//			switch(gundata.BucketNum)
+//			{
+//				case 0:
+//					gundata.Yaw_Angle_Offset = 0.0;
+//					gundata.Shooter_Vel_Offset = 0.0;
+//					break;
+//				case 1:
+//					gundata.Yaw_Angle_Offset = 0.0;
+//					gundata.Shooter_Vel_Offset = 0.0;
+//					break;
+//				case 2:
+//					gundata.Yaw_Angle_Offset = 0.0;
+//					gundata.Shooter_Vel_Offset = 0.0;
+//					break;
+//				case 3:
+//					gundata.Yaw_Angle_Offset = 0.0;
+//					gundata.Shooter_Vel_Offset = 0.0;
+//					break;
+//			}
 //		}
-//		OSSemSet(PeriodSem, 0, &os_err);
+//		if(PID_x->direction == CW)
+//		{
+//			switch(gundata.BucketNum)
+//			{
+//				case 0:
+//					gundata.Yaw_Angle_Offset = 0.0;
+//					gundata.Shooter_Vel_Offset = 0.0;
+//					break;
+//				case 1:
+//					gundata.Yaw_Angle_Offset = 0.0;
+//					gundata.Shooter_Vel_Offset = 0.0;
+//					break;
+//				case 2:
+//					gundata.Yaw_Angle_Offset = 0.0;
+//					gundata.Shooter_Vel_Offset = 0.0;
+//					break;
+//				case 3:
+//					gundata.Yaw_Angle_Offset = 0.0;
+//					gundata.Shooter_Vel_Offset = 0.0;	
+//					break;
+//			}
+//		}		
 
-//		GetPositionValue2(PID_x);//Get坐标读数
-//		GetLaserData2();         //Get激光读数
-
-		//GetPositionValue2(PID_x);//Get坐标读数
-		//GetLaserData2();         //Get激光读数
-		
-		//新车发球检测
-		/*
-		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "B","N","m",":",(int)gundata.BucketNum);	
-		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "V","e","l",":",(int)gundata.ShooterVel);	
-		USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "S","e","t",":",(int)gundata.ShooterVelSet);
-		USART_SendData(UART4,'\r');
-		USART_SendData(UART4,'\n');
-		{+}发球检测函数
-		*/
+//		gundata.Distance_Accuracy = 10.0;         //设定距离精度
+//		GunneryData_Operation(&gundata,PID_x);    //计算射击诸元
+//		YawPosCtrl(gundata.YawPosAngleSet);       //设定航向角
+//		ShooterVelCtrl(gundata.ShooterVelSet);    //设定射球转速
+//		ShooterVelCtrl(20);    //设定射球转速
+ShooterVelCtrl(20);
 		PID_A.fire_command = 1;
 		shoot(PID_x);
 		
-		UART4_OUT(PID_x);
+//		UART4_OUT(PID_x);
 	}
 }
