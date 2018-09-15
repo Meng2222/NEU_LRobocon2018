@@ -43,8 +43,6 @@ typedef struct S_Record
 void GetFloat (float Num10, int places);
 void GetLaserData(void);
 void GetPositionValue(PID_Value *pid_out);
-void GetLaserData2(void);
-void GetPositionValue2(PID_Value *pid_out);
 void SetFortAngle(PID_Value *pos,float set_angle);
 void RadarCorrection(PID_Value *pos);
 void Entertainment(void);

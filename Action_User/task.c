@@ -159,17 +159,17 @@ void WalkTask(void)
 		ReadActualPos(CAN2,7);
 		
 		GetData(PID_x);
-		ErrorDisposal(PID_x,Error_x);
-		PID_Competition(PID_x,direction,Error_x);
-		GO(PID_x);
-	
+//		ErrorDisposal(PID_x,Error_x);
+//		PID_Competition(PID_x,direction,Error_x);
+//		GO(PID_x);
+		
 		Gundata.BucketNum = PID_A.target_Num;      //设置目标桶号
 		GunneryData_Operation(&Gundata, PID_x);    //计算射击诸元
 //		YawPosCtrl(Gundata.YawPosAngleSet);        //设置航向角
 //		ShooterVelCtrl(Gundata.ShooterVelSet);     //设置射球转速
 //=================================================================================================================
 		//新车激光拟合
-		GetPositionValue2(PID_x);      //Get坐标读数
+		GetPositionValue(PID_x);      //Get坐标读数
 //		GetLaserData2();               //Get激光读数
 		
 //		SetFortAngle(PID_x,90.f);      /*激光拟合*/

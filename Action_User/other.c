@@ -445,7 +445,7 @@ float Yvaluereceive;
 //	USART_OUT(UART4,(uint8_t*)"%d  ",(int)Yvaluereceive);
 //}
 
-void GetLaserData2 (void)
+void GetLaserData (void)
 {
 	laserAvaluereceive=fort.laserAValueReceive;
 	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","A","a","d","c",":");	
@@ -456,7 +456,7 @@ void GetLaserData2 (void)
 	GetFloat (laserBvaluereceive, 3);
 }
 
-void GetPositionValue2(PID_Value *pid_out)//串口输出函数
+void GetPositionValue(PID_Value *pid_out)//串口输出函数
 {
 	Xvaluereceive=pid_out->X;
 	Yvaluereceive=pid_out->Y; 
