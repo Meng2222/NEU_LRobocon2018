@@ -36,7 +36,6 @@ void App_Task(void)
 	os_err = OSTaskCreate((void (*)(void *))WalkTask,
 						  (void *)0,							  
 						  (OS_STK *)&WalkTaskStk[Walk_TASK_STK_SIZE - 1],
-
 						  (INT8U)Walk_TASK_PRIO);				 
 }
 
@@ -119,7 +118,7 @@ void ConfigTask(void)
 	Gundata.Bucket_X[3] = -2200.0;      Gundata.Bucket_Y[3] = 200.0;
 
 	memset(Gundata.Yaw_Angle_Offset, 0, 8);
-	memset(Gundata.Shooter_Vel_Offset, 0, 8);	
+	memset(Gundata.Shooter_Vel_Offset, 0, 8);
 	while(1)
 	{
 		Laser_Right = fort.laserBValueReceive;                         //左ADC
