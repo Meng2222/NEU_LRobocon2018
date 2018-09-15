@@ -68,7 +68,7 @@
 #define TURN_AROUND_WHEEL_TO_BACK_WHEEL                               (286.f)
 
 //定位系统到后轮两轮轴中心间距
-#define OPS_TO_BACK_WHEEL                                             (116.5f)
+#define OPS_TO_BACK_WHEEL                                             (170.68f)
 //前轮后轮都是3508转一周脉冲都为8192
 #define NEW_CAR_COUNTS_PER_ROUND                                      (8192)
 //转向轮子直径

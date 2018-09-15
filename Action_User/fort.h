@@ -29,6 +29,18 @@ void ReadLaserBValue(void);
 void GetValueFromFort(uint8_t data);
 
 extern FortType fort;
+struct member
+{  
+   uint32_t pos_v;
+   uint32_t get_number_vorpos;
+};
+union push_ball_ActualPos_v
+{
+	
+	uint8_t datas[2];
+	uint32_t member[2];
+	
+};
 
 #endif
 

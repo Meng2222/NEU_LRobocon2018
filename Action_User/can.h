@@ -21,3 +21,5 @@ uint8_t CAN_TxMsg(CAN_TypeDef *CANx,
 				  uint8_t len);
 
 int OSCANSendCmd(CAN_TypeDef *CANx, CanTxMsg *TxMessage);
+
+
