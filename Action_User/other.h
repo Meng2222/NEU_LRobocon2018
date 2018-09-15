@@ -22,6 +22,9 @@
 #include "PID.h"
 #include "fort.h"
 #include "pps.h"
+#include "math.h"
+
+#define Compensation_Angle (0.f)
 
 typedef struct S_Record
 {
@@ -42,4 +45,8 @@ void GetLaserData(void);
 void GetPositionValue(PID_Value *pid_out);
 void GetLaserData2(void);
 void GetPositionValue2(PID_Value *pid_out);
+void SetFortAngle(PID_Value *pos,float set_angle);
+void RadarCorrection(PID_Value *pos);
+void Entertainment(void);
+void Power_On_Self_Test(PID_Value *pos);
 #endif

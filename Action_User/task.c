@@ -50,6 +50,7 @@ PID_Value PID_A;
 Err *Error_x;
 Err Error_A;
 float *error = NULL;
+extern float Set_FortAngle1;
 extern FortType fort;
 extern GunneryData Gundata;
 extern Command CmdRecData;
@@ -141,7 +142,6 @@ void ConfigTask(void)
                                   WalkTask      初始化后执行
 ===============================================================
 */
-
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
@@ -159,16 +159,38 @@ void WalkTask(void)
 		ReadActualPos(CAN2,7);
 		
 		GetData(PID_x);
-//		ErrorDisposal(PID_x,Error_x);
-//		PID_Competition(PID_x,direction,Error_x);
-//		GO(PID_x);
+		ErrorDisposal(PID_x,Error_x);
+		PID_Competition(PID_x,direction,Error_x);
+		GO(PID_x);
 	
 		Gundata.BucketNum = PID_A.target_Num;      //设置目标桶号
 		GunneryData_Operation(&Gundata, PID_x);    //计算射击诸元
-		YawPosCtrl(Gundata.YawPosAngleSet);        //设置航向角
-		ShooterVelCtrl(Gundata.ShooterVelSet);     //设置射球转速
+//		YawPosCtrl(Gundata.YawPosAngleSet);        //设置航向角
+//		ShooterVelCtrl(Gundata.ShooterVelSet);     //设置射球转速
+//=================================================================================================================
+		//新车激光拟合
+		GetPositionValue2(PID_x);      //Get坐标读数
+//		GetLaserData2();               //Get激光读数
+		
+//		SetFortAngle(PID_x,90.f);      /*激光拟合*/
+		RadarCorrection(PID_x);        /*雷达扫描*/
+//		Power_On_Self_Test(PID_x);     /*加电自检*/
+		YawPosCtrl(Set_FortAngle1);    //设定航向角
+		ShooterVelCtrl(5);             //设定射球转速
 
-		//以5 * 10ms为间隔发送数据
+		//新车发球检测
+				/*
+				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "B","N","m",":",(int)gundata.BucketNum);	
+				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "V","e","l",":",(int)gundata.ShooterVel);	
+				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "S","e","t",":",(int)gundata.ShooterVelSet);		
+				{+}发球检测函数
+				*/
+				
+				USART_SendData(UART4,'\r');
+				USART_SendData(UART4,'\n');
+//=================================================================================================================		
+/*
+//以5 * 10ms为间隔发送数据
 		cntSendTime++;
 		cntSendTime = cntSendTime % 5;
 		if(cntSendTime == 1)
@@ -181,7 +203,7 @@ void WalkTask(void)
 
 		if(fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 5.0 && Gundata.ShooterVelSet < 75.0 && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
 		shoot(PID_x);
-		
+*/		
 //		UART4_OUT(PID_x);
 	}
 }
