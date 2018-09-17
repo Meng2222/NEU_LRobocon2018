@@ -39,11 +39,11 @@
   * @retval None
   */
 
-float Kp=38,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Output=0,Vk=0,errl,lastErr1;
+float Kp=180,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Vk=0,errl,lastErr1;
 extern int R;
 void Straight(float v)
 {
-	VelCrl(CAN1,1,-v*CAR_WHEEL_COUNTS_PER_ROUND/(pi*WHEEL_DIAMETER)*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO);
+	VelCrl(CAN1,1,-v*CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO/(pi*WHEEL_DIAMETER));
 	VelCrl(CAN1,2,-Vk*CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO/(pi*TURN_AROUND_WHEEL_DIAMETER));
 }	
 void Spin(float R,float v)
@@ -65,6 +65,10 @@ void AnglePID(float setAngle,float feedbackAngle)
 		err=360+err;
 	Sumi+=Ki*err;
 	Vk=Kp*err+Sumi+Kd*(err-lastErr);
+	if(Vk>1280)
+		Vk=1280;
+	if(Vk<-1280)
+		Vk=-1280;
 	lastErr=err;																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																									
 }	
 float k,b,lAngle,setAngle,x,y,d;
@@ -170,70 +174,35 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 	if(status==1)
 	{	
 		if(sqrtf(d)>R)
-			setAngle=lAngle+90*(500/(fabs(sqrtf(d)-R)+500));
+			setAngle=lAngle+90*(700/(fabs(sqrtf(d)-R)+700));
 		else
-			setAngle=lAngle+180-90*(500/(fabs(sqrtf(d)-R)+500));
+			setAngle=lAngle+180-90*(700/(fabs(sqrtf(d)-R)+700));
 	}	
 	AnglePID(setAngle,GetAngle());
 	Straight(v);
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
-extern float angle,T,v,Distance;
+extern float Distance,shootX,shootY,angle,antiRad;
 void GetYawangle(float x1,float y1)
 {
-	static float R;
-	static float x,y,antiRad;
-	//含有误差的实时半径
-	antiRad=T*v/R;
-	R=sqrtf(GetX()*GetX()+(GetY()-2400)*(GetY()-2400));
 	if(status==0)
 	{	
-		//预判Ts后的坐标（适用于走圆形）
-		x=R*cos((angle-90)*pi/180+antiRad);
-		y=R*sin((angle-90)*pi/180+antiRad)+2400;
-		//预判Ts后炮台坐标
-		x=x-68*sin(GetAngle()*pi/180);
-		y=y+68*cos(GetAngle()*pi/180);
-		GetFunction(x,y,x1,y1);
-		if(GetAngle()<-90&&lAngle>90)
-			yawAngle=360+GetAngle()-lAngle;
+		GetFunction(shootX,shootY,x1,y1);
+		if((GetAngle()+antiRad*180/pi)<-90&&lAngle>90)
+			yawAngle=360+(GetAngle()+antiRad*180/pi)-lAngle;
 		else
-			yawAngle=GetAngle()-lAngle;		
+			yawAngle=(GetAngle()+antiRad*180/pi)-lAngle;		
 	}
 	else
 	{
-		x=R*cos((angle+90)*pi/180-antiRad);
-		y=R*sin((angle+90)*pi/180-antiRad)+2400;
-		//预判Ts后炮台坐标
-		x=x-68*sin(GetAngle()*pi/180);
-		y=y+68*cos(GetAngle()*pi/180);
-		GetFunction(x,y,x1,y1);
-		if(lAngle<-90&&GetAngle()>90)
-			yawAngle=-360+GetAngle()-lAngle;
+		GetFunction(shootX,shootY,x1,y1);
+		if(lAngle<-90&&(GetAngle()-antiRad*180/pi)>90)
+			yawAngle=-360+(GetAngle()-antiRad*180/pi)-lAngle;
 		else
-			yawAngle=GetAngle()-lAngle;	
+			yawAngle=(GetAngle()-antiRad*180/pi)-lAngle;	
 	}	
 }
 void GetDistance(float x1,float y1)
 {
-	static float x,y,antiRad;
-	static float R;
-	antiRad=T*v/R;
-	//含有误差的实时半径
-	R=sqrtf(GetX()*GetX()+(GetY()-2400)*(GetY()-2400));
-	if(status==0)
-	{	
-		x=R*cos((angle-90)*pi/180+antiRad);
-		y=R*sin((angle-90)*pi/180+antiRad)+2400;
-		x=x-68*sin(GetAngle()*pi/180+antiRad);
-		y=y+68*cos(GetAngle()*pi/180+antiRad);
-	}	
-	else
-	{
-		x=R*cos((angle+90)*pi/180-antiRad);
-		y=R*sin((angle+90)*pi/180-antiRad)+2400;
-		x=x-68*sin(GetAngle()*pi/180-antiRad);
-		y=y+68*cos(GetAngle()*pi/180-antiRad);
-	}
-	Distance=sqrtf((x-x1)*(x-x1)+(y-y1)*(y-y1));
+	Distance=sqrtf((shootX-x1)*(shootX-x1)+(shootY-y1)*(shootY-y1));
 }	

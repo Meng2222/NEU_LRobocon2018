@@ -42,21 +42,25 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-
+Msg_t frontwheelspeedBuffer;
 uint8_t i=0;	
 void CAN1_RX0_IRQHandler(void)
 {
+	uint32_t StdId=0;
 	OS_CPU_SR cpu_sr;
 	uint8_t buffer1[8];
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	CanRxMsg RxMessage;
-	CAN_Receive(CAN1, CAN_FIFO0, &RxMessage); //reveive data
-	for (i=0;i<8; i++)
+	CAN_RxMsg(CAN1,&StdId,buffer1,8);//reveive data
+	if(StdId==0x282)
 	{
-		buffer1[i] = RxMessage.Data[i];
-	}
+		for (i=0;i<8; i++)
+		{
+			frontwheelspeedBuffer.data8[i] = buffer1[i];
+		}
+	}	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
