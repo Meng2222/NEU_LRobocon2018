@@ -5,7 +5,7 @@
 #include "pps.h"
 #include "moveBase.h"
 typedef union
-{	
+{
 	uint8_t data8[4];
 	int		data32;
 	float   dataFloat;
@@ -41,11 +41,13 @@ typedef struct
 	float YawPosAngleRec;           //炮台航向角检测值                    单位°
 	float YawPosAngleTar;           //炮台相对偏移角度                    单位° 
 	float YawPosAngleSet;           //炮台设定角度                        单位°
+	float YawPosAngleSetAct;
 	
 	float ShooterVelRec;            //射球电机转速检测值                  单位rad/s
 	float ShooterVelSet;            //射球设定转速                        单位mm/s               
 	float ShooterVelSet_H;          //射球水平速度                        单位mm/s
 	float ShooterVelSet_V;          //射球竖直速度                        单位mm/s
+	float ShooterVelSetAct;
 	float ShooterTime;              //飞行时间                            单位s
 	
 	float Distance_Fort;            //炮台到目标点的距离                  单位mm	
@@ -66,10 +68,10 @@ typedef struct
 
 	float Distance_LaserA;          //激光A探测到的距离值                 单位mm
 	float Distance_LaserB;          //激光B探测到的距离值                 单位mm
-
+	
 	float No_Offset_Angle;          //无补偿航向角                        单位°
 	float No_Offset_ShooterVel;     //无补偿射球电机转速                  单位rad/s
-
+	
 	float Yaw_Zero_Offset;          //航向角归零补偿                      单位°
 	float Yaw_Angle_Offset[8];      //航向角补偿                          单位°
 	float Shooter_Vel_Offset[8];    //射球转速补偿                        单位rad/s
@@ -93,7 +95,7 @@ typedef struct{
 	float error_def;            //当前偏差与上一偏差的差值
     
     float output;               //PID控制器的输出
-    float out_max;              //输出上限
+    float flag;              //输出上限
     float out_min;              //输出下限
 }PID_Value_Fort;
 

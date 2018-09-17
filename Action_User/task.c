@@ -15,7 +15,7 @@ static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
 /*
 ===============================================================
-                                                APP_Task
+                                               APP_Task
 ===============================================================
 */
 void App_Task(void)
@@ -72,10 +72,10 @@ void ConfigTask(void)
 	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
 	ElmoInit(CAN2);                                                  //驱动器初始化
 	ElmoInit(CAN1);                                                  //驱动器初始化
-	VelLoopCfg(CAN1,2,16384000,16384000);                              //左电机速度环初始化
-	VelLoopCfg(CAN1,1,16384000,16384000);                              //右电机速度环初始化
-	VelLoopCfg(CAN2,5, 1638400, 1638400);                               //收球电机
-	VelLoopCfg(CAN2,6, 1638400, 1638400);                               //收球电机
+	VelLoopCfg(CAN1,2,32768000,32768000);                              //左电机速度环初始化
+	VelLoopCfg(CAN1,1,32768000,32768000);                              //右电机速度环初始化
+	VelLoopCfg(CAN2,5, 16384000, 16384000);                               //收球电机
+	VelLoopCfg(CAN2,6, 16384000, 16384000);                               //收球电机
 	PosLoopCfg(CAN2,7, 16384000,16384000,20000000);
 	MotorOn(CAN1,1);                                                 //右电机使能
 	MotorOn(CAN1,2);                                                 //左电机使能
@@ -91,14 +91,6 @@ void ConfigTask(void)
 	VelCrl(CAN2,5,60*32768);
 	VelCrl(CAN2,6,0-60*32768);
 	YawPosCtrl(0);
-	
-//	static float error1 = 0;                                         //用激光传感器矫正定位系统偏移
-//	//error1 = ((Get_Adc_Average(15,100) - Get_Adc_Average(14,100))/2)*0.922854f;
-//	error1 = 0;
-//	OS_CPU_SR cpu_sr;
-//	OS_ENTER_CRITICAL();                                             /*互斥访问*/
-//	error = &error1;
-//	OS_EXIT_CRITICAL();
 
 	CmdRecData.TarBucketNum_cmd = 0;
 	CmdRecData.FireFlag_cmd = 1;
@@ -109,7 +101,7 @@ void ConfigTask(void)
 	
 	//距离精度
 	Gundata.Distance_Accuracy = 10.0;
-	Gundata.Yaw_Zero_Offset = -16.0;
+	Gundata.Yaw_Zero_Offset = 0.0;
 	
 	//设定各桶编号及坐标
 	Gundata.Bucket_X[0] = 2200.0;       Gundata.Bucket_Y[0] = 200.0;
@@ -121,8 +113,8 @@ void ConfigTask(void)
 	memset(Gundata.Shooter_Vel_Offset, 0, 8);
 	while(1)
 	{
-		Laser_Right = fort.laserBValueReceive;                         //左ADC
-		Laser_Left = fort.laserAValueReceive;                          //右ADC
+		Laser_Right = fort.laserBValueReceive;                       //左ADC
+		Laser_Left = fort.laserAValueReceive;                        //右ADC
 		if(Laser_Left<100)
 		{
 			OSMboxPost(adc_msg,(void *)Left);                     
@@ -152,57 +144,52 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);                            //等信号量，10ms一次
+		ReadActualPos(CAN2,7);                                       //读取分球电机位置
 		
-//		ReadActualVel(CAN1,1);
-//		ReadActualVel(CAN1,2);
-		ReadActualPos(CAN2,7);
-		
-		GetData(PID_x);
-//		ErrorDisposal(PID_x,Error_x);
-//		PID_Competition(PID_x,direction,Error_x);
-//		GO(PID_x);
+		GetData(PID_x);                                              //读取定位系统信息
+		ErrorDisposal(PID_x,Error_x);                                //错误检测
+		PID_Competition(PID_x,direction,Error_x);                    //走形计算函数
+		GO(PID_x);                                                   //走
 		
 		Gundata.BucketNum = PID_A.target_Num;      //设置目标桶号
 		GunneryData_Operation(&Gundata, PID_x);    //计算射击诸元
-//		YawPosCtrl(Gundata.YawPosAngleSet);        //设置航向角
-//		ShooterVelCtrl(Gundata.ShooterVelSet);     //设置射球转速
-//=================================================================================================================
+		YawPosCtrl(Gundata.YawPosAngleSetAct);        //设置航向角
+		ShooterVelCtrl(Gundata.ShooterVelSetAct);     //设置射球转速
+/*=================================================================================================================
 		//新车激光拟合
 		GetPositionValue(PID_x);      //Get坐标读数
 //		GetLaserData2();               //Get激光读数
 		
-//		SetFortAngle(PID_x,90.f);      /*激光拟合*/
-		RadarCorrection(PID_x);        /*雷达扫描*/
-//		Power_On_Self_Test(PID_x);     /*加电自检*/
+//		SetFortAngle(PID_x,90.f);      //激光拟合
+		RadarCorrection(PID_x);        //雷达扫描
+//		Power_On_Self_Test(PID_x);     //加电自检
 		YawPosCtrl(Set_FortAngle1);    //设定航向角
 		ShooterVelCtrl(5);             //设定射球转速
 
 		//新车发球检测
-				/*
-				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "B","N","m",":",(int)gundata.BucketNum);	
-				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "V","e","l",":",(int)gundata.ShooterVel);	
-				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "S","e","t",":",(int)gundata.ShooterVelSet);		
+			
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "B","N","m",":",(int)gundata.BucketNum);	
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "V","e","l",":",(int)gundata.ShooterVel);	
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "S","e","t",":",(int)gundata.ShooterVelSet);		
 				{+}发球检测函数
-				*/
+			
 				
 				USART_SendData(UART4,'\r');
 				USART_SendData(UART4,'\n');
-//=================================================================================================================		
-/*
+//=================================================================================================================
+*/
+
 //以5 * 10ms为间隔发送数据
 		cntSendTime++;
 		cntSendTime = cntSendTime % 5;
 		if(cntSendTime == 1)
 		{
-			USART_OUT(UART4, (uint8_t*)"YawSet=%d,YawRac=%d,ShoSet=%d,ShoRec=%d,Yaw0=%d,Yaw1=%d,Yaw2=%d,Yaw3=%d,Sho0=%d,Sho1=%d,Sho2=%d,Sho3=%d\r\n",\
-			(int)Gundata.YawPosAngleSet, (int)Gundata.YawPosAngleRec, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelRec,\
-			(int)Gundata.Yaw_Angle_Offset[0], (int)Gundata.Yaw_Angle_Offset[1], (int)Gundata.Yaw_Angle_Offset[2], (int)Gundata.Yaw_Angle_Offset[3],\
-			(int)Gundata.Shooter_Vel_Offset[0], (int)Gundata.Shooter_Vel_Offset[1], (int)Gundata.Shooter_Vel_Offset[2], (int)Gundata.Shooter_Vel_Offset[3]);
-		}	
-
-		if(fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 5.0 && Gundata.ShooterVelSet < 75.0 && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
+			USART_OUT(UART4, (uint8_t*)"YawSet	%d	YawSetAct	%d	YawRec	%d	ShoSet	%d	ShoSetAct	%d	ShoRec	%d\r\n",\
+			(int)Gundata.YawPosAngleSet, (int)Gundata.YawPosAngleSetAct, (int)Gundata.YawPosAngleRec, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec);
+		}
+		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 2.0 && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 2.0 &&  Gundata.ShooterVelSet < 75.0 && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
+		else PID_A.fire_command = 0;
 		shoot(PID_x);
-*/		
-//		UART4_OUT(PID_x);
+		UART4_OUT(PID_x);
 	}
 }

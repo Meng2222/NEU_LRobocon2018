@@ -19,7 +19,7 @@ float Compare(float a1,float b1)                                             //±
 	else return -1.0f;
 }
 
-u8 Max(u8 a1,u8 a2,u8 a3)
+u8 Max(u8 a1,u8 a2,u8 a3)                                                    //±È½Ïº¯Êý
 {
 	u8 max = 0;
 	u8 flag = 0;
@@ -676,39 +676,40 @@ void shoot(PID_Value *p_gun)                                                 //É
 		cnt++;
 		if(cnt == 150)
 		{
-			USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
-			USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
-			USART_OUT(UART4,(uint8_t*)"%d	", (int)ballcolor);
+//			USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
+//			USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
+//			USART_OUT(UART4,(uint8_t*)"%d	", (int)ballcolor);
 			posError = abs(GetMotor7Pos() - pos);
-			if(posError > 700)
+			if(posError > 1000)
 			{
 				PosCrl(CAN2,7,ABSOLUTE_MODE,posLast);
 				pos = posLast;
 				cnt = 0;
-				USART_OUT(UART4,(uint8_t*)"stuck");
-				USART_SendData(UART4,'\r');
-				USART_SendData(UART4,'\n');
+//				USART_OUT(UART4,(uint8_t*)"stuck");
+//				USART_SendData(UART4,'\r');
+//				USART_SendData(UART4,'\n');
 				return;
 			}
 			if(ballcolor == 2)
 			{
-				USART_OUT(UART4,(uint8_t*)"%d	", 2);
+//				USART_OUT(UART4,(uint8_t*)"%d	", 2);
 				posLast = pos;
 				pos += p_gun->push_pos_down;
 				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 			}
 			else if(ballcolor == 0)
 			{
-				USART_OUT(UART4,(uint8_t*)"%d	", 0);
+//				USART_OUT(UART4,(uint8_t*)"%d	", 0);
 				posLast = pos;
 				pos += p_gun->push_pos_down;
 				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 			}
 			else if(ballcolor == 1) {p_gun->fire_request = 1;
-				USART_OUT(UART4,(uint8_t*)"%d	", 1);}
+//				USART_OUT(UART4,(uint8_t*)"%d	", 1);
+				}
 			cnt = 0;
-			USART_SendData(UART4,'\r');
-			USART_SendData(UART4,'\n');
+//			USART_SendData(UART4,'\r');
+//			USART_SendData(UART4,'\n');
 		}
 	}
 }
@@ -863,7 +864,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				PID_Pre(pid);
 				if(pid->l->line_Error > 700)
 				{
-					pid->V = 1200;
+					pid->V -= 25;
+					pid->V = constrain(pid->V,2000,1200);
 					pid->Line_Num = pid->Line_Num_Last;
 					pid->target_Num = pid->Line_Num % 4 + 1;
 					if(pid->target_Num == 4) pid->target_Num = 0;
@@ -1039,7 +1041,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				pid->kp = 15;
 				if(pid->l->line_Error < -700)
 				{
-					pid->V = 1200;
+					pid->V -= 25;
+					pid->V = constrain(pid->V,2000,1200);
 					pid->Line_Num = pid->Line_Num_Last;
 					PID_Control(pid);
 				}

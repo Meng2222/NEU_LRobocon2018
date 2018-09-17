@@ -151,6 +151,11 @@ void GetValueFromFort(uint8_t data)
 * @param  angle：输入的角度值 单位度°
 * @author 陈昕炜
 */
+
+float constrain0(float amt, float high, float low)                            //浮点数限幅函数
+{
+    return ((amt)<(low)?(low):((amt)>(high)?(high):(amt)));
+}
 float Constrain_float_Angle(float angle)
 {
 	if(angle > 180.0)
@@ -174,6 +179,7 @@ float Constrain_float_Angle(float angle)
 * @author 陈昕炜
 * @note   
 */
+PID_Value_Fort PID_YawPos_Angle, PID_Shooter_Vel;
 void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos)
 {
 	//读取炮台航向角和射球电机转速	
@@ -270,8 +276,8 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos)
 						- (int)Gun->YawPosAngleRec % 360) + Gun->YawPosAngleRec;
 	
 	
-//	Gun->YawPosAngleSet = Gun->YawPosAngleSet + YawPos_Angle_PID_Operation(Gun->YawPosAngleSet, Gun->YawPosAngleRec, &PID_YawPos_Angle);
-//	Gun->ShooterVelSet = Gun->ShooterVelSet + Shooter_Vel_PID_Operation(Gun->ShooterVelSet, Gun->ShooterVelRec, &PID_Shooter_Vel);
+	Gun->YawPosAngleSetAct = Gun->YawPosAngleSet + YawPos_Angle_PID_Operation(Gun->YawPosAngleSet, Gun->YawPosAngleRec, &PID_YawPos_Angle);
+	Gun->ShooterVelSetAct = Gun->ShooterVelSet + Shooter_Vel_PID_Operation(Gun->ShooterVelSet, Gun->ShooterVelRec, &PID_Shooter_Vel);
 }
 
 /**
@@ -280,6 +286,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos)
 * @author 陈昕炜
 * @note   用于PID控制
 */
+
 float PID_Operation(PID_Value_Fort *PID)
 {
 	PID->setValue = Constrain_float_Angle(PID->setValue);
@@ -287,8 +294,8 @@ float PID_Operation(PID_Value_Fort *PID)
 	PID->error = PID->setValue - PID->feedbackValue;
 	PID->error = Constrain_float_Angle(PID->error);
 	
-	PID->error_sum = PID->error_sum + PID->error;	
-	PID->error_def = PID->error - PID->error_pre;	
+	PID->error_sum = PID->error_sum + PID->error;
+	PID->error_def = PID->error - PID->error_pre;
 	PID->error_pre = PID->error;
 	
 	PID->output = PID->Kp * PID->error + PID->Ki * PID->error_sum + PID->Kd * PID->error_def;
@@ -305,8 +312,8 @@ float PID_Operation(PID_Value_Fort *PID)
 */
 float YawPos_Angle_PID_Operation(float YawPosAngle_Tar, float YawPosAngle_Rec, PID_Value_Fort *PID)
 {
-	PID->Kp = 1;
-	PID->Ki = 0;
+	PID->Kp = 3;
+	PID->Ki = 0.01;
 	PID->Kd = 0;
 	
 	PID->setValue = YawPosAngle_Tar;
@@ -324,8 +331,8 @@ float YawPos_Angle_PID_Operation(float YawPosAngle_Tar, float YawPosAngle_Rec, P
 */
 float Shooter_Vel_PID_Operation(float Shooter_Vel_Tar, float Shooter_Vel_Rec, PID_Value_Fort *PID)
 {
-	PID->Kp = 1;
-	PID->Ki = 0;
+	PID->Kp = 1.5;
+	PID->Ki = 0.01;
 	PID->Kd = 0;
 	
 	PID->setValue = Shooter_Vel_Tar;
