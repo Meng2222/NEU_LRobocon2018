@@ -39,7 +39,7 @@
   * @retval None
   */
 
-float Kp=180,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Vk=0,errl,lastErr1;
+float Kp=75,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Vk=0,errl,lastErr1;
 extern int R;
 void Straight(float v)
 {
@@ -65,10 +65,10 @@ void AnglePID(float setAngle,float feedbackAngle)
 		err=360+err;
 	Sumi+=Ki*err;
 	Vk=Kp*err+Sumi+Kd*(err-lastErr);
-	if(Vk>1280)
-		Vk=1280;
-	if(Vk<-1280)
-		Vk=-1280;
+	if(Vk>1300)
+		Vk=1300;
+	if(Vk<-1300)
+		Vk=-1300;
 	lastErr=err;																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																									
 }	
 float k,b,lAngle,setAngle,x,y,d;
@@ -174,9 +174,9 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 	if(status==1)
 	{	
 		if(sqrtf(d)>R)
-			setAngle=lAngle+90*(700/(fabs(sqrtf(d)-R)+700));
+			setAngle=lAngle+90*(500/(fabs(sqrtf(d)-R)+500));
 		else
-			setAngle=lAngle+180-90*(700/(fabs(sqrtf(d)-R)+700));
+			setAngle=lAngle+180-90*(500/(fabs(sqrtf(d)-R)+500));
 	}	
 	AnglePID(setAngle,GetAngle());
 	Straight(v);

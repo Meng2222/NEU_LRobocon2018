@@ -69,7 +69,7 @@ void ConfigTask(void)
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float yawAngle=0,T=0.168,v=1500,angle,Distance,antiRad,realR,shootX,shootY,futureX,futureY;
+float yawAngle=0,T=0.12,v=1500,angle,Distance,antiRad,realR,shootX,shootY,futureX,futureY;
 int status=0,throwFlag=0,R=600;
 extern float x,y,Vk;
 extern int time,Cnt,ballColor;
@@ -232,7 +232,7 @@ void WalkTask(void)
 			shootY=futureY+68*cos(GetAngle()*pi/180-antiRad);
 			if(shootX>=600&&shootY>1800)
 			{
-				if(shootY<2600)
+				if(shootY<3000)
 					throwFlag=1;
 				else
 					throwFlag=0;
@@ -248,7 +248,7 @@ void WalkTask(void)
 			}	
 			if(shootX<=600&&shootY>=3000)
 			{
-				if(shootX>-200)
+				if(shootX>-600)
 					throwFlag=1;
 				else
 					throwFlag=0;
@@ -264,7 +264,7 @@ void WalkTask(void)
 			}	
 			if(shootX<-600&&shootY<=3000)
 			{	
-				if(shootY>2200)
+				if(shootY>1600)
 					throwFlag=1;
 				else
 					throwFlag=0;
@@ -280,7 +280,7 @@ void WalkTask(void)
 			}
 			if(shootX>-600&&shootY<1800)
 			{	
-				if(shootX<200)
+				if(shootX<600)
 					throwFlag=1;
 				else
 					throwFlag=0;
@@ -302,18 +302,18 @@ void WalkTask(void)
 		V=-Vx+Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*Vx*Vx)-sqrt(3)*Vx);
 		shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		YawPosCtrl(shootAngle);
-		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574-(v-1000)*0.0035;
+		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3000)*0.0032;
 		if(rps>80)
 			rps=53;
 		ShooterVelCtrl(rps);
 		if(ballColor==0)
 			noBallCount++;	
-		if(noBallCount%31==0)
+		if(noBallCount%46==0)
 		{	
 			pushBallFlag=1;
 		}	
 		//一段时间无球后反转防卡球
-//		if(noBallCount>=110)
+//		if(noBallCount>=220)
 //		{	
 //			PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION/2);	
 //			noBallCount=0;
@@ -346,6 +346,6 @@ void WalkTask(void)
 //			haveShootedFlag=1;
 		lastRps=ReadRps();
 		ReadActualVel(CAN1,2);
-		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t\r\n",(int)GetX(),(int)GetY(),ballColor,(int)rps,(int)(-Vk),(int)(frontwheelspeedBuffer.data32[1]/(CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO)*(pi*TURN_AROUND_WHEEL_DIAMETER)));
+		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t\r\n",(int)GetX(),(int)GetY(),ballColor,(int)count,(int)(-Vk),(int)(frontwheelspeedBuffer.data32[1]/(CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO)*(pi*TURN_AROUND_WHEEL_DIAMETER)));
 	}
 }
