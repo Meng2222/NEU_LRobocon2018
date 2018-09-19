@@ -2,7 +2,7 @@
 #include "fort.h"
 u8 GetBallColor(void);
 extern FortType fort;
-extern GunneryData gundata;
+extern GunneryData Gundata;
 extern u8 ballcolor;
 Line_Value Line_N[34];
 Arc_Value Arc_N[12];
@@ -674,13 +674,13 @@ void shoot(PID_Value *p_gun)                                                 //É
 	else
 	{
 		cnt++;
-		if(cnt == 150)
+		if(cnt == 200)
 		{
 			USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 			USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
 			USART_OUT(UART4,(uint8_t*)"%d	", (int)ballcolor);
 			posError = abs(GetMotor7Pos() - pos);
-			if(posError > 1000)
+			if(posError > 1500)
 			{
 				PosCrl(CAN2,7,ABSOLUTE_MODE,posLast);
 				pos = posLast;
@@ -738,8 +738,8 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.YawPos);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.YawPosTarActAngle);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVel);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVelSet);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)Gundata.ShooterVelRec);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)Gundata.ShooterVelSet);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.CarVel_X);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.CarVel_Y);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterTime);
