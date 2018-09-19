@@ -1477,3 +1477,198 @@ int line_order4[36] = {19,22,29,32,31,30,25,28,27,26,21,24,27,30,29,32,31,30,29,
 		USART_SendData(UART4,'\n');
 		{+}发球检测函数
 		*/
+		
+		
+		//	/*Smith Predictor*/
+//	//初始化
+//	static float timeDelayAngle = 15;
+//	static float timeDelayVel = 15;
+//	static float x_preAngle = 0;
+//	static float y_preAngle = 0;
+//	static float x_preVel = 0;
+//	static float y_preVel = 0;
+//	static float shooterVelSetLast = 0;
+//	static float yawPosAngleSetLast = 0;
+//	static float shooterVelRecLast = 0;
+//	static float yawPosAngleRecLast = 0;
+//	static float tanAngle = 0;
+//	static float tanVel = 0;
+//	//反馈补偿
+////	if(fabs(Gun->YawPosAngleSet - Gun->YawPosAngleRec) < 10 &&\
+////		(((Gun->YawPosAngleRec - yawPosAngleRecLast) / (Gun->YawPosAngleSet - yawPosAngleSetLast)) > 0.5) &&\
+////		(((Gun->YawPosAngleRec - yawPosAngleRecLast) / (Gun->YawPosAngleSet - yawPosAngleSetLast)) < 2))
+////	{
+////		tanAngle = Gun->YawPosAngleRec - yawPosAngleRecLast;
+////		timeDelayAngle += (Gun->YawPosAngleSet - Gun->YawPosAngleRec) / (tanAngle);
+////		timeDelayAngle = constrain0(timeDelayAngle,20,20);
+////	}
+////	if(fabs(Gun->ShooterVelSet - Gun->ShooterVelRec) < 10 &&\
+////		(((Gun->ShooterVelRec - shooterVelRecLast) / (Gun->ShooterVelRec - shooterVelSetLast)) > 0.5) &&\
+////		(((Gun->ShooterVelRec - shooterVelRecLast) / (Gun->ShooterVelRec - shooterVelSetLast)) < 2))
+////	{
+////		tanVel = Gun->ShooterVelRec - shooterVelRecLast;
+////		timeDelayVel += (Gun->ShooterVelSet - Gun->ShooterVelRec) / (tanVel);
+////		timeDelayVel = constrain0(timeDelayVel,20,20);
+////	}
+//	//坐标预估
+//	x_preAngle = timeDelayAngle * Pos->X_Speed / 100.f;
+//	y_preAngle = timeDelayAngle * Pos->Y_Speed / 100.f;
+//	x_preVel = timeDelayVel * Pos->X_Speed / 100.f;
+//	y_preVel = timeDelayVel * Pos->Y_Speed / 100.f;
+//	//桶号预估
+//	
+//	//记录本次数值
+//	USART_OUT(UART4, (uint8_t*)"tDAngle	%d	tDVel	%d	x_pA	%d	y_pA	%d	x_pV	%d	y_pV	%d	shooterVelSetLast	%d	yawPosAngleSetLast	%d	shooterVelRecLast	%d	yawPosAngleRecLast	%d	tanAngle	%d		tanVel	%d	",\
+//	(int)timeDelayAngle,(int)timeDelayVel,(int)x_preAngle,(int)y_preAngle,(int)x_preVel,(int)y_preVel,(int)shooterVelSetLast,(int)yawPosAngleSetLast,(int)shooterVelRecLast,(int)yawPosAngleRecLast,(int)tanAngle,(int)tanVel);
+
+//	shooterVelSetLast = Gun->ShooterVelSet;
+//	yawPosAngleSetLast = Gun->YawPosAngleSet;
+//	shooterVelRecLast = Gun->ShooterVelRec;
+//	yawPosAngleRecLast = Gun->YawPosAngleRec;
+//	/*end of Smith Predictor*/
+//	
+//	
+//	//炮台坐标系补偿
+//	Gun->Fort_X = Pos->X + x_preAngle - (FORT_TO_BACK_WHEEL) * sin(Pos->Angle * Pi / 180.0);
+//	Gun->Fort_X = constrain0(Gun->Fort_X,2200,-2200);
+//	Gun->Fort_Y = Pos->Y + y_preAngle + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0);
+//	Gun->Fort_Y = constrain0(Gun->Fort_Y,4600,200);
+//	Gun->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive + Gun->Yaw_Zero_Offset);
+//	
+//	//初始化目标桶到炮台坐标的横纵轴距离和距离值
+//	Gun->Distance_Fort_X = Gun->Bucket_X[Gun->BucketNum] - Gun->Fort_X;
+//	Gun->Distance_Fort_Y = Gun->Bucket_Y[Gun->BucketNum] - Gun->Fort_Y;
+//	Gun->Distance_Fort = sqrt(Gun->Distance_Fort_X * Gun->Distance_Fort_X + Gun->Distance_Fort_Y * Gun->Distance_Fort_Y);
+//	
+//	//初始化车移动的横纵轴距离
+//	Gun->Distance_Car_X = 0;
+//	Gun->Distance_Car_Y = 0;
+//	
+//	//初始化射球实际移动的横纵轴距离为炮台到目标点的横纵轴距离
+//	Gun->Distance_Shoot_X = Gun->Distance_Fort_X;
+//	Gun->Distance_Shoot_Y = Gun->Distance_Fort_Y;
+//	
+//	//初始化迭代计算次数
+//	Gun->cntIteration = 0;
+//	
+//	//全方位全向速度补偿迭代
+//	do
+//	{
+//		//迭代次数计数
+//		Gun->cntIteration++;
+//		
+//		//计算射球实际移动的横纵轴距离和距离
+//		Gun->Distance_Shoot_X = Gun->Distance_Fort_X - Gun->Distance_Car_X;
+//		Gun->Distance_Shoot_Y = Gun->Distance_Fort_Y - Gun->Distance_Car_Y;
+//		Gun->Distance_Shoot = sqrt(Gun->Distance_Shoot_X * Gun->Distance_Shoot_X + Gun->Distance_Shoot_Y * Gun->Distance_Shoot_Y);
+//		
+//		//计算射球水平速度和飞行时间
+//		Gun->ShooterVelSet_H = sqrt((Gun->Distance_Shoot * Gun->Distance_Shoot * G) / (2.0 * (Gun->Distance_Shoot * tan(FORT_ELEVATION_RAD) - FORT_TO_BUCKET_HEIGHT)));
+//		Gun->ShooterTime = Gun->Distance_Shoot / Gun->ShooterVelSet_H;
+//		
+//		//计算射球飞行时间中车移动的横轴轴距离和距离
+//		Gun->Distance_Car_X = Pos->X_Speed * Gun->ShooterTime;
+//		Gun->Distance_Car_Y = Pos->Y_Speed * Gun->ShooterTime;
+//		Gun->Distance_Car = sqrt(Gun->Distance_Car_X * Gun->Distance_Car_X + Gun->Distance_Car_Y * Gun->Distance_Car_Y);
+//		
+//		//计算当前计算值与目标桶的在横轴轴上偏差值
+//		//射球飞行时间中车移动的距离 + 射球实际移动距离 - 炮台到目标点的距离
+//		Gun->Distance_Deviation_X = fabs(Gun->Distance_Shoot_X + Gun->Distance_Car_X - Gun->Distance_Fort_X);
+//		Gun->Distance_Deviation_Y = fabs(Gun->Distance_Shoot_Y + Gun->Distance_Car_Y - Gun->Distance_Fort_Y);
+//	}
+//	//当差值大于精度要求时，继续迭代
+//	while((Gun->Distance_Deviation_X > Gun->Distance_Accuracy) || (Gun->Distance_Deviation_Y > Gun->Distance_Accuracy));
+//	
+//    //根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
+//	
+//	//计算炮台偏向角 = arctan(射球实际移动的横轴距离 / 射球实际移动的纵轴距离)
+//	Gun->YawPosAngleTar = atan(Gun->Distance_Shoot_X / Gun->Distance_Shoot_Y) * 180.0 / Pi;
+//	Gun->No_Offset_Angle = atan(Gun->Distance_Fort_X / Gun->Distance_Fort_Y) * 180.0 / Pi;
+//	
+//	//将炮台航向角转化为与定位系统坐标系角度一致	
+//	switch(Gun->BucketNum)
+//	{
+//		case 0:
+//			Gun->YawPosAngleTar = -180.0 - Gun->YawPosAngleTar;
+//			Gun->No_Offset_Angle = -180.0 - Gun->No_Offset_Angle;
+//			break;
+//		case 1:
+//			Gun->YawPosAngleTar = Gun->YawPosAngleTar * -1.0;
+//			Gun->No_Offset_Angle = Gun->No_Offset_Angle * -1.0;
+//			break;		
+//		case 2:
+//			Gun->YawPosAngleTar = Gun->YawPosAngleTar * -1.0;
+//			Gun->No_Offset_Angle = Gun->No_Offset_Angle * -1.0;
+//			break;		
+//		case 3:
+//			Gun->YawPosAngleTar = 180.0 - Gun->YawPosAngleTar;
+//			Gun->No_Offset_Angle = 180.0 - Gun->No_Offset_Angle;
+//			break;
+//	}
+//	
+//	//计算炮台航向角实际值
+//	Gun->YawPosAngleSetAct = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Gun->YawPosAngleTar + Gun->Yaw_Angle_Offset[Gun->BucketNum + Gun->Square_Mode * 4] + Gun->Yaw_Zero_Offset)\
+//							- (int)Gun->YawPosAngleRec % 360) + Gun->YawPosAngleRec;
+//	
+//	
+//	
+//	//炮台坐标系补偿
+//	Gun->Fort_X = Pos->X + x_preVel + x_preAngle - (FORT_TO_BACK_WHEEL) * sin(Pos->Angle * Pi / 180.0);
+//	Gun->Fort_X = constrain0(Gun->Fort_X,2200,-2200);
+//	Gun->Fort_Y = Pos->Y + y_preVel + y_preAngle + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0);
+//	Gun->Fort_Y = constrain0(Gun->Fort_Y,4600,200);
+//	Gun->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive + Gun->Yaw_Zero_Offset);
+//	
+//	//初始化目标桶到炮台坐标的横纵轴距离和距离值
+//	Gun->Distance_Fort_X = Gun->Bucket_X[Gun->BucketNum] - Gun->Fort_X;
+//	Gun->Distance_Fort_Y = Gun->Bucket_Y[Gun->BucketNum] - Gun->Fort_Y;
+//	Gun->Distance_Fort = sqrt(Gun->Distance_Fort_X * Gun->Distance_Fort_X + Gun->Distance_Fort_Y * Gun->Distance_Fort_Y);
+//	
+//	//初始化车移动的横纵轴距离
+//	Gun->Distance_Car_X = 0;
+//	Gun->Distance_Car_Y = 0;
+//	
+//	//初始化射球实际移动的横纵轴距离为炮台到目标点的横纵轴距离
+//	Gun->Distance_Shoot_X = Gun->Distance_Fort_X;
+//	Gun->Distance_Shoot_Y = Gun->Distance_Fort_Y;
+//	
+//	//初始化迭代计算次数
+//	Gun->cntIteration = 0;
+//	
+//	//全方位全向速度补偿迭代
+//	do
+//	{
+//		//迭代次数计数
+//		Gun->cntIteration++;
+//		
+//		//计算射球实际移动的横纵轴距离和距离
+//		Gun->Distance_Shoot_X = Gun->Distance_Fort_X - Gun->Distance_Car_X;
+//		Gun->Distance_Shoot_Y = Gun->Distance_Fort_Y - Gun->Distance_Car_Y;
+//		Gun->Distance_Shoot = sqrt(Gun->Distance_Shoot_X * Gun->Distance_Shoot_X + Gun->Distance_Shoot_Y * Gun->Distance_Shoot_Y);
+//		
+//		//计算射球水平速度和飞行时间
+//		Gun->ShooterVelSet_H = sqrt((Gun->Distance_Shoot * Gun->Distance_Shoot * G) / (2.0 * (Gun->Distance_Shoot * tan(FORT_ELEVATION_RAD) - FORT_TO_BUCKET_HEIGHT)));
+//		Gun->ShooterTime = Gun->Distance_Shoot / Gun->ShooterVelSet_H;
+//		
+//		//计算射球飞行时间中车移动的横轴轴距离和距离
+//		Gun->Distance_Car_X = Pos->X_Speed * Gun->ShooterTime;
+//		Gun->Distance_Car_Y = Pos->Y_Speed * Gun->ShooterTime;
+//		Gun->Distance_Car = sqrt(Gun->Distance_Car_X * Gun->Distance_Car_X + Gun->Distance_Car_Y * Gun->Distance_Car_Y);
+//		
+//		//计算当前计算值与目标桶的在横轴轴上偏差值
+//		//射球飞行时间中车移动的距离 + 射球实际移动距离 - 炮台到目标点的距离
+//		Gun->Distance_Deviation_X = fabs(Gun->Distance_Shoot_X + Gun->Distance_Car_X - Gun->Distance_Fort_X);
+//		Gun->Distance_Deviation_Y = fabs(Gun->Distance_Shoot_Y + Gun->Distance_Car_Y - Gun->Distance_Fort_Y);
+//	}
+//	//当差值大于精度要求时，继续迭代
+//	while((Gun->Distance_Deviation_X > Gun->Distance_Accuracy) || (Gun->Distance_Deviation_Y > Gun->Distance_Accuracy));
+//	
+//    //根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
+//	Gun->ShooterVelSetAct = 0.0133 * Gun->Distance_Shoot + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+//	
+//	//计算炮台偏向角 = arctan(射球实际移动的横轴距离 / 射球实际移动的纵轴距离)
+//	
+//	//将炮台航向角转化为与定位系统坐标系角度一致	
+//	
+//	//计算炮台航向角实际值
+//	

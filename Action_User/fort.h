@@ -107,7 +107,7 @@ void ReadLaserAValue(void);
 void ReadLaserBValue(void);
 void GetValueFromFort(uint8_t data);
 
-void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos);
+void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos);
 float YawPos_Angle_PID_Operation(float YawPosAngle_Tar, float YawPosAngle_Rec, PID_Value_Fort *PID);
 float Shooter_Vel_PID_Operation(float Shooter_Vel_Tar, float Shooter_Vel_Rec, PID_Value_Fort *PID);
 float PID_Operation(PID_Value_Fort *PID);

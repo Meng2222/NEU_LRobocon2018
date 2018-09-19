@@ -180,9 +180,9 @@ float Constrain_float_Angle(float angle)
 * @note   
 */
 PID_Value_Fort PID_YawPos_Angle, PID_Shooter_Vel;
-void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos)
+void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 {
-	//读取炮台航向角和射球电机转速	
+	//读取炮台航向角和射球电机转速
 	Gun->YawPosAngleRec = fort.yawPosReceive;
 	Gun->ShooterVelRec = fort.shooterVelReceive;
 	
@@ -193,9 +193,13 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos)
 	Gun->Distance_LaserA = 2.5114 * fort.laserAValueReceive + 51.623;
 	Gun->Distance_LaserB = 2.4269 * fort.laserBValueReceive + 371.39;
 	
+	
+	/*feedback*/
 	//炮台坐标系补偿
 	Gun->Fort_X = Pos->X - (FORT_TO_BACK_WHEEL) * sin(Pos->Angle * Pi / 180.0);
+	Gun->Fort_X = constrain0(Gun->Fort_X,2200,-2200);
 	Gun->Fort_Y = Pos->Y + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0);
+	Gun->Fort_Y = constrain0(Gun->Fort_Y,4600,200);
 	Gun->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive + Gun->Yaw_Zero_Offset);
 	
 	//初始化目标桶到炮台坐标的横纵轴距离和距离值
@@ -230,10 +234,10 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos)
 		Gun->ShooterTime = Gun->Distance_Shoot / Gun->ShooterVelSet_H;
 		
 		//计算射球飞行时间中车移动的横轴轴距离和距离
-		Gun->Distance_Car_X = Pos->X_Speed * Gun->ShooterTime;		
+		Gun->Distance_Car_X = Pos->X_Speed * Gun->ShooterTime;
 		Gun->Distance_Car_Y = Pos->Y_Speed * Gun->ShooterTime;
 		Gun->Distance_Car = sqrt(Gun->Distance_Car_X * Gun->Distance_Car_X + Gun->Distance_Car_Y * Gun->Distance_Car_Y);
-
+		
 		//计算当前计算值与目标桶的在横轴轴上偏差值
 		//射球飞行时间中车移动的距离 + 射球实际移动距离 - 炮台到目标点的距离
 		Gun->Distance_Deviation_X = fabs(Gun->Distance_Shoot_X + Gun->Distance_Car_X - Gun->Distance_Fort_X);
@@ -276,8 +280,9 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos)
 						- (int)Gun->YawPosAngleRec % 360) + Gun->YawPosAngleRec;
 	
 	
-	Gun->YawPosAngleSetAct = Gun->YawPosAngleSet + YawPos_Angle_PID_Operation(Gun->YawPosAngleSet, Gun->YawPosAngleRec, &PID_YawPos_Angle);
-	Gun->ShooterVelSetAct = Gun->ShooterVelSet + Shooter_Vel_PID_Operation(Gun->ShooterVelSet, Gun->ShooterVelRec, &PID_Shooter_Vel);
+	/*ZYJ Predictor*/
+	
+
 }
 
 /**

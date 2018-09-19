@@ -108,7 +108,7 @@ void ConfigTask(void)
 	Gundata.Bucket_X[1] = 2200.0;       Gundata.Bucket_Y[1] = 4600.0;
 	Gundata.Bucket_X[2] = -2200.0;      Gundata.Bucket_Y[2] = 4600.0;
 	Gundata.Bucket_X[3] = -2200.0;      Gundata.Bucket_Y[3] = 200.0;
-
+	
 	memset(Gundata.Yaw_Angle_Offset, 0, 8);
 	memset(Gundata.Shooter_Vel_Offset, 0, 8);
 	while(1)
@@ -167,29 +167,31 @@ void WalkTask(void)
 		ShooterVelCtrl(5);             //设定射球转速
 
 		//新车发球检测
-			
+
 //				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "B","N","m",":",(int)gundata.BucketNum);	
 //				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "V","e","l",":",(int)gundata.ShooterVel);	
 //				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%d	", "S","e","t",":",(int)gundata.ShooterVelSet);		
 				{+}发球检测函数
-			
 				
-				USART_SendData(UART4,'\r');
+				
+				USART_SendData(UART4,'\r');         
 				USART_SendData(UART4,'\n');
 //=================================================================================================================
 */
 
 //以5 * 10ms为间隔发送数据
 		cntSendTime++;
-		cntSendTime = cntSendTime % 5;
-		if(cntSendTime == 1)
+		cntSendTime = cntSendTime % 1;
+		if(cntSendTime == 0)
 		{
-			USART_OUT(UART4, (uint8_t*)"YawSet	%d	YawSetAct	%d	YawRec	%d	ShoSet	%d	ShoSetAct	%d	ShoRec	%d\r\n",\
-			(int)Gundata.YawPosAngleSet, (int)Gundata.YawPosAngleSetAct, (int)Gundata.YawPosAngleRec, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec);
+			USART_OUT(UART4, (uint8_t*)"YawSet	%d	YawAct	%d	YawRec	%d	VelSet	%d	VelAct	%d	VelRec	%d	",\
+			(int)Gundata.YawPosAngleSet,(int)Gundata.YawPosAngleSetAct, (int)Gundata.YawPosAngleRec, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec);
 		}
 		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 2.0 && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 2.0 &&  Gundata.ShooterVelSet < 75.0 && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
 		else PID_A.fire_command = 0;
 		shoot(PID_x);
-		UART4_OUT(PID_x);
+		USART_SendData(UART4,'\r');
+		USART_SendData(UART4,'\n');
+//		UART4_OUT(PID_x);
 	}
 }

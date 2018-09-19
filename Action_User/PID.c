@@ -676,36 +676,36 @@ void shoot(PID_Value *p_gun)                                                 //É
 		cnt++;
 		if(cnt == 150)
 		{
-//			USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
-//			USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
-//			USART_OUT(UART4,(uint8_t*)"%d	", (int)ballcolor);
+			USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
+			USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
+			USART_OUT(UART4,(uint8_t*)"%d	", (int)ballcolor);
 			posError = abs(GetMotor7Pos() - pos);
 			if(posError > 1000)
 			{
 				PosCrl(CAN2,7,ABSOLUTE_MODE,posLast);
 				pos = posLast;
 				cnt = 0;
-//				USART_OUT(UART4,(uint8_t*)"stuck");
+				USART_OUT(UART4,(uint8_t*)"stuck");
 //				USART_SendData(UART4,'\r');
 //				USART_SendData(UART4,'\n');
 				return;
 			}
 			if(ballcolor == 2)
 			{
-//				USART_OUT(UART4,(uint8_t*)"%d	", 2);
+				USART_OUT(UART4,(uint8_t*)"%d	", 2);
 				posLast = pos;
 				pos += p_gun->push_pos_down;
 				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 			}
 			else if(ballcolor == 0)
 			{
-//				USART_OUT(UART4,(uint8_t*)"%d	", 0);
+				USART_OUT(UART4,(uint8_t*)"%d	", 0);
 				posLast = pos;
 				pos += p_gun->push_pos_down;
 				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 			}
 			else if(ballcolor == 1) {p_gun->fire_request = 1;
-//				USART_OUT(UART4,(uint8_t*)"%d	", 1);
+				USART_OUT(UART4,(uint8_t*)"%d	", 1);
 				}
 			cnt = 0;
 //			USART_SendData(UART4,'\r');
@@ -862,7 +862,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				pid->kp = 15;
 				pid->Line_Num = pid->Line_Num_Next;
 				PID_Pre(pid);
-				if(pid->l->line_Error > 700)
+				if(pid->l->line_Error > 800)
 				{
 					pid->V -= 25;
 					pid->V = constrain(pid->V,2000,1200);
@@ -1039,7 +1039,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				if(pid->target_Num == -1) pid->target_Num = 3;
 				PID_Pre(pid);
 				pid->kp = 15;
-				if(pid->l->line_Error < -700)
+				if(pid->l->line_Error < -800)
 				{
 					pid->V -= 25;
 					pid->V = constrain(pid->V,2000,1200);
