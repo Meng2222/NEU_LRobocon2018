@@ -264,7 +264,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 		case 1:
 			Gun->YawPosAngleTar = Gun->YawPosAngleTar * -1.0;
 			Gun->No_Offset_Angle = Gun->No_Offset_Angle * -1.0;
-			break;		
+			break;
 		case 2:
 			Gun->YawPosAngleTar = Gun->YawPosAngleTar * -1.0;
 			Gun->No_Offset_Angle = Gun->No_Offset_Angle * -1.0;
@@ -281,8 +281,12 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	
 	
 	/*ZYJ Predictor*/
-	
-
+	Gun->YawPosAngleSetAct = Gun->YawPosAngleSet + fabs(sqrt(Pos->X_Speed * Pos->X_Speed + Pos->Y_Speed * Pos->Y_Speed) / 100.f);
+	Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSetAct,80,0);
+	if(Gun->YawPosAngleSetAct > 79) Gun->YawPosAngleSetAct = 0;
+	Gun->ShooterVelSetAct = Gun->ShooterVelSet - fabs(sqrt(Pos->X_Speed * Pos->X_Speed + Pos->Y_Speed * Pos->Y_Speed) / 500.f);
+	Gun->ShooterVelSetAct = constrain0(Gun->ShooterVelSetAct,90,50);
+	if(Gun->ShooterVelSetAct < 54) Gun->ShooterVelSetAct = 80;
 }
 
 /**
@@ -304,8 +308,7 @@ float PID_Operation(PID_Value_Fort *PID)
 	PID->error_pre = PID->error;
 	
 	PID->output = PID->Kp * PID->error + PID->Ki * PID->error_sum + PID->Kd * PID->error_def;
-	return PID->output;
-}
+	return PID->output;}
 
 /**
 * @brief  航向电机位置闭环

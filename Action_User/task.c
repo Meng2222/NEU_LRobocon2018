@@ -151,6 +151,7 @@ void WalkTask(void)
 		PID_Competition(PID_x,direction,Error_x);                    //走形计算函数
 		GO(PID_x);                                                   //走
 		
+		GetData(PID_x);                                              //读取定位系统信息
 		Gundata.BucketNum = PID_A.target_Num;      //设置目标桶号
 		GunneryData_Operation(&Gundata, PID_x);    //计算射击诸元
 		YawPosCtrl(Gundata.YawPosAngleSetAct);        //设置航向角
@@ -187,7 +188,7 @@ void WalkTask(void)
 			USART_OUT(UART4, (uint8_t*)"YawSet	%d	YawAct	%d	YawRec	%d	VelSet	%d	VelAct	%d	VelRec	%d	",\
 			(int)Gundata.YawPosAngleSet,(int)Gundata.YawPosAngleSetAct, (int)Gundata.YawPosAngleRec, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec);
 		}
-		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 2.0 && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 2.0 &&  Gundata.ShooterVelSet < 75.0 && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
+		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 2.0 && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 2.0 &&  Gundata.ShooterVelSet < 85.0 && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
 		else PID_A.fire_command = 0;
 		shoot(PID_x);
 		USART_SendData(UART4,'\r');
