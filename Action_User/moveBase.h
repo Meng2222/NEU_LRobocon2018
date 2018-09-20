@@ -54,7 +54,7 @@
 //两个轮子中心距离（单位：mm）
 #define WHEEL_TREAD (434.0f)
 
-#define Pi 3.141592
+#define Pi 3.141592f
 
 //后轮电机的CAN ID号
 #define BACK_WHEEL_ID             5

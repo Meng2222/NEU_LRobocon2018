@@ -30,6 +30,7 @@ typedef struct
 	int BucketNum;                  //目标桶号
 	int cntIteration;               //迭代次数
 	int Square_Mode;
+	int BucketQuadrant;
 	
 	float Fort_X;                   //炮台横坐标                          单位mm
 	float Fort_Y;                   //炮台纵坐标                          单位mm

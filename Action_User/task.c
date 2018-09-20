@@ -189,7 +189,7 @@ void WalkTask(void)
 			USART_OUT(UART4, (uint8_t*)"YawSet	%d	YawAct	%d	YawRec	%d	VelSet	%d	VelAct	%d	VelRec	%d	",\
 			(int)Gundata.YawPosAngleSet,(int)Gundata.YawPosAngleSetAct, (int)Gundata.YawPosAngleRec, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec);
 		}
-		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 2.0 && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 2.0 &&  Gundata.ShooterVelSet < 85.0 && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
+		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 2.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 2.0f &&  Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
 		else PID_A.fire_command = 0;
 		shoot(PID_x);
 		USART_SendData(UART4,'\r');
