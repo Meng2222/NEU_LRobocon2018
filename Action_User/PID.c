@@ -716,15 +716,15 @@ void shoot(PID_Value *p_gun)                                                 //É
 
 void UART4_OUT(PID_Value *pid_out)                                           //´®¿ÚÊä³öº¯Êý
 {
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Line_Num);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)(sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())));
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)fort.shooterVelReceive);
@@ -738,8 +738,8 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetShooterVelCommand());
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.YawPos);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.YawPosTarActAngle);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)Gundata.ShooterVelRec);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)Gundata.ShooterVelSet);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)Gundata.ShooterVelRec);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)Gundata.ShooterVelSet);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.CarVel_X);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.CarVel_Y);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterTime);
@@ -747,8 +747,8 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVelSet);		
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.Angle_Deviation);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.cntIteration);
-//	USART_SendData(UART4,'\r');
-//	USART_SendData(UART4,'\n');
+	USART_SendData(UART4,'\r');
+	USART_SendData(UART4,'\n');
 }
 void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //ÐÂ°æ×ßÏß
 {
@@ -794,14 +794,13 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					if(pid->l->line_Priority == 0) break;
 				}
 				PID_Pre(pid);
-				if(pid->l->line_Error>1600)
+				if(pid->l->line_Error>1300)
 				{
 					pid->Line_Num = pid->Line_Num_Last;
-					pid->V += 25;
-					if(pid->Line_Num < 8) pid->V = constrain(pid->V,2000,1200);
-					else pid->V = constrain(pid->V,2000,1200);
+					pid->V += 10;
+					pid->V = constrain(pid->V,1800,1200);
 				}
-				else if(pid->l->line_Error<=1600)
+				else if(pid->l->line_Error<=1300)
 				{
 					pid->corner = 1;
 					pid->Line_Num_Next = pid->Line_Num;
@@ -828,7 +827,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				if(timeCnt < 150)
 				{
 					pid->Angle += 180;
-					pid->kp = 3;
+					pid->kp = 5;
 					PID_Control(pid);
 					pid->V = -1200;
 				}
@@ -861,24 +860,20 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			{
 				pid->kp = 15;
 				pid->Line_Num = pid->Line_Num_Next;
+				pid->target_Num = pid->Line_Num % 4 + 1;
+				if(pid->target_Num == 4) pid->target_Num = 0;
 				PID_Pre(pid);
 				if(pid->l->line_Error > 800)
 				{
-					pid->V -= 25;
-					pid->V = constrain(pid->V,2000,1200);
+					pid->V = 1200;
 					pid->Line_Num = pid->Line_Num_Last;
-					pid->target_Num = pid->Line_Num % 4 + 1;
-					if(pid->target_Num == 4) pid->target_Num = 0;
 					PID_Control(pid);
 				}
 				else
 				{
 					pid->Line_Num = pid->Line_Num_Next;
-					pid->target_Num = pid->Line_Num % 4 + 1;
-					if(pid->target_Num == 4) pid->target_Num = 0;
 					PID_Control(pid);
-					pid->V += 0;
-					if(ABS(pid->Error) < 8)
+					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
 					}
@@ -893,7 +888,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				if(timeCnt < 150)
 				{
 					pid->Angle += 180;
-					pid->kp = 3;
+					pid->kp = 5;
 					PID_Control(pid);
 					pid->V = -1200;
 				}
@@ -954,14 +949,14 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					}
 				}
 				PID_Pre(pid);
-				if(pid->l->line_Error <-1600)
+				if(pid->l->line_Error <-1300)
 				{
 					pid->Line_Num = pid->Line_Num_Last;
-					pid->V += 25;
-					if(pid->Line_Num < 25) pid->V = constrain(pid->V,2000,1200);
-					else pid->V = constrain(pid->V,2000,1200);
+					pid->V += 10;
+					if(pid->Line_Num < 25) pid->V = constrain(pid->V,1800,1200);
+					else pid->V = constrain(pid->V,1800,1200);
 				}
-				else if(pid->l->line_Error>=-1600)
+				else if(pid->l->line_Error>=-1300)
 				{
 					pid->corner = 1;
 					pid->Line_Num_Next = pid->Line_Num;
@@ -1003,7 +998,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				if(timeCnt < 150)
 				{
 					pid->Angle += 180;
-					pid->kp = 3;
+					pid->kp = 5;
 					PID_Control(pid);
 					pid->V = -1200;
 				}
@@ -1041,19 +1036,15 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				pid->kp = 15;
 				if(pid->l->line_Error < -800)
 				{
-					pid->V -= 25;
-					pid->V = constrain(pid->V,2000,1200);
+					pid->V = 1200;
 					pid->Line_Num = pid->Line_Num_Last;
 					PID_Control(pid);
 				}
 				else
 				{
 					pid->Line_Num = pid->Line_Num_Next;
-					pid->target_Num = pid->Line_Num % 4 - 1;
-					if(pid->target_Num == -1) pid->target_Num = 3;
 					PID_Control(pid);
-					pid->V += 0;
-					if(ABS(pid->Error) < 8)
+					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
 					}
@@ -1068,7 +1059,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				if(timeCnt < 150)
 				{
 					pid->Angle += 180;
-					pid->kp = 3;
+					pid->kp = 5;
 					PID_Control(pid);
 					pid->V = -1200;
 				}
