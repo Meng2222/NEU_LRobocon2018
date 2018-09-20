@@ -234,8 +234,8 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 		Gun->ShooterTime = Gun->Distance_Shoot / Gun->ShooterVelSet_H;
 		
 		//计算射球飞行时间中车移动的横轴轴距离和距离
-		Gun->Distance_Car_X = Pos->X_Speed * Gun->ShooterTime;
-		Gun->Distance_Car_Y = Pos->Y_Speed * Gun->ShooterTime;
+		Gun->Distance_Car_X = Pos->X_Speed * Gun->ShooterTime * 0.5;
+		Gun->Distance_Car_Y = Pos->Y_Speed * Gun->ShooterTime * 0.5;
 		Gun->Distance_Car = sqrt(Gun->Distance_Car_X * Gun->Distance_Car_X + Gun->Distance_Car_Y * Gun->Distance_Car_Y);
 		
 		//计算当前计算值与目标桶的在横轴轴上偏差值
@@ -247,8 +247,10 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	while((Gun->Distance_Deviation_X > Gun->Distance_Accuracy) || (Gun->Distance_Deviation_Y > Gun->Distance_Accuracy));
 	
     //根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
-	Gun->ShooterVelSet = 0.0133 * Gun->Distance_Shoot + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
-	Gun->No_Offset_ShooterVel = 0.0133 * Gun->Distance_Fort + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+//	Gun->ShooterVelSet = 0.0133 * Gun->Distance_Shoot + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+//	Gun->No_Offset_ShooterVel = 0.0133 * Gun->Distance_Fort + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+	Gun->ShooterVelSet = 0.0123 * Gun->Distance_Shoot + 35.224 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+	Gun->No_Offset_ShooterVel = 0.0123 * Gun->Distance_Fort + 35.224 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
 	
 	//计算炮台偏向角 = arctan(射球实际移动的横轴距离 / 射球实际移动的纵轴距离)
 	Gun->YawPosAngleTar = atan(Gun->Distance_Shoot_X / Gun->Distance_Shoot_Y) * 180.0 / Pi;
@@ -284,7 +286,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	Gun->YawPosAngleSetAct = Gun->YawPosAngleSet + fabs(sqrt(Pos->X_Speed * Pos->X_Speed + Pos->Y_Speed * Pos->Y_Speed) / 100.f);
 	Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSetAct,80,0);
 	if(Gun->YawPosAngleSetAct > 79) Gun->YawPosAngleSetAct = 0;
-	Gun->ShooterVelSetAct = Gun->ShooterVelSet - fabs(sqrt(Pos->X_Speed * Pos->X_Speed + Pos->Y_Speed * Pos->Y_Speed) / 500.f);
+	Gun->ShooterVelSetAct = Gun->ShooterVelSet - fabs(sqrt(Pos->X_Speed * Pos->X_Speed + Pos->Y_Speed * Pos->Y_Speed) / 400.f);
 	Gun->ShooterVelSetAct = constrain0(Gun->ShooterVelSetAct,90,50);
 	if(Gun->ShooterVelSetAct < 54) Gun->ShooterVelSetAct = 80;
 }

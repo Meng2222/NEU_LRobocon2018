@@ -147,7 +147,7 @@ void WalkTask(void)
 		ReadActualPos(CAN2,7);                                       //读取分球电机位置
 		
 		GetData(PID_x);                                              //读取定位系统信息
-		ErrorDisposal(PID_x,Error_x);                                //错误检测
+//		ErrorDisposal(PID_x,Error_x);                                //错误检测
 		PID_Competition(PID_x,direction,Error_x);                    //走形计算函数
 		GO(PID_x);                                                   //走
 		
@@ -156,6 +156,7 @@ void WalkTask(void)
 		GunneryData_Operation(&Gundata, PID_x);    //计算射击诸元
 		YawPosCtrl(Gundata.YawPosAngleSetAct);        //设置航向角
 		ShooterVelCtrl(Gundata.ShooterVelSetAct);     //设置射球转速
+//		ShooterVelCtrl(20);     //设置射球转速
 /*=================================================================================================================
 		//新车激光拟合
 		GetPositionValue(PID_x);      //Get坐标读数
