@@ -38,13 +38,13 @@
 //对应的收发串口
 #define USARTX UART5
 
-#define FORT_TO_BACK_WHEEL (10.5f)                              //炮台到后轮两轮轴中点距离    10.5mm
-#define G (9800.0f)                                             //重力加速度                  9800mm/s2
-#define FORT_ELEVATION_DEG (60.0f)                              //炮台仰角                    60°
-#define FORT_ELEVATION_RAD (FORT_ELEVATION_DEG * Pi / 180.0)    //炮台仰角                    1/3πrad
-#define FORT_HEIGHT (128.0f + 60.0f)                            //炮台高度                    188.0mm
-#define BUCKET_HEIGHT (800.0f)                                  //桶高度                      800.0mm
-#define FORT_TO_BUCKET_HEIGHT (BUCKET_HEIGHT - FORT_HEIGHT)     //炮台到桶高度差              (800.0 - 188.0)mm
+#define FORT_TO_BACK_WHEEL (10.5f)                               //炮台到后轮两轮轴中点距离    10.5mm
+#define G (9800.0f)                                              //重力加速度                  9800mm/s2
+#define FORT_ELEVATION_DEG (60.0f)                               //炮台仰角                    60°
+#define FORT_ELEVATION_RAD (FORT_ELEVATION_DEG * Pi / 180.0f)    //炮台仰角                    1/3πrad
+#define FORT_HEIGHT (128.0f + 60.0f)                             //炮台高度                    188.0mm
+#define BUCKET_HEIGHT (800.0f)                                   //桶高度                      800.0mm
+#define FORT_TO_BUCKET_HEIGHT (BUCKET_HEIGHT - FORT_HEIGHT)      //炮台到桶高度差              (800.0 - 188.0)mm
 
 FortType fort;
 GunneryData Gundata;
@@ -158,13 +158,13 @@ float constrain0(float amt, float high, float low)                            //
 }
 float Constrain_float_Angle(float angle)
 {
-	if(angle > 180.0)
+	if(angle > 180.0f)
 	{
-		angle = angle - 360.0;
+		angle = Constrain_float_Angle(angle - 360.0f);
 	}
-	if(angle < -180.0)
+	if(angle < -180.0f)
 	{
-		angle = angle + 360.0;
+		angle = Constrain_float_Angle(angle + 360.0f);
 	}
 	return angle;
 }
@@ -190,15 +190,15 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	if(Pos->direction == CW){Gun->Square_Mode = 1;}
 	
 	//读取炮台激光探测到的距离值
-	Gun->Distance_LaserA = 2.5114 * fort.laserAValueReceive + 51.623;
-	Gun->Distance_LaserB = 2.4269 * fort.laserBValueReceive + 371.39;
+	Gun->Distance_LaserA = 2.5114f * fort.laserAValueReceive + 51.623f;
+	Gun->Distance_LaserB = 2.4269f * fort.laserBValueReceive + 371.39f;
 	
 	
 	/*feedback*/
 	//炮台坐标系补偿
-	Gun->Fort_X = Pos->X - (FORT_TO_BACK_WHEEL) * sin(Pos->Angle * Pi / 180.0);
+	Gun->Fort_X = Pos->X - (FORT_TO_BACK_WHEEL) * sin(Pos->Angle * Pi / 180.0f);
 	Gun->Fort_X = constrain0(Gun->Fort_X,2200,-2200);
-	Gun->Fort_Y = Pos->Y + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0);
+	Gun->Fort_Y = Pos->Y + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0f);
 	Gun->Fort_Y = constrain0(Gun->Fort_Y,4600,200);
 	Gun->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive + Gun->Yaw_Zero_Offset);
 	
@@ -230,12 +230,12 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 		Gun->Distance_Shoot = sqrt(Gun->Distance_Shoot_X * Gun->Distance_Shoot_X + Gun->Distance_Shoot_Y * Gun->Distance_Shoot_Y);
 		
 		//计算射球水平速度和飞行时间
-		Gun->ShooterVelSet_H = sqrt((Gun->Distance_Shoot * Gun->Distance_Shoot * G) / (2.0 * (Gun->Distance_Shoot * tan(FORT_ELEVATION_RAD) - FORT_TO_BUCKET_HEIGHT)));
+		Gun->ShooterVelSet_H = sqrt((Gun->Distance_Shoot * Gun->Distance_Shoot * G) / (2.0f * (Gun->Distance_Shoot * tan(FORT_ELEVATION_RAD) - FORT_TO_BUCKET_HEIGHT)));
 		Gun->ShooterTime = Gun->Distance_Shoot / Gun->ShooterVelSet_H;
 		
 		//计算射球飞行时间中车移动的横轴轴距离和距离
-		Gun->Distance_Car_X = Pos->X_Speed * Gun->ShooterTime * 0.5;
-		Gun->Distance_Car_Y = Pos->Y_Speed * Gun->ShooterTime * 0.5;
+		Gun->Distance_Car_X = Pos->X_Speed * Gun->ShooterTime * 0.5f;
+		Gun->Distance_Car_Y = Pos->Y_Speed * Gun->ShooterTime * 0.5f;
 		Gun->Distance_Car = sqrt(Gun->Distance_Car_X * Gun->Distance_Car_X + Gun->Distance_Car_Y * Gun->Distance_Car_Y);
 		
 		//计算当前计算值与目标桶的在横轴轴上偏差值
@@ -249,31 +249,36 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
     //根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
 //	Gun->ShooterVelSet = 0.0133 * Gun->Distance_Shoot + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
 //	Gun->No_Offset_ShooterVel = 0.0133 * Gun->Distance_Fort + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
-	Gun->ShooterVelSet = 0.0123 * Gun->Distance_Shoot + 35.224 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
-	Gun->No_Offset_ShooterVel = 0.0123 * Gun->Distance_Fort + 35.224 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+	Gun->ShooterVelSet = 0.0123f * Gun->Distance_Shoot + 35.224f + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+	Gun->No_Offset_ShooterVel = 0.0123f * Gun->Distance_Fort + 35.224f + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
 	
 	//计算炮台偏向角 = arctan(射球实际移动的横轴距离 / 射球实际移动的纵轴距离)
-	Gun->YawPosAngleTar = atan(Gun->Distance_Shoot_X / Gun->Distance_Shoot_Y) * 180.0 / Pi;
-	Gun->No_Offset_Angle = atan(Gun->Distance_Fort_X / Gun->Distance_Fort_Y) * 180.0 / Pi;
+	Gun->YawPosAngleTar = atan(Gun->Distance_Shoot_X / Gun->Distance_Shoot_Y) * 180.0f / Pi;
+	Gun->No_Offset_Angle = atan(Gun->Distance_Fort_X / Gun->Distance_Fort_Y) * 180.0f / Pi;
+	
+	if(Gun->Distance_Fort_X > 0 && Gun->Distance_Fort_Y > 0) {Gun->BucketQuadrant = 1;}
+	if(Gun->Distance_Fort_X < 0 && Gun->Distance_Fort_Y > 0) {Gun->BucketQuadrant = 2;}	
+	if(Gun->Distance_Fort_X < 0 && Gun->Distance_Fort_Y < 0) {Gun->BucketQuadrant = 3;}	
+	if(Gun->Distance_Fort_X > 0 && Gun->Distance_Fort_Y < 0) {Gun->BucketQuadrant = 4;}
 	
 	//将炮台航向角转化为与定位系统坐标系角度一致	
-	switch(Gun->BucketNum)
+	switch(Gun->BucketQuadrant)
 	{
-		case 0:
-			Gun->YawPosAngleTar = -180.0 - Gun->YawPosAngleTar;
-			Gun->No_Offset_Angle = -180.0 - Gun->No_Offset_Angle;
-			break;
 		case 1:
-			Gun->YawPosAngleTar = Gun->YawPosAngleTar * -1.0;
-			Gun->No_Offset_Angle = Gun->No_Offset_Angle * -1.0;
-			break;
+			Gun->YawPosAngleTar = Gun->YawPosAngleTar * -1.0f;
+			Gun->No_Offset_Angle = Gun->No_Offset_Angle * -1.0f;
+			break;		
 		case 2:
-			Gun->YawPosAngleTar = Gun->YawPosAngleTar * -1.0;
-			Gun->No_Offset_Angle = Gun->No_Offset_Angle * -1.0;
+			Gun->YawPosAngleTar = Gun->YawPosAngleTar * -1.0f;
+			Gun->No_Offset_Angle = Gun->No_Offset_Angle * -1.0f;
 			break;		
 		case 3:
-			Gun->YawPosAngleTar = 180.0 - Gun->YawPosAngleTar;
-			Gun->No_Offset_Angle = 180.0 - Gun->No_Offset_Angle;
+			Gun->YawPosAngleTar = 180.0f - Gun->YawPosAngleTar;
+			Gun->No_Offset_Angle = 180.0f - Gun->No_Offset_Angle;
+			break;
+		case 4:
+			Gun->YawPosAngleTar = -180.0f - Gun->YawPosAngleTar;
+			Gun->No_Offset_Angle = -180.0f - Gun->No_Offset_Angle;
 			break;
 	}
 	
