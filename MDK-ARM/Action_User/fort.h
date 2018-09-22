@@ -27,6 +27,7 @@ float ReadYawPos(void);
 float ReadLaserAValue(void);
 float ReadLaserBValue(void);
 float ReadRps(void);
+float ReadyawPos(void);
 void GetValueFromFort(uint8_t data);
 
 extern FortType fort;

@@ -1,4 +1,4 @@
-#include  <includes.h>
+#include <includes.h>
 #include <app_cfg.h>
 #include "misc.h"
 #include "stm32f4xx_gpio.h"
@@ -69,14 +69,15 @@ void ConfigTask(void)
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float yawAngle=0,T=0.12,v=1500,angle,Distance,antiRad,realR,shootX,shootY,futureX,futureY;
-int status=0,throwFlag=0,R=600;
-extern float x,y,Vk;
+float yawAngle=0,T=0.112,v=1600,angle,Distance,antiRad,realR,shootX,shootY,futureX,futureY;
+int status=1,throwFlag=0,R=1600,bingoFlag[4][2]={0},haveShootedFlag=0,errTime=0,StdId,laserModel=0;
+float location[4][2]={{2200,200},{2200,4600},{-2200,4600},{-2200,200}};
+extern float x,y,Vk,Kp;
 extern int time,Cnt,ballColor;
 extern Msg_t frontwheelspeedBuffer;
 void WalkTask(void)
 {
-	static int lastTime=0,errFlag=0,pushBallCount=0,errTime=0,statusFlag,count=0,noBallCount=0,pushBallFlag=1,bingoFlag[4]={0},haveShootedFlag=0;
+	static int lastTime=0,errFlag=0,pushBallCount=0,statusFlag,count=0,noBallCount=0,pushBallFlag=1,Cnt=0,firstShootTime=2,LaserModelCount;
 	static float lastX=0,dLeft,dRight,lastY,lastRps,changeAngle,rps=50,Vx,Vy,V,shootAngle;
 	VelCrl(CAN2,COLLECT_BALL1_ID,100*32768); 
 	VelCrl(CAN2,COLLECT_BALL2_ID,-100*32768);
@@ -89,21 +90,12 @@ void WalkTask(void)
 	while((dLeft>1500&&dRight>1500)||dLeft==0||dRight==0);
 	//战术选择
 	if(dRight<=1500)
-	{
-		status=1;
-		if(dRight<=900&&dRight>100)
-			R=1100;
-		else if(dRight<=1500&&dRight>900)
-			R=1600;		
-	}	
-	else if(dLeft<=1500)
+		status=1;	
+	else 
 	{
 		status=0;
-		if(dLeft<=900&&dLeft>100)
-			R=1100;
-		else if(dLeft<=1500&&dLeft>900)
-			R=1600;
-	}	
+		PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION/2);
+	}
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
@@ -111,6 +103,52 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem,0,&os_err);
+		if(laserModel)
+		{
+			Cnt++;
+			CirclePID(0,2400,600,1000,status);
+			if(Cnt>150&&Cnt<200)
+			{
+				VelCrl(CAN1,1,0);				
+				VelCrl(CAN1,2,0);
+			}	
+			if(Cnt>200&&Cnt<250)
+			{
+				MotorOff(CAN1,1);
+				MotorOff(CAN1,2);
+			}	
+			if(Cnt>250)
+			{
+				if(StdId==4)
+					StdId=0;
+				pushBallCount++;
+				antiRad=0;
+				if(firstShootTime>0)
+					StdId=FirstshootJudge();
+				GetYawangle(StdId);
+				GetDistance(StdId);
+				YawPosCtrl(yawAngle);
+				rps=(Distance+2255.3)/70.84;
+				ShooterVelCtrl(rps);
+				if(pushBallCount%200==0)
+					pushBallFlag=1;
+				if(ballColor==MY_BALL_COLOR&&pushBallFlag&&ReadyawPos()-yawAngle>-0.5&&ReadyawPos()-yawAngle<0.5)
+				{	PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(++count)*PUSH_POSITION/2);	
+					pushBallFlag=0;
+					StdId++;
+					firstShootTime--;
+				}	
+				if(ballColor!=MY_BALL_COLOR&&ballColor!=0&&pushBallFlag)
+				{	PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION/2);	
+					pushBallFlag=0;	
+				}	
+			}	
+		}	
+		else{
+		if(v==1600)
+			Kp=75;
+		if(v==2000)
+			Kp=110;
 		x=GetX();
 		y=GetY();
 		angle=GetAngle()+90;
@@ -161,65 +199,37 @@ void WalkTask(void)
 			//预判Ts后炮台坐标
 			shootX=futureX-68*sin(GetAngle()*pi/180+antiRad);
 			shootY=futureY+68*cos(GetAngle()*pi/180+antiRad);
-			if(shootX<=600&&shootY<1800)
+			if(shootX<=800&&shootY<1600)
 			{	
-				if(shootX>-600)
+				if(shootX>-600&&shootX<600)
 					throwFlag=1;
 				else
 					throwFlag=0;
-				GetYawangle(2200,200);
-				GetDistance(2200,200);
-				if(haveShootedFlag==1)
-				{	bingoFlag[0]=errTime+1;
-					haveShootedFlag=0;
-				}	
-				if(bingoFlag[0]<4&&bingoFlag[0]>0)
-					throwFlag=0;
+				GetShootSituation(0);
 			}
-			if(shootY<=3000&&shootX>=600)
+			if(shootY<=3200&&shootX>=800)
 			{	
-				if(shootY>1800)
+				if(shootY<3000&&shootY>1800)
 					throwFlag=1;
 				else
 					throwFlag=0;
-				GetYawangle(2200,4600);
-				GetDistance(2200,4600);
-				if(haveShootedFlag==1)
-				{	bingoFlag[1]=errTime+1;
-					haveShootedFlag=0;
-				}	
-				if(bingoFlag[0]<4&&bingoFlag[0]>0)
-					throwFlag=0;				
+				GetShootSituation(1);
 			}	
-			if(shootX>-600&&shootY>=3000)
+			if(shootX>-800&&shootY>=3200)
 			{	
-				if(shootX<600)
+				if(shootX>-600&&shootX<600)
 					throwFlag=1;
 				else
 					throwFlag=0;
-				GetYawangle(-2200,4600);
-				GetDistance(-2200,4600);
-				if(haveShootedFlag==1)
-				{	bingoFlag[2]=errTime+1;
-					haveShootedFlag=0;
-				}	
-				if(bingoFlag[0]<4&&bingoFlag[0]>0)
-					throwFlag=0;				
-			}
-			if(shootY>1800&&shootX<-600)
+				GetShootSituation(2);
+			}			
+			if(shootY>1600&&shootX<-800)
 			{	
-				if(shootY<3000)
+				if(shootY<3000&&shootY>1800)
 					throwFlag=1;
 				else
 					throwFlag=0;
-				GetYawangle(-2200,200);
-				GetDistance(-2200,200);
-				if(haveShootedFlag==1)
-				{	bingoFlag[3]=errTime+1;
-					haveShootedFlag=0;
-				}	
-				if(bingoFlag[0]<4&&bingoFlag[0]>0)
-					throwFlag=0;				
+				GetShootSituation(3);		
 			}
 		}
 		else
@@ -230,68 +240,37 @@ void WalkTask(void)
 			//预判Ts后炮台坐标
 			shootX=futureX-68*sin(GetAngle()*pi/180-antiRad);
 			shootY=futureY+68*cos(GetAngle()*pi/180-antiRad);
-			if(shootX>=600&&shootY>1800)
+			if(shootX>=800&&shootY>1600)
 			{
-				if(shootY<3000)
+				if(shootY<3000&&shootY>1800)
 					throwFlag=1;
 				else
 					throwFlag=0;
-				GetYawangle(2200,200);
-				GetDistance(2200,200);
-				if(haveShootedFlag==1)
-				{
-					bingoFlag[0]=errTime+1;
-					haveShootedFlag=0;
-				}	
-				if(bingoFlag[0]<4&&bingoFlag[0]>0)
-					throwFlag=0;				
+				GetShootSituation(0);					
 			}	
-			if(shootX<=600&&shootY>=3000)
+			if(shootX<=800&&shootY>=3200)
 			{
-				if(shootX>-600)
+				if(shootX>-600&&shootX<600)
 					throwFlag=1;
 				else
 					throwFlag=0;
-				GetYawangle(2200,4600);
-				GetDistance(2200,4600);
-				if(haveShootedFlag==1)
-				{	
-					bingoFlag[1]=errTime+1;
-					haveShootedFlag=0;
-				}		
-				if(bingoFlag[0]<4&&bingoFlag[0]>0)
-					throwFlag=0;				
+				GetShootSituation(1);				
 			}	
-			if(shootX<-600&&shootY<=3000)
+			if(shootX<-800&&shootY<=3200)
 			{	
-				if(shootY>1600)
+				if(shootY<3000&&shootY>1800)
 					throwFlag=1;
 				else
 					throwFlag=0;
-				GetYawangle(-2200,4600);
-				GetDistance(-2200,4600);
-				if(haveShootedFlag==1)
-				{
-					bingoFlag[2]=errTime+1;
-					haveShootedFlag=0;
-				}		
-				if(bingoFlag[0]<4&&bingoFlag[0]>0)
-					throwFlag=0;				
+				GetShootSituation(2);						
 			}
-			if(shootX>-600&&shootY<1800)
+			if(shootX>-800&&shootY<1600)
 			{	
-				if(shootX<600)
+				if(shootX>-600&&shootX<600)
 					throwFlag=1;
 				else
 					throwFlag=0;
-				GetYawangle(-2200,200);
-				GetDistance(-2200,200);
-				if(haveShootedFlag==1)
-				{	bingoFlag[3]=errTime+1;
-					haveShootedFlag=0;
-				}	
-				if(bingoFlag[0]<4&&bingoFlag[0]>0)
-					throwFlag=0;				
+				GetShootSituation(3);					
 			}
 		}
 		//圆筒方向速度
@@ -302,31 +281,30 @@ void WalkTask(void)
 		V=-Vx+Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*Vx*Vx)-sqrt(3)*Vx);
 		shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		YawPosCtrl(shootAngle);
-		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3000)*0.0032;
-		if(rps>80)
-			rps=53;
+		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3500)*0.0041;
+		if(rps>74)
+			throwFlag=0;
 		ShooterVelCtrl(rps);
 		if(ballColor==0)
 			noBallCount++;	
-		if(noBallCount%46==0)
-		{	
+		if(noBallCount%36==0)	
 			pushBallFlag=1;
-		}	
 		//一段时间无球后反转防卡球
 //		if(noBallCount>=220)
 //		{	
 //			PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION/2);	
 //			noBallCount=0;
 //		}	
-		if(R>1000)
+		if(R>1500)
 		{
 				if(throwFlag&&ballColor==MY_BALL_COLOR&&pushBallFlag)
 				{
 					PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(++count)*PUSH_POSITION);				
 					pushBallFlag=0;
 					noBallCount=1;
+					haveShootedFlag=1;
 				}		
-				if(pushBallCount>=100)
+				if(pushBallCount%100==0)
 				{	
 					//当拿到对方的球，倒转180度	
 					if(ballColor!=MY_BALL_COLOR&&ballColor!=0&&pushBallFlag)
@@ -335,17 +313,19 @@ void WalkTask(void)
 						pushBallFlag=0;
 						noBallCount=1;
 					}	
-					pushBallCount=0;
 				}	
 		}
 		pushBallCount++;
 		lastX=x;
 		lastY=y;
-		//通过转速突变判断是否射出球
-//		if(lastRps/ReadRps()-1>0.2&&lastRps/ReadRps()-1<0.5)
-//			haveShootedFlag=1;
-		lastRps=ReadRps();
-		ReadActualVel(CAN1,2);
-		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t\r\n",(int)GetX(),(int)GetY(),ballColor,(int)count,(int)(-Vk),(int)(frontwheelspeedBuffer.data32[1]/(CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO)*(pi*TURN_AROUND_WHEEL_DIAMETER)));
-	}
+		if((bingoFlag[0][1]!=0&&bingoFlag[1][1]!=0&&bingoFlag[2][1]!=0&&bingoFlag[3][1]!=0)||errTime>4||pushBallCount>6000)
+		{
+			LaserModelCount++;
+			if(LaserModelCount>=100)
+				laserModel=1;
+		}	
+//		ReadActualVel(CAN1,2);
+		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t\r\n",(int)GetX(),(int)GetY(),ballColor,(int)count,laserModel);//(int)(frontwheelspeedBuffer.data32[1]/(CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO)*(pi*TURN_AROUND_WHEEL_DIAMETER)));
+		}	
+	}	
 }

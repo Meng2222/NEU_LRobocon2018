@@ -16,7 +16,7 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __MOVEBASE_H
 #define __MOVEBASE_H
-
+#include "stdint.h"
 
 
 /* Includes ------------------------------------------------------------------*/
@@ -72,8 +72,11 @@ void AnglePID(float setAngle,float feedbackAngle);
 void GetFunction(float x1,float y1,float x2,float y2);
 void linePID(float x1,float y1,float x2,float y2,float v);
 void CirclePID(float x0,float y0,float R,float v,int status);
-void GetYawangle(float x1,float y1);
-void GetDistance(float x1,float y1);
+void GetYawangle(uint8_t StdId);
+void GetDistance(uint8_t StdId);
+void BingoJudge(uint8_t StdId);
+void GetShootSituation(uint8_t StdId);
+int FirstshootJudge(void);
 #define pi 3.141592f
 //后轮电机的CAN ID号
 #define BACK_WHEEL_ID             1

@@ -26,6 +26,7 @@
 #include "stm32f4xx_usart.h"
 #include "math.h"
 #include "pps.h"
+
 /* Private typedef ------------------------------------------------------------------------------------*/
 /* Private define -------------------------------------------------------------------------------------*/
 /* Private macro --------------------------------------------------------------------------------------*/
@@ -166,28 +167,29 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 	if(status==0)
 	{	
 		if(sqrtf(d)>R)
-			setAngle=lAngle-90*(500/(fabs(sqrtf(d)-R)+500));	
+			setAngle=lAngle-90*(600/(fabs(sqrtf(d)-R)+600));	
 		else
-			setAngle=lAngle-180+90*(500/(fabs(sqrtf(d)-R)+500));		
+			setAngle=lAngle-180+90*(600/(fabs(sqrtf(d)-R)+600));		
 	}	 
 	//顺时针
 	if(status==1)
 	{	
 		if(sqrtf(d)>R)
-			setAngle=lAngle+90*(500/(fabs(sqrtf(d)-R)+500));
+			setAngle=lAngle+90*(600/(fabs(sqrtf(d)-R)+600));
 		else
-			setAngle=lAngle+180-90*(500/(fabs(sqrtf(d)-R)+500));
+			setAngle=lAngle+180-90*(600/(fabs(sqrtf(d)-R)+600));
 	}	
 	AnglePID(setAngle,GetAngle());
 	Straight(v);
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
-extern float Distance,shootX,shootY,angle,antiRad;
-void GetYawangle(float x1,float y1)
+extern float Distance,shootX,shootY,angle,antiRad,location[4][2];
+extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag;
+void GetYawangle(uint8_t StdId)
 {
 	if(status==0)
 	{	
-		GetFunction(shootX,shootY,x1,y1);
+		GetFunction(shootX,shootY,location[StdId][0],location[StdId][1]);
 		if((GetAngle()+antiRad*180/pi)<-90&&lAngle>90)
 			yawAngle=360+(GetAngle()+antiRad*180/pi)-lAngle;
 		else
@@ -195,14 +197,49 @@ void GetYawangle(float x1,float y1)
 	}
 	else
 	{
-		GetFunction(shootX,shootY,x1,y1);
+		GetFunction(shootX,shootY,location[StdId][0],location[StdId][1]);
 		if(lAngle<-90&&(GetAngle()-antiRad*180/pi)>90)
 			yawAngle=-360+(GetAngle()-antiRad*180/pi)-lAngle;
 		else
 			yawAngle=(GetAngle()-antiRad*180/pi)-lAngle;	
 	}	
 }
-void GetDistance(float x1,float y1)
+void GetDistance(uint8_t StdId)
 {
-	Distance=sqrtf((shootX-x1)*(shootX-x1)+(shootY-y1)*(shootY-y1));
+	Distance=sqrtf((shootX-location[StdId][0])*(shootX-location[StdId][0])+(shootY-location[StdId][1])*(shootY-location[StdId][1]));
+}	
+void BingoJudge(uint8_t StdId)
+{
+	if(haveShootedFlag==1&&bingoFlag[StdId][0]==0)
+	{	
+		bingoFlag[StdId][0]=errTime+1;
+		haveShootedFlag=0;
+	}	
+	if(haveShootedFlag==1&&bingoFlag[StdId][1]==0)
+	{	
+		bingoFlag[StdId][1]=errTime+1;
+		haveShootedFlag=0;
+	}					
+	if(bingoFlag[StdId][0]!=0&&bingoFlag[StdId][1]!=0)
+		throwFlag=0;
+}
+void GetShootSituation(uint8_t StdId)
+{
+	GetYawangle(StdId);
+	GetDistance(StdId);
+	BingoJudge(StdId);
+}	
+int FirstshootJudge(void)
+{
+	int StdId,maxPriority;
+	maxPriority=bingoFlag[0][0];
+	for(int i=1;i<3;i++)
+	{
+		if(bingoFlag[i][0]>bingoFlag[0][0])
+		{
+			maxPriority=bingoFlag[i][0];
+			StdId=i;
+		}	
+	}	
+	return StdId;
 }	
