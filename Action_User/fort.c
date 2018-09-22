@@ -32,7 +32,7 @@
 FortType fort;
 
 
-
+int32_t pushPulse=0;
 int bufferI = 0;
 char buffer[20] = {0};
 
@@ -150,34 +150,45 @@ void GetValueFromFort(uint8_t data)
 	}
 }
 
+
 static uint16_t shootCnt=0;
 static uint8_t shootFlag=0;	
 static uint8_t shootFlag2=0;
-
+static uint8_t isBallRight=0;	
+//车走形所在轨道
 extern uint8_t flagOne;
+
+//故障判断标志位 主要用于车卡在某一位置，即errFlg=3;
 extern uint8_t errFlg;
+
+/**
+* @brief 炮台发射
+* @param flg：车走行的标志位
+* @param pushTime：切换轨道后推球计数时间
+* @retval none
+* @attention 
+*/
 
 void Shoot(uint8_t flg,uint16_t pushTime)
 {
 	static float bucketPosX[4]={BUCKET_ONE_X,BUCKET_TWO_X,BUCKET_THR_X,BUCKET_FOR_X};
 	static float bucketPosY[4]={BUCKET_ONE_Y,BUCKET_TWO_Y,BUCKET_THR_Y,BUCKET_FOR_Y};	
-	
 	static uint8_t shootFlagLast=0;
-
 	static uint16_t judgeCnt=0;
-
-	
+	static float shootAngleLast=0;
+	static float getAngleLast=0;
 	static uint8_t i=0;
 	static float shootSpeed=0;
 	static uint8_t judgeFlg=0;
-		
+
 	float shootX=GetPosX();
 	float shootY=GetPosY();
 	float getAngle=GetAngle();
 	float shootDistance=0;
 	float shootAngle=0;
-	float shootTurnAngle=0;
+	static float shootTurnAngle=0;
 
+	isBallRight=BallColorRecognition();
 	shootCnt++;
 	//判断是否发出球
 	if( shootCnt == pushTime)
@@ -222,48 +233,33 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 	//枪定位桶角度
 	if(shootFlag == 2 || shootFlag == 3)
 	{
-		shootAngle=260-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
-		shootTurnAngle=getAngle+shootAngle;
-		if(shootTurnAngle > 350 && shootTurnAngle <= 360)
-		{
-			shootTurnAngle=350;
-		}
-		else if(shootTurnAngle > 360) 
-		{
-			shootTurnAngle=shootTurnAngle-360;
-		}
-		else if(shootTurnAngle < 0 && shootTurnAngle >= -10)
-		{
-			shootTurnAngle=0;
-		}
+		shootAngle=90-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
+		if((getAngle-getAngleLast > 180))
+			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast-360);
+		else if((getAngle-getAngleLast < -180))
+			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast+360);
+		else
+			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast);
 	}
 	else if(shootFlag == 0 || shootFlag == 1)
 	
 	{
-		shootAngle=80-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
-		shootTurnAngle=getAngle+shootAngle;
-		if(shootTurnAngle > 350 && shootTurnAngle <= 360)
-		{
-			shootTurnAngle=350;
-		}
-		else if(shootTurnAngle < -10)
-		{
-			shootTurnAngle=shootTurnAngle+360;
-		}
-		else if(shootTurnAngle < 0 && shootTurnAngle >= -10)
-		{
-			shootTurnAngle=0;
-		}
+		shootAngle=-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI)-90;
+		if((getAngle-getAngleLast > 180))
+			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast-360);
+		else if((getAngle-getAngleLast < -180))
+			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast+360);
+		else
+			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast);
 	}
-	
+	getAngleLast=getAngle;
+	shootAngleLast=shootAngle;
 	//区域改变，计数清0
 	if(shootFlagLast != shootFlag)
-	{
-		if(errFlg >= 3)
-			YawPosCtrl(shootAngle);	
-		
+	{	
 		shootCnt=0;
 		judgeCnt=0;
+		i=!i;
 		shootFlagLast=shootFlag;
 		i=!i;
 	}
@@ -298,8 +294,8 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 		
 		shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
 		
-		//激光校准
-		LaserCalibration(shootDistance);
+//		//激光校准
+//		LaserCalibration(shootDistance);
 		
 		if(shootDistance < 4000 && shootDistance > 2300)
 		{
@@ -309,7 +305,6 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 				shootSpeed=(SHOOOT_KP*shootDistance)+19;
 			
 			ShooterVelCtrl(shootSpeed);
-			usartValue.shootSp=shootSpeed;
 		}
 	}
 	
@@ -321,14 +316,21 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 		if(judgeCnt < 100)
 		{
 			judgeCnt++;
-			if(fort.shooterVelReceive < (shootSpeed-5));
-			else 
+			if(fort.shooterVelReceive < (shootSpeed-5))
 			{
-				notShoot[i]=shootFlag;
+				notShoot[i]=4;
 			}
 		}
 		else
 		{
+			if(notShoot[i] < 4)
+			{
+				notShoot[i]=shootFlag;
+			}
+			else
+			{
+				notShoot[i]=0;
+			}
 			judgeFlg=0;
 			judgeCnt=0;
 		}
@@ -336,18 +338,25 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 	
 }
 
-//车卡住处理
+/**
+* @brief 车卡住处理
+* @param none
+* @retval none
+* @attention 
+*/
 void CarStuck(void)
 {
-	if(shootCnt == 150)
+	if(shootCnt == 100 && isBallRight == 1)
 	{
-		PosCrl(CAN2, 7,ABSOLUTE_MODE,4500);
+		// 推球	
+		PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,OTHER_COUNTS_PER_ROUND/2);			
 	}
-	else if(shootCnt == 300)
+	else if(shootCnt == 200 && isBallRight == 1)
 	{
-		PosCrl(CAN2, 7,ABSOLUTE_MODE,5);
+		// 推球	
+		PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,OTHER_COUNTS_PER_ROUND/2);
 	}
-	else if(shootCnt > 450)
+	else if(shootCnt > 300)
 	{
 		shootCnt=0;
 		if(notShoot[0] == 0 && notShoot[1] == 0)
@@ -382,7 +391,13 @@ void CarStuck(void)
 	}
 }
 
-//正常发射1
+/**
+* @brief //正常发射1，车顺时针转时的正常发射
+* @param getPushTime：推球时间
+* @retval none
+* @attention 
+*/
+
 void NormalShootOne(uint16_t getPushTime)
 {
 	if(flagOne == 7 || flagOne == 11)
@@ -393,10 +408,11 @@ void NormalShootOne(uint16_t getPushTime)
 			getPushTime=getPushTime-TIME_DIFF_1_ONE;
 		else;
 		
-		if(shootCnt == getPushTime)
+		if(shootCnt == getPushTime && isBallRight == 1)
 		{
 			// 推球	
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
 			shootCnt=0;
 		}
 		
@@ -410,10 +426,11 @@ void NormalShootOne(uint16_t getPushTime)
 		else 
 			getPushTime=getPushTime;
 		
-		if(shootCnt == getPushTime)
+		if(shootCnt == getPushTime && isBallRight == 1)
 		{
 			// 推球	
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
 			shootCnt=0;
 		}
 	}
@@ -425,10 +442,11 @@ void NormalShootOne(uint16_t getPushTime)
 			getPushTime=getPushTime-TIME_DIFF_1_THR;
 		else;
 		
-		if(shootCnt == getPushTime)
+		if(shootCnt == getPushTime && isBallRight == 1)
 		{
 			// 推球	
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
 			shootCnt=0;
 		}
 	}
@@ -439,16 +457,23 @@ void NormalShootOne(uint16_t getPushTime)
 		if(flagOne == 6)
 			getPushTime=getPushTime-TIME_DIFF_1_FOR;
 		
-		if(shootCnt == getPushTime)
+		if(shootCnt == getPushTime && isBallRight == 1)
 		{
 			// 推球	
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
 			shootCnt=0;
 		}
 	}
 }
 
-//正常发射2
+/**
+* @brief //正常发射2，车逆时针转时的正常发射
+* @param getPushTime：推球时间
+* @retval none
+* @attention 
+*/
+
 void NormalShootTwo(uint16_t getPushTime)
 {
 	if(flagOne == 6 || flagOne == 10)
@@ -458,10 +483,11 @@ void NormalShootTwo(uint16_t getPushTime)
 			getPushTime=getPushTime-TIME_DIFF_2_ONE;
 		else;
 		
-		if(shootCnt == getPushTime)
+		if(shootCnt == getPushTime && isBallRight == 1)
 		{
 			// 推球	
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
 			shootCnt=0;
 		}
 		
@@ -473,10 +499,11 @@ void NormalShootTwo(uint16_t getPushTime)
 			getPushTime=getPushTime-TIME_DIFF_2_TWO;
 		else;
 		
-		if(shootCnt == getPushTime)
+		if(shootCnt == getPushTime && isBallRight == 1)
 		{
 			// 推球	
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
 			shootCnt=0;
 		}
 	}
@@ -488,10 +515,11 @@ void NormalShootTwo(uint16_t getPushTime)
 			getPushTime=getPushTime-TIME_DIFF_2_THR;
 		else;
 		
-		if(shootCnt == getPushTime)
+		if(shootCnt == getPushTime && isBallRight == 1)
 		{
 			// 推球	
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,4500);
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
 			shootCnt=0;
 		}
 	}
@@ -503,18 +531,25 @@ void NormalShootTwo(uint16_t getPushTime)
 			getPushTime=getPushTime-TIME_DIFF_2_FOR;
 		else;
 		
-		if(shootCnt == getPushTime)
+		if(shootCnt == getPushTime && isBallRight == 1)
 		{
 			// 推球	
-			PosCrl(CAN1, 0x06,ABSOLUTE_MODE,5);
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
 			shootCnt=0;
 		}
 	}
 }
 
-//激光校准
+/**
+* @brief 激光校准
+* @param getreferenceDistance：参考距离，即定位系统算出的距离
+* @retval none
+* @attention 
+*/
 float posXAdd=0;
 float posYAdd=0;
+extern uint8_t adcFlag;
 void LaserCalibration(float getreferenceDistance)
 {
 	float laserdistance=0; 
@@ -524,17 +559,90 @@ void LaserCalibration(float getreferenceDistance)
 	{
 		if((laserdistance+100) < getreferenceDistance || (laserdistance-100) > getreferenceDistance)
 		{
-			if(flagOne == 10 || flagOne == 12)
+			if(flagOne == 9)
 			{
-				posXAdd=laserdistance-getreferenceDistance;
+				if(adcFlag == 0)
+					posXAdd=getreferenceDistance-laserdistance;
+				else
+					posXAdd=laserdistance-getreferenceDistance;
 			}
-			else if(flagOne == 9 || flagOne == 11)
+			else if(flagOne == 11)
 			{
-				posYAdd=laserdistance-getreferenceDistance;
+				if(adcFlag == 0)
+					posXAdd=laserdistance-getreferenceDistance;
+				else
+					posXAdd=getreferenceDistance-laserdistance;
+			}
+			else if(flagOne == 10)
+			{
+				if(adcFlag == 0)
+					posYAdd=getreferenceDistance-laserdistance;
+				else
+					posYAdd=laserdistance-getreferenceDistance;
+			}
+			else if(flagOne == 12)
+			{
+				if(adcFlag == 0) 
+					posYAdd=laserdistance-getreferenceDistance;
+				else
+					posYAdd=getreferenceDistance-laserdistance;
 			}
 		}
 	}
 		
 
+}
+
+/**
+* @brief 球颜色识别
+* @param none
+* @retval none
+* @attention 
+*/
+extern int32_t pushPos;
+extern uint8_t ballColor;
+uint8_t BallColorRecognition(void)
+{
+	static uint16_t ballCnt=0;
+	ballCnt++;
+	if(pushPos == pushPulse)
+	{
+//		ballCnt=0;
+//		if(ballColor == WRONG_BALL)
+//		{
+//			pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
+//			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+//			return 0;
+//		}
+//		else if(ballColor == RIGHT_BALL)
+//		{
+//			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+//			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
+//			return 1;
+//		}
+//		else
+//		{
+//			return 0;
+//		}
+	}
+	else
+	{
+////			if(ballCnt == 400)
+////			{
+////				pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
+////				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+////				
+////				
+////			}
+////			else if(ballCnt > 800)
+////			{
+////				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+////				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+////				ballCnt=0;
+////			}
+////			return 0;
+	}
+		
+		
 }
 

@@ -1,12 +1,12 @@
 #include "pid.h"
 
-static float outMax=800;
-static float outMin=-800;
+static float outMax=2000;
+static float outMin=-2000;
 float outMax2=90;
 float outMin2=-90;
 
-float outMax3=3000;
-float outMin3=1000; 
+float outMax3=800;
+float outMin3=800; 
 
 static struct PIDPara_{
 	float aKp;
@@ -62,9 +62,11 @@ float DistancePid(float valueSet,float valueNow)
 
 	err=valueSet-valueNow;
 	iTerm+=(pid_Para.dKi*err);
-
-	if(iTerm > 10) iTerm=8;
-	if(iTerm < -10) iTerm=-8;
+	if(err > 1 || err < -1)
+	{
+	if(iTerm > 10) iTerm=10;
+	if(iTerm < -10) iTerm=-10;
+	}
 	
 	valueOut=(pid_Para.dKp*err)+iTerm+(pid_Para.dKd*(err-errLast));
 	

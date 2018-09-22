@@ -3,7 +3,8 @@
 
 #include "stdint.h"
 
-
+// 宏定义推球电机ID
+#define PUSH_BALL_ID (7)
 #define BUCKET_ONE_X (-2200.0)
 #define BUCKET_ONE_Y 105.0
 #define BUCKET_TWO_X (-2200.0)
@@ -25,6 +26,10 @@
 #define TIME_DIFF_2_TWO 65
 #define TIME_DIFF_2_THR 65
 #define TIME_DIFF_2_FOR 65
+
+#define RIGHT_BALL 1
+#define WRONG_BALL 2
+#define NO_BALL    0
 
 typedef union
 {	
@@ -56,6 +61,7 @@ void CarStuck(void);
 void NormalShootOne(uint16_t getPushTime);
 void NormalShootTwo(uint16_t getPushTime);
 void LaserCalibration(float getreferenceDistance);
+uint8_t BallColorRecognition(void);
 extern FortType fort;
 
 

@@ -44,7 +44,7 @@ extern struct usartValue_{
 
 
 
-
+uint8_t flagOne=0;
 uint8_t errFlg=0;
 /**
   * @brief  PID 转弯
@@ -56,19 +56,18 @@ uint8_t errFlg=0;
 
 void Turn(float angle,float gospeed)
 {
+	
 	int32_t pulseNum=0;
-	int32_t bPulseNum=(gospeed*4095)/(PI*WHEEL_DIAMETER);
-	float getAngle=0;
+	int32_t bPulseNum=-(gospeed*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(PI*WHEEL_DIAMETER*TRANSMISSION_RATIO);
+	float getAngle=GetAngle();
 	float speed=0;
-	getAngle=GetAngle();
+
+	speed=AnglePid(angle,getAngle);
+	usartValue.d=speed;
+	pulseNum=-(speed*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(PI*TURN_AROUND_WHEEL_DIAMETER*TRANSMISSION_RATIO);
 	
-	speed=AnglePid(angle,getAngle);	
-	usartValue.pidValueOut=speed;
-	
-	pulseNum=(speed*4095)/(PI*WHEEL_DIAMETER);
-	
-	VelCrl(CAN2, 0x01,bPulseNum+pulseNum);
-	VelCrl(CAN2, 0x02,pulseNum-bPulseNum);
+	VelCrl(CAN1, TURN_AROUND_WHEEL_ID,pulseNum);
+	VelCrl(CAN1, BACK_WHEEL_ID,bPulseNum);
 
 }	
  
@@ -83,17 +82,88 @@ void Turn(float angle,float gospeed)
 void BackTurn(float angle,float gospeed)
 {
 	int32_t pulseNum=0;
-	int32_t bPulseNum=-(gospeed*4095)/(PI*WHEEL_DIAMETER);
+	int32_t bPulseNum=(gospeed*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(PI*WHEEL_DIAMETER*TRANSMISSION_RATIO);
 	float getAngle=0;
 	float speed=0;
 	getAngle=GetAngle();
 	
 	speed=AnglePid(angle,getAngle);	
-	usartValue.pidValueOut=speed;
 	
-	pulseNum=(speed*4095)/(PI*WHEEL_DIAMETER);
-	VelCrl(CAN2, 0x01,bPulseNum+pulseNum);
-	VelCrl(CAN2, 0x02,pulseNum-bPulseNum);
+	pulseNum=-(speed*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO)/(PI*TURN_AROUND_WHEEL_DIAMETER*TRANSMISSION_RATIO);
+	VelCrl(CAN1, TURN_AROUND_WHEEL_ID,pulseNum);
+	VelCrl(CAN1, BACK_WHEEL_ID,bPulseNum);
+
+}
+/**
+  * @brief  新底盘直线闭环
+  * @note	
+  * @param A1
+  * @param B1
+  * @param C1
+  * @param dir:为0 往上或右走
+  * @retval None
+  */
+uint8_t straightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed)
+{
+	
+	
+	float setAngle=0;
+	float getAngleNow=GetAngle();
+	float getX=GetPosX();
+	float getY=GetPosY();
+	float distance=((A1*getX)+(B1*getY)+C1)/sqrt((A1*A1)+(B1*B1));
+	float angleAdd=DistancePid(distance,0);
+	
+	if((B1 > -0.005) && (B1 < 0.005))
+	{
+		if(!dir)
+		{
+			setAngle=0;
+			Turn(setAngle+angleAdd,setSpeed);
+		}
+		else
+		{
+			if(A1 > 0)
+			{
+				setAngle=-180;
+				Turn(setAngle-angleAdd,setSpeed);
+			}
+			else
+			{
+				setAngle=180;
+				Turn(setAngle+angleAdd,setSpeed);
+			}
+		}
+	}
+	else
+	{
+		if(!dir)
+		{
+			setAngle=(atan(-A1/B1)*180/PI)-90;
+			Turn(setAngle-angleAdd,setSpeed);
+		}
+		else
+		{
+			setAngle=(atan(-A1/B1)*180/PI)+90;
+			Turn(setAngle+angleAdd,setSpeed);
+		}
+		
+	}
+	if(flagOne < 7)
+	{
+		if((distance < 32) && (distance > -32))
+			return 1;
+		else
+			return 0; 
+	}
+	else
+	{
+		if((distance < 45) && (distance > -45))
+			return 1;
+		else
+			return 0; 
+	}
+
 
 }
 
@@ -105,165 +175,225 @@ void BackTurn(float angle,float gospeed)
   * @retval None
   */
 
-uint8_t BackstraightLine(float A2,float B2,float C2,uint8_t dir)
+uint8_t BackstraightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed)
 {
 	float setAngle=0;
-	float getAngle=GetAngle();
-	float getX=GetPosX();
-	float getY=GetPosY();
-	float distance=((A2*getX)+(B2*getY)+C2)/sqrt(A2*A2+B2*B2);
-	float angleAdd=0.1*distance;
-	if(angleAdd > 90)
-	{
-		angleAdd=90;
-	}
-	else if(angleAdd < -90)
-	{
-		angleAdd=-90;
-	}
-	
-	
-	if((B2 > -0.005) && (B2 < 0.005))
-	{
-		if(!dir)
-		{
-			if(A2 > 0)
-				{
-					setAngle=-180;
-				}
-				else
-				{
-					setAngle=180;
-				}
-		}
-		else
-		{
-				setAngle=0;
-		}
-	}
-	else
-	{
-		if(!dir)
-		{
-			setAngle=(atan(-A2/B2)*180/PI)-90;
-		}
-		else
-		{
-			setAngle=(atan(-A2/B2)*180/PI)+90;
-		}
-	}
-
-	if(distance > 10)
-	{
-		if(setAngle >= 0)
-		{
-			BackTurn(setAngle-angleAdd,1000);
-		}
-		else
-		{
-			BackTurn(setAngle+angleAdd,1000);			
-		}
-	}
-	else if(distance < -10)
-	{
-		if(setAngle >= 0)
-		{
-			BackTurn(setAngle-angleAdd,1000);
-		}
-		else
-		{
-			BackTurn(setAngle+angleAdd,1000);		
-		}
-	}
-	else
-	{
-		BackTurn(setAngle,1000);
-	}
-	if((distance < 100) && (distance > -100))
-		return 1;
-	else
-		return 0; 
-}
-
-
-/**
-  * @brief  沿直线走，能回到直线,距离速度pid
-  * @note	给定直线以Ax+By+C=0形式
-  * @param  A：
-  * @param  B:
-  * @param  C:
-  * @param  dir:dir为0，向右；dir为1，向左
-  * @retval None
-  */
-
-void HighSpeedStraightLine(float A1,float B1,float C1,uint8_t dir,float highSpeed)
-{
-	float setAngle=0;
-	float getAngle=GetAngle();
 	float getX=GetPosX();
 	float getY=GetPosY();
 	float distance=((A1*getX)+(B1*getY)+C1)/sqrt(A1*A1+B1*B1);
-	float angleAdd=DistancePid(distance,0);
+	float angleAdd=DistancePid(distance,0);;
 	
-	
-
 	if((B1 > -0.005) && (B1 < 0.005))
 	{
 		if(!dir)
 		{
 			setAngle=0;
+			BackTurn(setAngle-angleAdd,setSpeed);
 		}
 		else
 		{
-				if(A1 > 0)
-				{
-					setAngle=-180;
-				}
-				else
-				{
-					setAngle=180;
-				}
+			if(A1 > 0)
+			{
+				setAngle=-180;
+				BackTurn(setAngle+angleAdd,setSpeed);
+			}
+			else
+			{
+				setAngle=180;
+				BackTurn(setAngle-angleAdd,setSpeed);
+			}
 		}
 	}
 	else
 	{
 		if(!dir)
 		{
-			setAngle=(atan(-A1/B1)*180/PI)-90;
-		}
-		else
-		{
 			setAngle=(atan(-A1/B1)*180/PI)+90;
-		}
-	}
-
-	if(distance > 10)
-	{
-		if(setAngle < 0)
-		{
-			Turn(setAngle-angleAdd,highSpeed);
+			BackTurn(setAngle-angleAdd,setSpeed);
 		}
 		else
 		{
-			Turn(setAngle+angleAdd,highSpeed);		
+			setAngle=(atan(-A1/B1)*180/PI)-90;
+			BackTurn(setAngle+angleAdd,setSpeed);
 		}
 	}
-	else if(distance < -10)
-	{
-		if(setAngle >= 0)
-		{
-			Turn(setAngle+angleAdd,highSpeed);
-		}
-		else
-		{
-			Turn(setAngle-angleAdd,highSpeed);		
-		}
-	}
+	if((distance < 100) && (distance > -100))
+		return 1;
 	else
+		return 0; 	
+}
+
+
+/**
+  * @brief  走方形
+  * @note	
+  * @param 
+  * @retval None
+  */
+void Squre(void)
+{
+	static uint8_t sFlag=0;
+	float speed2=0;
+	float sTAngle=GetAngle();
+	float sTX=GetPosX();
+	float sTY=GetPosY();
+	Angle_PidPara((600*KP_A),0,0);
+	switch(sFlag)
 	{
-		Turn(setAngle,highSpeed);
+		case 0:
+			if(sTY < 2500)
+			{
+				speed2=1000;
+				straightLine(1,0,1200,0,speed2);
+			}
+			else
+			{
+				speed2=600;
+				if(straightLine(0,1,-3400,0,speed2) == 1)
+					sFlag++;
+			}
+				
+			break;
+		case 1:
+			if(sTX < 250)
+			{
+				speed2=2000;
+				straightLine(0,1,-3400,0,speed2);
+				
+			}
+			else
+			{
+				speed2=600;
+				if(straightLine(1,0,-1200,1,speed2) == 1)
+					sFlag++;
+			}
+			break;
+		case 2:
+			if(sTY > 2150)
+			{
+				speed2=2000;
+				straightLine(1,0,-1200,1,speed2);
+				
+			}
+			else
+			{
+				speed2=600;
+				if(straightLine(0,1,-1200,1,speed2) == 1)
+					sFlag++;
+			}
+			break;
+		case 3:
+			if(sTX > -250)
+			{
+				speed2=2000;
+				straightLine(0,1,-1200,1,speed2);
+				
+			}
+			else
+			{
+				speed2=600;
+				if(straightLine(1,0,1200,0,speed2) == 1)
+					sFlag++;
+			}
+			break;
+			
+		case 4:
+			if(sTY < 2450)
+			{
+				speed2=2000;
+				straightLine(1,0,1200,0,speed2);
+				
+			}
+			else
+			{
+				speed2=600;
+				if(straightLine(0,1,-3400,0,speed2) == 1)
+					sFlag=1;
+			}
+			break;
+		default: sFlag=0;
+			break;
 	}
+}
+
+
+void Squre2(void)
+{
+	static uint8_t sFlag=0;
+	static float speed3=2500;
+	static float speed4=600;
+	float sTAngle=GetAngle();
+	float sTX=GetPosX();
+	float sTY=GetPosY();
 	
+	switch(sFlag)
+	{
+		case 0:
+			if(sTY < 2850)
+			{
+				straightLine(1,0,1900,0,1000);
+				
+			}
+			else
+			{
+				if(straightLine(0,1,-4100,0,speed4) == 1)
+					sFlag++;
+			}
+				
+			break;
+		case 1:
+			if(sTX < 650)
+			{ 
+				straightLine(0,1,-4100,0,speed3);
+				
+			}
+			else
+			{
+
+				if(straightLine(1,0,-1900,1,speed4) == 1)
+					sFlag++;
+			}
+			break;
+		case 2:
+			if(sTY > 1550)
+			{
+				straightLine(1,0,-1900,1,speed3);
+				
+			}
+			else
+			{
+				if(straightLine(0,1,-300,1,speed4) == 1)
+					sFlag++;
+			}
+			break;
+		case 3:
+			if(sTX > -650)
+			{
+				straightLine(0,1,-300,1,speed3);
+				
+			}
+			else
+			{
+				if(straightLine(1,0,1900,0,speed4) == 1)
+					sFlag++;
+			}
+			break;
+			
+		case 4:
+			if(sTY < 2850)
+			{
+				straightLine(1,0,1900,0,speed3);
+				
+			}
+			else
+			{
+				if(straightLine(0,1,-4100,0,speed4) == 1)
+					sFlag=1;
+			}
+			break;
+		default: sFlag=0;
+			break;
+	}
 }
 
 /**
@@ -272,182 +402,211 @@ void HighSpeedStraightLine(float A1,float B1,float C1,uint8_t dir,float highSpee
   * @param 
   * @retval None
   */
-uint8_t flagOne=0;
-extern float outMax3;
-extern float outMin3; 
+
 
 void BiggerSquareOne(void)
 {
 	float sTAngle=GetAngle();
 	float sTX=GetPosX();
 	float sTY=GetPosY();
-	float speed1=0;
-	if(flagOne<8)
-	{		
-		outMax3=1300;
-		outMin3=1300; 
-	}
-	else 
-	{
-		outMax3=1300;
-		outMin3=1300; 
-	}
+	float speed1=600;
+	float speed2=2000;
+	float speed3=2400;
+  static int Tangencyflag=0,Tangencyflag2=0,lastTangencyflag=0,sureflag=0;
 	switch(flagOne)
 	{
 		case 0:
-			if(sTY < 1900)
+			if(GetPosY()<1900)
 			{
-				N_Strght_Walk(1,0,700,1,1300);
-				
+			Angle_PidPara(27,0,0);
+		  Distance_PidPara(0.1,0,4);
+	    straightLine(1,0,700,0,1500);
 			}
 			else
 				flagOne++;
 			break;
 		case 1:
-			if(sTX < -200)
-			{
-				N_Strght_Walk(0,1,-2900,1,1300);
-				
-			}
-			else
-				flagOne++;
-			break;
+        Angle_PidPara(80,0,0);
+		    Distance_PidPara(0.1,0,0);
+				N_SET_closeRound(0,2300,450,1,1500);
+			  if(GetPosX()>100&&GetPosY()<1800)  
+					Tangencyflag2=1;
+				if(GetAngle()>88&&GetAngle()<92)
+					Tangencyflag=1;
+		    else Tangencyflag=0;
+		    if(GetPosY()>2300)
+			    sureflag=1;
+		    if(Tangencyflag==1&&lastTangencyflag==0&&sureflag&&Tangencyflag2)
+			    flagOne++;
+		    lastTangencyflag=Tangencyflag;
+			  break;
 		case 2:
-			if(sTY > 2600)
+			if(GetPosY()<2300)
 			{
-				N_Strght_Walk(1,0,-700,2,1300);
-				
+				Angle_PidPara(30,0,0);
+		    Distance_PidPara(0.1,0,3);
+				straightLine(1,0,1200,0,1500);
 			}
 			else
-				flagOne++;
+				flagOne=5;
 			break;
-		case 3:
-			if(sTX > -300)
+	case 4:
+			if(sTY < 2400)
 			{
-				N_Strght_Walk(0,1,-1600,2,1300);
+				straightLine(1,0,1200,0,speed2);
 				
 			}
 			else
-				flagOne++;
-			break;
-			
-		case 4:
-			if(sTY < 2600)
 			{
-				if(sTY < 2150)
-					speed1=SpeedPid(sTY,950);
-				else
-					speed1=SpeedPid(3200,sTY);
-				N_Strght_Walk(1,0,1300,1,speed1);
-				
+				shootFlagOne=5;
+				if(straightLine(0,1,-3400,0,speed1) == 1)
+					flagOne++;
 			}
-			else
-				flagOne++;
 			break;
 		case 5:
-			if(sTX < 300)
+			if(sTX < 200)
 			{
-				if(sTX > -400)
-					speed1=SpeedPid(900,sTX);
-				else
-					speed1=SpeedPid(sTX,-2000);
-				N_Strght_Walk(0,1,-3600,1,speed1);
+				straightLine(0,1,-3400,0,speed2);
 				
 			}
 			else
-				flagOne++;
+			{
+				shootFlagOne=6;
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				if(straightLine(1,0,-1200,1,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 6:
-			if(sTY > 1900)
+			if(sTY > 2300)
 			{
-				if(sTY < 2850)
-					speed1=SpeedPid(sTY,1350);
-				else
-					speed1=SpeedPid(4300,sTY);
-				N_Strght_Walk(1,0,-1300,2,speed1);
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,-1200,1,speed2);
 				
 			}
 			else
-				flagOne++;
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=7;
+				if(straightLine(0,1,-1200,1,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 7:
-			if(sTX > -800)
+			if(sTX > -400)
 			{
-				if(sTX > 0)
-					speed1=SpeedPid(2000,sTX); 
-				else
-					speed1=SpeedPid(sTX,-1450);
-				N_Strght_Walk(0,1,-900,2,speed1);
+				Angle_PidPara((600*(266.55/20000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-1200,1,speed3);
 				
 			}
 			else
-				flagOne++;
+			{
+				Angle_PidPara((800*KP_A),0,30);
+				Distance_PidPara(KP_D,0,KD_D2);
+				shootFlagOne=8;
+				if(straightLine(1,0,1900,0,speed1) == 1)
+					flagOne++;
+			}
 			break;
 			
 		case 8:
 			if(sTY < 2800)
 			{
-				if(sTY < 2150)
-					speed1=SpeedPid(sTY,250);
-				else
-					speed1=SpeedPid(3550,sTY);
-				N_Strght_Walk(1,0,1800,1,speed1);
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,1900,0,speed3);
 				
 			}
 			else
-				flagOne++;
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=9;
+				if(straightLine(0,1,-4300,0,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 9:
-			if(sTX < 800)
-			{
-				if(sTX > 0)
-					speed1=SpeedPid(1150,sTX);
-				else
-					speed1=SpeedPid(sTX,-2550);
-				N_Strght_Walk(0,1,-4200,1,speed1);
+			if(sTX < 450)
+			{ 
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-4300,0,speed3);
 				
 			}
 			else
-				flagOne++;
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=10;
+				if(straightLine(1,0,-1900,1,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 10:
-			if(sTY > 1500)
+			if(sTY > 1800)
 			{
-				if(sTY < 2650)
-					speed1=SpeedPid(sTY,1150);
-				else
-					speed1=SpeedPid(4950,sTY);
-				N_Strght_Walk(1,0,-1800,2,speed1);
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,-1900,1,speed3);
 				
 			}
 			else
-				flagOne++;
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=11;
+				if(straightLine(0,1,-300,1,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 11:
-			if(sTX > -800)
+			if(sTX > -400)
 			{
-				if(sTX > 500)
-					speed1=SpeedPid(2550,sTX);
-				else
-					speed1=SpeedPid(sTX,-1150);
-				N_Strght_Walk(0,1,-500,2,speed1);
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-300,1,speed3);
 				
 			}
 			else
-				flagOne++;
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=12;				
+				if(straightLine(1,0,1900,0,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 12:
-			if(sTY < 3200)
+			if(sTY < 2800)
 			{
-				if(sTY < 2150)
-					speed1=SpeedPid(sTY,-250);
-				else
-					speed1=SpeedPid(3550,sTY);
-				N_Strght_Walk(1,0,1800,1,speed1);
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,1900,0,speed3);
 				
 			}
 			else
-				flagOne=9;
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=9;
+				if(straightLine(0,1,-4300,0,speed1) == 1)
+				{
+					flagOne=9;
+					if(shootReady[0] == 1 && shootReady[1] == 1 && shootReady[2] == 1 && shootReady[3] == 1)
+					{
+						for(int i=0;i<4;i++)
+						{
+							shootReady[i]=0;
+						}
+					}
+					step++;
+				}
+			}
 			break;
 		default: flagOne=0;
 			break;
@@ -462,171 +621,201 @@ void BiggerSquareOne(void)
   */
 
 
-void BiggerSquareTwo(void)
+void Oppo_BiggerSquareTwo(void)
 {
 	float sTAngle=GetAngle();
 	float sTX=GetPosX();
 	float sTY=GetPosY();
-	float speed1=0;
-	usartValue.flagValue=flagOne;
+	float speed1=600;
+	float speed2=2000;
+	float speed3=2500;
+	
+
 	switch(flagOne)
 	{
+		static int Tangencyflag=0,Tangencyflag2=0,lastTangencyflag=0,sureflag=0;
 		case 0:
-			if(sTY < 2150)
+			if(GetPosY()<1900)
 			{
-				N_Strght_Walk(1,0,-700,1,1300);
-				
+			  Angle_PidPara(27,0,0);
+		    Distance_PidPara(0.1,0,4);
+	      straightLine(1,0,-700,0,1500);
 			}
 			else
 				flagOne++;
 			break;
 		case 1:
-			if(sTX > 200)
+        Angle_PidPara(80,0,0);
+        Distance_PidPara(0.1,0,0);
+				N_SET_closeRound(0,2300,450,2,1500);
+			  if(GetPosX()<-100&&GetPosY()<1800)  
+					Tangencyflag2=1;
+				if(GetAngle()>-92&&GetAngle()<-88)
+					Tangencyflag=1;
+		    else Tangencyflag=0;
+		    if(GetPosY()>2300)
+			    sureflag=1;
+		    if(Tangencyflag==1&&lastTangencyflag==0&&sureflag&&Tangencyflag2)
+			    flagOne++;
+		    lastTangencyflag=Tangencyflag;
+			  break;
+	 case 2:
+			if(GetPosY()<3300)
 			{
-				N_Strght_Walk(0,1,-3050,2,1300);
-
-			}
-			else
-				flagOne++;
-			break;
-		case 2:
-			if(sTY > 2550)
-			{
-				N_Strght_Walk(1,0,700,2,1300);
-				
+				Angle_PidPara(30,0,0);
+		    Distance_PidPara(0.1,0,3);
+				straightLine(1,0,-1200,0,1500);
 			}
 			else
 				flagOne++;
 			break;
 		case 3:
-			if(sTX < 250)
-			{
-				N_Strght_Walk(0,1,-1650,1,1300);
-				
-			}
-			else
-				flagOne++;
-			break;
-			
+			 straightLine(1,0,-1200,0,0);
+		break;
 		case 4:
-			if(sTY < 2600)
+			if(sTY < 2500)
 			{
-				if(sTY < 2200)
-					speed1=SpeedPid(sTY,1000);
-				else
-					speed1=SpeedPid(3250,sTY);
-				N_Strght_Walk(1,0,-1350,1,speed1);
-				
+				Angle_PidPara((600*KP_A),0,0);
+	      Distance_PidPara(KP_D,0,15); 
+				if(straightLine(1,0,1200,0,1200)==1)
+				  straightLine(1,0,1200,0,speed2);		
 			}
 			else
-				flagOne++;
+			{
+				if(straightLine(0,1,-3400,0,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 5:
-			if(sTX > -250)
+			if(sTX > -300)
 			{
-				if(sTX > 400)
-					speed1=SpeedPid(2000,sTX);
-				else
-					speed1=SpeedPid(sTX,-900);
-				N_Strght_Walk(0,1,-3700,2,speed1);
-				
+				Angle_PidPara((600*(266.55/14000)),0,0);
+				Distance_PidPara(KP_D,0,15);
+				straightLine(0,1,-3400,1,speed2);			
 			}
 			else
-				flagOne++;
+			{
+				if(straightLine(1,0,1200,1,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 6:
 			if(sTY > 2100)
 			{
-				if(sTY > 2850)
-					speed1=SpeedPid(4350,sTY);
-				else
-					speed1=SpeedPid(sTY,1450);
-				N_Strght_Walk(1,0,1350,2,speed1);
-				
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D,0,20);
+				straightLine(1,0,1200,1,speed2);
+		
 			}
 			else
-				flagOne++;
+			{
+				if(straightLine(0,1,-1200,0,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 7:
-			if(sTX < 750)
+			if(sTX < 650)
 			{
-				if(sTX < 0)
-					speed1=SpeedPid(sTX,-2000);
-				else
-					speed1=SpeedPid(1400,sTX);
-				N_Strght_Walk(0,1,-1000,1,speed1);
-				
+
+				Angle_PidPara((600*(266.55/20000)),0,0);
+				Distance_PidPara(KP_D,0,20);
+				straightLine(0,1,-1200,0,speed3);
+			
 			}
 			else
-				flagOne++;
+			{
+				Angle_PidPara((600*KP_A),0,0);
+				Distance_PidPara(KP_D,0,18);
+				if(straightLine(1,0,-1900,0,speed1) == 1)
+					flagOne++;
+			}
 			break;
 			
 		case 8:
-			if(sTY < 2750)
+			if(sTY < 2850)
 			{
-				if(sTY < 2200)
-					speed1=SpeedPid(sTY,350);
-				else
-					speed1=SpeedPid(3500,sTY);
-				N_Strght_Walk(1,0,-1850,1,speed1);
-				
+
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D,0,20);
+				straightLine(1,0,-1900,0,speed3);
+			
 			}
 			else
-				flagOne++;
+			{
+				Angle_PidPara((600*KP_A),0,0);
+				Distance_PidPara(KP_D,0,16);
+				if(straightLine(0,1,-4100,1,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 9:
-			if(sTX > -400)
-			{
-				if(sTX > 0)
-					speed1=SpeedPid(2600,sTX);
-				else
-					speed1=SpeedPid(sTX,-1150);
-				N_Strght_Walk(0,1,-4200,2,speed1);
-				
+
+			if(sTX > -650)
+			{ 
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D,0,20);
+				straightLine(0,1,-4100,1,speed3);
+	
 			}
 			else
-				flagOne++;
+			{
+        Angle_PidPara((600*KP_A),0,0);
+				Distance_PidPara(KP_D,0,16);
+				if(straightLine(1,0,1900,1,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 10:
-			if(sTY > 1950)
+			if(sTY > 1550)
 			{
-				if(sTY > 2300)
-					speed1=SpeedPid(4950,sTY);
-				else
-					speed1=SpeedPid(sTY,1200);
-				N_Strght_Walk(1,0,1850,2,speed1);
-				
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D,0,20);
+				straightLine(1,0,1900,1,speed3);
+
 			}
 			else
-				flagOne++;
+			{
+				Angle_PidPara((600*KP_A),0,0);
+				Distance_PidPara(KP_D,0,16);
+				if(straightLine(0,1,-300,0,speed1) == 1)
+					flagOne++;
+			}
 			break;
 		case 11:
-			if(sTX < 400)
+			if(sTX < 650)
 			{
-				if(sTX < 0 )
-					speed1=SpeedPid(sTX,-2600);
-				else
-					speed1=SpeedPid(1150,sTX);
-				N_Strght_Walk(0,1,-500,1,speed1);
-				
+
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D,0,20);
+				straightLine(0,1,-300,0,speed3);
+		
 			}
 			else
-				flagOne++;
-			break;
-		case 12: 
-			if(sTY < 2750)
 			{
-				if(sTY < 2200)
-					speed1=SpeedPid(sTY,-250);
-				else
-					speed1=SpeedPid(3500,sTY);
-				N_Strght_Walk(1,0,-1850,1,speed1);
-				
+				Angle_PidPara((600*KP_A),0,0);
+				Distance_PidPara(KP_D,0,16);
+				if(straightLine(1,0,-1900,0,speed1) == 1)
+					flagOne++;
+			}
+			break;
+		case 12:
+			if(sTY < 2850)
+			{
+
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D,0,20);
+				straightLine(1,0,-1900,0,speed3);
+			
 			}
 			else
-				flagOne=9;
+			{
+				Angle_PidPara((600*KP_A),0,0);
+				Distance_PidPara(KP_D,0,16);
+				if(straightLine(0,1,-4100,1,speed1) == 1)
+					flagOne=9;
+			}
 			break;
-		default: flagOne=0;
+		default: flagOne=3;
 			break;
 	}
 }
@@ -670,7 +859,7 @@ void Walk(uint8_t getAdcFlag)
 	uint8_t ready=0;
 	static float X_Now=0;
 	static float Y_Now=0;
-	static uint8_t errFlag=0;
+	static uint8_t errFlag=0,transferflag=0;
 	static uint16_t walkCnt=0;
 	float speedx=0;
 	float speedy=0;
@@ -709,33 +898,33 @@ void Walk(uint8_t getAdcFlag)
 		{
 			if(Y_Now > 3200)
 			{
-				ready=BackstraightLine(0,1,500-Y_Now,getAdcFlag);
+				ready=BackstraightLine(0,1,500-Y_Now,getAdcFlag,1000);
 			}
 			else if((Y_Now <= 3200) && (Y_Now > 2300))
 			{
-				ready=BackstraightLine(0,1,-500-Y_Now,getAdcFlag);
+				ready=BackstraightLine(0,1,-500-Y_Now,getAdcFlag,1000);
 			}
 		}
 		else if(((X_Now+2300) > Y_Now) && ((2300-X_Now) > Y_Now))
 		{
 			if((Y_Now <= 2300) && (Y_Now > 1200))
 			{
-				ready=BackstraightLine(0,1,500-Y_Now,!getAdcFlag);
+				ready=BackstraightLine(0,1,500-Y_Now,!getAdcFlag,1000);
 			}
 			else if(Y_Now <= 1200)
 			{
-				ready=BackstraightLine(0,1,-500-Y_Now,!getAdcFlag);
+				ready=BackstraightLine(0,1,-500-Y_Now,!getAdcFlag,1000);
 			}
 		}
 		else if(((X_Now+2300) < Y_Now) && ((2300-X_Now) >= Y_Now))
 		{
 			if(X_Now <= 0 && X_Now > -1000)
 			{
-				ready=BackstraightLine(1,0,500-X_Now,!getAdcFlag);
+				ready=BackstraightLine(1,0,500-X_Now,!getAdcFlag,1000);
 			}
 			else if(X_Now <= -1000)
 			{
-				ready=BackstraightLine(1,0,-500-X_Now,!getAdcFlag);
+				ready=BackstraightLine(1,0,-500-X_Now,!getAdcFlag,1000);
 			}
 		}
 		else if(((X_Now+2300) >= Y_Now) && ((2300-X_Now) < Y_Now))
@@ -743,12 +932,12 @@ void Walk(uint8_t getAdcFlag)
 		
 			if(X_Now >= 0 && X_Now < 1000)
 			{
-				ready=BackstraightLine(1,0,-500-X_Now,getAdcFlag);
+				ready=BackstraightLine(1,0,-500-X_Now,getAdcFlag,1000);
 			}
 			
 			else if(X_Now >= 1000)
 			{
-				ready=BackstraightLine(1,0,500-X_Now,getAdcFlag);
+				ready=BackstraightLine(1,0,500-X_Now,getAdcFlag,1000);
 			}
 		}
 		
@@ -768,6 +957,11 @@ void Walk(uint8_t getAdcFlag)
 	{
 		if(!getAdcFlag)
 		{
+			switch(transferflag)
+			{
+				case 0:
+					
+			}
 			BiggerSquareOne();
 		}
 		else
@@ -777,9 +971,55 @@ void Walk(uint8_t getAdcFlag)
 	}
 
 }
-
-
-
+void The_Collect_Round()
+{
+	static int roundflag=0,changeflag=0,lastchangeflag=0,change_R=0,changeflag2=0,lastchangeflag2=0,change_R2=0;
+	switch(roundflag)
+	{
+		case 0:
+		  if(GetPosY()<1700)
+			{		 
+  			Angle_PidPara(40,0,0);
+        Distance_PidPara(0.1,0,5);
+		    straightLine(1,0,1800,0,1500);
+			}
+			else 
+				roundflag++;
+		break;
+		case 1:
+			
+			  Angle_PidPara(80,0,0);
+        Distance_PidPara(0.08,0,0);
+				N_SET_closeRound(-100,2300,900,1,2000);
+  			if(GetPosY()>1750)
+					changeflag=1;
+				else 
+					changeflag=0;
+				if(changeflag==1&&lastchangeflag==0)
+					change_R++;
+				lastchangeflag=changeflag;
+				if(change_R==2)
+  				roundflag++;
+				break;
+		case 2:
+			Angle_PidPara(70,0,0);
+		  Distance_PidPara(0.08,0,0);
+		  N_SET_closeRound(-50,2300,450,1,1500);
+		  if(GetPosY()>2170&&GetPosY()<2200&&GetPosX()<0)
+				changeflag2=1;
+			else changeflag2=0;
+			if(changeflag2==1&&lastchangeflag2==0)
+				change_R2++;
+			lastchangeflag2=changeflag2;
+			if(change_R2==2)
+				roundflag++;
+			break;
+		case 3:
+			VelCrl(CAN1,1,0);
+		  VelCrl(CAN1,2,0);
+		  break;
+	}
+}
 //非差速直线 F_B=1上 F_B下 右
 void N_Strght_Walk (float a,float b,float c,int F_B,float backspeed)
 {
@@ -1108,6 +1348,7 @@ void N_Back_Strght_Walk (float a,float b,float c,int F_B,float backspeed)
 	VelCrl(CAN2,1,backspeed*REDUCTION_RATIO*NEW_CAR_COUNTS_PER_ROUND/(PI*WHEEL_DIAMETER));//后轮
   VelCrl(CAN2,2,frontspeed*REDUCTION_RATIO*NEW_CAR_COUNTS_PER_ROUND/(PI*TURN_AROUND_WHEEL_DIAMETER));//前轮
 }
+
 
 
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
