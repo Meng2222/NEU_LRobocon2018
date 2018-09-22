@@ -77,8 +77,8 @@ float DistancePid(float valueSet,float valueNow)
 	return valueOut;
 }
 
-//速度pid
-float SpeedPid(float valueSet,float valueNow)
+//角速度pid
+float GyroPid(float valueSet,float valueNow)
 {
 	
 	float err=0;
@@ -89,8 +89,8 @@ float SpeedPid(float valueSet,float valueNow)
 	err=valueSet-valueNow;
 	iTerm+=(pid_Para.sKi*err);
 
-	if(iTerm > 100) iTerm=100;
-	if(iTerm < -100) iTerm=-100;
+	if(iTerm > outMax3) iTerm=outMax3;
+	if(iTerm < outMin3) iTerm=outMin3;
 	
 	valueOut=(pid_Para.sKp*err)+iTerm+(pid_Para.sKd*(err-errLast));
 	
@@ -139,7 +139,7 @@ void Distance_PidPara(float fKp,float fKi,float fKd)
 	pid_Para.dKd=fKd;
 }
 
-void Speed_PidPara(float fKp,float fKi,float fKd)
+void Gyro_PidPara(float fKp,float fKi,float fKd)
 {
 	pid_Para.sKp=fKp;
 	pid_Para.sKi=fKi;

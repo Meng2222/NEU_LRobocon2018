@@ -36,8 +36,7 @@ int32_t pushPulse=0;
 int bufferI = 0;
 char buffer[20] = {0};
 
-//未发射的桶
-uint8_t notShoot[2]={0};
+
 
 extern struct usartValue_{
 	uint32_t cnt;//用于检测是否数据丢失
@@ -150,15 +149,44 @@ void GetValueFromFort(uint8_t data)
 	}
 }
 
+char BUFF[8]={0};
 
-static uint16_t shootCnt=0;
-static uint8_t shootFlag=0;	
-static uint8_t shootFlag2=0;
+struct comend Cmd;
+void UARTCmd(uint8_t data)
+{
+	static uint8_t buffI=0;
+	BUFF[buffI] = data;
+	buffI++;
+	if(BUFF[buffI - 2] == '\r' && BUFF[buffI - 1] == '\n')
+	{ 
+		if(buffI > 2 &&  strncmp(BUFF,"PO",2) == 0)//接收航向位置
+		{
+				for(int i = 0; i < 4; i++)
+					Cmd.turn=(BUFF[2]-0x30)*100+(BUFF[3]-0x30)*10+(BUFF[4]-0x30)*1+(BUFF[5]-0x30)*0.1;
+		}
+		else if(buffI > 2 &&  strncmp(BUFF,"VE",2) == 0)//接收发射电机转速
+		{
+				for(int i = 0; i < 4; i++)
+					Cmd.shoot=(BUFF[2]-0x30)*10+(BUFF[3]-0x30)*1+(BUFF[4]-0x30)*0.1+(BUFF[5]-0x30)*0.01;
+		}
+		for(int i = 0; i < 8; i++)
+		{
+			BUFF[i] = 0;
+		}
+			bufferI = 0;
+	}
+}
+
+//发射的桶
+uint8_t shootReady[4]={0,0,0,0};
+uint8_t shootReadyflg=0;
+uint8_t backshoot=0;
+uint8_t shootFlag=0;	
 static uint8_t isBallRight=0;	
 //车走形所在轨道
-extern uint8_t flagOne;
+uint8_t shootFlagOne;
 
-//故障判断标志位 主要用于车卡在某一位置，即errFlg=3;
+//故障判断标志位 主要用于车卡在某一位置，即errFlg=4;
 extern uint8_t errFlg;
 
 /**
@@ -168,34 +196,30 @@ extern uint8_t errFlg;
 * @retval none
 * @attention 
 */
+static float bucketPosX[4]={BUCKET_ONE_X,BUCKET_TWO_X,BUCKET_THR_X,BUCKET_FOR_X};
+static float bucketPosY[4]={BUCKET_ONE_Y,BUCKET_TWO_Y,BUCKET_THR_Y,BUCKET_FOR_Y};	
 
-void Shoot(uint8_t flg,uint16_t pushTime)
+void Shoot(uint8_t flg)
 {
-	static float bucketPosX[4]={BUCKET_ONE_X,BUCKET_TWO_X,BUCKET_THR_X,BUCKET_FOR_X};
-	static float bucketPosY[4]={BUCKET_ONE_Y,BUCKET_TWO_Y,BUCKET_THR_Y,BUCKET_FOR_Y};	
+	
 	static uint8_t shootFlagLast=0;
-	static uint16_t judgeCnt=0;
 	static float shootAngleLast=0;
 	static float getAngleLast=0;
+	static float shootTurnAngle=0;
 	static uint8_t i=0;
 	static float shootSpeed=0;
-	static uint8_t judgeFlg=0;
-
+	static uint8_t judgeFlg=1;
+	
+	float errOne=0;
+	float errTwo=0;
 	float shootX=GetPosX();
 	float shootY=GetPosY();
 	float getAngle=GetAngle();
 	float shootDistance=0;
 	float shootAngle=0;
-	static float shootTurnAngle=0;
-
+	float laserdistance=0; 
+	
 	isBallRight=BallColorRecognition();
-	shootCnt++;
-	//判断是否发出球
-	if( shootCnt == pushTime)
-	{
-		judgeFlg=1;
-	}
-	else;
 	
 	//判断车所在区域
 	if(flg == 0)
@@ -209,7 +233,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 		//正常发射
 		else
 		{
-			NormalShootOne(pushTime);
+			NormalShootOne();
 		}		
 	}
 
@@ -224,7 +248,7 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 		//正常发射
 		else
 		{
-			NormalShootTwo(pushTime);
+			NormalShootTwo();
 		}			
 	}
 	
@@ -233,108 +257,125 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 	if(shootFlag == 2 || shootFlag == 3)
 	{
 		shootAngle=90-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI);
-		if((getAngle-getAngleLast > 180))
-			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast-360);
-		else if((getAngle-getAngleLast < -180))
-			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast+360);
-		else
-			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast);
 	}
-	else if(shootFlag == 0 || shootFlag == 1)
 	
+	else if(shootFlag == 0 || shootFlag == 1)
 	{
 		shootAngle=-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI)-90;
-		if((getAngle-getAngleLast > 180))
-			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast-360);
-		else if((getAngle-getAngleLast < -180))
-			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast+360);
-		else
-			shootTurnAngle+=(getAngle+shootAngle-shootAngleLast-getAngleLast);
+
 	}
-	getAngleLast=getAngle;
-	shootAngleLast=shootAngle;
+	errOne=shootAngle-shootAngleLast;
+	errTwo=getAngle-getAngleLast;
+	if(errOne > 180 && errTwo > 180)
+		shootTurnAngle+=(errOne+errTwo-720);
+	
+	else if(errOne < -180 && errTwo < -180)
+		shootTurnAngle+=(errOne+errTwo+720);
+	
+	else if(errOne > 180 || errTwo > 180)
+		shootTurnAngle+=(errOne+errTwo-360);
+	
+	else if(errOne < -180 || errTwo < -180)
+		shootTurnAngle+=(errOne+errTwo+360);
+	
+	else
+		shootTurnAngle+=(errOne+errTwo);
+	
+		getAngleLast=getAngle;
+		shootAngleLast=shootAngle;
+	
+	
+	
 	//区域改变，计数清0
-	if(shootFlagLast != shootFlag)
+	if(shootFlagLast != shootFlagOne)
 	{	
-		shootCnt=0;
-		judgeCnt=0;
-		i=!i;
-		shootFlagLast=shootFlag;
+		shootFlagLast=shootFlagOne;
+		judgeFlg=1;
+		if(i< 3)
+		{
+			i++;
+		}
+		else
+			i=0;
 	}
 	
 	//完全卡住发射
 	if(errFlg >= 3)
 	{
 		YawPosCtrl(shootTurnAngle);
+		
+		laserdistance=(((fort.laserAValueReceive+fort.laserBValueReceive)/2)*LASER_SCALE)-200;
+	
 		shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
-		shootSpeed=(SHOOOT_KP*shootDistance)+35.7;
+		if((shootDistance+100) > laserdistance && (shootDistance-100) < laserdistance)
+			shootDistance=laserdistance;
+		else;
+		shootSpeed=(SHOOOT_KP*shootDistance)+36.5;
 		ShooterVelCtrl(shootSpeed);
+		
 	}
 	
 	
 	//正常发射
 	else
 	{
+		
 		if(flg == 0)
 		{
-			if(flagOne < 8)
-				YawPosCtrl(shootTurnAngle-2);
+			if(shootFlagOne < 8)
+				YawPosCtrl(shootTurnAngle-33);
 			else
-				YawPosCtrl(shootTurnAngle);
+				YawPosCtrl(shootTurnAngle-14);
 		}
 		else
 		{
-			if(flagOne < 8)
-				YawPosCtrl(shootTurnAngle+4);
+			if(shootFlagOne < 8)
+				YawPosCtrl(shootTurnAngle+2);
 			else
-				YawPosCtrl(shootTurnAngle+6);
+				YawPosCtrl(shootTurnAngle+2);
 		}
 		
 		shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
 		
-//		//激光校准
-//		LaserCalibration(shootDistance);
-		
-		if(shootDistance < 4000 && shootDistance > 2300)
+		float speed=sqrt(GetSpeeedX()*GetSpeeedX()+GetSpeeedY()*GetSpeeedY());
+		if(backshoot == 0)
 		{
-			if(flagOne < 8)
-				shootSpeed=(SHOOOT_KP*shootDistance)+18;
+			if(shootFlagOne < 8)
+				shootSpeed=(SHOOOT_KP*shootDistance)+32-speed*0.009;
 			else
-				shootSpeed=(SHOOOT_KP*shootDistance)+19;
-			
-			ShooterVelCtrl(shootSpeed);
+				shootSpeed=(SHOOOT_KP*shootDistance)+28-speed*0.0095;
 		}
+		else if(backshoot == 1)
+		{
+			shootSpeed=(SHOOOT_KP*shootDistance)+28+speed*0.0095;
+		}
+		
+		ShooterVelCtrl(shootSpeed);
 	}
+	
 	
 	
 	
 	//检测是否打出球
-	if(judgeFlg == 1)
-	{
-		
-		if(judgeCnt < 100)
-		{
-			judgeCnt++;
-			if(fort.shooterVelReceive < (shootSpeed-5))
-			{
-				notShoot[i]=4;
-			}
-		}
-		else
-		{
-			if(notShoot[i] < 4)
-			{
-				notShoot[i]=shootFlag;
-			}
-			else
-			{
-				notShoot[i]=0;
-			}
-			judgeFlg=0;
-			judgeCnt=0;
-		}
-	}
-	
+//	if(judgeFlg == 1)
+//	{
+//		if(fort.shooterVelReceive < (shootSpeed-5))
+//		{
+//			shootReady[i]=1;
+//			judgeFlg=0;
+//		}
+//		else
+//		{
+//			shootReady[i]=0;
+//		}
+//	}
+//	USART_OUT(UART4, " %d\t", (int)shootSpeed);
+//	USART_OUT(UART4, " %d\t", (int)fort.shooterVelReceive);
+//	
+	USART_OUT(UART4, " %d\t", (int)shootReady[0]);
+	USART_OUT(UART4, " %d\t", (int)shootReady[1]);
+	USART_OUT(UART4, " %d\t", (int)shootReady[2]);
+	USART_OUT(UART4, " %d\t", (int)shootReady[3]);
 }
 
 /**
@@ -345,46 +386,71 @@ void Shoot(uint8_t flg,uint16_t pushTime)
 */
 void CarStuck(void)
 {
-	if(shootCnt == 100 && isBallRight == 1)
+	static uint8_t shootFlag2=0;
+	static uint16_t shootCnt=0;
+	
+	if(isBallRight == 1)
 	{
-		// 推球	
-		PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,OTHER_COUNTS_PER_ROUND/2);			
-	}
-	else if(shootCnt == 200 && isBallRight == 1)
-	{
-		// 推球	
-		PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,OTHER_COUNTS_PER_ROUND/2);
-	}
-	else if(shootCnt > 300)
-	{
-		shootCnt=0;
-		if(notShoot[0] == 0 && notShoot[1] == 0)
+		shootCnt++;
+		if(shootCnt == 100)
 		{
-			if(shootFlag2 < 3)
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);			
+		}
+		else if(shootCnt > 200)
+		{
+			shootCnt=0;
+				
+			if(shootReady[0] == 0 && shootReady[1] == 0 && shootReady[2] == 0 && shootReady[3] == 0)
 			{
-				shootFlag=shootFlag2+1;
-				shootFlag2++;
+				if(shootFlag2 < 3)
+				{
+					shootFlag=shootFlag2+1;
+					shootFlag2++;
+				}
+				else if(shootFlag2 < 5)
+				{
+					shootFlag=5-shootFlag2;
+					shootFlag2++;
+				}
+				else
+				{
+					shootFlag2=0;
+					shootFlag=0;
+				}
 			}
-			else if(shootFlag2 < 5)
+			else if(shootReady[0] == 0)
 			{
-				shootFlag=5-shootFlag2;
-				shootFlag2++;
+				shootFlag=0;
+				shootFlag2=shootFlag;
+				shootReady[0] = 1;
+			}
+			else if(shootReady[1] == 0)
+			{
+				shootFlag=1;
+				shootFlag2=shootFlag;
+				shootReady[1] = 1;
+			}
+			else if(shootReady[2] == 0)
+			{
+				shootFlag=2;
+				shootFlag2=shootFlag;
+				shootReady[2] = 1;
+			}
+			else if(shootReady[3] == 0)
+			{
+				shootFlag=3;
+				shootFlag2=shootFlag;
+				shootReady[3] = 1;
 			}
 			else
 			{
-				shootFlag2=0;
-				shootFlag=0;
+				shootReady[0] = 0;
+				shootReady[1] = 0;
+				shootReady[2] = 0;
+				shootReady[3] = 0;
 			}
-		}
-		else if(notShoot[0] > 0)
-		{
-			shootFlag=notShoot[0];
-			notShoot[0]=0;
-		}
-		else if(notShoot[1] > 0)
-		{
-			shootFlag=notShoot[1];
-			notShoot[1]=0;
 		}
 		
 	}
@@ -396,72 +462,130 @@ void CarStuck(void)
 * @retval none
 * @attention 
 */
-
-void NormalShootOne(uint16_t getPushTime)
+extern uint8_t step;
+void NormalShootOne(void)
 {
-	if(flagOne == 7 || flagOne == 11)
+	float D=0;
+	if((shootFlagOne == 7 || shootFlagOne == 11) && shootReady[0] == 0)
 	{
 		shootFlag=0;
-		
-		if(flagOne == 7)
-			getPushTime=getPushTime-TIME_DIFF_1_ONE;
-		else;
-		
-		if(shootCnt == getPushTime && isBallRight == 1)
+		backshoot=0;
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(/*fabs(GetSpeeedX())>= 1600 && */isBallRight == 1 && D > 2000 && D < 3500)
 		{
 			// 推球	
 			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
-			shootCnt=0;
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[0]=1;
 		}
 		
 	}
-	else if(flagOne == 4 || flagOne == 8 || flagOne == 12)
+	else if((shootFlagOne == 8 || shootFlagOne == 12) && shootReady[1] == 0)
 	{
 		shootFlag=1;
-		
-		if(flagOne == 4)
-			getPushTime=getPushTime-TIME_DIFF_1_TWO;
-		else 
-			getPushTime=getPushTime;
-		
-		if(shootCnt == getPushTime && isBallRight == 1)
+		backshoot=0;
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(/*fabs(GetSpeeedY()) >= 1600 &&*/ (shootFlagOne == 12|| shootFlagOne == 8) &&isBallRight == 1 && D > 2000 && D < 3500)
 		{
 			// 推球	
 			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
-			shootCnt=0;
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[1]=1;
 		}
+		
 	}
-	else if(flagOne == 5 || flagOne == 9)
+	else if((shootFlagOne == 5 || shootFlagOne == 9) && shootReady[2] == 0)
 	{
 		shootFlag=2;
-		
-		if(flagOne == 5)
-			getPushTime=getPushTime-TIME_DIFF_1_THR;
-		else;
-		
-		if(shootCnt == getPushTime && isBallRight == 1)
+		backshoot=0;
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(/*fabs(GetSpeeedX())>= 1600 && */shootFlagOne == 9 && isBallRight == 1 && D > 2000 && D < 3500)
 		{
 			// 推球	
 			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
-			shootCnt=0;
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[2]=1;
+		}
+		else if(shootFlagOne == 5 &&  fabs(GetSpeeedX()) >= 1500 && isBallRight == 1 && D > 2000)
+		{
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[2]=1;
 		}
 	}
-	else if(flagOne == 6 || flagOne == 10)
+	else if((shootFlagOne == 6 || shootFlagOne == 10) && shootReady[3] == 0 )
 	{
 		shootFlag=3;
-		
-		if(flagOne == 6)
-			getPushTime=getPushTime-TIME_DIFF_1_FOR;
-		
-		if(shootCnt == getPushTime && isBallRight == 1)
+		backshoot=0;
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(/*fabs(GetSpeeedY()) >= 1600 &&*/ shootFlagOne == 10 && isBallRight == 1 && D > 2000 && D < 3500)
 		{
 			// 推球	
 			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
-			shootCnt=0;
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[3]=1;
+		}
+		else if(shootFlagOne == 6 && fabs(GetSpeeedY()) >= 1500 && isBallRight == 1 && D > 2000)
+		{
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[3]=1;
+		}
+	}
+	
+	
+	
+	else if((shootFlagOne == 8 || shootFlagOne == 12) && shootReady[0] == 0 && shootReady[1] == 1)
+	{
+		shootFlag=0;
+		backshoot=1;
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(/*fabs(GetSpeeedX())>= 1600 && */isBallRight == 1 && D > 2000 && D < 3500)
+		{
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[0]=1;
+		}
+	}
+	else if(shootFlagOne == 9 && shootReady[1] == 0 && shootReady[2] == 1)
+	{
+		shootFlag=1;
+		backshoot=1;
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(/*fabs(GetSpeeedY()) >= 1600 &&*/isBallRight == 1 && D > 2000 && D < 3500)
+		{
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[1]=1;
+		}
+	}
+	else if(shootFlagOne == 10 && shootReady[2] == 0 && shootReady[3] == 1)
+	{
+		shootFlag=2;
+		backshoot=1;
+		if(/*fabs(GetSpeeedY()) >= 1600 &&*/isBallRight == 1 && D > 2000 && D < 3500)
+		{
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[2]=1;
+		}
+	}
+	else if(shootFlagOne == 11 && shootReady[3] == 0 && shootReady[0] == 1)
+	{
+		shootFlag=3;
+		backshoot=1;
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(/*fabs(GetSpeeedX())>= 1600 && */isBallRight == 1 && D > 2000 && D < 3500)
+		{
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			shootReady[3]=1;
 		}
 	}
 }
@@ -473,124 +597,76 @@ void NormalShootOne(uint16_t getPushTime)
 * @attention 
 */
 
-void NormalShootTwo(uint16_t getPushTime)
+void NormalShootTwo(void)
 {
-	if(flagOne == 6 || flagOne == 10)
+	float D=0;
+	
+	if(shootFlagOne == 6 || shootFlagOne == 10)
 	{ 
 		shootFlag=0;
-		if(flagOne == 6)
-			getPushTime=getPushTime-TIME_DIFF_2_ONE;
-		else;
-		
-		if(shootCnt == getPushTime && isBallRight == 1)
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(shootFlagOne == 10 && fabs(GetSpeeedY()) >= 1400 && isBallRight == 1 && D > 2400 )
 		{
 			// 推球	
 			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
-			shootCnt=0;
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+		}
+		else if(shootFlagOne == 6 && fabs(GetSpeeedY()) >= 1100 && isBallRight == 1 && D > 2000)
+		{
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
 		}
 		
 	}
-	else if(flagOne == 5 || flagOne == 9)
+	else if(shootFlagOne == 5 || shootFlagOne == 9)
 	{ 
 		shootFlag=1;
-		if(flagOne == 5)
-			getPushTime=getPushTime-TIME_DIFF_2_TWO;
-		else;
-		
-		if(shootCnt == getPushTime && isBallRight == 1)
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(shootFlagOne == 9 && fabs(GetSpeeedX()) >= 1400 && isBallRight == 1 && D > 2400)
 		{
 			// 推球	
 			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
-			shootCnt=0;
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+		}
+		else if(shootFlagOne == 5 && fabs(GetSpeeedX()) >= 1100 && isBallRight == 1 && D > 2000)
+		{
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
 		}
 	}
-	else if(flagOne == 4 || flagOne == 8 || flagOne == 12)
+	else if(shootFlagOne == 2 || shootFlagOne == 8 || shootFlagOne == 12)
 	{
+		
 		shootFlag=2;
-		
-		if(flagOne == 4)
-			getPushTime=getPushTime-TIME_DIFF_2_THR;
-		else;
-		
-		if(shootCnt == getPushTime && isBallRight == 1)
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if((shootFlagOne == 12|| shootFlagOne == 8) && fabs(GetSpeeedY()) >= 1500 && isBallRight == 1 && D > 2400)
 		{
 			// 推球	
 			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
-			shootCnt=0;
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+		}
+		else if(shootFlagOne == 4 && fabs(GetSpeeedY()) >= 1100 && isBallRight == 1 && D > 2400)
+		{
+			// 推球	
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
 		}
 	}
-	else if(flagOne == 7 || flagOne == 11)
+	else if(shootFlagOne == 7 || shootFlagOne == 11)
 	{
 		shootFlag=3;
-		
-		if(flagOne == 7)
-			getPushTime=getPushTime-TIME_DIFF_2_FOR;
-		else;
-		
-		if(shootCnt == getPushTime && isBallRight == 1)
+		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		if(fabs(GetSpeeedX()) >= 1400 && isBallRight == 1 && D > 2400)
 		{
 			// 推球	
 			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
-			shootCnt=0;
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
 		}
 	}
 }
 
-/**
-* @brief 激光校准
-* @param getreferenceDistance：参考距离，即定位系统算出的距离
-* @retval none
-* @attention 
-*/
-float posXAdd=0;
-float posYAdd=0;
-extern uint8_t adcFlag;
-void LaserCalibration(float getreferenceDistance)
-{
-	float laserdistance=0; 
-	laserdistance=(((fort.laserAValueReceive+fort.laserBValueReceive)/2)*LASER_SCALE)-200;
-	
-	if(getreferenceDistance < 3800 && getreferenceDistance > 2300)
-	{
-		if((laserdistance+100) < getreferenceDistance || (laserdistance-100) > getreferenceDistance)
-		{
-			if(flagOne == 9)
-			{
-				if(adcFlag == 0)
-					posXAdd=getreferenceDistance-laserdistance;
-				else
-					posXAdd=laserdistance-getreferenceDistance;
-			}
-			else if(flagOne == 11)
-			{
-				if(adcFlag == 0)
-					posXAdd=laserdistance-getreferenceDistance;
-				else
-					posXAdd=getreferenceDistance-laserdistance;
-			}
-			else if(flagOne == 10)
-			{
-				if(adcFlag == 0)
-					posYAdd=getreferenceDistance-laserdistance;
-				else
-					posYAdd=laserdistance-getreferenceDistance;
-			}
-			else if(flagOne == 12)
-			{
-				if(adcFlag == 0) 
-					posYAdd=laserdistance-getreferenceDistance;
-				else
-					posYAdd=getreferenceDistance-laserdistance;
-			}
-		}
-	}
-		
-
-}
 
 /**
 * @brief 球颜色识别
@@ -602,44 +678,76 @@ extern int32_t pushPos;
 extern uint8_t ballColor;
 uint8_t BallColorRecognition(void)
 {
-	static uint16_t ballCnt=0;
-	ballCnt++;
-	if(pushPos == pushPulse)
+	static uint16_t ballCnt1=0;
+	static uint16_t ballCnt2=0;
+	ReadActualPos(CAN2, PUSH_BALL_ID);
+	if(pushPos > pushPulse-600 && pushPos < pushPulse+300)
 	{
-//		ballCnt=0;
-//		if(ballColor == WRONG_BALL)
-//		{
-//			pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
-//			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-//			return 0;
-//		}
-//		else if(ballColor == RIGHT_BALL)
-//		{
-//			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-//			PosCrl(CAN2, PUSH_BALL_ID,RELATIVE_MODE,pushPulse);
-//			return 1;
-//		}
-//		else
-//		{
-//			return 0;
-//		}
+		ballCnt2++;
+		if(ballColor == RIGHT_BALL)
+		{
+			ballCnt2=0;
+			return 1;
+		}
+		else if(ballColor == WRONG_BALL && ballCnt2 > 70)
+		{
+			pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			ballCnt2=0;
+			return 0;
+			
+		}
+		else
+		{
+			if(ballCnt2 == 200)
+			{
+				pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
+				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+				
+				
+			}
+			else if(ballCnt2 > 400)
+			{
+				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+				ballCnt2=0;
+			}
+			return 0;
+		}
 	}
 	else
 	{
-////			if(ballCnt == 400)
-////			{
-////				pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
-////				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-////				
-////				
-////			}
-////			else if(ballCnt > 800)
-////			{
-////				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-////				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-////				ballCnt=0;
-////			}
-////			return 0;
+		
+		ballCnt2=0;
+		if(ballCnt1 > 200 && ballColor == WRONG_BALL)
+		{
+			pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			ballCnt1=0;
+			
+		}
+		else if(ballCnt1 > 200 && ballColor == RIGHT_BALL)
+		{
+			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			ballCnt1=0;
+		}
+		else
+		{
+			if(ballCnt1 == 200)
+			{
+				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+			}
+			else if(ballCnt1 > 400)
+			{
+				pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
+				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+				ballCnt1=0;
+			}
+		}
+		ballCnt1++;
+		return 0;
 	}
 		
 		

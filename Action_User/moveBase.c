@@ -38,7 +38,7 @@ extern struct usartValue_{
 	float shootangle;
 }usartValue;
 
-
+uint8_t step=0;
 uint8_t flagOne=0;
 uint8_t errFlg=0;
 /**
@@ -125,6 +125,7 @@ uint8_t straightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed)
 			}
 			else
 			{
+				 
 				setAngle=180;
 				Turn(setAngle+angleAdd,setSpeed);
 			}
@@ -146,14 +147,14 @@ uint8_t straightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed)
 	}
 	if(flagOne < 7)
 	{
-		if((distance < 32) && (distance > -32))
+		if((distance < 35) && (distance > -35))
 			return 1;
 		else
 			return 0; 
 	}
 	else
 	{
-		if((distance < 45) && (distance > -45))
+		if((distance < 52) && (distance > -52))
 			return 1;
 		else
 			return 0; 
@@ -162,6 +163,44 @@ uint8_t straightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed)
 
 }
 
+
+void N_SET_closeRound(float x,float y,float R,float clock,float backspeed)
+{
+	float Distance=0;
+	float k=0;
+	float setangle=0,Agl=0,frontspeed=0;
+	Distance=sqrt(pow(GetPosX()-x,2)+pow(GetPosY()-y,2))-R;
+	k=(GetPosX()-x)/(y-GetPosY());
+	//顺1逆2
+	if(clock==1)
+	{
+		if(GetPosY()>y)
+		  Agl=-90+atan(k)*180/PI;
+	  else if(GetPosY()<y)
+		  Agl=90+atan(k)*180/PI;
+	  else if(GetPosY()==y&&GetPosX()>=x)
+		  Agl=180;
+	  else if(GetPosY()==y&&GetPosX()<x)
+		  Agl=0;
+		setangle=Agl-DistancePid(Distance,0);
+		frontspeed=AnglePid(setangle,GetAngle());
+	}
+	else if(clock==2)
+	{
+		if(GetPosY()>y)
+		  Agl=90+atan(k)*180/PI;
+	  else if(GetPosY()<y)
+		  Agl=-90+atan(k)*180/PI;
+	  else if(GetPosY()==y&&GetPosX()>=x)
+		  Agl=0;
+	  else if(GetPosY()==y&&GetPosX()<x)
+		  Agl=180;
+		setangle=Agl+DistancePid(Distance,0);
+		frontspeed=AnglePid(setangle,GetAngle());
+	}
+	VelCrl(CAN1,1,-backspeed*REDUCTION_RATIO*NEW_CAR_COUNTS_PER_ROUND/(PI*WHEEL_DIAMETER));//后轮
+	VelCrl(CAN1,2,-frontspeed*REDUCTION_RATIO*NEW_CAR_COUNTS_PER_ROUND/(PI*TURN_AROUND_WHEEL_DIAMETER));//前轮
+}
 
 /**
   * @brief  后退走直线
@@ -220,177 +259,281 @@ uint8_t BackstraightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed)
 
 
 /**
-  * @brief  走方形
+  * @brief  顺时针走方形，面积渐渐变大，偏离轨道后能回去
   * @note	
   * @param 
   * @retval None
   */
-void Squre(void)
+extern uint8_t modeFlag;
+extern uint8_t shootReady[4];
+extern uint8_t shootFlagOne;
+float speed[4]={2500,2500,2500,2500};
+void BiggerSquareOne(void)
 {
-	static uint8_t sFlag=0;
-	float speed2=0;
+	static int Tangencyflag=0,Tangencyflag2=0,lastTangencyflag=0,sureflag=0;
 	float sTAngle=GetAngle();
 	float sTX=GetPosX();
 	float sTY=GetPosY();
-	Angle_PidPara((600*KP_A),0,0);
-	switch(sFlag)
+	float speed1=800;
+	float speed2=2000;
+	float speed3=2500;
+	if(modeFlag)
+	{
+		speed2=1500;
+		speed3=2000;
+	
+	}
+	
+	switch(flagOne)
 	{
 		case 0:
-			if(sTY < 2500)
+			if(sTY < 1900)
 			{
-				speed2=1000;
-				straightLine(1,0,1200,0,speed2);
+				Angle_PidPara(27,0,0);
+				Distance_PidPara(0.1,0,4);
+				straightLine(1,0,700,0,1500);
+			}
+			else
+				flagOne++;
+			break;
+		case 1:
+			Angle_PidPara(80,0,0);
+		    Distance_PidPara(0.1,0,0);
+				N_SET_closeRound(0,2300,450,1,1500);
+			 if(GetPosX() > 100 && GetPosY() < 1800)  
+				Tangencyflag2=1;
+				if(GetAngle() > 88 && GetAngle() < 92)
+					Tangencyflag=1;
+				else 
+					Tangencyflag=0;
+		    if(GetPosY()>2300)
+			    sureflag=1;
+		    if(Tangencyflag == 1 && lastTangencyflag == 0 && sureflag && Tangencyflag2)
+			    flagOne++;
+		    lastTangencyflag=Tangencyflag;
+			break;
+		case 2:
+			if(sTY < 2600)
+			{
+				Angle_PidPara(30,0,0);
+				Distance_PidPara(0.10,0,3);
+				straightLine(1,0,1200,0,1500);
 			}
 			else
 			{
-				speed2=600;
-				if(straightLine(0,1,-3400,0,speed2) == 1)
-					sFlag++;
+				shootFlagOne=5;
+				Angle_PidPara((800*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,25); 
+				if(straightLine(0,1,-3400,0,speed1) == 1)
+				flagOne=5;
 			}
-				
 			break;
-		case 1:
-			if(sTX < 250)
+//		case 0:
+//			if(sTY < 2000)
+//			{
+//				straightLine(1,0,700,0,1000);
+//				
+//			}
+//			else
+//				flagOne++;
+//			break;
+//		case 1:
+//			if(sTX < -200)
+//			{
+//				straightLine(0,1,-2900,0,1000);
+//				
+//			}
+//			else
+//				flagOne++;
+//			break;
+//		case 2:
+//			if(sTY > 2500)
+//			{
+//				straightLine(1,0,-700,1,1000);
+//				
+//			}
+//			else
+//				flagOne++;
+//			break;
+//		case 3:
+//			if(sTX > -400)
+//			{
+//				straightLine(0,1,-1700,1,1000);
+//				
+//			}
+//			else
+//			{
+//				shootFlagOne=4;
+//				if(straightLine(1,0,1200,0,speed1) == 1)
+//					flagOne++;
+//			}
+//			break;
+//			
+//		case 4:
+//			if(sTY < 2400)
+//			{
+//				straightLine(1,0,1200,0,speed2);
+//				
+//			}
+//			else
+//			{
+//				shootFlagOne=5;
+//				if(straightLine(0,1,-3400,0,speed1) == 1)
+//					flagOne++;
+//			}
+//			break;
+		case 5:
+			if(sTX < 200)
 			{
-				speed2=2000;
 				straightLine(0,1,-3400,0,speed2);
 				
 			}
 			else
 			{
-				speed2=600;
-				if(straightLine(1,0,-1200,1,speed2) == 1)
-					sFlag++;
+				shootFlagOne=6;
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				if(straightLine(1,0,-1200,1,speed1) == 1)
+					flagOne++;
 			}
 			break;
-		case 2:
-			if(sTY > 2150)
+		case 6:
+			if(sTY > 2300)
 			{
-				speed2=2000;
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
 				straightLine(1,0,-1200,1,speed2);
 				
 			}
 			else
 			{
-				speed2=600;
-				if(straightLine(0,1,-1200,1,speed2) == 1)
-					sFlag++;
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=7;
+				if(straightLine(0,1,-1200,1,speed1) == 1)
+					flagOne++;
 			}
 			break;
-		case 3:
-			if(sTX > -250)
+		case 7:
+			if(sTX > -400)
 			{
-				speed2=2000;
-				straightLine(0,1,-1200,1,speed2);
+				Angle_PidPara((600*(266.55/20000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-1200,1,speed3);
 				
 			}
 			else
 			{
-				speed2=600;
-				if(straightLine(1,0,1200,0,speed2) == 1)
-					sFlag++;
+				Angle_PidPara((800*KP_A),0,30);
+				Distance_PidPara(KP_D,0,KD_D2);
+				shootFlagOne=8;
+				if(straightLine(1,0,1900,0,speed1) == 1)
+					flagOne++;
 			}
 			break;
 			
-		case 4:
-			if(sTY < 2450)
+		case 8:
+			if(sTY < 2800)
 			{
-				speed2=2000;
-				straightLine(1,0,1200,0,speed2);
-				
-			}
-			else
-			{
-				speed2=600;
-				if(straightLine(0,1,-3400,0,speed2) == 1)
-					sFlag=1;
-			}
-			break;
-		default: sFlag=0;
-			break;
-	}
-}
-
-
-void Squre2(void)
-{
-	static uint8_t sFlag=0;
-	static float speed3=2500;
-	static float speed4=600;
-	float sTAngle=GetAngle();
-	float sTX=GetPosX();
-	float sTY=GetPosY();
-	
-	switch(sFlag)
-	{
-		case 0:
-			if(sTY < 2850)
-			{
-				straightLine(1,0,1900,0,1000);
-				
-			}
-			else
-			{
-				if(straightLine(0,1,-4100,0,speed4) == 1)
-					sFlag++;
-			}
-				
-			break;
-		case 1:
-			if(sTX < 650)
-			{ 
-				straightLine(0,1,-4100,0,speed3);
-				
-			}
-			else
-			{
-
-				if(straightLine(1,0,-1900,1,speed4) == 1)
-					sFlag++;
-			}
-			break;
-		case 2:
-			if(sTY > 1550)
-			{
-				straightLine(1,0,-1900,1,speed3);
-				
-			}
-			else
-			{
-				if(straightLine(0,1,-300,1,speed4) == 1)
-					sFlag++;
-			}
-			break;
-		case 3:
-			if(sTX > -650)
-			{
-				straightLine(0,1,-300,1,speed3);
-				
-			}
-			else
-			{
-				if(straightLine(1,0,1900,0,speed4) == 1)
-					sFlag++;
-			}
-			break;
-			
-		case 4:
-			if(sTY < 2850)
-			{
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
 				straightLine(1,0,1900,0,speed3);
 				
 			}
 			else
 			{
-				if(straightLine(0,1,-4100,0,speed4) == 1)
-					sFlag=1;
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=9;
+				if(straightLine(0,1,-4300,0,speed1) == 1)
+					flagOne++;
 			}
 			break;
-		default: sFlag=0;
+		case 9:
+			if(sTX < 450)
+			{ 
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-4300,0,speed3);
+				
+			}
+			else
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=10;
+				if(straightLine(1,0,-1900,1,speed1) == 1)
+					flagOne++;
+			}
+			break;
+		case 10:
+			if(sTY > 1800)
+			{
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,-1900,1,speed3);
+				
+			}
+			else
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=11;
+				if(straightLine(0,1,-300,1,speed1) == 1)
+					flagOne++;
+			}
+			break;
+		case 11:
+			if(sTX > -400)
+			{
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-300,1,speed3);
+				
+			}
+			else
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=12;				
+				if(straightLine(1,0,1900,0,speed1) == 1)
+					flagOne++;
+			}
+			break;
+		case 12:
+			if(sTY < 2800)
+			{
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,1900,0,speed3);
+				
+			}
+			else
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=9;
+				if(straightLine(0,1,-4300,0,speed1) == 1)
+				{
+					flagOne=9;
+					if(shootReady[0] == 1 && shootReady[1] == 1 && shootReady[2] == 1 && shootReady[3] == 1)
+					{
+						for(int i=0;i<4;i++)
+						{
+							shootReady[i]=0;
+						}
+					}
+					if(shootReady[2] == 0)
+						speed[2]=2000;
+					step++;
+				}
+			}
+			break;
+			
+		default: flagOne=0;
 			break;
 	}
 }
-
 /**
   * @brief  顺时针走方形，面积渐渐变大，偏离轨道后能回去
   * @note	
@@ -398,188 +541,232 @@ void Squre2(void)
   * @retval None
   */
 
-
-void BiggerSquareOne(void)
+void BiggerSquareTwo(void)
 {
 	float sTAngle=GetAngle();
 	float sTX=GetPosX();
 	float sTY=GetPosY();
-	float speed1=600;
-	float speed2=2000;
-	float speed3=2400;
+	float speed1=800;
 	
 	
 	switch(flagOne)
 	{
-		case 0:
-			if(sTY < 2000)
-			{
-				straightLine(1,0,700,0,800);
-				
-			}
-			else
-				flagOne++;
-			break;
-		case 1:
-			if(sTX < -200)
-			{
-				straightLine(0,1,-2900,0,800);
-				
-			}
-			else
-				flagOne++;
-			break;
-		case 2:
-			if(sTY > 2500)
-			{
-				straightLine(1,0,-700,1,800);
-				
-			}
-			else
-				flagOne++;
-			break;
-		case 3:
-			if(sTX > -400)
-			{
-				straightLine(0,1,-1700,1,800);
-				
-			}
-			else
-			{
-				if(straightLine(1,0,1200,0,speed1) == 1)
-					flagOne++;
-			}
-			break;
-			
-		case 4:
-			if(sTY < 2500)
-			{
-				straightLine(1,0,1200,0,speed2);
-				
-			}
-			else
-			{
-				if(straightLine(0,1,-3400,0,speed1) == 1)
-					flagOne++;
-			}
-			break;
-		case 5:
-			if(sTX < 250)
-			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
-				straightLine(0,1,-3400,0,speed2);
-				
-			}
-			else
-			{
-				if(straightLine(1,0,-1200,1,speed1) == 1)
-					flagOne++;
-			}
-			break;
-		case 6:
-			if(sTY > 2100)
-			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
-				straightLine(1,0,-1200,1,speed2);
-				
-			}
-			else
-			{
-				if(straightLine(0,1,-1200,1,speed1) == 1)
-					flagOne++;
-			}
-			break;
-		case 7:
-			if(sTX > -650)
-			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
-				straightLine(0,1,-1200,1,speed3);
-				
-			}
-			else
-			{
-				if(straightLine(1,0,1900,0,speed1) == 1)
-					flagOne++;
-			}
-			break;
-			
-		case 8:
-			if(sTY < 2850)
-			{
-				Angle_PidPara((600*(266.55/17000)),0,0);
-				Distance_PidPara(KP_D,0,20);
-				straightLine(1,0,1900,0,speed3);
-				
-			}
-			else
-			{
-				
-				if(straightLine(0,1,-4100,0,speed1) == 1)
-					flagOne++;
-			}
-			break;
 		case 9:
-			if(sTX < 650)
+			if(sTX < 450)
 			{ 
-				Angle_PidPara((600*(266.55/17000)),0,0);
-				Distance_PidPara(KP_D,0,20);
-				straightLine(0,1,-4100,0,speed3);
+				
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-4300,0,speed[2]);
 				
 			}
 			else
 			{
-
+				
+				
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=10;
 				if(straightLine(1,0,-1900,1,speed1) == 1)
+				{
+					if(shootReady[3] == 0)
+						speed[3]=2000;
 					flagOne++;
+				}
 			}
 			break;
 		case 10:
-			if(sTY > 1550)
+			if(sTY > 1700)
 			{
-				Angle_PidPara((600*(266.55/17000)),0,0);
-				Distance_PidPara(KP_D,0,20);
-				straightLine(1,0,-1900,1,speed3);
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,-1900,1,speed[3]);
 				
 			}
 			else
 			{
+				
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=11;
 				if(straightLine(0,1,-300,1,speed1) == 1)
+				{
+					if(shootReady[0] == 0)
+						speed[0]=2000;
 					flagOne++;
+				}
 			}
 			break;
 		case 11:
-			if(sTX > -650)
+			if(sTX > -400)
 			{
-				Angle_PidPara((600*(266.55/17000)),0,0);
-				Distance_PidPara(KP_D,0,20);
-				straightLine(0,1,-300,1,speed3);
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-300,1,speed[0]);
 				
 			}
 			else
 			{
+				
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=12;				
 				if(straightLine(1,0,1900,0,speed1) == 1)
+				{
+					if(shootReady[1] == 0)
+						speed[1]=2000;
 					flagOne++;
+				}
 			}
 			break;
 		case 12:
-			if(sTY < 2850)
+			if(sTY < 2900)
 			{
-				Angle_PidPara((600*(266.55/17000)),0,0);
-				Distance_PidPara(KP_D,0,20);
-				straightLine(1,0,1900,0,speed3);
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,1900,0,speed[1]);
 				
 			}
 			else
 			{
-				if(straightLine(0,1,-4100,0,speed1) == 1)
-					flagOne=9;
+				
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=9;
+				if(straightLine(0,1,-4300,0,speed1) == 1)
+				{
+					flagOne++;
+					if(shootReady[0] == 1 && shootReady[1] == 1 && shootReady[2] == 1 && shootReady[3] == 1)
+					{
+						for(int i=0;i<4;i++)
+						{
+							shootReady[i]=0;
+						}
+					}
+					if(shootReady[1] == 0)
+						speed[1]=2000;
+				}
+			}
+			break;
+		case 13:
+			if(sTX < 450)
+			{ 
+				
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-4300,0,speed[2]);
+				
+			}
+			else
+			{
+				
+				
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=10;
+				if(straightLine(1,0,-1900,1,speed1) == 1)
+				{
+					if(shootReady[3] == 0)
+						speed[3]=2000;
+					flagOne++;
+				}
+			}
+			break;
+		case 14:
+			if(sTY > 1700)
+			{
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,-1900,1,speed[3]);
+				
+			}
+			else
+			{
+				
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=11;
+				if(straightLine(0,1,-300,1,speed1) == 1)
+				{
+					if(shootReady[0] == 0)
+						speed[0]=2000;
+					flagOne++;
+				}
+			}
+			break;
+		case 15:
+			if(sTX > -400)
+			{
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-300,1,speed[0]);
+				
+			}
+			else
+			{
+				
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=12;				
+				if(straightLine(1,0,1900,0,speed1) == 1)
+				{
+						flagOne=0;
+						step++;
+				}
 			}
 			break;
 		default: flagOne=0;
 			break;
+	}
+}
+
+void The_Collect_Round()
+{
+	static int roundflag=0,changeflag=0,lastchangeflag=0,change_R=0,changeflag2=0,lastchangeflag2=0,change_R2=0;
+	switch(roundflag)
+	{
+		case 0:
+		  if(GetPosY()<1700)
+			{		 
+				Angle_PidPara(40,0,0);
+				Distance_PidPara(0.1,0,5);
+				straightLine(1,0,1800,0,1500);
+			}
+			else 
+				roundflag++;
+		break;
+		case 1:
+			
+			Angle_PidPara(80,0,0);
+			Distance_PidPara(0.08,0,0);
+			N_SET_closeRound(-100,2300,900,1,2000);
+  			if(GetPosY()>1750)
+				changeflag=1;
+			else 
+				changeflag=0;
+			if(changeflag==1&&lastchangeflag==0)
+				change_R++;
+			lastchangeflag=changeflag;
+			if(change_R==2)
+			roundflag++;
+			break;
+		case 2:
+			Angle_PidPara(70,0,0);
+			Distance_PidPara(0.08,0,0);
+			N_SET_closeRound(-50,2300,450,1,1500);
+			if(GetPosY()>2170&&GetPosY()<2200&&GetPosX()<0)
+				changeflag2=1;
+			else changeflag2=0;
+			if(changeflag2==1&&lastchangeflag2==0)
+				change_R2++;
+			lastchangeflag2=changeflag2;
+			if(change_R2==2)
+				roundflag++;
+			break;
+		case 3:
+			VelCrl(CAN1,1,0);
+		  VelCrl(CAN1,2,0);
+		  break;
 	}
 }
 
@@ -591,14 +778,14 @@ void BiggerSquareOne(void)
   */
 
 
-void BiggerSquareTwo(void)
+void BiggerSquareThr(void)
 {
 	float sTAngle=GetAngle();
 	float sTX=GetPosX();
 	float sTY=GetPosY();
-	float speed1=600;
-	float speed2=2000;
-	float speed3=2500;
+	float speed1=1000;
+	float speed2=1000;
+	float speed3=1000;
 	
 
 	switch(flagOne)
@@ -638,134 +825,157 @@ void BiggerSquareTwo(void)
 			}
 			else
 			{
+				shootFlagOne=4;
 				if(straightLine(1,0,-1200,0,speed1) == 1)
 					flagOne++;
 			}
 			break;
 			
 		case 4:
-			if(sTY < 2500)
+			if(sTY < 2600)
 			{
 				straightLine(1,0,1200,0,speed2);
 				
 			}
 			else
 			{
+				shootFlagOne=5;
 				if(straightLine(0,1,-3400,1,speed1) == 1)
 					flagOne++;
 			}
 			break;
 		case 5:
-			if(sTX > -300)
+			if(sTX > -400)
 			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
 				straightLine(0,1,-3400,1,speed2);
 				
 			}
 			else
 			{
+				shootFlagOne=6;
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,20);
 				if(straightLine(1,0,1200,1,speed1) == 1)
 					flagOne++;
 			}
 			break;
 		case 6:
-			if(sTY > 2100)
+			if(sTY > 2000)
 			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
+				Angle_PidPara((600*(266.55/17000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
 				straightLine(1,0,1200,1,speed2);
 				
 			}
 			else
 			{
+				shootFlagOne=7;
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,20);
 				if(straightLine(0,1,-1200,0,speed1) == 1)
 					flagOne++;
 			}
 			break;
 		case 7:
-			if(sTX < 650)
+			if(sTX < 800)
 			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
+				Angle_PidPara((600*(266.55/19000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
 				straightLine(0,1,-1200,0,speed3);
 				
 			}
 			else
 			{
+				shootFlagOne=8;
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,18);
 				if(straightLine(1,0,-1900,0,speed1) == 1)
 					flagOne++;
 			}
 			break;
 			
 		case 8:
-			if(sTY < 2850)
+			if(sTY < 3200)
 			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
+				Angle_PidPara((600*(266.55/17000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
 				straightLine(1,0,-1900,0,speed3);
 				
 			}
 			else
 			{
-				if(straightLine(0,1,-4100,1,speed1) == 1)
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=9;
+				if(straightLine(0,1,-4300,1,speed1) == 1)
 					flagOne++;
 			}
 			break;
 		case 9:
-			if(sTX > -650)
+			if(sTX > -800)
 			{ 
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
-				straightLine(0,1,-4100,1,speed3);
+				Angle_PidPara((600*(266.55/17000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-4300,1,speed3);
 				
 			}
 			else
 			{
-
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=10;
 				if(straightLine(1,0,1900,1,speed1) == 1)
 					flagOne++;
 			}
 			break;
 		case 10:
-			if(sTY > 1550)
+			if(sTY > 1400)
 			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
+				Angle_PidPara((600*(266.55/17000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
 				straightLine(1,0,1900,1,speed3);
 				
 			}
 			else
 			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=11;
 				if(straightLine(0,1,-300,0,speed1) == 1)
 					flagOne++;
 			}
 			break;
 		case 11:
-			if(sTX < 650)
+			if(sTX < 700)
 			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
+				Angle_PidPara((600*(266.55/17000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
 				straightLine(0,1,-300,0,speed3);
 				
 			}
 			else
 			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=12;
 				if(straightLine(1,0,-1900,0,speed1) == 1)
 					flagOne++;
 			}
 			break;
 		case 12:
-			if(sTY < 2850)
+			if(sTY < 3200)
 			{
-				Angle_PidPara((600*(266.55/16000)),0,0);
-				Distance_PidPara(KP_D,0,20);
+				Angle_PidPara((600*(266.55/17000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
 				straightLine(1,0,-1900,0,speed3);
 				
 			}
 			else
 			{
-				if(straightLine(0,1,-4100,1,speed1) == 1)
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=9;
+				if(straightLine(0,1,-4300,1,speed1) == 1)
 					flagOne=9;
 			}
 			break;
@@ -774,39 +984,116 @@ void BiggerSquareTwo(void)
 	}
 }
 
+void BiggerSquareFor(void)
+{
+	float sTAngle=GetAngle();
+	float sTX=GetPosX();
+	float sTY=GetPosY();
+	float speed1=800;
+	float speed[4]={2500,2500,2500,2500};
+	
+//	for(int i=0;i<4;i++)
+//	{
+//		if(shootReady[i] == 0)
+//			speed[i]=2000;
+//	}
+	switch(flagOne)
+	{
+		case 0:
+			Angle_PidPara((600*KP_A),0,KD_A);
+			Distance_PidPara(KP_D,0,KD_D);
+			shootFlagOne=10;
+			if(straightLine(0,1,-4300,0,speed1) == 1)
+				flagOne=9;
+			break;
+		case 9:
+			if(sTX < 450)
+			{ 
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-4300,0,speed[2]);
+				
+			}
+			else
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=10;
+				if(straightLine(1,0,-1900,1,speed1) == 1)
+					flagOne++;
+			}
+			break;
+		case 10:
+			if(sTY > 1700)
+			{
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,-1900,1,speed[3]);
+				
+			}
+			else
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=11;
+				if(straightLine(0,1,-300,1,speed1) == 1)
+					flagOne++;
+			}
+			break;
+		case 11:
+			if(sTX > -400)
+			{
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(0,1,-300,1,speed[0]);
+				
+			}
+			else
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=12;				
+				if(straightLine(1,0,1900,0,speed1) == 1)
+					flagOne++;
+			}
+			break;
+		case 12:
+			if(sTY < 2900)
+			{
+				Angle_PidPara((600*(266.55/18000)),0,0);
+				Distance_PidPara(KP_D2,0,KD_D2);
+				straightLine(1,0,1900,0,speed[1]);
+				
+			}
+			else
+			{
+				Angle_PidPara((600*KP_A),0,KD_A);
+				Distance_PidPara(KP_D,0,KD_D);
+				shootFlagOne=9;
+				if(straightLine(0,1,-4300,0,speed1) == 1)
+				{
+					flagOne=9;
+					if(shootReady[0] == 1 && shootReady[1] == 1 && shootReady[2] == 1 && shootReady[3] == 1)
+					{
+						for(int i=0;i<4;i++)
+						{
+							shootReady[i]=0;
+						}
+					}
+				}
+			}
+			break;
+		default: flagOne=0;
+			break;
+	}
+}
+
 /**
-  * @brief  x方向速度
+  * @brief  走形1
   * @note	
   * @param 
   * @retval None
   */
-
-float Speed_X(void)
-{
-	static float tXLast=0;
-	float tX=GetPosX();
-	float speedX=(tX-tXLast)*100;
-	tXLast=tX;
-	return speedX;
-}
-
-
-/**
-  * @brief  y方向速度
-  * @note	
-  * @param 
-  * @retval None
-  */
-
-float Speed_Y(void)
-{
-	static float tYLast=0;
-	float tY=GetPosY();
-	float speedY=(tY-tYLast)*100;
-	tYLast=tY;
-	return speedY;
-}
-
 
 void Walk(uint8_t getAdcFlag)
 {
@@ -819,8 +1106,8 @@ void Walk(uint8_t getAdcFlag)
 	float speedy=0;
 	
 	
-	speedx=Speed_X();
-	speedy=Speed_Y();
+	speedx=GetSpeeedX();
+	speedy=GetSpeeedY();
 	
 	//故障判断
 	if((speedx < 100) && (speedx > -100) && (speedy < 100) && (speedy > -100))
@@ -832,72 +1119,64 @@ void Walk(uint8_t getAdcFlag)
 			X_Now=GetPosX();
 			Y_Now=GetPosY();
 			walkCnt=0;
-		} 
+		} 	
 		if(errFlag == 1)
 		{
 			if(errFlg > 3)
 				errFlg=3;
 			else
 				errFlg++;
-			
 		}
 	}
 	else
-		errFlg=0;
+	{
+			errFlg=0;
+	}
 	
 	//故障处理，后退
-	if(errFlag)
+	if(errFlag && step < 2)
 	{
-		if(((X_Now+2300) <= Y_Now) && ((2300-X_Now) <= Y_Now))
+		//顺时针
+		if(getAdcFlag == 0 && (flagOne == 4 || flagOne == 8 || flagOne == 12))
 		{
-			if(Y_Now > 3200)
-			{
-				ready=BackstraightLine(0,1,500-Y_Now,getAdcFlag,1000);
-			}
-			else if((Y_Now <= 3200) && (Y_Now > 2300))
-			{
-				ready=BackstraightLine(0,1,-500-Y_Now,getAdcFlag,1000);
-			}
+			ready=BackstraightLine(1,0,-400-X_Now,0,1000);
 		}
-		else if(((X_Now+2300) > Y_Now) && ((2300-X_Now) > Y_Now))
+		else if(getAdcFlag == 0 && (flagOne == 5 || flagOne == 9))
 		{
-			if((Y_Now <= 2300) && (Y_Now > 1200))
-			{
-				ready=BackstraightLine(0,1,500-Y_Now,!getAdcFlag,1000);
-			}
-			else if(Y_Now <= 1200)
-			{
-				ready=BackstraightLine(0,1,-500-Y_Now,!getAdcFlag,1000);
-			}
+			ready=BackstraightLine(0,1,400-Y_Now,1,1000);
 		}
-		else if(((X_Now+2300) < Y_Now) && ((2300-X_Now) >= Y_Now))
+		else if(getAdcFlag == 0 && (flagOne == 6 || flagOne == 10))
 		{
-			if(X_Now <= 0 && X_Now > -1000)
-			{
-				ready=BackstraightLine(1,0,500-X_Now,!getAdcFlag,1000);
-			}
-			else if(X_Now <= -1000)
-			{
-				ready=BackstraightLine(1,0,-500-X_Now,!getAdcFlag,1000);
-			}
+			ready=BackstraightLine(1,0,400-X_Now,1,1000);
 		}
-		else if(((X_Now+2300) >= Y_Now) && ((2300-X_Now) < Y_Now))
+		else if(getAdcFlag == 0 && (flagOne == 7 || flagOne == 11))
 		{
-		
-			if(X_Now >= 0 && X_Now < 1000)
-			{
-				ready=BackstraightLine(1,0,-500-X_Now,getAdcFlag,1000);
-			}
-			
-			else if(X_Now >= 1000)
-			{
-				ready=BackstraightLine(1,0,500-X_Now,getAdcFlag,1000);
-			}
+			ready=BackstraightLine(0,1,-400-Y_Now,0,1000);
 		}
 		
+		//逆时针
+		if(getAdcFlag == 1 && (flagOne == 4 || flagOne == 8 || flagOne == 12))
+		{
+			ready=BackstraightLine(1,0,400-X_Now,0,1000);
+		}
+		else if(getAdcFlag == 1 && (flagOne == 5 || flagOne == 9))
+		{
+			ready=BackstraightLine(0,1,400-Y_Now,0,1000);
+		}
+		else if(getAdcFlag == 1 && (flagOne == 6 || flagOne == 10))
+		{
+			ready=BackstraightLine(1,0,-400-X_Now,1,1000);
+		}
+		else if(getAdcFlag == 1 && (flagOne == 7 || flagOne == 11))
+		{
+			ready=BackstraightLine(0,1,-400-Y_Now,1,1000);
+		}
 		if(ready)
 		{
-			if(flagOne >= 8)
+				
+			if(flagOne == 12)
+				flagOne=4;
+			else if(flagOne >= 8)
 				flagOne=flagOne-4;
 			else
 				flagOne=flagOne+4;
@@ -906,20 +1185,32 @@ void Walk(uint8_t getAdcFlag)
 		else;
 	}
 	
-	//
 	else
 	{
 		if(!getAdcFlag)
 		{
-			BiggerSquareOne();
+			switch(step)
+			{
+				case 0:
+					BiggerSquareOne();
+					break;
+				case 1:
+					BiggerSquareTwo();
+					break;
+				case 2:
+					The_Collect_Round();
+					break;
+				default: break;
+			}		
 		}
 		else
 		{
-			BiggerSquareTwo();
+			BiggerSquareThr();
 		}
 	}
 
 }
+
 
 
 

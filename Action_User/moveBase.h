@@ -24,6 +24,7 @@
 #include <math.h>
 #include "elmo.h"
 #include "trans.h"
+#include "fort.h"
 /* Includes ------------------------------------------------------------------*/
 
 
@@ -49,10 +50,12 @@
 
 
 #define PI (3.141593)
-#define TURN_RIGHT 0
-#define TURN_LEFT  1
-#define KP_A (266.55/10000)
-#define KP_D (0.23)
+#define KP_A  (266.55/14000)
+#define KD_A  (140)
+#define KP_D  (0.30)
+#define KD_D  (28)
+#define KP_D2 (0.19)
+#define KD_D2 (22)
 
 //后轮电机的CAN ID号
 #define BACK_WHEEL_ID                                                 (1)
@@ -86,14 +89,13 @@
 /* Exported functions --------------------------------------------------------*/
 void Turn(float angle,float gospeed);
 void BackTurn(float angle,float gospeed);
+void N_SET_closeRound(float x,float y,float R,float clock,float backspeed);
 uint8_t straightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed);
 uint8_t BackstraightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed);
-void Squre(void);
-void Squre2(void);
 void BiggerSquareOne(void);
 void BiggerSquareTwo(void);
-float Speed_X(void);
-float Speed_Y(void);
+void BiggerSquareThr(void);
+void BiggerSquareFor(void);
 void Walk(uint8_t getAdcFlag);
 #endif /* ___H */
 

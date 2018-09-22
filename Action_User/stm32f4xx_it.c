@@ -41,6 +41,7 @@
 #include "elmo.h"
 #include "app_cfg.h"
 #include "fort.h"
+#include "key.h"
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
@@ -122,6 +123,10 @@ void CAN2_RX0_IRQHandler(void)
 		for(int i=0;i<8;i++)
 		translation.data8[i]=CAN2Buffer2[i];
 		pushPos=translation.data32[1];
+		if(translation.data32[0] == 5850)
+		{
+			pushPos=translation.data32[1];
+		}
 	}
 	
 
@@ -222,6 +227,7 @@ void TIM3_IRQHandler(void)
 	OSIntExit();
 }
 
+
 void TIM4_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -230,6 +236,7 @@ void TIM4_IRQHandler(void)
 	OS_EXIT_CRITICAL();
 	if (TIM_GetITStatus(TIM4, TIM_IT_Update) == SET)
 	{
+		
 		TIM_ClearITPendingBit(TIM4, TIM_IT_Update);
 	}
 	OSIntExit();
@@ -237,7 +244,7 @@ void TIM4_IRQHandler(void)
 //试场调参数用蓝牙串口中断函数
 void UART4_IRQHandler(void)
 {
-
+	uint8_t data;
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 	OSIntNesting++;
@@ -245,6 +252,8 @@ void UART4_IRQHandler(void)
 
 	if (USART_GetITStatus(UART4, USART_IT_RXNE) == SET)
 	{
+		data=USART_ReceiveData(UART4);
+		UARTCmd(data);
 		USART_ClearITPendingBit(UART4, USART_IT_RXNE);	
 	}
 	OSIntExit();
@@ -375,7 +384,7 @@ void USART6_IRQHandler(void) //更新频率200Hz
 
 
 
-static float angle=0,posX=0,posY=0,speed_X=0,speed_Y=0;
+static float angle=0,posX=0,posY=0,speed_X=0,speed_Y=0,gyro=0;
 
 extern uint8_t isOKFlag;
 
@@ -456,7 +465,7 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 					 speed_Y = posture.ActVal[2]; 
 					 posX = posture.ActVal[3];//x 
 					 posY = posture.ActVal[4];//y 
-					 posture.ActVal[5] = posture.ActVal[5];
+					 gyro = posture.ActVal[5];
 				 } 
 				 count = 0; 
 				 break; 
@@ -489,19 +498,17 @@ float GetAngle(void)
 }
 
 extern float axis_Xerr;
-extern float posXAdd;
-extern float posYAdd;
 float GetPosX(void)
 {
 	float newPosX;
-	newPosX=posX+(OPS_TO_BACK_WHEEL*sin(angle*PI/180))+posXAdd;
+	newPosX=posX+(OPS_TO_BACK_WHEEL*sin(angle*PI/180));
 	return newPosX;
 
 }
 float GetPosY(void)
 {
 	float newPosY;
-	newPosY=posY+OPS_TO_BACK_WHEEL-(OPS_TO_BACK_WHEEL*cos(angle*PI/180))+posYAdd;
+	newPosY=posY+OPS_TO_BACK_WHEEL-(OPS_TO_BACK_WHEEL*cos(angle*PI/180));
 	return newPosY;
 }
 float GetSpeeedX(void)
@@ -513,7 +520,10 @@ float GetSpeeedY(void)
 {
 	return speed_Y;
 }
-
+float GetGyro(void)
+{
+	return gyro;
+}
 void UART5_IRQHandler(void)
 {
 	uint8_t data;
@@ -546,6 +556,29 @@ void UART5_IRQHandler(void)
 	}
 	OSIntExit();
 }
+
+uint8_t keyFlag=0;
+void EXTI1_IRQHandler(void)
+{
+	if(EXTI_GetITStatus(EXTI_Line1)!=RESET)//判断某个线上的中断是否发生   
+   { 
+		keyFlag=!keyFlag;
+		EXTI_ClearITPendingBit(EXTI_Line1);  //清除LINE上的中断标志位
+		
+   }           
+}
+
+uint8_t modeFlag=0;
+void EXTI0_IRQHandler(void)
+{
+	if(EXTI_GetITStatus(EXTI_Line0)!=RESET)//判断某个线上的中断是否发生   
+   { 
+		modeFlag=!modeFlag;
+		EXTI_ClearITPendingBit(EXTI_Line0);  //清除LINE上的中断标志位
+		
+   }           
+}
+
 
 /**
   * @brief   This function handles NMI exception.
