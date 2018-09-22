@@ -220,9 +220,13 @@ void BingoJudge(uint8_t StdId)
 		bingoFlag[StdId][1]=errTime+1;
 		haveShootedFlag=0;
 	}					
-	if(bingoFlag[StdId][0]!=0&&bingoFlag[StdId][1]!=0)
+	if(bingoFlag[StdId][0]==1||bingoFlag[StdId][1]!=0)
 		throwFlag=0;
+	
+	
+	
 }
+
 void GetShootSituation(uint8_t StdId)
 {
 	GetYawangle(StdId);
@@ -243,3 +247,18 @@ int FirstshootJudge(void)
 	}	
 	return StdId;
 }	
+
+/*激光模式*/
+float getLingtAngle(float xi,float yi,int tragetCnt)
+{
+	static float angii=0;	
+	if(tragetCnt==0)
+		angii=GetAngle()+90-180/pi*atan((0-yi)/(2400-xi));
+	if(tragetCnt==1)
+		angii=GetAngle()+90-180/pi*atan((4800-yi)/(2400-xi));
+	if(tragetCnt==2)
+		angii=GetAngle()-90-180/pi*atan((4800-yi)/(-2400-xi));
+	if(tragetCnt==3)
+		angii=GetAngle()-90-180/pi*atan((0-yi)/(-2400-xi));
+	return angii;
+}
