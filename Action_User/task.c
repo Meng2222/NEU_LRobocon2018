@@ -44,10 +44,15 @@ void App_Task(void)
                                              初始化任务
 ===============================================================
 */
+int shootDebug = 1;
+int pidDebug = 1;
+int fortDebug = 1;
 PID_Value *PID_x = NULL;
 PID_Value PID_A;
-Err *Error_x;
+Err *Error_x = NULL;
 Err Error_A;
+targetNum *target_x = NULL;
+targetNum target_A;
 float *error = NULL;
 extern float Set_FortAngle1;
 extern FortType fort;
@@ -57,12 +62,9 @@ void ConfigTask(void)
 {
 	PID_x = &PID_A;
 	Error_x = &Error_A;
-	Error_A.Err_X = 0;
-	Error_A.Err_Y = 0;
-	Error_A.flag = 0;
-	Error_A.timeCnt = 0;
-	Error_A.distance = 0;
-	Error_A.err_distance = 100;
+	target_x = &target_A;
+	Error_A.Err_X = 0,Error_A.Err_Y = 0,Error_A.flag = 0,Error_A.timeCnt = 0,Error_A.distance = 0,Error_A.err_distance = 100;
+	target_A.n0 = 0,target_A.n1 = 0,target_A.n2 = 0,target_A.n3 = 0;
 	int Laser_Left = 0;
 	int Laser_Right = 0;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
@@ -88,8 +90,8 @@ void ConfigTask(void)
 	USART1_Init(921600);
 	WaitOpsPrepare();                                                //等待定位系统准备完成
 	PID_Init(PID_x);                                                 //PID参数初始化
-	VelCrl(CAN2,5,60*32768);
-	VelCrl(CAN2,6,0-60*32768);
+	VelCrl(CAN2,5,70*32768);
+	VelCrl(CAN2,6,0-70*32768);
 	YawPosCtrl(0);
 
 	CmdRecData.TarBucketNum_cmd = 0;
@@ -108,6 +110,11 @@ void ConfigTask(void)
 	Gundata.Bucket_X[1] = 2200.0;       Gundata.Bucket_Y[1] = 4600.0;
 	Gundata.Bucket_X[2] = -2200.0;      Gundata.Bucket_Y[2] = 4600.0;
 	Gundata.Bucket_X[3] = -2200.0;      Gundata.Bucket_Y[3] = 200.0;
+	
+	Gundata.Yaw_Angle_Offset[0] =  1.0f;  Gundata.Shooter_Vel_Offset[0] = 2.0f;
+	Gundata.Yaw_Angle_Offset[1] =  2.0f;  Gundata.Shooter_Vel_Offset[1] = 1.0f;
+	Gundata.Yaw_Angle_Offset[2] = -0.5f;  Gundata.Shooter_Vel_Offset[2] = 0.0f;
+	Gundata.Yaw_Angle_Offset[3] =  1.5f;  Gundata.Shooter_Vel_Offset[3] = 0.0f;
 	
 	memset(Gundata.Yaw_Angle_Offset, 0, 8);
 	memset(Gundata.Shooter_Vel_Offset, 0, 8);
@@ -147,7 +154,7 @@ void WalkTask(void)
 		ReadActualPos(CAN2,7);                                       //读取分球电机位置
 		
 		GetData(PID_x);                                              //读取定位系统信息
-//		ErrorDisposal(PID_x,Error_x);                                //错误检测
+		ErrorDisposal(PID_x,Error_x);                                //错误检测
 		PID_Competition(PID_x,direction,Error_x);                    //走形计算函数
 		GO(PID_x);                                                   //走
 		
@@ -182,18 +189,21 @@ void WalkTask(void)
 */
 
 //以5 * 10ms为间隔发送数据
+		if(fortDebug == 1){
 		cntSendTime++;
 		cntSendTime = cntSendTime % 1;
-//		if(cntSendTime == 0)
-//		{
-//			USART_OUT(UART4, (uint8_t*)"YawSet	%d	YawAct	%d	YawRec	%d	VelSet	%d	VelAct	%d	VelRec	%d	",\
-//			(int)Gundata.YawPosAngleSet,(int)Gundata.YawPosAngleSetAct, (int)Gundata.YawPosAngleRec, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec);
-//		}
-//		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 2.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 2.0f &&  Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
-//		else PID_A.fire_command = 0;
-//		shoot(PID_x);
-//		USART_SendData(UART4,'\r');
-//		USART_SendData(UART4,'\n');
-		UART4_OUT(PID_x);
+		if(cntSendTime == 0)
+		{
+			USART_OUT(UART4, (uint8_t*)"NOYawSet	%d	YawSet	%d	YawAct	%d	YawRec	%d	NOVelSet	%d	VelSet	%d	VelAct	%d	VelRec	%d	Yaw2=%d	Yaw3=%d",\
+			(int)Gundata.No_Offset_Angle, (int)Gundata.YawPosAngleSet,(int)Gundata.YawPosAngleSetAct, (int)Gundata.YawPosAngleRec, \
+			(int)Gundata.No_Offset_ShooterVel, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec,\
+			(int)Gundata.Yaw_Angle_Offset[2], (int)Gundata.Yaw_Angle_Offset[3]);
+		}}
+		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 2.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 2.0f &&  Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
+		else PID_A.fire_command = 0;
+		if(pidDebug) UART4_OUT(PID_x);
+		shoot(PID_x,target_x,shootDebug);
+		USART_SendData(UART4,'\r');
+		USART_SendData(UART4,'\n');
 	}
 }

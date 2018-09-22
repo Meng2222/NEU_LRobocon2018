@@ -138,6 +138,14 @@ typedef struct errorDisposal
 	u8 flag;
 }Err;
 
+typedef struct targetrecord
+{
+	int n0;
+	int n1;
+	int n2;
+	int n3;
+}targetNum;
+
 void PID_Init(PID_Value *PID_a);
 void PID_Line_Init(void);
 void PID_Arc_Init(void);
@@ -156,5 +164,5 @@ void PID_Competition_testVersion(PID_Value *pid, u8 dir);
 void PID_Competition(PID_Value *pid, u8 dir, Err *error);
 void ErrorDisposal(PID_Value *pid,Err *error);
 void GetData(PID_Value *p);
-void shoot(PID_Value *p_GO);
+void shoot(PID_Value *p_gun, targetNum *target, int Debug);
 #endif

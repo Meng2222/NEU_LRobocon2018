@@ -109,6 +109,7 @@ int Timer(void)//¼ÆÊ±º¯Êý
 {
 	if(t_Flag==0){t_cnt++;return 0;}
 	if(t_Flag==1){t_cnt=0;return t_cnt;}
+	return 0;
 }
 /*************************************************************************************
                                       »Ø¹é·½³Ì
@@ -169,7 +170,7 @@ float Return_LinearRegressionEquation_b (float array[2][51], int num)//Çó»Ø¹é·½³
 
 float Return_LinearRegressionEquation_angle (float array[2][51], int num)//Çó»Ø¹é·½³Ì·½Ïò
 {
-	
+	return 0;
 }
 
 void LinearRegressionEquation_3Coordinates(float x1,float y1,float x2,float y2,float x3,float y3)//Èýµã»Ø¹é·½³Ì
