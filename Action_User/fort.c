@@ -241,7 +241,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 		Gun->Distance_Deviation_Y = fabs(Gun->Distance_Shoot_Y + Gun->Distance_Car_Y - Gun->Distance_Fort_Y);
 	}
 	//当差值大于精度要求时，继续迭代
-	while((Gun->Distance_Deviation_X > Gun->Distance_Accuracy) || (Gun->Distance_Deviation_Y > Gun->Distance_Accuracy));
+	while(((Gun->Distance_Deviation_X > Gun->Distance_Accuracy) || (Gun->Distance_Deviation_Y > Gun->Distance_Accuracy)) && (Gun->cntIteration < 10));
 	
     //根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
 //	Gun->ShooterVelSet = 0.0133 * Gun->Distance_Shoot + 35.267 + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];

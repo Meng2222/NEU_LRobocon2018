@@ -469,6 +469,10 @@ void NMI_Handler(void)
 {
 	while (1)
 	{
+		while (1)
+	{
+		USART_OUT(UART4,(uint8_t*)"NMI_Handler\r\n");
+	}
 	}
 }
 
@@ -538,6 +542,10 @@ void UsageFault_Handler(void)
   */
 void SVC_Handler(void)
 {
+	while (1)
+	{
+		USART_OUT(UART4,(uint8_t*)" SVC_Handler\r\n");
+	}
 }
 
 /**
@@ -547,6 +555,10 @@ void SVC_Handler(void)
   */
 void DebugMon_Handler(void)
 {
+	while (1)
+	{
+		USART_OUT(UART4,(uint8_t*)" DebugMon_Handler\r\n");
+	}
 }
 
 

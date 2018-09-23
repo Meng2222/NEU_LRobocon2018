@@ -48,6 +48,9 @@ float GetSpeedX(void);
 float GetSpeedY(void);
 /*返回定位系统的Z轴角速度值*/
 
+
+extern void CorrectAngle(float value);
+
 #define manual (1)
 #define Arc (2)
 #define Line (3)

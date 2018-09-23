@@ -25,7 +25,7 @@ void App_Task(void)
 
 	/*创建信号量**/
 	PeriodSem = OSSemCreate(0);
-	adc_msg = OSMboxCreate(NULL); 
+	adc_msg = OSMboxCreate(NULL);
 
 	/*创建任务*/
 	os_err = OSTaskCreate((void (*)(void *))ConfigTask, /*初始化任务**/
@@ -44,9 +44,9 @@ void App_Task(void)
                                              初始化任务
 ===============================================================
 */
-int shootDebug = 1;
+int shootDebug = 0;
 int pidDebug = 1;
-int fortDebug = 1;
+int fortDebug = 0;
 PID_Value *PID_x = NULL;
 PID_Value PID_A;
 Err *Error_x = NULL;
@@ -163,7 +163,6 @@ void WalkTask(void)
 		GunneryData_Operation(&Gundata, PID_x);    //计算射击诸元
 		YawPosCtrl(Gundata.YawPosAngleSetAct);        //设置航向角
 		ShooterVelCtrl(Gundata.ShooterVelSetAct);     //设置射球转速
-//		ShooterVelCtrl(20);     //设置射球转速
 /*=================================================================================================================
 		//新车激光拟合
 		GetPositionValue(PID_x);      //Get坐标读数
@@ -188,7 +187,7 @@ void WalkTask(void)
 //=================================================================================================================
 */
 
-//以5 * 10ms为间隔发送数据
+//以1 * 10ms为间隔发送数据
 		if(fortDebug == 1){
 		cntSendTime++;
 		cntSendTime = cntSendTime % 1;
@@ -199,11 +198,12 @@ void WalkTask(void)
 			(int)Gundata.No_Offset_ShooterVel, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec,\
 			(int)Gundata.Yaw_Angle_Offset[2], (int)Gundata.Yaw_Angle_Offset[3]);
 		}}
-		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 2.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 2.0f &&  Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1)PID_A.fire_command = 1;
+		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 3.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 3.0f &&  Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1 && Gundata.cntIteration < 10)PID_A.fire_command = 1;
 		else PID_A.fire_command = 0;
 		if(pidDebug) UART4_OUT(PID_x);
+//		USART_OUT(UART4, (uint8_t*)"cntIteration	%d",(int)Gundata.cntIteration);
 		shoot(PID_x,target_x,shootDebug);
-		USART_SendData(UART4,'\r');
-		USART_SendData(UART4,'\n');
+		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
+		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
 	}
 }

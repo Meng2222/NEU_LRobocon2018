@@ -690,14 +690,14 @@ void shoot(PID_Value *p_gun, targetNum *target, int Debug)                      
 	{
 		posGap = GetMotor7Pos() - pos;
 		timeCnt++;
-		if(posGap > (0.f-600.f) && posGap < 200)
+		if(posGap > (0.f-600.f) && posGap < 100)
 		{
 			timeDelay ++;
-			if(timeDelay < 60 || timeCnt < 90) return;
+			if(timeDelay < 70 || timeCnt < 100) return;
 			if(ballcolor == 0) noneCnt += 1;
 			else if(ballcolor == 1) whiteCnt += 1;
 			else if(ballcolor == 2) blackCnt += 1;
-			if(noneCnt > 30)
+			if(noneCnt > 20)
 			{
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -709,7 +709,7 @@ void shoot(PID_Value *p_gun, targetNum *target, int Debug)                      
 				if(Debug == 1) USART_SendData(UART4,'\r');
 				if(Debug == 1) USART_SendData(UART4,'\n');
 			}
-			else if(whiteCnt > 30)
+			else if(blackCnt > 20)
 			{
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -719,7 +719,7 @@ void shoot(PID_Value *p_gun, targetNum *target, int Debug)                      
 				if(Debug == 1) USART_SendData(UART4,'\r');
 				if(Debug == 1) USART_SendData(UART4,'\n');
 			}
-			else if(blackCnt > 30)
+			else if(whiteCnt > 20)
 			{
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -748,15 +748,16 @@ void shoot(PID_Value *p_gun, targetNum *target, int Debug)                      
 
 void UART4_OUT(PID_Value *pid_out)                                           //´®¿ÚÊä³öº¯Êý
 {
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->corner);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Line_Num);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)(sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())));
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)fort.shooterVelReceive);
@@ -814,6 +815,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			if(error->flag == 0)
 			{
 				pid->kp = 20;
+				pid->kd = 1000;
 				pid->direction = ACW;
 				pid->Mode = Line;
 				PID_Control(pid);
@@ -830,8 +832,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				if(pid->l->line_Error>1300)
 				{
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 1) pid->V += 20;
-//					else pid->V -= 10;
+					if(pid->Error < 1) pid->V += 10;
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error<=1300)
@@ -860,7 +861,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				timeCnt++;
 				pid->target_Num = (pid->Line_Num + 17) % 4 - 1;
 				if(pid->target_Num == -1) pid->target_Num = 3;
-				if(timeCnt < 200)
+				if(timeCnt < 170)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -912,6 +913,9 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
+						float angle = pid->Angle - 0.1f;
+						CorrectAngle(angle);
+						USART_OUT(UART4,(uint8_t*)"%d	", (int)angle);
 					}
 					return;
 				}
@@ -923,7 +927,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				timeCnt++;
 				pid->target_Num = (pid->Line_Num + 17) % 4 - 1;
 				if(pid->target_Num == -1) pid->target_Num = 3;
-				if(timeCnt < 200)
+				if(timeCnt <170)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -962,6 +966,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			if(error->flag == 0)
 			{
 				pid->kp = 20;
+				pid->kd = 1000;
 				pid->direction = CW;
 				pid->Mode = Line;
 				PID_Control(pid);
@@ -990,8 +995,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				if(pid->l->line_Error <-1300)
 				{
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 1) pid->V += 20;
-//					else pid->V -= 10;
+					if(pid->Error < 1) pid->V += 10;
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error>=-1300)
@@ -1035,7 +1039,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				timeCnt++;
 				pid->target_Num = (pid->Line_Num - 17) % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
-				if(timeCnt < 200)
+				if(timeCnt < 170)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1087,6 +1091,9 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
+						float angle = pid->Angle + 0.1f;
+						CorrectAngle(angle);
+						USART_OUT(UART4,(uint8_t*)"%d	", (int)angle);
 					}
 					return;
 				}
@@ -1098,7 +1105,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				timeCnt++;
 				pid->target_Num = (pid->Line_Num - 17) % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
-				if(timeCnt < 200)
+				if(timeCnt < 170)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1150,7 +1157,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		error->Err_Y = pid->Y;
 	}
 	error->timeCnt++;
-	if(error->timeCnt == 50)
+	if(error->timeCnt > 80)
 	{
 		error->timeCnt = 0;
 		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));

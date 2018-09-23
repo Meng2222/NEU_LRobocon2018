@@ -286,7 +286,7 @@ void CorrectY(float value)
 	{
 		delay_ms(1);
 		for(i=0;i<8;i++)
-		 USART_SendData(USART3,tdata[i]);	
+		 USART_SendData(USART3,tdata[i]);
 	}
 }
 
