@@ -62,10 +62,10 @@ static  void  RunTask(void);
 *                             Size of the task stacks (# of OS_STK entries)
 *********************************************************************************************************
 */
-#define  APP_TASK_START_STK_SIZE					512u
-#define  Config_TASK_START_STK_SIZE					1024u
-#define  Walk_TASK_STK_SIZE							4096u
-#define  RUN_TASK_STK_SIZE                          4096u
+#define  APP_TASK_START_STK_SIZE					1024u
+#define  Config_TASK_START_STK_SIZE					2048u
+#define  Walk_TASK_STK_SIZE							8192u
+#define  RUN_TASK_STK_SIZE                          8192u
 
 /*
 *********************************************************************************************************

@@ -122,6 +122,7 @@ typedef struct PID
 	int Arc_Num;
 	int Coordinate_Num;
 	int target_Num;
+	int target_Next;
 	int err_line_num;
 	int push_pos_up;
 	int push_pos_down;
@@ -164,8 +165,8 @@ float constrain(float amt, float high, float low);
 float GetShooterVelCommand(void);
 float GetYawPosCommand(void);
 void PID_Competition_testVersion(PID_Value *pid, u8 dir);
-void PID_Competition(PID_Value *pid, u8 dir, Err *error);
+void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[]);
 void ErrorDisposal(PID_Value *pid,Err *error);
 void GetData(PID_Value *p);
-void shoot(PID_Value *p_gun, targetNum *target, int Debug);
+void shoot(PID_Value *p_gun, int target[], int Debug);
 #endif

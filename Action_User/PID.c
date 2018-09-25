@@ -4,7 +4,7 @@ u8 GetBallColor(void);
 extern FortType fort;
 extern GunneryData Gundata;
 extern u8 ballcolor;
-Line_Value Line_N[34];
+Line_Value Line_N[54];
 Arc_Value Arc_N[12];
 Coordinate_Value Coordinate_N[12];
 float ABS(float thing)                                                       //¸¡µã¾ø¶ÔÖµº¯Êý
@@ -453,6 +453,106 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[33].line_Angle = 0;
 	Line_N[33].line_Error = 0;
 	Line_N[33].line_Priority = 1000;
+	
+	
+	
+	
+	
+	Line_N[40].x1 = -1800;
+	Line_N[40].y1 = 600;
+	Line_N[40].x2 = -1800;
+	Line_N[40].y2 = 4200;
+	Line_N[40].line_kp = 20;
+	Line_N[40].line_A = 0;
+	Line_N[40].line_B = 0;
+	Line_N[40].line_C = 0;
+	Line_N[40].line_Angle = 0;
+	Line_N[40].line_Error = 0;
+	Line_N[40].line_Priority = 1000;
+	
+	Line_N[41].x1 = -1800;
+	Line_N[41].y1 = 600;
+	Line_N[41].x2 = -1800;
+	Line_N[41].y2 = 4200;
+	Line_N[41].line_kp = 20;
+	Line_N[41].line_A = 0;
+	Line_N[41].line_B = 0;
+	Line_N[41].line_C = 0;
+	Line_N[41].line_Angle = 0;
+	Line_N[41].line_Error = 0;
+	Line_N[41].line_Priority = 1000;
+	
+	Line_N[42].x1 = -1800;
+	Line_N[42].y1 = 600;
+	Line_N[42].x2 = -1800;
+	Line_N[42].y2 = 4200;
+	Line_N[42].line_kp = 20;
+	Line_N[42].line_A = 0;
+	Line_N[42].line_B = 0;
+	Line_N[42].line_C = 0;
+	Line_N[42].line_Angle = 0;
+	Line_N[42].line_Error = 0;
+	Line_N[42].line_Priority = 1000;
+	
+	Line_N[43].x1 = -1800;
+	Line_N[43].y1 = 600;
+	Line_N[43].x2 = -1800;
+	Line_N[43].y2 = 4200;
+	Line_N[43].line_kp = 20;
+	Line_N[43].line_A = 0;
+	Line_N[43].line_B = 0;
+	Line_N[43].line_C = 0;
+	Line_N[43].line_Angle = 0;
+	Line_N[43].line_Error = 0;
+	Line_N[43].line_Priority = 1000;
+	
+	Line_N[50].x1 = -1800;
+	Line_N[50].y1 = 600;
+	Line_N[50].x2 = -1800;
+	Line_N[50].y2 = 4200;
+	Line_N[50].line_kp = 20;
+	Line_N[50].line_A = 0;
+	Line_N[50].line_B = 0;
+	Line_N[50].line_C = 0;
+	Line_N[50].line_Angle = 0;
+	Line_N[50].line_Error = 0;
+	Line_N[50].line_Priority = 1000;
+	
+	Line_N[51].x1 = -1800;
+	Line_N[51].y1 = 600;
+	Line_N[51].x2 = -1800;
+	Line_N[51].y2 = 4200;
+	Line_N[51].line_kp = 20;
+	Line_N[51].line_A = 0;
+	Line_N[51].line_B = 0;
+	Line_N[51].line_C = 0;
+	Line_N[51].line_Angle = 0;
+	Line_N[51].line_Error = 0;
+	Line_N[51].line_Priority = 1000;
+	
+	Line_N[52].x1 = -1800;
+	Line_N[52].y1 = 600;
+	Line_N[52].x2 = -1800;
+	Line_N[52].y2 = 4200;
+	Line_N[52].line_kp = 20;
+	Line_N[52].line_A = 0;
+	Line_N[52].line_B = 0;
+	Line_N[52].line_C = 0;
+	Line_N[52].line_Angle = 0;
+	Line_N[52].line_Error = 0;
+	Line_N[52].line_Priority = 1000;
+	
+	Line_N[53].x1 = -1800;
+	Line_N[53].y1 = 600;
+	Line_N[53].x2 = -1800;
+	Line_N[53].y2 = 4200;
+	Line_N[53].line_kp = 20;
+	Line_N[53].line_A = 0;
+	Line_N[53].line_B = 0;
+	Line_N[53].line_C = 0;
+	Line_N[53].line_Angle = 0;
+	Line_N[53].line_Error = 0;
+	Line_N[53].line_Priority = 1000;
 }
 
 void PID_Arc_Init(void)                                                      //Ô²ÐÎ²ÎÊý³õÊ¼»¯
@@ -656,7 +756,7 @@ void GO(PID_Value *p_GO)                                                     //µ
 	VelCrl(CAN1,1,(int)((0+(32768/(120*Pi))*(p_GO->vel))-(32768/(120*Pi))*(p_GO->V)));
 }
 
-void shoot(PID_Value *p_gun, targetNum *target, int Debug)                                                 //ÉäÇòº¯Êý
+void shoot(PID_Value *p_gun, int targets[], int Debug)                                                 //ÉäÇòº¯Êý
 {
 	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0;
 	if (p_gun->fire_request)
@@ -667,24 +767,12 @@ void shoot(PID_Value *p_gun, targetNum *target, int Debug)                      
 		PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 		p_gun->fire_request = 0;
 		p_gun->fire_command = 0;
-		switch (p_gun->target_Num)
+		targets[p_gun->target_Num] += 1;
+		if(targets[0]+targets[1]+targets[2]+targets[3] == 4)
 		{
-			case 0:
-				target->n0 += 1;
-				break;
-			case 1:
-				target->n1 += 1;
-				break;
-			case 2:
-				target->n2 += 1;
-				break;
-			case 3:
-				target->n3 += 1;
-				break;
-			default:
-				break;
+			targets[0] = 0, targets[1] = 0, targets[2] = 0, targets[3] = 0;
 		}
-		if(Debug == 1) USART_OUT(UART4,(uint8_t*)"fire	%d	%d	%d	%d	\r\n", (int)target->n0,(int)target->n1,(int)target->n2,(int)target->n3);
+		if(Debug == 1) USART_OUT(UART4,(uint8_t*)"fire	%d	%d	%d	%d	\r\n", (int)targets[0],(int)targets[1],(int)targets[2],(int)targets[3]);
 	}
 	else
 	{
@@ -784,7 +872,7 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 //	USART_SendData(UART4,'\n');
 }
 
-void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //ÐÂ°æ×ßÏß
+void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])                     //ÐÂ°æ×ßÏß
 {
 	static u8 flag = 0;
 	int i = 0;
@@ -815,7 +903,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			if(error->flag == 0)
 			{
 				pid->kp = 20;
-				pid->kd = 1000;
+				pid->kd = 100;
 				pid->direction = ACW;
 				pid->Mode = Line;
 				PID_Control(pid);
@@ -824,15 +912,17 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				pid->Line_Num_Last = pid->Line_Num;
 				for(i=0;i<4;i++)
 				{
-					pid->Line_Num = 4*i+pid->target_Num;
+					pid->Line_Num_Next = pid->Line_Num = 4*i+pid->target_Num;
 					pid->l = &Line_N[pid->Line_Num];
 					if(pid->l->line_Priority == 0) break;
 				}
+				pid->target_Next = pid->Line_Num % 4 + 1;
+				if(pid->target_Next == 4) pid->target_Next = 0;
 				PID_Pre(pid);
 				if(pid->l->line_Error>1300)
 				{
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 1) pid->V += 10;
+					if(pid->Error < 2) pid->V += 10;
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error<=1300)
@@ -915,7 +1005,6 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 						pid->corner = 0;
 						float angle = pid->Angle - 0.1f;
 						CorrectAngle(angle);
-						USART_OUT(UART4,(uint8_t*)"%d	", (int)angle);
 					}
 					return;
 				}
@@ -966,7 +1055,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 			if(error->flag == 0)
 			{
 				pid->kp = 20;
-				pid->kd = 1000;
+				pid->kd = 100;
 				pid->direction = CW;
 				pid->Mode = Line;
 				PID_Control(pid);
@@ -977,7 +1066,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				{
 					for(i=4;i<8;i++)
 					{
-						pid->Line_Num = 4*i+pid->target_Num;
+						pid->Line_Num_Next = pid->Line_Num = 4*i+pid->target_Num;
 						pid->l = &Line_N[pid->Line_Num];
 						if(pid->l->line_Priority == 0) break;
 					}
@@ -986,16 +1075,18 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 				{
 					for(i=4;i<8;i++)
 					{
-						pid->Line_Num = 4*i+4;
+						pid->Line_Num_Next = pid->Line_Num = 4*i+4;
 						pid->l = &Line_N[pid->Line_Num];
 						if(pid->l->line_Priority == 0) break;
 					}
 				}
+				pid->target_Next = pid->Line_Num_Next % 4 - 1;
+				if(pid->target_Next == -1) pid->target_Next = 3;
 				PID_Pre(pid);
 				if(pid->l->line_Error <-1300)
 				{
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 1) pid->V += 10;
+					if(pid->Error < 2) pid->V += 10;
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error>=-1300)
@@ -1093,7 +1184,6 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error)                     //Ð
 						pid->corner = 0;
 						float angle = pid->Angle + 0.1f;
 						CorrectAngle(angle);
-						USART_OUT(UART4,(uint8_t*)"%d	", (int)angle);
 					}
 					return;
 				}
