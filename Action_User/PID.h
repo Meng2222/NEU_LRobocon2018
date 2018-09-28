@@ -99,6 +99,8 @@ typedef struct PID
 	u8 direction;
 	u8 fire_request;
 	u8 fire_command;
+	u8 fire_flag;
+	u8 fire_cornor;
 	int Mode;
 	int Mode_Last;
 	float Angle_Set;
@@ -139,6 +141,8 @@ typedef struct errorDisposal
 	float timeCnt;
 	float distance;
 	float err_distance;
+	int errCnt;
+	u8 stop;
 	u8 flag;
 }Err;
 

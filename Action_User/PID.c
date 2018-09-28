@@ -615,6 +615,7 @@ void PID_Init(PID_Value *PID_a)                                              //P
 	PID_a->push_pos_down = -16384;
 	PID_a->fire_request = 0;
 	PID_a->fire_command = 0;
+	PID_a->fire_flag = 0;
 		
 	PID_Line_Init();
 	PID_a->l = &Line_N[PID_a->Line_Num];
@@ -758,7 +759,7 @@ void GO(PID_Value *p_GO)                                                     //µ
 
 void shoot(PID_Value *p_gun, int targets[], int Debug)                                                 //ÉäÇòº¯Êý
 {
-	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0;
+	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0;
 	if (p_gun->fire_request)
 	{
 		if(!p_gun->fire_command) return;
@@ -780,12 +781,13 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		timeCnt++;
 		if(posGap > (0.f-600.f) && posGap < 100)
 		{
+			if(flag == 1) return;
 			timeDelay ++;
-			if(timeDelay < 70 || timeCnt < 100) return;
+			if(timeDelay < 80) return;
 			if(ballcolor == 0) noneCnt += 1;
 			else if(ballcolor == 1) whiteCnt += 1;
 			else if(ballcolor == 2) blackCnt += 1;
-			if(noneCnt > 20)
+			if(noneCnt > 30)
 			{
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -796,8 +798,9 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 0);
 				if(Debug == 1) USART_SendData(UART4,'\r');
 				if(Debug == 1) USART_SendData(UART4,'\n');
+				flag = 1;
 			}
-			else if(blackCnt > 20)
+			else if(blackCnt > 30)
 			{
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -806,8 +809,9 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 1);
 				if(Debug == 1) USART_SendData(UART4,'\r');
 				if(Debug == 1) USART_SendData(UART4,'\n');
+				flag = 1;
 			}
-			else if(whiteCnt > 20)
+			else if(whiteCnt > 30)
 			{
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -818,8 +822,10 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 2);
 				if(Debug == 1) USART_SendData(UART4,'\r');
 				if(Debug == 1) USART_SendData(UART4,'\n');
+				flag = 1;
 			}
 		}
+		if(posGap > 8000 || posGap < -8000) flag = 0;
 		if(timeCnt > 500)
 		{
 			if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
@@ -830,6 +836,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 			if(Debug == 1) USART_OUT(UART4,(uint8_t*)"stuck");
 			if(Debug == 1) USART_SendData(UART4,'\r');
 			if(Debug == 1) USART_SendData(UART4,'\n');
+			flag = 0;
 		}
 	}
 }
@@ -947,11 +954,11 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 			}
 			else
 			{
-				static int timeCnt = 0;
-				timeCnt++;
+				static int timeCnt1 = 0;
+				timeCnt1++;
 				pid->target_Num = (pid->Line_Num + 17) % 4 - 1;
 				if(pid->target_Num == -1) pid->target_Num = 3;
-				if(timeCnt < 170)
+				if(timeCnt1 < 150)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -960,7 +967,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				}
 				else
 				{
-					timeCnt = 0;
+					timeCnt1 = 0;
 					error->flag = 0;
 					pid->V = 1200;
 					pid->kp = 20;
@@ -1012,11 +1019,11 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 			}
 			else
 			{
-				static int timeCnt = 0;
-				timeCnt++;
+				static int timeCnt2 = 0;
+				timeCnt2++;
 				pid->target_Num = (pid->Line_Num + 17) % 4 - 1;
 				if(pid->target_Num == -1) pid->target_Num = 3;
-				if(timeCnt <170)
+				if(timeCnt2 <150)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1026,7 +1033,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				else
 				{
 					pid->corner = 0;
-					timeCnt = 0;
+					timeCnt2 = 0;
 					error->flag = 0;
 					pid->V = 1200;
 					pid->kp = 20;
@@ -1126,11 +1133,11 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 			}
 			else
 			{
-				static int timeCnt = 0;
-				timeCnt++;
+				static int timeCnt3 = 0;
+				timeCnt3++;
 				pid->target_Num = (pid->Line_Num - 17) % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
-				if(timeCnt < 170)
+				if(timeCnt3 < 150)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1139,7 +1146,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				}
 				else
 				{
-					timeCnt = 0;
+					timeCnt3 = 0;
 					error->flag = 0;
 					pid->V = 1200;
 					pid->kp = 20;
@@ -1182,7 +1189,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle + 0.1f;
+						float angle = pid->Angle + 0.05f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1191,11 +1198,11 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 			}
 			else
 			{
-				static int timeCnt = 0;
-				timeCnt++;
+				static int timeCnt4 = 0;
+				timeCnt4++;
 				pid->target_Num = (pid->Line_Num - 17) % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
-				if(timeCnt < 170)
+				if(timeCnt4 < 150)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1205,7 +1212,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				else
 				{
 					pid->corner = 0;
-					timeCnt = 0;
+					timeCnt4 = 0;
 					error->flag = 0;
 					pid->V = 1200;
 					pid->kp = 20;
@@ -1227,6 +1234,31 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 			}
 		}
 	}
+	static int timeCnt = 0;
+	if(error->flag == 0 && error->errCnt != 0 && targetp[pid->target_Num] == 0 && (pid->corner == 0 || pid->fire_cornor == 0) &&\
+		((pid->Y < 3000 && pid->Y > 1800) || (pid->X > (0-600) && pid->X < 600) || pid->fire_cornor == 0) && pid->fire_flag == 0)
+	{
+		pid->fire_cornor = 0;
+		timeCnt ++;
+		error->stop = 1;
+		error->timeCnt = 0;
+		pid->V = 0;
+		pid->vel = 0;
+		//É¨ÃèÍ¶Çòº¯Êý
+		if(timeCnt > 400)
+		{
+			pid->fire_flag = 1;
+			timeCnt = 0;
+			pid->fire_cornor = 1;
+		}
+	}
+	else
+	{
+		if((!(pid->Y < 3000 && pid->Y > 1800) || (pid->X > (0-600) && pid->X < 600))) pid->fire_flag = 0;
+		pid->fire_cornor = 1;
+		error->stop = 0;
+		timeCnt = 0;
+	}
 }
 
 void GetData(PID_Value *p)                                                   //¶ÁÊý
@@ -1240,7 +1272,7 @@ void GetData(PID_Value *p)                                                   //¶
 
 void ErrorDisposal(PID_Value *pid,Err *error)                                //´íÎó¼ì²â
 {
-	if(error->flag == 1) return;
+	if(error->flag == 1 || error->stop == 1) return;
 	if(error->timeCnt == 0)
 	{
 		error->Err_X = pid->X;
@@ -1254,6 +1286,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		if(error->distance < error->err_distance)
 		{
 			error->flag = 1;
+			error->errCnt += 1;
 			pid->err_line_num = pid->Line_Num;
 			if(pid->Line_Num < 8) pid->Line_Num += 8;
 			else if(pid->Line_Num > 7 && pid->Line_Num < 17) pid->Line_Num -= 8;

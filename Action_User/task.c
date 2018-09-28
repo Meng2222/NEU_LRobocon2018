@@ -108,13 +108,18 @@ void ConfigTask(void)
 	Gundata.Bucket_X[2] = -2200.0;      Gundata.Bucket_Y[2] = 4600.0;
 	Gundata.Bucket_X[3] = -2200.0;      Gundata.Bucket_Y[3] = 200.0;
 	
-	Gundata.Yaw_Angle_Offset[0] =  1.0f;  Gundata.Shooter_Vel_Offset[0] = 2.0f;
-	Gundata.Yaw_Angle_Offset[1] =  2.0f;  Gundata.Shooter_Vel_Offset[1] = 1.0f;
-	Gundata.Yaw_Angle_Offset[2] = -0.5f;  Gundata.Shooter_Vel_Offset[2] = 0.0f;
-	Gundata.Yaw_Angle_Offset[3] =  1.5f;  Gundata.Shooter_Vel_Offset[3] = 0.0f;
+	Gundata.Yaw_Angle_Offset[0] = -1.5f;  Gundata.Shooter_Vel_Offset[0] =  0.0f;
+	Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] =  0.5f;
+	Gundata.Yaw_Angle_Offset[2] = -0.5f;  Gundata.Shooter_Vel_Offset[2] =  0.0f;
+	Gundata.Yaw_Angle_Offset[3] =  1.5f;  Gundata.Shooter_Vel_Offset[3] = -1.0f;
 	
-	memset(Gundata.Yaw_Angle_Offset, 0, 8);
-	memset(Gundata.Shooter_Vel_Offset, 0, 8);
+	Gundata.Yaw_Angle_Offset[4] =  0.0f;  Gundata.Shooter_Vel_Offset[4] = 0.0f;
+	Gundata.Yaw_Angle_Offset[5] =  0.0f;  Gundata.Shooter_Vel_Offset[5] = 0.0f;
+	Gundata.Yaw_Angle_Offset[6] =  0.0f;  Gundata.Shooter_Vel_Offset[6] = 0.0f;
+	Gundata.Yaw_Angle_Offset[7] =  0.0f;  Gundata.Shooter_Vel_Offset[7] = 0.0f;
+	
+//	memset(Gundata.Yaw_Angle_Offset, 0, 8);
+//	memset(Gundata.Shooter_Vel_Offset, 0, 8);
 	while(1)
 	{
 		Laser_Right = fort.laserBValueReceive;                       //左ADC
@@ -152,7 +157,7 @@ void WalkTask(void)
 		
 		GetData(PID_x);																								//读取定位系统信息
 		ErrorDisposal(PID_x,Error_x);																				//错误检测
-		PID_Competition(PID_x,direction,Error_x,target);															//走形计算函数
+		PID_Competition(PID_x,direction,Error_x,target);													//走形计算函数
 		GO(PID_x);																										//电机控制
 		
 		GetData(PID_x);																								//读取定位系统信息
@@ -172,7 +177,7 @@ void WalkTask(void)
 			(int)Gundata.Yaw_Angle_Offset[2], (int)Gundata.Yaw_Angle_Offset[3]);
 		}}
 		if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 3.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 3.0f &&  \
-			Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1 && Gundata.cntIteration < 10 && target[PID_A.target_Num] == 0)PID_A.fire_command = 1;
+			Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1 && Gundata.cntIteration < 10/* && target[PID_A.target_Num] == 0*/)PID_A.fire_command = 1;
 		else PID_A.fire_command = 0;
 		if(pidDebug) UART4_OUT(PID_x);
 		shoot(PID_x,target,shootDebug);
