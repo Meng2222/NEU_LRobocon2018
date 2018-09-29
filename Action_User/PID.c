@@ -3,6 +3,7 @@
 u8 GetBallColor(void);
 extern FortType fort;
 extern GunneryData Gundata;
+extern ScanData Scan;
 extern u8 ballcolor;
 Line_Value Line_N[54];
 Arc_Value Arc_N[12];
@@ -794,7 +795,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 				posLast = pos;
 				pos += p_gun->push_pos_down;
 				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
-				noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0;
+				noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0, Scan.FirePermitFlag = 0;
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 0);
 				if(Debug == 1) USART_SendData(UART4,'\r');
 				if(Debug == 1) USART_SendData(UART4,'\n');
@@ -1244,7 +1245,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 		error->timeCnt = 0;
 		pid->V = 0;
 		pid->vel = 0;
-		//É¨ÃèÍ¶Çòº¯Êý
+		Scan.ScanStatus = 1;
 		if(timeCnt > 400)
 		{
 			pid->fire_flag = 1;
@@ -1259,6 +1260,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 		pid->fire_cornor = 1;
 		error->stop = 0;
 		timeCnt = 0;
+		Scan.ScanStatus = 0;
 	}
 }
 

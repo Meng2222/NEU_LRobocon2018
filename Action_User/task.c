@@ -57,6 +57,7 @@ extern float Set_FortAngle1;
 extern FortType fort;
 extern GunneryData Gundata;
 extern Command CmdRecData;
+extern ScanData Scan;
 void ConfigTask(void)
 {
 	PID_x = &PID_A;
@@ -145,28 +146,32 @@ void ConfigTask(void)
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
-	os_err = os_err;																										//防报错
+	os_err = os_err;																		//防报错
 	static u32 direction = 0;
 	int cntSendTime = 0;
 	if(direction == 0) direction = (u32)OSMboxPend(adc_msg,0,&os_err);
-	OSSemSet(PeriodSem, 0, &os_err);																		//信号量归零
+	OSSemSet(PeriodSem, 0, &os_err);														//信号量归零
 	while (1)
 	{
-		OSSemPend(PeriodSem, 0, &os_err);																	//等信号量，10ms一次
-		ReadActualPos(CAN2,7);																					//读取分球电机位置
+		OSSemPend(PeriodSem, 0, &os_err);													//等信号量，10ms一次
+		ReadActualPos(CAN2,7);																//读取分球电机位置
 		
-		GetData(PID_x);																								//读取定位系统信息
-		ErrorDisposal(PID_x,Error_x);																				//错误检测
-		PID_Competition(PID_x,direction,Error_x,target);													//走形计算函数
-		GO(PID_x);																										//电机控制
+		GetData(PID_x);																		//读取定位系统信息
+		ErrorDisposal(PID_x,Error_x);														//错误检测
+		PID_Competition(PID_x,direction,Error_x,target);									//走形计算函数
+		GO(PID_x);																			//电机控制
 		
-		GetData(PID_x);																								//读取定位系统信息
+		GetData(PID_x);																		//读取定位系统信息
 		if(Error_A.errCnt == 0){
-		Gundata.BucketNum = PID_A.target_Num;															//设置目标桶号
-		GunneryData_Operation(&Gundata, PID_x);															//计算射击诸元
-		YawPosCtrl(Gundata.YawPosAngleSetAct);														//设置航向角
-		ShooterVelCtrl(Gundata.ShooterVelSetAct);}														//设置射球转速
-																																//以1 * 10ms为间隔发送数据
+		Gundata.BucketNum = PID_A.target_Num;				//设置目标桶号
+		GunneryData_Operation(&Gundata, PID_x);				//计算射击诸元
+		YawPosCtrl(Gundata.YawPosAngleSetAct);				//设置航向角
+		ShooterVelCtrl(Gundata.ShooterVelSetAct);}			//设置射球转速
+		else
+		{
+			Scan_Operation(&Scan, PID_x);
+		}
+																						//以1 * 10ms为间隔发送数据
 		if(fortDebug == 1){
 		cntSendTime++;
 		cntSendTime = cntSendTime % 1;
@@ -174,16 +179,25 @@ void WalkTask(void)
 		{
 			USART_OUT(UART4, (uint8_t*)"NOYawSet	%d	YawSet	%d	YawAct	%d	YawRec	%d	NOVelSet	%d	VelSet	%d	VelAct	%d	VelRec	%d	Yaw2=%d	Yaw3=%d",\
 			(int)Gundata.No_Offset_Angle, (int)Gundata.YawPosAngleSet,(int)Gundata.YawPosAngleSetAct, (int)Gundata.YawPosAngleRec, \
-			(int)Gundata.No_Offset_ShooterVel, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec,\
+			(int)Gundata.No_Offset_Vel, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec,\
 			(int)Gundata.Yaw_Angle_Offset[2], (int)Gundata.Yaw_Angle_Offset[3]);
 		}}
-		if(Error_A.errCnt == 0){if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 3.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 3.0f &&\
-			Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1 && Gundata.cntIteration < 10)PID_A.fire_command = 1;
-		else PID_A.fire_command = 0;}
+		
+		if(Error_A.errCnt == 0)
+		{
+			if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 3.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 3.0f &&\
+				    Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1 && Gundata.cntIteration < 10)PID_A.fire_command = 1;
+			else PID_A.fire_command = 0;
+		}
+		else
+		{
+			if(CmdRecData.FireFlag_cmd == 1 && Scan.FirePermitFlag == 1)PID_A.fire_command = 1;
+			else PID_A.fire_command = 0;
+		}
 		if(pidDebug) UART4_OUT(PID_x);
 		shoot(PID_x,target,shootDebug);
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
-		OSSemSet(PeriodSem, 0, &os_err);																		//信号量归零
+		OSSemSet(PeriodSem, 0, &os_err);				   //信号量归零
 	}
 }
