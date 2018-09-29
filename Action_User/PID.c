@@ -1235,7 +1235,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 		}
 	}
 	static int timeCnt = 0;
-	if(error->flag == 0 && error->errCnt != 0 && targetp[pid->target_Num] == 0 && (pid->corner == 0 || pid->fire_cornor == 0) &&\
+	if(error->flag == 0 && error->errCnt != 0 && targetp[pid->target_Num] == 0/* && (pid->corner == 0 || pid->fire_cornor == 0)*/ &&\
 		((pid->Y < 3000 && pid->Y > 1800) || (pid->X > (0-600) && pid->X < 600) || pid->fire_cornor == 0) && pid->fire_flag == 0)
 	{
 		pid->fire_cornor = 0;
@@ -1250,11 +1250,12 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 			pid->fire_flag = 1;
 			timeCnt = 0;
 			pid->fire_cornor = 1;
+			pid->target_Last = pid->target_Num;
 		}
 	}
 	else
 	{
-		if((!(pid->Y < 3000 && pid->Y > 1800) || (pid->X > (0-600) && pid->X < 600))) pid->fire_flag = 0;
+		if(pid->target_Num != pid->target_Last) pid->fire_flag = 0;
 		pid->fire_cornor = 1;
 		error->stop = 0;
 		timeCnt = 0;

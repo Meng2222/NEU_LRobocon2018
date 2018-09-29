@@ -125,6 +125,7 @@ typedef struct PID
 	int Coordinate_Num;
 	int target_Num;
 	int target_Next;
+	int target_Last;
 	int err_line_num;
 	int push_pos_up;
 	int push_pos_down;
