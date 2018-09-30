@@ -161,13 +161,13 @@ float constrain0(float amt, float high, float low)
 */
 float Constrain_float_Angle(float angle)
 {
-	if(angle > 180.0f)
+	while(angle > 180.0f)
 	{
-		angle = Constrain_float_Angle(angle - 360.0f);
+		angle -= 360.0f;
 	}
-	if(angle < -180.0f)
+	while(angle < -180.0f)
 	{
-		angle = Constrain_float_Angle(angle + 360.0f);
+		angle -= 360.0f;
 	}
 	return angle;
 }
