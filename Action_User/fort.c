@@ -163,11 +163,11 @@ float Constrain_float_Angle(float angle)
 {
 	while(angle > 180.0f)
 	{
-		angle -= 360.0f;
+		angle = angle - 360.0f;
 	}
 	while(angle < -180.0f)
 	{
-		angle -= 360.0f;
+		angle = angle + 360.0f;
 	}
 	return angle;
 }
@@ -251,10 +251,10 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	Gun->No_Offset_Angle = YawPosAngleTar_Operation(Gun->Distance_Fort_X , Gun->Distance_Fort_Y);
 	
 	//计算炮台航向角设定值
-	Gun->YawPosAngleSet  = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Gun->YawPosAngleTar  + Gun->Yaw_Angle_Offset[Gun->BucketNum + Gun->Square_Mode * 4] + Gun->Yaw_Zero_Offset)\
-						- (int)Gun->YawPosAngleRec % 360) + Gun->YawPosAngleRec;
-	Gun->No_Offset_Angle = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Gun->No_Offset_Angle + Gun->Yaw_Angle_Offset[Gun->BucketNum + Gun->Square_Mode * 4] + Gun->Yaw_Zero_Offset)\
-						- (int)Gun->YawPosAngleRec % 360) + Gun->YawPosAngleRec;	
+	Gun->YawPosAngleSet  = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Gun->YawPosAngleTar  + Gun->Yaw_Angle_Offset[Gun->BucketNum + Gun->Square_Mode * 4] + Gun->Yaw_Zero_Offset) - Constrain_float_Angle(Gun->YawPosAngleRec))\
+						 + Gun->YawPosAngleRec;
+	Gun->No_Offset_Angle = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Gun->No_Offset_Angle + Gun->Yaw_Angle_Offset[Gun->BucketNum + Gun->Square_Mode * 4] + Gun->Yaw_Zero_Offset) - Constrain_float_Angle(Gun->YawPosAngleRec))\
+						 + Gun->YawPosAngleRec;			
 	
 	/*ZYJ Predictor*/
 	if(Pos->direction == ACW)
@@ -302,12 +302,12 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos)
 	Scan->FortToBorder_Distance_X = Scan->Bucket_Border_X[Pos->target_Num * 2] - Scan->Fort_X;
 	Scan->FortToBorder_Distance_Y = Scan->Bucket_Border_Y[Pos->target_Num * 2] - Scan->Fort_Y;
 	Scan->BorderAngleTar = YawPosAngleTar_Operation(Scan->FortToBorder_Distance_X, Scan->FortToBorder_Distance_Y);
-	Scan->BorderAngleA = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Scan->BorderAngleTar + Scan->Yaw_Zero_Offset) - (int)Scan->YawPosAngleRec % 360) + Scan->YawPosAngleRec;	
+	Scan->BorderAngleA = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Scan->BorderAngleTar + Scan->Yaw_Zero_Offset) - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec;		
 
 	Scan->FortToBorder_Distance_X = Scan->Bucket_Border_X[Pos->target_Num * 2 + 1] - Scan->Fort_X;
 	Scan->FortToBorder_Distance_Y = Scan->Bucket_Border_Y[Pos->target_Num * 2 + 1] - Scan->Fort_Y;	
 	Scan->BorderAngleTar = YawPosAngleTar_Operation(Scan->FortToBorder_Distance_X, Scan->FortToBorder_Distance_Y);
-	Scan->BorderAngleB = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Scan->BorderAngleTar + Scan->Yaw_Zero_Offset) - (int)Scan->YawPosAngleRec % 360) + Scan->YawPosAngleRec;
+	Scan->BorderAngleB = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Scan->BorderAngleTar + Scan->Yaw_Zero_Offset) - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec;
 
 	//比较大小得出较小的航向角设定值和较大的航向角设定值
 	Scan->BorderAngleUpper = (((Scan->BorderAngleA) > (Scan->BorderAngleB))?(Scan->BorderAngleA):(Scan->BorderAngleB)) + 10.0f;
@@ -399,7 +399,7 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos)
 		
 		//计算炮台航向角目标值和设定值
 		Scan->YawPosAngleTar = YawPosAngleTar_Operation(Scan->FortToBucket_Distance_X, Scan->FortToBucket_Distance_Y);
-		Scan->YawPosAngleSet = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Scan->YawPosAngleTar + Scan->Yaw_Zero_Offset) - (int)Scan->YawPosAngleRec % 360) + Scan->YawPosAngleRec;	
+		Scan->YawPosAngleSet = Constrain_float_Angle(Constrain_float_Angle(Pos->Angle - Scan->YawPosAngleTar + Scan->Yaw_Zero_Offset) - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec;	
 
 		if((fabs(Scan->YawPosAngleRec - Scan->YawPosAngleSet) < 1.0f) && (fabs(Scan->ShooterVelRec - Scan->ShooterVelSet) < 2.0f))
 		{
