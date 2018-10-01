@@ -109,7 +109,7 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
-int Cnt,time,count=0;
+int backwardCount=0;
 extern int changeLightTime;
 void TIM2_IRQHandler(void)
 {
@@ -121,18 +121,15 @@ void TIM2_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-		Cnt++;
-		count++;
+		backwardCount++;
 		changeLightTime++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
 		{
 			OSSemPost(PeriodSem);
-			time++;
 			periodCounter = PERIOD_COUNTER;
 		}
 		TIM_ClearITPendingBit(TIM2, TIM_IT_Update);
@@ -141,9 +138,9 @@ void TIM2_IRQHandler(void)
 }
 int Get_Time_Flag(void)
 {
-	if(Cnt>=1000)
+	if(backwardCount>=1200)
 	{
-		Cnt=0;
+		backwardCount=0;
 		return 1;
 	}
 	else

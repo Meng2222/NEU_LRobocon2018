@@ -46,16 +46,18 @@ void ConfigTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
+	delay_s(3);
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	TIM_Init(TIM2,999,83,1,3);
+	KeyInit();
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	UART5_Init(921600);
+	delay_s(2);
 	ElmoInit(CAN1);
 	ElmoInit(CAN2);
-	delay_s(2);
 	VelLoopCfg(CAN2,COLLECT_BALL1_ID,500000,500000);
 	VelLoopCfg(CAN2,COLLECT_BALL2_ID,500000,500000);
 	PosLoopCfg(CAN2,PUSH_BALL_ID,5000000,5000000,10000000);
@@ -69,85 +71,85 @@ void ConfigTask(void)
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float yawAngle=0,T=0.11,v=1600,angle,Distance,antiRad,realR,shootX,shootY,futureX,futureY;
-int status=1,throwFlag=0,R=1600,bingoFlag[4][2]={0},haveShootedFlag=0,errTime=0,StdId,laserModel=0,changeLightTime=0;
+float yawAngle=0,T=0.11,v=1500,angle,Distance,antiRad,realR,shootX,shootY,futureX,futureY,lastX=0,lastY=0,x,y;
+int status=1,throwFlag=0,R=600,bingoFlag[4][2]={0},haveShootedFlag=0,errTime=0,StdId,laserModel=0,changeLightTime=0,RchangeFlag,FindBallModel=0,lastTime=0,time=0;
 float location[4][2]={{2200,200},{2200,4600},{-2200,4600},{-2200,200}};
-extern float x,y,Vk,Kp;
-extern int time,Cnt,ballColor;
+extern float Vk,Kp;
+extern int ballColor,backwardCount;
 extern Msg_t frontwheelspeedBuffer;
 void WalkTask(void)
 {
-	static int PE1=1,PE0=1,cycleCnt=0,staticShootFlag_1=0,staticShootFlag_2=0,staticShootFlag_3=0,E=1,push_Ball_Count=0,noPushCnt=0,noPushFlag=1,LastCount=0;
+	static int PE1=0,PE0=0,cycleCnt=0,staticShootFlag_1=0,staticShootFlag_2=0,staticShootFlag_3=0,E=1,push_Ball_Count=0,noPushCnt=0,noPushFlag=1,LastCount=0;
 	static float staticShootAngle_1=0,timeAngle=0,DistanceA=0,DistanceB=0,lightAngle=0,staticShootAngle_2=0;
-	static int lastTime=0,errFlag=0,pushBallCount=0,statusFlag,count=0,noBallCount=0,pushBallFlag=1,staticPushBallFlag=1,Cnt=0,firstShootTime=2,LaserModelCount;
-	static float lastX=0,dLeft,dRight,lastY,lastRps,changeAngle,rps=50,Vx,Vy,V,shootAngle;
-	VelCrl(CAN2,COLLECT_BALL1_ID,100*32768); 
-	VelCrl(CAN2,COLLECT_BALL2_ID,-100*32768);
+	static int errFlag=0,pushBallCount=0,statusFlag,count=0,noBallCount=0,pushBallFlag=1,staticPushBallFlag=1,Cnt=0,laserModelCount,FindBallModelCount,banFirstShoot=150;
+	static float dLeft=0,dRight=0,changeAngle,rps=50,Vx,Vy,V,shootAngle;
+	PE0=GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1);
 	do
-	{
-		//炮台激光
-		dLeft=ReadLaserAValue()*2.48+24.8;
-		dRight=ReadLaserBValue()*2.48+24.8;
+	{	if(PE0==1)
+		{	
+			VelCrl(CAN2,COLLECT_BALL1_ID,-100*32768); 
+			VelCrl(CAN2,COLLECT_BALL2_ID,100*32768);
+		}	
+		else		
+		{	//炮台激光
+			dLeft=ReadLaserAValue()*2.48+24.8;
+			dRight=ReadLaserBValue()*2.48+24.8;	
+			VelCrl(CAN2,COLLECT_BALL1_ID,80*32768); 
+			VelCrl(CAN2,COLLECT_BALL2_ID,-80*32768);
+		}	
 	}
 	while((dLeft>1500&&dRight>1500)||dLeft==0||dRight==0);
 	//战术选择
 	if(dRight<=1500)
-		status=1;	
+	{	status=0;
+		PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION/2);
+		if(dRight>100&&dRight<500)
+			R=600;
+		if(dRight>500&&dRight<1000)
+			R=1100;
+	}	
 	else 
 	{
-		status=0;
-		PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION/2);
+		status=1;
+		if(dLeft>100&&dLeft<500)
+			R=600;
+		if(dLeft>500&&dLeft<1000)
+			R=1100;
 	}
 	CPU_INT08U os_err;
 	os_err = os_err;
 	OSSemSet(PeriodSem, 0, &os_err);
-	time=0;
 	while (1)
 	{
 		OSSemPend(PeriodSem,0,&os_err);
+		x=GetX();
+		y=GetY();
 		if(laserModel)
 		{
+			Kp=85;
 			Cnt++;
-			CirclePID(0,2400,600,1000,status);
-			if(Cnt>150&&Cnt<200)
+			CirclePID(0,2400,R,1000,status);
+			if(Cnt<=125)
+				Rchange(-750);
+			else if(Cnt<=250)
+				Rchange(-750);
+			else if(Cnt<300)
 			{ 
 				VelCrl(CAN1,1,0);				
 				VelCrl(CAN1,2,0);
 			}	
-			if(Cnt>200&&Cnt<250)
+			else if(Cnt<350)
 			{
 				MotorOff(CAN1,1);
 				MotorOff(CAN1,2);
 				StdId=FirstshootJudge();
 			}	
-			if(Cnt>250)
+			else 
 			{
 				if(ReadLaserAValue()>=25)
 				DistanceA=ReadLaserAValue()*2.480+24.8;
 				if(ReadLaserBValue()>=25)
 				DistanceB=ReadLaserBValue()*2.480+24.8;
-//				if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1)==1&&PE1==1)
-//				{
-//					C+=1;
-//					PE1=0;
-//					changeLightTime=0;
-//					staticShootFlag_1=0;
-//					staticShootFlag_2=0;
-//					staticShootFlag_3=0;
-//				}
-//				if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1)==0)	
-//					PE1=1;
-//				if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_0)==1&&PE0==1)
-//				{
-//					C-=1;
-//					PE0=0;
-//					changeLightTime=0;
-//					staticShootFlag_1=0;
-//					staticShootFlag_2=0;
-//					staticShootFlag_3=0;
-//				}
-//				if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_0)==0)
-//					PE0=1;
 				if(staticShootFlag_3!=1)
 				{
 					cycleCnt=(StdId+1)/4;
@@ -201,6 +203,7 @@ void WalkTask(void)
 							if(ballColor==1&&staticPushBallFlag==1)
 							{
 								count+=1;
+								bingoFlag[StdId][0]+=5;
 								noPushFlag=1;
 								staticPushBallFlag=0;
 								push_Ball_Count=410;
@@ -234,58 +237,93 @@ void WalkTask(void)
 							staticShootFlag_1=0;
 							staticShootFlag_2=0;
 							staticShootFlag_3=0;
-							StdId++;
+							StdId=FirstshootJudge();
 							changeLightTime=0;
 						}
 						USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t\r\n",(int)staticPushBallFlag,(int)ballColor,noPushFlag,(int)noPushCnt,(int)LastCount,count);
 					}
 				}
-			} //cnt>250终点		
+			} //cnt>250终点	
+		else if(FindBallModel)
+		{
+			Kp=100;
+			laserModelCount++;
+			if(status==0)
+			{
+				if(x>1400&&y<3800)
+					linePID(2000,400,2000,4400,1000);
+				if(y>3800&&x>-1400)
+					linePID(2000,4400,-2000,4400,1000);
+				if(x<-1400&&y>1000)
+					linePID(-2000,4400,-2000,400,1000);
+				if(y<1000&&x<1400)
+					linePID(-2000,400,2000,400,1000);
+			}	
+			else
+			{
+				if(x>1400&&y>1000)
+					linePID(2000,4400,2000,400,1000);
+				if(y>3800&&x<1400)
+					linePID(-2000,4400,2000,4400,1000);
+				if(x<-1400&&y<3800)
+					linePID(-2000,400,-2000,4400,1000);
+				if(y<1000&&x>-1400)
+					linePID(2000,400,-2000,400,1000);
+			}	
+			if(laserModelCount>2000)
+			{
+				FindBallModel=0;
+				laserModel=1;
+			}
+		}			
 		else{
 		if(v==1600)
-			Kp=75;
+			Kp=85;
 		if(v==2000)
 			Kp=110;
-		x=GetX();
-		y=GetY();
 		angle=GetAngle()+90;
 		realR=sqrtf(x*x+(y-2400)*(y-2400));
 		antiRad=T*sqrtf(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())/realR;
 		if(errFlag==1)
 		{	
 			AnglePID(changeAngle,GetAngle());
-			Straight(-1200);
+			Straight(-1000);
 			if(errTime%2==0&&statusFlag)
 			{
 				status=1-status;
-				statusFlag=0;	
+				statusFlag=0;
+				PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION/2);
 			}	
 			if(Get_Time_Flag())	
 				errFlag=0;
 			time=0;
+			lastTime=0;
 		}	
 		else
 		{
+			time++;
 			CirclePID(0,2400,R,v,status);
 			if(status==0)
 			{
 				if(x>-100&&lastX<-100&&y<2400&&R<1500)
-					R+=500;
+					RchangeFlag=1;
 			}	
 			else
 			{
 				if(x<100&&lastX>100&&y<2400&&R<1500)
-					R+=500;
+					RchangeFlag=1;
 			}		
-			if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>50)
+			if(RchangeFlag)
+				Rchange(500);
+			if((x-lastX)*(x-lastX)+(y-lastY)*(y-lastY)>80)
 				lastTime=time;
-			if(time-lastTime>=100)
+			if(time-lastTime>=50)
 			{	
 				errFlag=1;
 				statusFlag=1;
 				errTime++;
-				changeAngle=GetAngle()+45;
-				Cnt=0;
+				changeAngle=GetAngle()+60;
+				backwardCount=0;
 			}	
 		}	
 		if(status==0)
@@ -378,51 +416,52 @@ void WalkTask(void)
 		V=-Vx+Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*Vx*Vx)-sqrt(3)*Vx);
 		shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		YawPosCtrl(shootAngle);
-		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3500)*0.0039;
-		if(rps>74)
-			throwFlag=0;
+		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3500)*0.0035;
 		ShooterVelCtrl(rps);
 		if(ballColor==0)
 			noBallCount++;
-		if(noBallCount%36==0)	
+		if(noBallCount%20==0)	
 			pushBallFlag=1;
 		//一段时间无球后反转防卡球
-//		if(noBallCount>=220)
+//		if(noBallCount>=1000)
 //		{	
 //			PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION/2);	
 //			noBallCount=0;
 //		}	
-		if(R>1500)
+		if(R>=1600)
 		{
-				if(throwFlag&&ballColor==MY_BALL_COLOR&&pushBallFlag)
+			if(throwFlag&&ballColor==MY_BALL_COLOR&&pushBallFlag)
+			{
+				//当刚切换到1600半径稳定1.5s
+				if(--banFirstShoot>0)
+					goto label;	
+				PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(++count)*PUSH_POSITION);				
+				pushBallFlag=0;
+				noBallCount=1;
+				haveShootedFlag=1;
+			}		
+			if(pushBallCount%100==0)
+			{	
+				//当拿到对方的球，倒转180度	
+				if(ballColor!=MY_BALL_COLOR&&ballColor!=0&&pushBallFlag)
 				{
-					PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(++count)*PUSH_POSITION);				
+					PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION);
 					pushBallFlag=0;
 					noBallCount=1;
-					haveShootedFlag=1;
-				}		
-				if(pushBallCount%100==0)
-				{	
-					//当拿到对方的球，倒转180度	
-					if(ballColor!=MY_BALL_COLOR&&ballColor!=0&&pushBallFlag)
-					{
-						PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION);
-						pushBallFlag=0;
-						noBallCount=1;
-					}	
 				}	
+			}	
 		}
-		pushBallCount++;
+		label:pushBallCount++;
 		lastX=x;
 		lastY=y;
-		if(((bingoFlag[0][1]!=0||bingoFlag[0][0]==1)&&(bingoFlag[1][1]!=0||bingoFlag[1][0]==1)&&(bingoFlag[2][1]!=0||bingoFlag[2][0]==1)&&(bingoFlag[3][1]!=0||bingoFlag[3][0]==1))||errTime>4||pushBallCount>6000)
+		if((bingoFlag[0][1]!=0&&bingoFlag[1][1]!=0&&bingoFlag[2][1]!=0&&bingoFlag[3][1]!=0)||errTime>4||pushBallCount>4000)
 		{
-			LaserModelCount++;
-			if(LaserModelCount>=100)
+			laserModelCount++;
+			if(laserModelCount>=100)
 				laserModel=1;
 		}	
-//		ReadActualVel(CAN1,2);
-		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t\r\n",(int)GetX(),(int)GetY(),ballColor,(int)count,laserModel);//(int)(frontwheelspeedBuffer.data32[1]/(CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO)*(pi*TURN_AROUND_WHEEL_DIAMETER)));
-		}	
+		ReadActualVel(CAN1,2);
+		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetX(),(int)GetY(),ballColor,count,throwFlag,pushBallFlag);//(int)(frontwheelspeedBuffer.data32[1]/(CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO)*(pi*TURN_AROUND_WHEEL_DIAMETER)));
+		}
 	}	
 }

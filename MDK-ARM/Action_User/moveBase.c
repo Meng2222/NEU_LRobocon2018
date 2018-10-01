@@ -49,8 +49,8 @@ void Straight(float v)
 }	
 void Spin(float R,float v)
 {
-	VelCrl(CAN2,1,v*4096/(pi*WHEEL_DIAMETER)+Vk);
-	VelCrl(CAN2,2,-v*4096*(R+(WHEEL_TREAD-WHEEL_WIDTH)/2)/((R-(WHEEL_TREAD-WHEEL_WIDTH)/2)*pi*WHEEL_DIAMETER)+Vk);
+	VelCrl(CAN2,1,v*4096/(pi*WHEEL_DIAMETER));
+	VelCrl(CAN2,2,-v*4096*(R+(WHEEL_TREAD-WHEEL_WIDTH)/2)/((R-(WHEEL_TREAD-WHEEL_WIDTH)/2)*pi*WHEEL_DIAMETER));
 }
 void TurnRight(float angle,float v)
 {
@@ -72,9 +72,9 @@ void AnglePID(float setAngle,float feedbackAngle)
 		Vk=-1300;
 	lastErr=err;																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																									
 }	
-float k,b,lAngle,setAngle,x,y,d;
+float k,b,lAngle,setAngle,d;
 int flag;
-extern float yawAngle;
+extern float yawAngle,x,y;
 extern int status;
 void GetFunction(float x1,float y1,float x2,float y2)
 {
@@ -184,7 +184,7 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
 extern float Distance,shootX,shootY,angle,antiRad,location[4][2];
-extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag;
+extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag;
 void GetYawangle(uint8_t StdId)
 {
 	if(status==0)
@@ -212,19 +212,27 @@ void BingoJudge(uint8_t StdId)
 {
 	if(haveShootedFlag==1&&bingoFlag[StdId][0]==0)
 	{	
-		bingoFlag[StdId][0]=errTime+1;
+		bingoFlag[StdId][0]=5-errTime;
 		haveShootedFlag=0;
 	}	
-	if(haveShootedFlag==1&&bingoFlag[StdId][1]==0)
+	else if(haveShootedFlag==1&&bingoFlag[StdId][1]==0)
 	{	
-		bingoFlag[StdId][1]=errTime+1;
+		bingoFlag[StdId][1]=5-errTime;
 		haveShootedFlag=0;
 	}					
-	if(bingoFlag[StdId][0]==1||bingoFlag[StdId][1]!=0)
+	if(bingoFlag[StdId][1]!=0)
 		throwFlag=0;
-	
-	
-	
+	else if(bingoFlag[StdId][0]!=0)
+	{
+		for(uint8_t i=0;i<4;i++)
+		{
+			if(bingoFlag[i][0]==0&&i!=StdId)
+			{
+				throwFlag=0;
+				break;
+			}	
+		}
+	}
 }
 
 void GetShootSituation(uint8_t StdId)
@@ -239,7 +247,7 @@ int FirstshootJudge(void)
 	maxPriority=bingoFlag[0][0];
 	for(int i=1;i<3;i++)
 	{
-		if(bingoFlag[i][0]>bingoFlag[0][0])
+		if(bingoFlag[i][0]<bingoFlag[0][0])
 		{
 			maxPriority=bingoFlag[i][0];
 			StdId=i;
@@ -247,7 +255,17 @@ int FirstshootJudge(void)
 	}	
 	return StdId;
 }	
-
+int RchangeTime=125; 
+void Rchange(int Rchange)
+{
+	if(--RchangeTime>=0)
+		R+=Rchange/125;
+	else
+	{
+		RchangeFlag=0;
+		RchangeTime=125;
+	}
+}
 /*激光模式*/
 float getLingtAngle(float xi,float yi,int tragetCnt)
 {

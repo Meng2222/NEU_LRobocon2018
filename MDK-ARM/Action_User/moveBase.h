@@ -77,6 +77,7 @@ void GetDistance(uint8_t StdId);
 void BingoJudge(uint8_t StdId);
 void GetShootSituation(uint8_t StdId);
 int FirstshootJudge(void);
+void Rchange(int Rchange);
 float getLingtAngle(float xi,float yi,int tragetCnt);
 #define pi 3.141592f
 //后轮电机的CAN ID号
