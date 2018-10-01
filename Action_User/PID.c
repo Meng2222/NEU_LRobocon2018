@@ -844,16 +844,18 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 
 void UART4_OUT(PID_Value *pid_out)                                           //´®¿ÚÊä³öº¯Êý
 {
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->corner);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->corner);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->fire_flag);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->fire_turn);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Line_Num);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)(sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())));
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)fort.shooterVelReceive);
@@ -931,7 +933,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				{
 					pid->fire_turn = 0;
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 2) pid->V += 10;
+					if(pid->Error < 3) pid->V += 10;
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error<=1300)
@@ -1014,7 +1016,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle - 0.03f;
+						float angle = pid->Angle - 0.02f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1098,7 +1100,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				{
 					pid->fire_turn = 0;
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 2) pid->V += 10;
+					if(pid->Error < 3) pid->V += 10;
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error>=-1300)
@@ -1196,7 +1198,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle + 0.04f;
+						float angle = pid->Angle + 0.02f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1241,40 +1243,6 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 			}
 		}
 	}
-	static int timeCnt = 0;
-	if(/*((targetp[pid->target_Num] == 0) && (targetp[0] + targetp[1] + targetp[2] + targetp[3] == 3)) ||\*/
-		(error->flag == 0 && error->errCnt != 0 && targetp[pid->target_Num] == 0 && (pid->fire_turn == 0 || pid->fire_cornor == 0) &&\
-		((pid->Y < 3000 && pid->Y > 1800) || (pid->X > (0-600) && pid->X < 600) || pid->fire_cornor == 0) && pid->fire_flag == 0 &&\
-		((pid->Line_Num_Next < 17 && pid->Line_Num_Next > 3) || (pid->Line_Num_Next > 20 && pid->Line_Num_Next < 34))))
-	{
-		pid->fire_cornor = 0;
-		timeCnt ++;
-		error->stop = 1;
-		error->timeCnt = 0;
-		pid->V = 0;
-		pid->vel = 0;
-		if(Scan.FirePermitFlag)
-		{
-			Scan.ScanStatus = 1;
-			Scan.FirePermitFlag = 0;
-		}
-		if(timeCnt > 400)
-		{
-			pid->fire_flag = 1;
-			timeCnt = 0;
-			pid->fire_cornor = 1;
-			pid->target_Last = pid->target_Num;
-		}
-	}
-	else
-	{
-		if(pid->target_Num != pid->target_Last) pid->fire_flag = 0;
-		pid->fire_cornor = 1;
-		error->stop = 0;
-		timeCnt = 0;
-		Scan.ScanStatus = 0;
-		Scan.FirePermitFlag = 1;
-	}
 }
 
 void GetData(PID_Value *p)                                                   //¶ÁÊý
@@ -1300,14 +1268,14 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		error->Err_Y = pid->Y;
 	}
 	error->timeCnt++;
-	if(error->timeCnt > 80)
+	if(error->timeCnt > 150)
 	{
 		error->timeCnt = 0;
 		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));
 		if(error->distance < error->err_distance)
 		{
 			error->flag = 1;
-			error->errCnt += 1;
+//			error->errCnt += 1;
 			pid->err_line_num = pid->Line_Num;
 			if(pid->Line_Num < 8) pid->Line_Num += 8;
 			else if(pid->Line_Num > 7 && pid->Line_Num < 17) pid->Line_Num -= 8;

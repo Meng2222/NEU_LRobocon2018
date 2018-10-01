@@ -44,8 +44,8 @@ void App_Task(void)
                                              初始化任务
 ===============================================================
 */
-int shootDebug = 1;
-int pidDebug = 0;
+int shootDebug = 0;
+int pidDebug = 1;
 int fortDebug = 0;
 PID_Value *PID_x = NULL;
 PID_Value PID_A;
@@ -209,7 +209,7 @@ void WalkTask(void)
 		}
 		else
 		{
-			if(CmdRecData.FireFlag_cmd == 1 && Scan.FirePermitFlag == 1)PID_A.fire_command = 1;
+			if(CmdRecData.FireFlag_cmd == 1 && Scan.FirePermitFlag == 1) PID_A.fire_command = 1;
 			else PID_A.fire_command = 0;
 		}
 		if(pidDebug) UART4_OUT(PID_x);
