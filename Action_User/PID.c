@@ -1243,8 +1243,8 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 	}
 	static int timeCnt = 0;
 	if(error->flag == 0 && error->errCnt != 0 && targetp[pid->target_Num] == 0 && (pid->fire_turn == 0 || pid->fire_cornor == 0) &&\
-		((pid->Y < 2700 && pid->Y > 2100) || (pid->X > (0-300) && pid->X < 300) || pid->fire_cornor == 0) && pid->fire_flag == 0 &&\
-		((pid->Line_Num < 17 && pid->Line_Num > 3) || (pid->Line_Num > 20 && pid->Line_Num < 34)))
+		((pid->Y < 3000 && pid->Y > 1800) || (pid->X > (0-600) && pid->X < 600) || pid->fire_cornor == 0) && pid->fire_flag == 0 &&\
+		((pid->Line_Num_Next < 17 && pid->Line_Num_Next > 3) || (pid->Line_Num_Next > 20 && pid->Line_Num_Next < 34)))
 	{
 		pid->fire_cornor = 0;
 		timeCnt ++;

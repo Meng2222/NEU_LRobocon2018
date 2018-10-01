@@ -109,10 +109,10 @@ void ConfigTask(void)
 	Gundata.Bucket_X[2] = -2200.0;      Gundata.Bucket_Y[2] = 4600.0;
 	Gundata.Bucket_X[3] = -2200.0;      Gundata.Bucket_Y[3] = 200.0;
 	
-	Gundata.Yaw_Angle_Offset[0] = -1.5f;  Gundata.Shooter_Vel_Offset[0] =  0.0f;
-	Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] =  0.5f;
-	Gundata.Yaw_Angle_Offset[2] = -0.5f;  Gundata.Shooter_Vel_Offset[2] =  0.0f;
-	Gundata.Yaw_Angle_Offset[3] =  1.5f;  Gundata.Shooter_Vel_Offset[3] = -1.0f;
+	Gundata.Yaw_Angle_Offset[0] =  0.0f;  Gundata.Shooter_Vel_Offset[0] =  0.0f;
+	Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] =  0.0f;
+	Gundata.Yaw_Angle_Offset[2] =  0.0f;  Gundata.Shooter_Vel_Offset[2] =  0.0f;
+	Gundata.Yaw_Angle_Offset[3] =  0.0f;  Gundata.Shooter_Vel_Offset[3] =  0.0f;
 	
 	Gundata.Yaw_Angle_Offset[4] =  0.0f;  Gundata.Shooter_Vel_Offset[4] = 0.0f;
 	Gundata.Yaw_Angle_Offset[5] =  0.0f;  Gundata.Shooter_Vel_Offset[5] = 0.0f;
