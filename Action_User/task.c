@@ -101,7 +101,7 @@ void ConfigTask(void)
 	
 	//距离精度
 	Gundata.Distance_Accuracy = 10.0;
-	Gundata.Yaw_Zero_Offset = 0.0;
+	Gundata.Yaw_Zero_Offset = 2.5f;
 	
 	//设定各桶编号及坐标
 	Gundata.Bucket_X[0] = 2200.0;       Gundata.Bucket_Y[0] = 200.0;
@@ -121,6 +121,22 @@ void ConfigTask(void)
 	
 //	memset(Gundata.Yaw_Angle_Offset, 0, 8);
 //	memset(Gundata.Shooter_Vel_Offset, 0, 8);
+
+    //初始化扫描参数
+	Scan.ScanStatus = 0;
+	Scan.ScanPermitFlag = 1;
+	Scan.Yaw_Zero_Offset = 0.0f;
+	
+	//设定各挡板边缘坐标值
+	Scan.Bucket_Border_X[0] =  2000.0;       Scan.Bucket_Border_Y[0] =   -54.0;
+	Scan.Bucket_Border_X[1] =  2454.0;       Scan.Bucket_Border_Y[1] =   400.0;
+	Scan.Bucket_Border_X[2] =  2454.0;       Scan.Bucket_Border_Y[2] =  4400.0;
+	Scan.Bucket_Border_X[3] =  2000.0;       Scan.Bucket_Border_Y[3] =  4854.0;
+	Scan.Bucket_Border_X[4] = -2000.0;       Scan.Bucket_Border_Y[4] =  4854.0;
+	Scan.Bucket_Border_X[5] = -2454.0;       Scan.Bucket_Border_Y[5] =  4400.0;
+	Scan.Bucket_Border_X[6] = -2454.0;       Scan.Bucket_Border_Y[6] =   400.0;
+	Scan.Bucket_Border_X[7] = -2000.0;       Scan.Bucket_Border_Y[7] =   -54.0;	
+	
 	while(1)
 	{
 		Laser_Right = fort.laserBValueReceive;                       //左ADC
@@ -170,6 +186,8 @@ void WalkTask(void)
 		else
 		{
 			Scan_Operation(&Scan, PID_x);
+			YawPosCtrl(Scan.YawPosAngleSet);
+			ShooterVelCtrl(Scan.ShooterVelSet);	
 		}
 																						//以1 * 10ms为间隔发送数据
 		if(fortDebug == 1){
