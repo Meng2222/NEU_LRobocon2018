@@ -101,6 +101,7 @@ typedef struct PID
 	u8 fire_command;
 	u8 fire_flag;
 	u8 fire_cornor;
+	u8 fire_turn;
 	int Mode;
 	int Mode_Last;
 	float Angle_Set;

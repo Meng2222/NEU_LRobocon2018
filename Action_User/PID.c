@@ -929,6 +929,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				PID_Pre(pid);
 				if(pid->l->line_Error>1300)
 				{
+					pid->fire_turn = 0;
 					pid->Line_Num = pid->Line_Num_Last;
 					if(pid->Error < 2) pid->V += 10;
 					pid->V = constrain(pid->V,1800,1200);
@@ -1003,15 +1004,17 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					pid->V = 1200;
 					pid->Line_Num = pid->Line_Num_Last;
 					PID_Control(pid);
+					pid->fire_turn = 0;
 				}
 				else
 				{
 					pid->Line_Num = pid->Line_Num_Next;
 					PID_Control(pid);
+					pid->fire_turn = 1;
 					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle - 0.1f;
+						float angle = pid->Angle - 0.05f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1093,6 +1096,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				PID_Pre(pid);
 				if(pid->l->line_Error <-1300)
 				{
+					pid->fire_turn = 0;
 					pid->Line_Num = pid->Line_Num_Last;
 					if(pid->Error < 2) pid->V += 10;
 					pid->V = constrain(pid->V,1800,1200);
@@ -1179,6 +1183,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				pid->kp = 15;
 				if(pid->l->line_Error < -800)
 				{
+					pid->fire_turn = 0;
 					pid->V = 1200;
 					pid->Line_Num = pid->Line_Num_Last;
 					PID_Control(pid);
@@ -1187,6 +1192,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				{
 					pid->Line_Num = pid->Line_Num_Next;
 					PID_Control(pid);
+					pid->fire_turn = 1;
 					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
@@ -1236,7 +1242,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 		}
 	}
 	static int timeCnt = 0;
-	if(error->flag == 0 && error->errCnt != 0 && targetp[pid->target_Num] == 0/* && (pid->corner == 0 || pid->fire_cornor == 0)*/ &&\
+	if(error->flag == 0 && error->errCnt != 0 && targetp[pid->target_Num] == 0 && (pid->fire_turn == 0 || pid->fire_cornor == 0) &&\
 		((pid->Y < 3000 && pid->Y > 1800) || (pid->X > (0-600) && pid->X < 600) || pid->fire_cornor == 0) && pid->fire_flag == 0)
 	{
 		pid->fire_cornor = 0;
