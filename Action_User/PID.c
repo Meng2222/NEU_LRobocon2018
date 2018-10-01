@@ -801,7 +801,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 				if(Debug == 1) USART_SendData(UART4,'\n');
 				flag = 1;
 			}
-			else if(blackCnt > 30)
+			else if(whiteCnt > 30)
 			{
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -812,7 +812,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 				if(Debug == 1) USART_SendData(UART4,'\n');
 				flag = 1;
 			}
-			else if(whiteCnt > 30)
+			else if(blackCnt > 30)
 			{
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -827,7 +827,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 			}
 		}
 		if(posGap > 8000 || posGap < -8000) flag = 0;
-		if(timeCnt > 500)
+		if(timeCnt > 600)
 		{
 			if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 			if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -1014,7 +1014,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle - 0.05f;
+						float angle = pid->Angle - 0.03f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1196,7 +1196,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					if(ABS(pid->Error) < 2)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle + 0.05f;
+						float angle = pid->Angle + 0.04f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1242,7 +1242,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 		}
 	}
 	static int timeCnt = 0;
-	if(((targetp[pid->target_Num] == 0) && (targetp[0] + targetp[1] + targetp[2] + targetp[3] == 3)) ||\
+	if(/*((targetp[pid->target_Num] == 0) && (targetp[0] + targetp[1] + targetp[2] + targetp[3] == 3)) ||\*/
 		(error->flag == 0 && error->errCnt != 0 && targetp[pid->target_Num] == 0 && (pid->fire_turn == 0 || pid->fire_cornor == 0) &&\
 		((pid->Y < 3000 && pid->Y > 1800) || (pid->X > (0-600) && pid->X < 600) || pid->fire_cornor == 0) && pid->fire_flag == 0 &&\
 		((pid->Line_Num_Next < 17 && pid->Line_Num_Next > 3) || (pid->Line_Num_Next > 20 && pid->Line_Num_Next < 34))))
@@ -1282,6 +1282,8 @@ void GetData(PID_Value *p)                                                   //¶
 	if(GetAngle() > 180 || GetAngle() < -180) return;
 	else if(GetX() > 4000 || GetX() < -4000) return;
 	else if(GetY() > 4000 || GetY() < -4000) return;
+	else if(GetSpeedY() > 3000 || GetSpeedY() < -3000) return;
+	else if(GetSpeedX() > 3000 || GetSpeedX() < -3000) return;
 	p->Angle = GetAngle();
 	p->X = GetX() + 170.08f * sin((p->Angle)*(Pi/180));
 	p->Y = GetY() + 75.03f + 170.68f - 170.68f * cos((p->Angle)*(Pi/180));

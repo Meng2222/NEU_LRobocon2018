@@ -260,7 +260,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	if(Pos->direction == ACW)
 	{
 		Gun->YawPosAngleSetAct = Gun->YawPosAngleSet;
-		Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSetAct,80,0);
+		Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSetAct,90,0);
 		if(Gun->YawPosAngleSetAct > 79) Gun->YawPosAngleSetAct = 0;
 		Gun->ShooterVelSetAct = Gun->ShooterVelSet;
 		Gun->ShooterVelSetAct = constrain0(Gun->ShooterVelSetAct,90,50);
@@ -269,7 +269,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	else
 	{
 		Gun->YawPosAngleSetAct = Gun->YawPosAngleSet;
-		Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSetAct,0,-80);
+		Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSetAct,0,-90);
 		if(Gun->YawPosAngleSetAct < -79) Gun->YawPosAngleSetAct = 0;
 		Gun->ShooterVelSetAct = Gun->ShooterVelSet;
 		Gun->ShooterVelSetAct = constrain0(Gun->ShooterVelSetAct,90,50);
