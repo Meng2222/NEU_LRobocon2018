@@ -179,17 +179,17 @@ void WalkTask(void)
 		
 		GetData(PID_x);																		//读取定位系统信息
 		if(Error_A.errCnt == 0){
-		Gundata.BucketNum = PID_A.target_Num;				//设置目标桶号
-		GunneryData_Operation(&Gundata, PID_x);				//计算射击诸元
-		YawPosCtrl(Gundata.YawPosAngleSetAct);				//设置航向角
-		ShooterVelCtrl(Gundata.ShooterVelSetAct);}			//设置射球转速
+		Gundata.BucketNum = PID_A.target_Num;												//设置目标桶号
+		GunneryData_Operation(&Gundata, PID_x);												//计算射击诸元
+		YawPosCtrl(Gundata.YawPosAngleSetAct);												//设置航向角
+		ShooterVelCtrl(Gundata.ShooterVelSetAct);}											//设置射球转速
 		else
 		{
 			Scan_Operation(&Scan, PID_x);
 			YawPosCtrl(Scan.YawPosAngleSet);
 			ShooterVelCtrl(Scan.ShooterVelSet);	
 		}
-																						//以1 * 10ms为间隔发送数据
+
 		if(fortDebug == 1){
 		cntSendTime++;
 		cntSendTime = cntSendTime % 1;
@@ -216,6 +216,6 @@ void WalkTask(void)
 		shoot(PID_x,target,shootDebug);
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
-		OSSemSet(PeriodSem, 0, &os_err);				   //信号量归零
+		OSSemSet(PeriodSem, 0, &os_err);
 	}
 }
