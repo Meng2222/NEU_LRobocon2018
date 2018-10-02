@@ -484,3 +484,17 @@ float Tar_Angle_Operation(float Distance_X, float Distance_Y)
 	}
 	return Tar_Angle;	
 }
+
+void SpitBall(void)
+{
+	if(fort.laserAValueReceive == 0 && fort.laserBValueReceive == 0)
+	{
+		VelCrl(CAN2, 5, 0-70 * 32768);
+		VelCrl(CAN2, 6, 70 * 32768);
+	}
+	else
+	{
+		VelCrl(CAN2, 5, 70 * 32768);
+		VelCrl(CAN2, 6, 0 - 70 * 32768);		
+	}
+}

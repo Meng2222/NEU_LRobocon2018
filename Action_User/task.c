@@ -221,6 +221,7 @@ void WalkTask(void)
 		shoot(PID_x,target,shootDebug);
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
+		SpitBall();
 		OSSemSet(PeriodSem, 0, &os_err);
 	}
 }

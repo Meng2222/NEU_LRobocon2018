@@ -170,6 +170,7 @@ void GetValueFromFort(uint8_t data);
 void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos);
 void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[]);
 float Tar_Angle_Operation(float Distance_X, float Distance_Y);
+void SpitBall(void);
 
 extern FortType fort;
 
