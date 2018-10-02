@@ -861,8 +861,8 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->corner);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->fire_flag);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->fire_turn);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Line_Num);
@@ -908,7 +908,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 	int i = 0;
 	if(flag == 0 && dir == Right)
 	{
-		pid->Line_Num = 4;
+		pid->Line_Num = 0;
 		flag = 1;
 		for(i=0;i<4;i++)
 		{
@@ -918,7 +918,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 	}
 	if(flag == 0 && dir == Left)
 	{
-		pid->Line_Num = 23;
+		pid->Line_Num = 19;
 		flag = 1;
 		for(i=4;i<8;i++)
 		{
@@ -950,7 +950,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 						priority1.priority = pid->l->line_Priority;
 						priority1.line_num = pid->Line_Num;
 					}
-					if(priority1.priority < pid->l->line_Priority)
+					if(priority1.priority > pid->l->line_Priority)
 					{
 						priority1.priority = pid->l->line_Priority;
 						priority1.line_num = pid->Line_Num;
@@ -1122,7 +1122,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 							priority2.priority = pid->l->line_Priority;
 							priority2.line_num = pid->Line_Num;
 						}
-						if(priority2.priority < pid->l->line_Priority)
+						if(priority2.priority > pid->l->line_Priority)
 						{
 							priority2.priority = pid->l->line_Priority;
 							priority2.line_num = pid->Line_Num;
@@ -1140,7 +1140,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 							priority2.priority = pid->l->line_Priority;
 							priority2.line_num = pid->Line_Num;
 						}
-						if(priority2.priority < pid->l->line_Priority)
+						if(priority2.priority > pid->l->line_Priority)
 						{
 							priority2.priority = pid->l->line_Priority;
 							priority2.line_num = pid->Line_Num;
@@ -1334,7 +1334,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		if(error->distance < error->err_distance)
 		{
 			error->flag = 1;
-//			error->errCnt += 1;
+			error->errCnt += 1;
 			pid->err_line_num = pid->Line_Num;
 			if(pid->Line_Num < 8) pid->Line_Num += 8;
 			else if(pid->Line_Num > 7 && pid->Line_Num < 17) pid->Line_Num -= 8;
