@@ -80,8 +80,8 @@ void ConfigTask(void)
 	MotorOn(CAN1,1);                                                 //右电机使能
 	MotorOn(CAN1,2);                                                 //左电机使能
 	MotorOn(CAN2,5); 
-	MotorOn(CAN2,6); 
-	MotorOn(CAN2,7); 
+	MotorOn(CAN2,6);
+	MotorOn(CAN2,7);
 	USART3_Init(115200);                                             //串口3初始化，定位系统用
 	UART4_Init(921600);                                              //串口4初始化，与上位机通信用
 	UART5_Init(921600);
@@ -198,12 +198,12 @@ void WalkTask(void)
 		if(cntSendTime == 0)
 		{
 			//Scan参数
-			USART_OUT(UART4, (uint8_t*)"ScanSta=%d	DisL=%d	DisR=%d	LX=%d	LY=%d	RX=%d	RY=%d	LeftAng=%d	RightAng=%d	LeftX=%d	LeftY=%d	RightX=%d	RightY=%d	BucX=%d	BucY=%d	ShoSet=%d	YawSet=%d	delay=%d	cntdelay=%d\r\n",\
+			USART_OUT(UART4, (uint8_t*)"ScanSta=%d	DisL=%d	DisR=%d	LX=%d	LY=%d	RX=%d	RY=%d	LeftAng=%d	RightAng=%d	LeftX=%d	LeftY=%d	RightX=%d	RightY=%d	BucX=%d	BucY=%d	ShoSet=%d	YawSet=%d	delay=%d	cntdelay=%d	firecmd=%d\r\n",\
 			(int)Scan.ScanStatus,           (int)Scan.Probe_Left_Distance,  (int)Scan.Probe_Right_Distance,\
 			(int)Scan.Probe_Left_X,         (int)Scan.Probe_Left_Y,         (int)Scan.Probe_Right_X,        (int)Scan.Probe_Right_Y,\
 			(int)Scan.BorderAngleLeft,      (int)Scan.BorderAngleRight,     (int)Scan.BucketBorder_Left_X,  (int)Scan.BucketBorder_Left_Y, (int)Scan.BucketBorder_Right_X, (int)Scan.BucketBorder_Right_Y,\
 			(int)Scan.Probe_Bucket_X,       (int)Scan.Probe_Bucket_Y,       (int)Scan.ShooterVelSet,        (int)Scan.YawPosAngleSet,\
-			(int)Scan.DelayFlag,            (int)Scan.CntDelayTime);
+			(int)Scan.DelayFlag,            (int)Scan.CntDelayTime,         (int)PID_A.fire_command);
 		}}
 		
 		if(PID_x->V != 0)
@@ -217,7 +217,7 @@ void WalkTask(void)
 			if(CmdRecData.FireFlag_cmd == 1 && Scan.FirePermitFlag == 1) PID_A.fire_command = 1;
 			else PID_A.fire_command = 0;
 		}
-		if(pidDebug) UART4_OUT(PID_x);
+		if(pidDebug) UART4_OUT(PID_x,Error_x);
 		shoot(PID_x,target,shootDebug);
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');

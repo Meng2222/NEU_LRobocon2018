@@ -67,7 +67,7 @@ float GetSpeedX(void);
 float GetSpeedY(void);
 /*返回定位系统的Z轴角速度值*/
 float GetWZ(void);
-void UART4_OUT(PID_Value *pid_out);
+void UART4_OUT(PID_Value *pid_out , Err*error1);
 void GetValueFromPC(u8 data);
 float GetYawPosCommand(void);
 float GetShooterVelCommand(void);
