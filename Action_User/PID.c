@@ -585,8 +585,8 @@ void PID_Arc_Init(void)                                                      //Ô
 
 void PID_Coordinate_Init(void)                                               //×ø±ê²ÎÊý³õÊ¼»¯
 {
-	Coordinate_N[0].x3 = 1000;
-	Coordinate_N[0].y3 = 1000;
+	Coordinate_N[0].x3 = 2400;
+	Coordinate_N[0].y3 = 2400;
 	Coordinate_N[0].coordinate_Angle = 0;
 }
 void PID_Init(PID_Value *PID_a)                                              //PID×Ü²ÎÊý³õÊ¼»¯
@@ -893,6 +893,17 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 
 void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])                     //ÐÂ°æ×ßÏß
 {
+	if(pid->stop == 1)
+	{
+		pid->Mode = Coordinate;
+		PID_Control(pid);
+		if(pid->Y > 1800 && pid->Y < 3000 && pid->X > 0-600 && pid->X < 600)
+		{
+			pid->vel = 0;
+			pid->V = 0;
+		}
+		return;
+	}
 	static u8 flag = 0;
 	int i = 0;
 	if(flag == 0 && dir == Right)
@@ -1049,7 +1060,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				timeCnt2++;
 				pid->target_Num = (pid->Line_Num + 17) % 4 - 1;
 				if(pid->target_Num == -1) pid->target_Num = 3;
-				if(timeCnt2 <150)
+				if(timeCnt2 <200)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1184,7 +1195,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				timeCnt3++;
 				pid->target_Num = (pid->Line_Num - 17) % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
-				if(timeCnt3 < 150)
+				if(timeCnt3 < 200)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1251,7 +1262,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				timeCnt4++;
 				pid->target_Num = (pid->Line_Num - 17) % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
-				if(timeCnt4 < 150)
+				if(timeCnt4 < 200)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1358,18 +1369,18 @@ void PriorityControl(PID_Value *PID,Err *err)
 			}
 			else/*ÎÞÇò*/
 			{
-				
+				return;
 			}
 		}
 		else/*É¨Ãè×ßÐÎ*/
 		{
 			if(PID->dogHungry == 0)/*ÓÐÇò*/
 			{
-				
+				PID->stop = 1;
 			}
 			else/*ÎÞÇò*/
 			{
-				
+				PID->stop = 1;
 			}
 		}
 	}
