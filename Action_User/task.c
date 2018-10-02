@@ -178,7 +178,7 @@ void WalkTask(void)
 		GO(PID_x);																			//电机控制
 		
 		GetData(PID_x);																		//读取定位系统信息
-		if(Error_A.errCnt == 0){
+		if(PID_x->V != 0){
 		Gundata.BucketNum = PID_A.target_Num;												//设置目标桶号
 		GunneryData_Operation(&Gundata, PID_x);												//计算射击诸元
 		YawPosCtrl(Gundata.YawPosAngleSetAct);												//设置航向角
@@ -201,7 +201,7 @@ void WalkTask(void)
 			(int)Gundata.Yaw_Angle_Offset[2], (int)Gundata.Yaw_Angle_Offset[3]);
 		}}
 		
-		if(Error_A.errCnt == 0)
+		if(PID_x->V != 0)
 		{
 			if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 3.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 3.0f &&\
 				    Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1 && Gundata.cntIteration < 10 && target[PID_x->target_Num] == 0)PID_A.fire_command = 1;
