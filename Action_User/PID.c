@@ -1364,6 +1364,7 @@ void WatchDog(PID_Value *Dog)
 
 void PriorityControl(PID_Value *PID,Err *err)
 {
+	err->errCnt = 1;
 	int i = 0;
 	int prioritySum = 0;
 	for( i = 0 ; i < 29 ; i ++ )/*锁住内三圈优先级*/
