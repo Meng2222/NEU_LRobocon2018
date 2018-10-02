@@ -832,7 +832,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 				if(targets[0] != 0 && targets[1] != 0 && targets[2] != 0 && targets[3] != 0)
 				{
 					targets[0] = 0, targets[1] = 0, targets[2] = 0, targets[3] = 0;
-				}
+				}			
 				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"fire	%d	%d	%d	%d	\r\n", (int)targets[0],(int)targets[1],(int)targets[2],(int)targets[3]);
 			}
 		}

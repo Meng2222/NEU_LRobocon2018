@@ -107,8 +107,10 @@ typedef struct{
 	int ScanStatus;                   //扫描状态                              0走行   1扫描 2射球
 	int ScanPermitFlag;               //允许扫描                              0不允许 1允许
 	int FirePermitFlag;               //允许射球                              0不允许 1允许    
-	int Square_Mode;                  //方形走行方向                          Square_Mode = 0时    逆时针
-                                      //                                      Square_Mode = 1时    顺时针
+	int BucketNum;                    //目标桶号
+	int i;
+	int DelayFlag;
+	int CntDelayTime;	
 	
 	float Fort_X;                     //炮台横坐标                            单位mm
 	float Fort_Y;                     //炮台纵坐标                            单位mm
@@ -119,12 +121,9 @@ typedef struct{
 	float FortToBorder_Distance_X;    //炮塔到目标桶挡板边缘横轴距离          单位mm     6|_   _|1 
 	float FortToBorder_Distance_Y;    //炮塔到目标桶挡板边缘纵轴距离          单位mm        7 0
 	
-	float BorderAngleTar;             //指向挡板边缘航向角目标值              单位°
-	float BorderAngleA;               //指向挡板边缘航向角设定值A             单位°
-	float BorderAngleB;               //指向挡板边缘航向角设定值B             单位°
-	float BorderAngleUpper;           //较大的航向角设定值                    单位°
-	float BorderAngleLower;           //较小的航向角设定值                    单位°
-
+	float BorderAngleTar;             //指向挡板边缘航向角目标值			  单位°
+	float BorderAngleRight;           //位于最右侧的扫描起始航向角设定值	  单位°
+	float BorderAngleLeft;            //位于最左侧的扫描终止航向角设定值	  单位°
 
 	float Laser_Left_X;               //左侧激光横坐标                        单位mm  
 	float Laser_Left_Y;               //左侧激光纵坐标                        单位mm
@@ -138,10 +137,10 @@ typedef struct{
 	float Probe_Right_X;              //右侧激光探测点横坐标                  单位mm
 	float Probe_Right_Y;	          //右侧激光探测点纵坐标                  单位mm
 	
-	float BucketBorder_Lower_X;       //较小的航向角设定值的挡板边缘横坐标    单位mm
-	float BucketBorder_Lower_Y;       //较小的航向角设定值的挡板边缘纵坐标    单位mm
-	float BucketBorder_Upper_X;       //较大的航向角设定值的挡板边缘横坐标    单位mm
-	float BucketBorder_Upper_Y;       //较大的航向角设定值的挡板边缘纵坐标    单位mm
+	float BucketBorder_Left_X;        //左侧挡板边缘横坐标					  单位mm
+	float BucketBorder_Left_Y;        //左侧挡板边缘纵坐标					  单位mm
+	float BucketBorder_Right_X;       //右侧挡板边缘横坐标					  单位mm
+	float BucketBorder_Right_Y;		  //右侧挡板边缘纵坐标					  单位mm
 	
 	float FortToBucket_Distance_X;    //炮塔到目标桶横轴距离                  单位mm
 	float FortToBucket_Distance_Y;    //炮塔到目标桶纵轴距离                  单位mm	
@@ -155,7 +154,8 @@ typedef struct{
 	float YawPosAngleRec;             //炮台航向角实际值                      单位°
 	float YawPosAngleTar;             //炮台航向角目标值                      单位°              
 	float YawPosAngleSet;             //炮台航向角设定值                      单位°
-	float Yaw_Zero_Offset;            //航向角归零补偿值                      单位°         
+	float Yaw_Zero_Offset;            //航向角归零补偿值                      单位° 
+	float Shooter_Vel_Offset;         //射球电机转速补偿值                    单位rad/s		
 }ScanData;
 
 
@@ -168,7 +168,7 @@ void ReadLaserBValue(void);
 void GetValueFromFort(uint8_t data);
 
 void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos);
-void Scan_Operation(ScanData *Scan, PID_Value const *Pos);
+void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[]);
 float Tar_Angle_Operation(float Distance_X, float Distance_Y);
 
 extern FortType fort;
