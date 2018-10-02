@@ -102,6 +102,9 @@ typedef struct PID
 	u8 fire_flag;
 	u8 fire_cornor;
 	u8 fire_turn;
+	u8 dogHungry;
+	u8 stop;
+	int food;
 	int Mode;
 	int Mode_Last;
 	float Angle_Set;
@@ -156,6 +159,12 @@ typedef struct targetrecord
 	int n3;
 }targetNum;
 
+typedef struct priority1
+{
+	int line_num;
+	int priority;
+}priority;
+
 void PID_Init(PID_Value *PID_a);
 void PID_Line_Init(void);
 void PID_Arc_Init(void);
@@ -171,7 +180,7 @@ float constrain(float amt, float high, float low);
 float GetShooterVelCommand(void);
 float GetYawPosCommand(void);
 void PID_Competition_testVersion(PID_Value *pid, u8 dir);
-void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[]);
+void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[]);
 void ErrorDisposal(PID_Value *pid,Err *error);
 void GetData(PID_Value *p);
 void shoot(PID_Value *p_gun, int target[], int Debug);

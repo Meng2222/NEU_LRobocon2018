@@ -174,7 +174,7 @@ void WalkTask(void)
 		
 		GetData(PID_x);																		//读取定位系统信息
 		ErrorDisposal(PID_x,Error_x);														//错误检测
-		PID_Competition(PID_x,direction,Error_x,target);									//走形计算函数
+		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
 		GO(PID_x);																			//电机控制
 		
 		GetData(PID_x);																		//读取定位系统信息
@@ -187,7 +187,7 @@ void WalkTask(void)
 		{
 			Scan_Operation(&Scan, PID_x);
 			YawPosCtrl(Scan.YawPosAngleSet);
-			ShooterVelCtrl(Scan.ShooterVelSet);	
+			ShooterVelCtrl(Scan.ShooterVelSet);
 		}
 
 		if(fortDebug == 1){

@@ -53,7 +53,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[0].line_C = 0;
 	Line_N[0].line_Angle = 0;
 	Line_N[0].line_Error = 0;
-	Line_N[0].line_Priority = 2;
+	Line_N[0].line_Priority = 0;
 	
 	Line_N[1].x1 = 600;
 	Line_N[1].y1 = 3000;
@@ -65,7 +65,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[1].line_C = 0;
 	Line_N[1].line_Angle = 0;
 	Line_N[1].line_Error = 0;
-	Line_N[1].line_Priority = 2;
+	Line_N[1].line_Priority = 0;
 	
 	Line_N[2].x1 = -600;
 	Line_N[2].y1 = 3000;
@@ -77,7 +77,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[2].line_C = 0;
 	Line_N[2].line_Angle = 0;
 	Line_N[2].line_Error = 0;
-	Line_N[2].line_Priority = 1;
+	Line_N[2].line_Priority = 0;
 	
 	Line_N[3].x1 = -600;
 	Line_N[3].y1 = 1800;
@@ -89,7 +89,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[3].line_C = 0;
 	Line_N[3].line_Angle = 0;
 	Line_N[3].line_Error = 0;
-	Line_N[3].line_Priority = 1;
+	Line_N[3].line_Priority = 0;
 	
 	Line_N[4].x1 = 1000;
 	Line_N[4].y1 = 1400;
@@ -101,7 +101,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[4].line_C = 0;
 	Line_N[4].line_Angle = 0;
 	Line_N[4].line_Error = 0;
-	Line_N[4].line_Priority = 0;
+	Line_N[4].line_Priority = 1;
 	
 	Line_N[5].x1 = 1000;
 	Line_N[5].y1 = 3400;
@@ -113,7 +113,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[5].line_C = 0;
 	Line_N[5].line_Angle = 0;
 	Line_N[5].line_Error = 0;
-	Line_N[5].line_Priority = 0;
+	Line_N[5].line_Priority = 1;
 	
 	Line_N[6].x1 = -1000;
 	Line_N[6].y1 = 3400;
@@ -125,7 +125,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[6].line_C = 0;
 	Line_N[6].line_Angle = 0;
 	Line_N[6].line_Error = 0;
-	Line_N[6].line_Priority = 2;
+	Line_N[6].line_Priority = 1;
 	
 	Line_N[7].x1 = -1000;
 	Line_N[7].y1 = 1400;
@@ -137,7 +137,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[7].line_C = 0;
 	Line_N[7].line_Angle = 0;
 	Line_N[7].line_Error = 0;
-	Line_N[7].line_Priority = 2;
+	Line_N[7].line_Priority = 1;
 	
 	Line_N[8].x1 = 1400;
 	Line_N[8].y1 = 1000;
@@ -149,7 +149,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[8].line_C = 0;
 	Line_N[8].line_Angle = 0;
 	Line_N[8].line_Error = 0;
-	Line_N[8].line_Priority = 3;
+	Line_N[8].line_Priority = 2;
 	
 	Line_N[9].x1 = 1400;
 	Line_N[9].y1 = 3800;
@@ -161,7 +161,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[9].line_C = 0;
 	Line_N[9].line_Angle = 0;
 	Line_N[9].line_Error = 0;
-	Line_N[9].line_Priority = 3;
+	Line_N[9].line_Priority = 2;
 	
 	Line_N[10].x1 = -1400;
 	Line_N[10].y1 = 3800;
@@ -173,7 +173,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[10].line_C = 0;
 	Line_N[10].line_Angle = 0;
 	Line_N[10].line_Error = 0;
-	Line_N[10].line_Priority = 3;
+	Line_N[10].line_Priority = 2;
 	
 	Line_N[11].x1 = -1400;
 	Line_N[11].y1 = 1000;
@@ -185,7 +185,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[11].line_C = 0;
 	Line_N[11].line_Angle = 0;
 	Line_N[11].line_Error = 0;
-	Line_N[11].line_Priority = 3;
+	Line_N[11].line_Priority = 2;
 	
 	Line_N[12].x1 = 1800;
 	Line_N[12].y1 = 600;
@@ -197,7 +197,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[12].line_C = 0;
 	Line_N[12].line_Angle = 0;
 	Line_N[12].line_Error = 0;
-	Line_N[12].line_Priority = 1;
+	Line_N[12].line_Priority = 3;
 		
 	Line_N[13].x1 = 1800;
 	Line_N[13].y1 = 4200;
@@ -209,7 +209,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[13].line_C = 0;
 	Line_N[13].line_Angle = 0;
 	Line_N[13].line_Error = 0;
-	Line_N[13].line_Priority = 1;
+	Line_N[13].line_Priority = 3;
 	
 	Line_N[14].x1 = -1800;
 	Line_N[14].y1 = 4200;
@@ -221,7 +221,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[14].line_C = 0;
 	Line_N[14].line_Angle = 0;
 	Line_N[14].line_Error = 0;
-	Line_N[14].line_Priority = 0;
+	Line_N[14].line_Priority = 3;
 	
 	Line_N[15].x1 = -1800;
 	Line_N[15].y1 = 600;
@@ -233,7 +233,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[15].line_C = 0;
 	Line_N[15].line_Angle = 0;
 	Line_N[15].line_Error = 0;
-	Line_N[15].line_Priority = 0;
+	Line_N[15].line_Priority = 3;
 	
 	Line_N[16].x1 = 1800;
 	Line_N[16].y1 = 600;
@@ -261,7 +261,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[19].line_C = 0;
 	Line_N[19].line_Angle = 0;
 	Line_N[19].line_Error = 0;
-	Line_N[19].line_Priority = 2;
+	Line_N[19].line_Priority = 0;
 	
 	Line_N[18].x1 = -600;
 	Line_N[18].y1 = 3000;
@@ -273,7 +273,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[18].line_C = 0;
 	Line_N[18].line_Angle = 0;
 	Line_N[18].line_Error = 0;
-	Line_N[18].line_Priority = 2;
+	Line_N[18].line_Priority = 0;
 	
 	Line_N[17].x1 = 600;
 	Line_N[17].y1 = 3000;
@@ -285,7 +285,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[17].line_C = 0;
 	Line_N[17].line_Angle = 0;
 	Line_N[17].line_Error = 0;
-	Line_N[17].line_Priority = 1;
+	Line_N[17].line_Priority = 0;
 	
 	Line_N[20].x1 = 600;
 	Line_N[20].y1 = 1800;
@@ -297,7 +297,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[20].line_C = 0;
 	Line_N[20].line_Angle = 0;
 	Line_N[20].line_Error = 0;
-	Line_N[20].line_Priority = 1;
+	Line_N[20].line_Priority = 0;
 	
 	Line_N[23].x1 = -1000;
 	Line_N[23].y1 = 1400;
@@ -309,7 +309,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[23].line_C = 0;
 	Line_N[23].line_Angle = 0;
 	Line_N[23].line_Error = 0;
-	Line_N[23].line_Priority = 0;
+	Line_N[23].line_Priority = 1;
 	
 	Line_N[22].x1 = -1000;
 	Line_N[22].y1 = 3400;
@@ -321,7 +321,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[22].line_C = 0;
 	Line_N[22].line_Angle = 0;
 	Line_N[22].line_Error = 0;
-	Line_N[22].line_Priority = 0;
+	Line_N[22].line_Priority = 1;
 	
 	Line_N[21].x1 = 1000;
 	Line_N[21].y1 = 3400;
@@ -333,7 +333,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[21].line_C = 0;
 	Line_N[21].line_Angle = 0;
 	Line_N[21].line_Error = 0;
-	Line_N[21].line_Priority = 2;
+	Line_N[21].line_Priority = 1;
 	
 	Line_N[24].x1 = 1000;
 	Line_N[24].y1 = 1400;
@@ -345,7 +345,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[24].line_C = 0;
 	Line_N[24].line_Angle = 0;
 	Line_N[24].line_Error = 0;
-	Line_N[24].line_Priority = 2;
+	Line_N[24].line_Priority = 1;
 	
 	Line_N[27].x1 = -1400;
 	Line_N[27].y1 = 1000;
@@ -357,7 +357,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[27].line_C = 0;
 	Line_N[27].line_Angle = 0;
 	Line_N[27].line_Error = 0;
-	Line_N[27].line_Priority = 3;
+	Line_N[27].line_Priority = 2;
 	
 	Line_N[26].x1 = -1400;
 	Line_N[26].y1 = 3800;
@@ -369,7 +369,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[26].line_C = 0;
 	Line_N[26].line_Angle = 0;
 	Line_N[26].line_Error = 0;
-	Line_N[26].line_Priority = 3;
+	Line_N[26].line_Priority = 2;
 	
 	Line_N[25].x1 = 1400;
 	Line_N[25].y1 = 3800;
@@ -381,7 +381,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[25].line_C = 0;
 	Line_N[25].line_Angle = 0;
 	Line_N[25].line_Error = 0;
-	Line_N[25].line_Priority = 3;
+	Line_N[25].line_Priority = 2;
 	
 	Line_N[28].x1 = 1400;
 	Line_N[28].y1 = 1000;
@@ -393,7 +393,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[28].line_C = 0;
 	Line_N[28].line_Angle = 0;
 	Line_N[28].line_Error = 0;
-	Line_N[28].line_Priority = 3;
+	Line_N[28].line_Priority = 2;
 	
 	Line_N[31].x1 = -1800;
 	Line_N[31].y1 = 600;
@@ -405,7 +405,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[31].line_C = 0;
 	Line_N[31].line_Angle = 0;
 	Line_N[31].line_Error = 0;
-	Line_N[31].line_Priority = 1;
+	Line_N[31].line_Priority = 3;
 	
 	Line_N[30].x1 = -1800;
 	Line_N[30].y1 = 4200;
@@ -417,7 +417,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[30].line_C = 0;
 	Line_N[30].line_Angle = 0;
 	Line_N[30].line_Error = 0;
-	Line_N[30].line_Priority = 1;
+	Line_N[30].line_Priority = 3;
 	
 	Line_N[29].x1 = 1800;
 	Line_N[29].y1 = 4200;
@@ -429,7 +429,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[29].line_C = 0;
 	Line_N[29].line_Angle = 0;
 	Line_N[29].line_Error = 0;
-	Line_N[29].line_Priority = 0;
+	Line_N[29].line_Priority = 3;
 	
 	Line_N[32].x1 = 1800;
 	Line_N[32].y1 = 600;
@@ -441,7 +441,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[32].line_C = 0;
 	Line_N[32].line_Angle = 0;
 	Line_N[32].line_Error = 0;
-	Line_N[32].line_Priority = 0;
+	Line_N[32].line_Priority = 3;
 	
 	Line_N[33].x1 = -1800;
 	Line_N[33].y1 = 600;
@@ -617,7 +617,9 @@ void PID_Init(PID_Value *PID_a)                                              //P
 	PID_a->fire_request = 0;
 	PID_a->fire_command = 0;
 	PID_a->fire_flag = 0;
-		
+	PID_a->food = 2000;
+	PID_a->dogHungry = 0;
+
 	PID_Line_Init();
 	PID_a->l = &Line_N[PID_a->Line_Num];
 	
@@ -763,18 +765,13 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0;
 	if (p_gun->fire_request)
 	{
+		p_gun->food = 2000;
 		if(!p_gun->fire_command) return;
 		posLast = pos;
 		pos += p_gun->push_pos_up;
 		PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 		p_gun->fire_request = 0;
 		p_gun->fire_command = 0;
-		targets[p_gun->target_Num] += 1;
-		if(targets[0]+targets[1]+targets[2]+targets[3] == 4)
-		{
-			targets[0] = 0, targets[1] = 0, targets[2] = 0, targets[3] = 0;
-		}
-		if(Debug == 1) USART_OUT(UART4,(uint8_t*)"fire	%d	%d	%d	%d	\r\n", (int)targets[0],(int)targets[1],(int)targets[2],(int)targets[3]);
 	}
 	else
 	{
@@ -826,7 +823,19 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 				flag = 1;
 			}
 		}
-		if(posGap > 8000 || posGap < -8000) flag = 0;
+		if(posGap > 14000 || posGap < -14000)
+		{
+			flag = 0;
+			if(pos-posLast > 16000)
+			{
+				targets[p_gun->target_Num] += 1;
+				if(targets[0] != 0 && targets[1] != 0 && targets[2] != 0 && targets[3] != 0)
+				{
+					targets[0] = 0, targets[1] = 0, targets[2] = 0, targets[3] = 0;
+				}
+				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"fire	%d	%d	%d	%d	\r\n", (int)targets[0],(int)targets[1],(int)targets[2],(int)targets[3]);
+			}
+		}
 		if(timeCnt > 600)
 		{
 			if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
@@ -854,8 +863,8 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->corner);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->fire_flag);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->fire_turn);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->fire_flag);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->fire_turn);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Line_Num);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)(sqrt(GetSpeedX()*GetSpeedX()+GetSpeedY()*GetSpeedY())));
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)fort.shooterVelReceive);
@@ -882,7 +891,7 @@ void UART4_OUT(PID_Value *pid_out)                                           //´
 //	USART_SendData(UART4,'\n');
 }
 
-void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])                     //ÐÂ°æ×ßÏß
+void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])                     //ÐÂ°æ×ßÏß
 {
 	static u8 flag = 0;
 	int i = 0;
@@ -920,13 +929,24 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				pid->target_Num = pid->Line_Num % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
 				pid->Line_Num_Last = pid->Line_Num;
+				priority priority1 = {0};
 				for(i=0;i<4;i++)
 				{
 					pid->Line_Num_Next = pid->Line_Num = 4*i+pid->target_Num;
 					pid->l = &Line_N[pid->Line_Num];
-					if(pid->l->line_Priority == 0) break;
+					if(i == 0)
+					{
+						priority1.priority = pid->l->line_Priority;
+						priority1.line_num = pid->Line_Num;
+					}
+					if(priority1.priority < pid->l->line_Priority)
+					{
+						priority1.priority = pid->l->line_Priority;
+						priority1.line_num = pid->Line_Num;
+					}
 				}
-				pid->target_Next = pid->Line_Num % 4 + 1;
+				pid->Line_Num_Next = pid->Line_Num = priority1.line_num;
+				pid->target_Next = pid->Line_Num_Next % 4 + 1;
 				if(pid->target_Next == 4) pid->target_Next = 0;
 				PID_Pre(pid);
 				if(pid->l->line_Error>1300)
@@ -944,16 +964,16 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					{
 						Line_N[4*i+pid->target_Num].line_Priority--;
 						if(Line_N[4*i+pid->target_Num].line_Priority == -1) Line_N[4*i+pid->target_Num].line_Priority = 3;
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+pid->target_Num));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+pid->target_Num].line_Priority));
-	//					USART_SendData(UART4,'\r');
-	//					USART_SendData(UART4,'\n');
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+pid->target_Num));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+pid->target_Num].line_Priority));
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
 					}
-	//				USART_OUT(UART4,(uint8_t*)"%d	", (int)(pid->Line_Num));
-	//				USART_SendData(UART4,'\r');
-	//				USART_SendData(UART4,'\n');
-	//				USART_SendData(UART4,'\r');
-	//				USART_SendData(UART4,'\n');
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(pid->Line_Num));
+//					USART_SendData(UART4,'\r');
+//					USART_SendData(UART4,'\n');
+//					USART_SendData(UART4,'\r');
+//					USART_SendData(UART4,'\n');
 				}
 			}
 			else
@@ -980,14 +1000,14 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					for(i=0;i<17;i++)
 					{
 						Line_N[i+17].line_Priority = Line_N[i].line_Priority;
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
-	//					USART_SendData(UART4,'\r');
-	//					USART_SendData(UART4,'\n');
-	//					USART_SendData(UART4,'\r');
-	//					USART_SendData(UART4,'\n');
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
 					}
 				}
 			}
@@ -1013,7 +1033,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					pid->Line_Num = pid->Line_Num_Next;
 					PID_Control(pid);
 					pid->fire_turn = 1;
-					if(ABS(pid->Error) < 2)
+					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
 						float angle = pid->Angle - 0.02f;
@@ -1048,14 +1068,14 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					for(i=0;i<17;i++)
 					{
 						Line_N[i+17].line_Priority = Line_N[i].line_Priority;
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
-	//					USART_SendData(UART4,'\r');
-	//					USART_SendData(UART4,'\n');
-	//					USART_SendData(UART4,'\r');
-	//					USART_SendData(UART4,'\n');
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
 					}
 				}
 			}
@@ -1075,13 +1095,23 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 				pid->target_Num = pid->Line_Num % 4 - 1;
 				if(pid->target_Num == -1) pid->target_Num = 3;
 				pid->Line_Num_Last = pid->Line_Num;
+				priority priority2 = {0};
 				if(pid->target_Num != 0)
 				{
 					for(i=4;i<8;i++)
 					{
 						pid->Line_Num_Next = pid->Line_Num = 4*i+pid->target_Num;
 						pid->l = &Line_N[pid->Line_Num];
-						if(pid->l->line_Priority == 0) break;
+						if(i == 4)
+						{
+							priority2.priority = pid->l->line_Priority;
+							priority2.line_num = pid->Line_Num;
+						}
+						if(priority2.priority < pid->l->line_Priority)
+						{
+							priority2.priority = pid->l->line_Priority;
+							priority2.line_num = pid->Line_Num;
+						}
 					}
 				}
 				else if(pid->target_Num == 0)
@@ -1090,9 +1120,19 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					{
 						pid->Line_Num_Next = pid->Line_Num = 4*i+4;
 						pid->l = &Line_N[pid->Line_Num];
-						if(pid->l->line_Priority == 0) break;
+						if(i == 4)
+						{
+							priority2.priority = pid->l->line_Priority;
+							priority2.line_num = pid->Line_Num;
+						}
+						if(priority2.priority < pid->l->line_Priority)
+						{
+							priority2.priority = pid->l->line_Priority;
+							priority2.line_num = pid->Line_Num;
+						}
 					}
 				}
+				pid->Line_Num_Next = pid->Line_Num = priority2.line_num;
 				pid->target_Next = pid->Line_Num_Next % 4 - 1;
 				if(pid->target_Next == -1) pid->target_Next = 3;
 				PID_Pre(pid);
@@ -1113,10 +1153,10 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 						{
 							Line_N[4*i+pid->target_Num].line_Priority--;
 							if(Line_N[4*i+pid->target_Num].line_Priority == -1) Line_N[4*i+pid->target_Num].line_Priority = 3;
-	//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+pid->target_Num));
-	//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+pid->target_Num].line_Priority));
-	//						USART_SendData(UART4,'\r');
-	//						USART_SendData(UART4,'\n');
+//							USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+pid->target_Num));
+//							USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+pid->target_Num].line_Priority));
+//							USART_SendData(UART4,'\r');
+//							USART_SendData(UART4,'\n');
 						}
 					}
 					else if(pid->target_Num == 0)
@@ -1125,17 +1165,17 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 						{
 							Line_N[4*i+4].line_Priority--;
 							if(Line_N[4*i+4].line_Priority == -1) Line_N[4*i+4].line_Priority = 3;
-	//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+4));
-	//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+4].line_Priority));
-	//						USART_SendData(UART4,'\r');
-	//						USART_SendData(UART4,'\n');
+//							USART_OUT(UART4,(uint8_t*)"%d	", (int)(4*i+4));
+//							USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[4*i+4].line_Priority));
+//							USART_SendData(UART4,'\r');
+//							USART_SendData(UART4,'\n');
 						}
 					}
-	//				USART_OUT(UART4,(uint8_t*)"%d	", (int)(pid->Line_Num));
-	//				USART_SendData(UART4,'\r');
-	//				USART_SendData(UART4,'\n');
-	//				USART_SendData(UART4,'\r');
-	//				USART_SendData(UART4,'\n');
+//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(pid->Line_Num));
+//					USART_SendData(UART4,'\r');
+//					USART_SendData(UART4,'\n');
+//					USART_SendData(UART4,'\r');
+//					USART_SendData(UART4,'\n');
 				}
 			}
 			else
@@ -1162,14 +1202,14 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					for(i=0;i<17;i++)
 					{
 						Line_N[i].line_Priority = Line_N[i+17].line_Priority;
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
-	//					USART_SendData(UART4,'\r');
-	//					USART_SendData(UART4,'\n');
-	//					USART_SendData(UART4,'\r');
-	//					USART_SendData(UART4,'\n');
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
 					}
 				}
 			}
@@ -1195,7 +1235,7 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					pid->Line_Num = pid->Line_Num_Next;
 					PID_Control(pid);
 					pid->fire_turn = 1;
-					if(ABS(pid->Error) < 2)
+					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
 						float angle = pid->Angle + 0.02f;
@@ -1230,19 +1270,20 @@ void PID_Competition(PID_Value *pid, u8 dir, Err *error, int targetp[])         
 					for(i=0;i<17;i++)
 					{
 						Line_N[i].line_Priority = Line_N[i+17].line_Priority;
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
-	//					USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
-	//					USART_SendData(UART4,'\r');
-	//					USART_SendData(UART4,'\n');
-	//					USART_SendData(UART4,'\r');
-	//					USART_SendData(UART4,'\n');
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(i));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i].line_Priority));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(i+17));
+//						USART_OUT(UART4,(uint8_t*)"%d	", (int)(Line_N[i+17].line_Priority));
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
+//						USART_SendData(UART4,'\r');
+//						USART_SendData(UART4,'\n');
 					}
 				}
 			}
 		}
 	}
+	
 }
 
 void GetData(PID_Value *p)                                                   //¶ÁÊý
@@ -1268,7 +1309,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		error->Err_Y = pid->Y;
 	}
 	error->timeCnt++;
-	if(error->timeCnt > 150)
+	if(error->timeCnt > 200)
 	{
 		error->timeCnt = 0;
 		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));
@@ -1286,5 +1327,50 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 //		USART_OUT(UART4,(uint8_t*)"%d	", (int)error->flag);
 //		USART_SendData(UART4,'\r');
 //		USART_SendData(UART4,'\n');
+	}
+}
+
+void WatchDog(PID_Value *Dog)
+{
+	Dog->food -- ;
+	if(Dog->food < 0) Dog->dogHungry = 1;
+}
+
+void PriorityControl(PID_Value *PID,Err *err)
+{
+	int i = 0;
+	int prioritySum = 0;
+	for( i = 0 ; i < 29 ; i ++ )/*Ëø×¡ÄÚÈýÈ¦ÓÅÏÈ¼¶*/
+	{
+		if(i < 12 || (i > 16 && i <29))
+		{
+			if(Line_N[i].line_Priority >= 3) Line_N[i].line_Priority = 1000;
+			prioritySum += Line_N[i].line_Priority;/*ÄÚÈýÈ¦ÓÅÏÈ¼¶ÇóºÍ*/
+		}
+	}
+	if(prioritySum >= 23500)/*×îÍâÈ¦×ßÐÎ×´Ì¬*/
+	{
+		if(err->errCnt == 0)/*Î´±ÜÕÏ×´Ì¬*/
+		{
+			if(PID->dogHungry == 0)/*ÓÐÇò*/
+			{
+				return;
+			}
+			else/*ÎÞÇò*/
+			{
+				
+			}
+		}
+		else/*É¨Ãè×ßÐÎ*/
+		{
+			if(PID->dogHungry == 0)/*ÓÐÇò*/
+			{
+				
+			}
+			else/*ÎÞÇò*/
+			{
+				
+			}
+		}
 	}
 }
