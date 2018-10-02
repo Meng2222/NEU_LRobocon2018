@@ -40,7 +40,7 @@
   * @retval None
   */
 
-float Kp=75,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Vk=0,errl,lastErr1;
+float Kp=90,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Vk=0,errl,lastErr1;
 extern int R;
 void Straight(float v)
 {
@@ -74,7 +74,7 @@ void AnglePID(float setAngle,float feedbackAngle)
 }	
 float k,b,lAngle,setAngle,d;
 int flag;
-extern float yawAngle,x,y;
+extern float yawAngle,x,y,lastX,lastY;
 extern int status;
 void GetFunction(float x1,float y1,float x2,float y2)
 {
@@ -266,6 +266,34 @@ void Rchange(int Rchange)
 		RchangeTime=125;
 	}
 }
+void IncreaseR(int Radium)
+{	if(status==0)
+	{
+		if(x>-100&&lastX<-100&&y<2400&&R<Radium)
+			RchangeFlag=1;
+	}	
+	else
+	{
+		if(x<100&&lastX>100&&y<2400&&R<Radium)
+			RchangeFlag=1;
+	}		
+	if(RchangeFlag)
+		Rchange(500);	
+}	
+void DecreaseR(int Radium)
+{	if(status==0)
+	{
+		if(x>-100&&lastX<-100&&y<2400&&R>Radium)
+			RchangeFlag=1;
+	}	
+	else
+	{
+		if(x<100&&lastX>100&&y<2400&&R>Radium)
+			RchangeFlag=1;
+	}		
+	if(RchangeFlag)
+		Rchange(-500);	
+}	
 /*激光模式*/
 float getLingtAngle(float xi,float yi,int tragetCnt)
 {
