@@ -1091,6 +1091,10 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				}
 			}
 		}
+		for(i=0;i<17;i++)
+		{
+			Line_N[i+17].line_Priority = Line_N[i].line_Priority;
+		}
 	}
 	else if(pid->Line_Num > 16)
 	{
@@ -1293,8 +1297,11 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				}
 			}
 		}
+		for(i=0;i<17;i++)
+		{
+			Line_N[i].line_Priority = Line_N[i+17].line_Priority;
+		}
 	}
-	
 }
 
 void GetData(PID_Value *p)                                                   //读数
@@ -1369,7 +1376,22 @@ void PriorityControl(PID_Value *PID,Err *err)
 			}
 			else/*无球*/
 			{
-				return;
+				if(PID->Line_Num < 17)
+				{
+					for(i = 0 ; i < 4 ; i ++ )
+					{
+						Line_N[i + 00].line_Priority = 2;
+						Line_N[i + 12].line_Priority = 3;
+					}
+				}
+				else
+				{
+					for(i = 0 ; i < 4 ; i ++ )
+					{
+						Line_N[i + 17].line_Priority = 2;
+						Line_N[i + 29].line_Priority = 3;
+					}
+				}
 			}
 		}
 		else/*扫描走形*/

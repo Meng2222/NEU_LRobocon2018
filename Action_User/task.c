@@ -173,6 +173,7 @@ void WalkTask(void)
 		ReadActualPos(CAN2,7);																//读取分球电机位置
 		
 		GetData(PID_x);																		//读取定位系统信息
+		PriorityControl(PID_x,Error_x);
 		ErrorDisposal(PID_x,Error_x);														//错误检测
 		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
 		GO(PID_x);																			//电机控制
