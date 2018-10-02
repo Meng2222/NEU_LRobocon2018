@@ -53,13 +53,14 @@ typedef union
 
 Can_recieve_data motor1Speed;
 Can_recieve_data motor2Speed;
+Can_recieve_data motor5Speed;
+Can_recieve_data motor6Speed;
 Can_recieve_data motor7Pos;
 u8 ballcolor = 0;
 u8 GetBallColor(void)
 {
 	return ballcolor;
 }
-
 int GetMotor1Speed(void)
 {
 	return motor1Speed.data;
@@ -71,6 +72,14 @@ int GetMotor2Speed(void)
 int GetMotor7Pos(void)
 {
 	return motor7Pos.data;
+}
+int GetMotor5Speed(void)
+{
+	return motor5Speed.data;
+}
+int GetMotor6Speed(void)
+{
+	return motor6Speed.data;
 }
 
 void CAN1_RX0_IRQHandler(void)
@@ -134,7 +143,15 @@ void CAN2_RX0_IRQHandler(void)
 	{
 		for(i=0;i<4;i++) motor7Pos.u8data[i] = CAN2Buffer[i+4];
 	}
-
+	else if(StdId == 0x0285 && (CAN2Buffer[0] == 0x56 && CAN2Buffer[1] == 0x58))
+	{
+		for(i=0;i<4;i++) motor5Speed.u8data[i] = CAN2Buffer[i+4];
+	}
+	else if(StdId == 0x0286 && (CAN2Buffer[0] == 0x56 && CAN2Buffer[1] == 0x58))
+	{
+		for(i=0;i<4;i++) motor6Speed.u8data[i] = CAN2Buffer[i+4];
+	}
+	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);

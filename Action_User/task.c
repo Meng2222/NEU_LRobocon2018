@@ -44,9 +44,11 @@ void App_Task(void)
                                              初始化任务
 ===============================================================
 */
+//GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1);
 int shootDebug = 0;
 int pidDebug = 1;
 int fortDebug = 0;
+int ballcommand = 0;
 PID_Value *PID_x = NULL;
 PID_Value PID_A;
 Err *Error_x = NULL;
@@ -65,6 +67,8 @@ void ConfigTask(void)
 	Error_A.Err_X = 0,Error_A.Err_Y = 0,Error_A.flag = 0,Error_A.timeCnt = 0,Error_A.distance = 0,Error_A.err_distance = 100;
 	int Laser_Left = 0;
 	int Laser_Right = 0;
+	KeyInit2();
+	KeyInit0();
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
 	TIM_Init(TIM2,999,83,0,0);                                       //时钟2初始化，1ms周期
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);                //can1初始化
@@ -86,71 +90,80 @@ void ConfigTask(void)
 	UART4_Init(921600);                                              //串口4初始化，与上位机通信用
 	UART5_Init(921600);
 	USART1_Init(921600);
-	WaitOpsPrepare();                                                //等待定位系统准备完成
-	PID_Init(PID_x);                                                 //PID参数初始化
-	VelCrl(CAN2,5,70*32768);
-	VelCrl(CAN2,6,0-70*32768);
-	YawPosCtrl(0);
-
-	CmdRecData.TarBucketNum_cmd = 0;
-	CmdRecData.FireFlag_cmd = 1;
-	CmdRecData.MoveFlag_cmd = 1;
-	CmdRecData.YawZeroOffset_cmd = 0;
-	CmdRecData.YawPosSet_cmd = 0;
-	CmdRecData.ShooterVelSet_cmd = 0;
-	
-	//距离精度
-	Gundata.Distance_Accuracy = 10.0;
-	Gundata.Yaw_Zero_Offset = 2.5f;
-	
-	//设定各桶编号及坐标
-	Gundata.Bucket_X[0] =  2200.0;      Gundata.Bucket_Y[0] =  200.0;
-	Gundata.Bucket_X[1] =  2200.0;      Gundata.Bucket_Y[1] = 4600.0;
-	Gundata.Bucket_X[2] = -2200.0;      Gundata.Bucket_Y[2] = 4600.0;
-	Gundata.Bucket_X[3] = -2200.0;      Gundata.Bucket_Y[3] =  200.0;
-	
-	Gundata.Yaw_Angle_Offset[0] =  0.0f;  Gundata.Shooter_Vel_Offset[0] =  1.0f;
-	Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] =  1.0f;
-	Gundata.Yaw_Angle_Offset[2] =  0.0f;  Gundata.Shooter_Vel_Offset[2] =  1.0f;
-	Gundata.Yaw_Angle_Offset[3] =  0.0f;  Gundata.Shooter_Vel_Offset[3] =  1.0f;
-	
-	Gundata.Yaw_Angle_Offset[4] = -1.5f;  Gundata.Shooter_Vel_Offset[4] =  1.0f;
-	Gundata.Yaw_Angle_Offset[5] = -1.5f;  Gundata.Shooter_Vel_Offset[5] =  1.0f;
-	Gundata.Yaw_Angle_Offset[6] = -1.5f;  Gundata.Shooter_Vel_Offset[6] =  1.0f;
-	Gundata.Yaw_Angle_Offset[7] = -1.5f;  Gundata.Shooter_Vel_Offset[7] =  1.0f;
-	
-//	memset(Gundata.Yaw_Angle_Offset, 0, 8);
-//	memset(Gundata.Shooter_Vel_Offset, 0, 8);
-
-    //初始化扫描参数
-	Scan.ScanStatus = 0;
-	Scan.ScanPermitFlag = 1;
-	Scan.Yaw_Zero_Offset = 0.0f;
-	
-	//设定各挡板边缘坐标值
-	Scan.Bucket_Border_X[0] =  2000.0;       Scan.Bucket_Border_Y[0] =   -54.0;
-	Scan.Bucket_Border_X[1] =  2454.0;       Scan.Bucket_Border_Y[1] =   400.0;
-	Scan.Bucket_Border_X[2] =  2454.0;       Scan.Bucket_Border_Y[2] =  4400.0;
-	Scan.Bucket_Border_X[3] =  2000.0;       Scan.Bucket_Border_Y[3] =  4854.0;
-	Scan.Bucket_Border_X[4] = -2000.0;       Scan.Bucket_Border_Y[4] =  4854.0;
-	Scan.Bucket_Border_X[5] = -2454.0;       Scan.Bucket_Border_Y[5] =  4400.0;
-	Scan.Bucket_Border_X[6] = -2454.0;       Scan.Bucket_Border_Y[6] =   400.0;
-	Scan.Bucket_Border_X[7] = -2000.0;       Scan.Bucket_Border_Y[7] =   -54.0;	
-	
-	while(1)
+	if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1) == 1) ballcommand = 1;
+	if(GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_4) == 0)
 	{
-		Laser_Right = fort.laserBValueReceive;                       //左ADC
-		Laser_Left = fort.laserAValueReceive;                        //右ADC
-		if(Laser_Left<100)
+		WaitOpsPrepare();                                                //等待定位系统准备完成
+		PID_Init(PID_x);                                                 //PID参数初始化
+		YawPosCtrl(0);
+		CmdRecData.TarBucketNum_cmd = 0;
+		CmdRecData.FireFlag_cmd = 1;
+		CmdRecData.MoveFlag_cmd = 1;
+		CmdRecData.YawZeroOffset_cmd = 0;
+		CmdRecData.YawPosSet_cmd = 0;
+		CmdRecData.ShooterVelSet_cmd = 0;
+		VelCrl(CAN2, 5, 70 * 32768);
+		VelCrl(CAN2, 6, 0-70 * 32768);
+		
+		//距离精度
+		Gundata.Distance_Accuracy = 10.0;
+		Gundata.Yaw_Zero_Offset = 2.5f;
+		
+		//设定各桶编号及坐标
+		Gundata.Bucket_X[0] =  2200.0;      Gundata.Bucket_Y[0] =  200.0;
+		Gundata.Bucket_X[1] =  2200.0;      Gundata.Bucket_Y[1] = 4600.0;
+		Gundata.Bucket_X[2] = -2200.0;      Gundata.Bucket_Y[2] = 4600.0;
+		Gundata.Bucket_X[3] = -2200.0;      Gundata.Bucket_Y[3] =  200.0;
+		
+		Gundata.Yaw_Angle_Offset[0] =  0.0f;  Gundata.Shooter_Vel_Offset[0] =  1.0f;
+		Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] =  1.0f;
+		Gundata.Yaw_Angle_Offset[2] =  0.0f;  Gundata.Shooter_Vel_Offset[2] =  1.0f;
+		Gundata.Yaw_Angle_Offset[3] =  0.0f;  Gundata.Shooter_Vel_Offset[3] =  1.0f;
+		
+		Gundata.Yaw_Angle_Offset[4] = -1.5f;  Gundata.Shooter_Vel_Offset[4] =  1.0f;
+		Gundata.Yaw_Angle_Offset[5] = -1.5f;  Gundata.Shooter_Vel_Offset[5] =  1.0f;
+		Gundata.Yaw_Angle_Offset[6] = -1.5f;  Gundata.Shooter_Vel_Offset[6] =  1.0f;
+		Gundata.Yaw_Angle_Offset[7] = -1.5f;  Gundata.Shooter_Vel_Offset[7] =  1.0f;
+		
+	//	memset(Gundata.Yaw_Angle_Offset, 0, 8);
+	//	memset(Gundata.Shooter_Vel_Offset, 0, 8);
+
+		//初始化扫描参数
+		Scan.ScanStatus = 0;
+		Scan.ScanPermitFlag = 1;
+		Scan.Yaw_Zero_Offset = 0.0f;
+		
+		//设定各挡板边缘坐标值
+		Scan.Bucket_Border_X[0] =  2000.0;       Scan.Bucket_Border_Y[0] =   -54.0;
+		Scan.Bucket_Border_X[1] =  2454.0;       Scan.Bucket_Border_Y[1] =   400.0;
+		Scan.Bucket_Border_X[2] =  2454.0;       Scan.Bucket_Border_Y[2] =  4400.0;
+		Scan.Bucket_Border_X[3] =  2000.0;       Scan.Bucket_Border_Y[3] =  4854.0;
+		Scan.Bucket_Border_X[4] = -2000.0;       Scan.Bucket_Border_Y[4] =  4854.0;
+		Scan.Bucket_Border_X[5] = -2454.0;       Scan.Bucket_Border_Y[5] =  4400.0;
+		Scan.Bucket_Border_X[6] = -2454.0;       Scan.Bucket_Border_Y[6] =   400.0;
+		Scan.Bucket_Border_X[7] = -2000.0;       Scan.Bucket_Border_Y[7] =   -54.0;	
+		
+		while(1)
 		{
-			OSMboxPost(adc_msg,(void *)Left);                     
-			OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
+			Laser_Right = fort.laserBValueReceive;                       //左ADC
+			Laser_Left = fort.laserAValueReceive;                        //右ADC
+			if(Laser_Left<100)
+			{
+				OSMboxPost(adc_msg,(void *)Left);                     
+				OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
+			}
+			else if(Laser_Right<100)
+			{
+				OSMboxPost(adc_msg,(void *)Right);
+				OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
+			}
 		}
-		else if(Laser_Right<100)
-		{
-			OSMboxPost(adc_msg,(void *)Right);
-			OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
-		}
+	}
+	else
+	{
+		VelCrl(CAN2,5,0-70*32768);
+		VelCrl(CAN2,6,70*32768);
+		while(1){};
 	}
 }
 
@@ -180,7 +193,7 @@ void WalkTask(void)
 		GO(PID_x);																			//电机控制
 		
 		GetData(PID_x);																		//读取定位系统信息
-		if(PID_x->V != 0){
+		if(PID_x->V != 0 && Error_x->errCnt == 0){
 		Gundata.BucketNum = PID_A.target_Num;												//设置目标桶号
 		GunneryData_Operation(&Gundata, PID_x);												//计算射击诸元
 		YawPosCtrl(Gundata.YawPosAngleSetAct);												//设置航向角
@@ -206,7 +219,7 @@ void WalkTask(void)
 			(int)Scan.DelayFlag,            (int)Scan.CntDelayTime,         (int)PID_A.fire_command);
 		}}
 		
-		if(PID_x->V != 0)
+		if(PID_x->V != 0 && Error_x->errCnt == 0)
 		{
 			if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 3.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 3.0f &&\
 				    Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1 && Gundata.cntIteration < 10 && target[PID_x->target_Num] == 0)PID_A.fire_command = 1;
@@ -221,7 +234,6 @@ void WalkTask(void)
 		shoot(PID_x,target,shootDebug);
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
-		SpitBall();
 		OSSemSet(PeriodSem, 0, &os_err);
 	}
 }

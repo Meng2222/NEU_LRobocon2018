@@ -760,6 +760,7 @@ void GO(PID_Value *p_GO)                                                     //µ
 	VelCrl(CAN1,1,(int)((0+(32768/(120*Pi))*(p_GO->vel))-(32768/(120*Pi))*(p_GO->V)));
 }
 
+extern int ballcommand;
 void shoot(PID_Value *p_gun, int targets[], int Debug)                                                 //ÉäÇòº¯Êý
 {
 	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0, flag2 = 0;
@@ -786,42 +787,85 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 			if(ballcolor == 0) noneCnt += 1;
 			else if(ballcolor == 1) whiteCnt += 1;
 			else if(ballcolor == 2) blackCnt += 1;
-			if(noneCnt > 50)
+			if(ballcommand == 0)
 			{
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
-				posLast = pos;
-				pos += p_gun->push_pos_down;
-				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
-				noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0, Scan.FirePermitFlag = 0;
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 0);
-				if(Debug == 1) USART_SendData(UART4,'\r');
-				if(Debug == 1) USART_SendData(UART4,'\n');
-				flag = 1;
+				if(noneCnt > 50)
+				{
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
+					posLast = pos;
+					pos += p_gun->push_pos_down;
+					PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
+					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0, Scan.FirePermitFlag = 0;
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 0);
+					if(Debug == 1) USART_SendData(UART4,'\r');
+					if(Debug == 1) USART_SendData(UART4,'\n');
+					flag = 1;
+				}
+				else if(whiteCnt > 50)
+				{
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
+					p_gun->fire_request = 1;
+					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0;
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 1);
+					if(Debug == 1) USART_SendData(UART4,'\r');
+					if(Debug == 1) USART_SendData(UART4,'\n');
+					flag = 1;
+				}
+				else if(blackCnt > 50)
+				{
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
+					posLast = pos;
+					pos += p_gun->push_pos_down;
+					PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
+					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0;
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 2);
+					if(Debug == 1) USART_SendData(UART4,'\r');
+					if(Debug == 1) USART_SendData(UART4,'\n');
+					flag = 1;
+				}
 			}
-			else if(blackCnt > 50)
+			else
 			{
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
-				p_gun->fire_request = 1;
-				noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0;
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 1);
-				if(Debug == 1) USART_SendData(UART4,'\r');
-				if(Debug == 1) USART_SendData(UART4,'\n');
-				flag = 1;
-			}
-			else if(whiteCnt> 50)
-			{
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
-				posLast = pos;
-				pos += p_gun->push_pos_down;
-				PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
-				noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0;
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 2);
-				if(Debug == 1) USART_SendData(UART4,'\r');
-				if(Debug == 1) USART_SendData(UART4,'\n');
-				flag = 1;
+				if(noneCnt > 50)
+				{
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
+					posLast = pos;
+					pos += p_gun->push_pos_down;
+					PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
+					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0, Scan.FirePermitFlag = 0;
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 0);
+					if(Debug == 1) USART_SendData(UART4,'\r');
+					if(Debug == 1) USART_SendData(UART4,'\n');
+					flag = 1;
+				}
+				else if(blackCnt> 50)
+				{
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
+					p_gun->fire_request = 1;
+					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0;
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 1);
+					if(Debug == 1) USART_SendData(UART4,'\r');
+					if(Debug == 1) USART_SendData(UART4,'\n');
+					flag = 1;
+				}
+				else if(whiteCnt > 50)
+				{
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
+					posLast = pos;
+					pos += p_gun->push_pos_down;
+					PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
+					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0;
+					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 2);
+					if(Debug == 1) USART_SendData(UART4,'\r');
+					if(Debug == 1) USART_SendData(UART4,'\n');
+					flag = 1;
+				}
 			}
 		}
 		if(posGap > 14000 || posGap < -14000)
@@ -901,8 +945,10 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 {
 	if(pid->stop == 1 && error->flag == 0)
 	{
-		pid->Mode = Coordinate;
+		if(pid->Line_Num < 17) pid->Line_Num = 0;
+		else pid->Line_Num = 19;
 		PID_Control(pid);
+		pid->V = 1000;
 		if(pid->Y > 1800 && pid->Y < 3000 && pid->X > 0-600 && pid->X < 600)
 		{
 			pid->vel = 0;
@@ -1055,7 +1101,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle - 0.3f;
+						float angle = pid->Angle - 0.6f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1261,7 +1307,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle + 0.3f;
+						float angle = pid->Angle + 0.6f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1335,7 +1381,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		error->Err_Y = pid->Y;
 	}
 	error->timeCnt++;
-	if(error->timeCnt > 200)
+	if(error->timeCnt > 150)
 	{
 		error->timeCnt = 0;
 		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));
@@ -1364,7 +1410,6 @@ void WatchDog(PID_Value *Dog)
 
 void PriorityControl(PID_Value *PID,Err *err)
 {
-	err->errCnt = 1;
 	int i = 0;
 	int prioritySum = 0;
 	for( i = 0 ; i < 29 ; i ++ )/*Ëø×¡ÄÚÈýÈ¦ÓÅÏÈ¼¶*/
