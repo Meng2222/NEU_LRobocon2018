@@ -186,7 +186,7 @@ void WalkTask(void)
 		ShooterVelCtrl(Gundata.ShooterVelSetAct);}											//设置射球转速
 		else
 		{
-			Scan_Operation(&Scan, PID_x);
+			Scan_Operation(&Scan, PID_x, target);
 			YawPosCtrl(Scan.YawPosAngleSet);
 			ShooterVelCtrl(Scan.ShooterVelSet);
 		}
@@ -196,10 +196,13 @@ void WalkTask(void)
 		cntSendTime = cntSendTime % 1;
 		if(cntSendTime == 0)
 		{
-			USART_OUT(UART4, (uint8_t*)"NOYawSet	%d	YawSet	%d	YawAct	%d	YawRec	%d	NOVelSet	%d	VelSet	%d	VelAct	%d	VelRec	%d	Yaw2=%d	Yaw3=%d",\
-			(int)Gundata.No_Offset_Angle, (int)Gundata.YawPosAngleSet,(int)Gundata.YawPosAngleSetAct, (int)Gundata.YawPosAngleRec, \
-			(int)Gundata.No_Offset_Vel, (int)Gundata.ShooterVelSet, (int)Gundata.ShooterVelSetAct, (int)Gundata.ShooterVelRec,\
-			(int)Gundata.Yaw_Angle_Offset[2], (int)Gundata.Yaw_Angle_Offset[3]);
+			//Scan参数
+			USART_OUT(UART4, (uint8_t*)"ScanSta=%d	DisL=%d	DisR=%d	LX=%d	LY=%d	RX=%d	RY=%d	LeftAng=%d	RightAng=%d	LeftX=%d	LeftY=%d	RightX=%d	RightY=%d	BucX=%d	BucY=%d	ShoSet=%d	YawSet=%d	delay=%d	cntdelay=%d\r\n",\
+			(int)Scan.ScanStatus,           (int)Scan.Probe_Left_Distance,  (int)Scan.Probe_Right_Distance,\
+			(int)Scan.Probe_Left_X,         (int)Scan.Probe_Left_Y,         (int)Scan.Probe_Right_X,        (int)Scan.Probe_Right_Y,\
+			(int)Scan.BorderAngleLeft,      (int)Scan.BorderAngleRight,     (int)Scan.BucketBorder_Left_X,  (int)Scan.BucketBorder_Left_Y, (int)Scan.BucketBorder_Right_X, (int)Scan.BucketBorder_Right_Y,\
+			(int)Scan.Probe_Bucket_X,       (int)Scan.Probe_Bucket_Y,       (int)Scan.ShooterVelSet,        (int)Scan.YawPosAngleSet,\
+			(int)Scan.DelayFlag,            (int)Scan.CntDelayTime);
 		}}
 		
 		if(PID_x->V != 0)
