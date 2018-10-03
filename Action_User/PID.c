@@ -766,7 +766,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0, flag2 = 0;
 	if (p_gun->fire_request)
 	{
-		p_gun->food = 1500;
+		p_gun->food = 1300;
 		if(!p_gun->fire_command) return;
 		posLast = pos;
 		pos += p_gun->push_pos_up;
@@ -1014,7 +1014,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				{
 					pid->fire_turn = 0;
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 3) pid->V += 10;
+					if(pid->Error < 3) pid->V += 15;
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error<=1300)
@@ -1095,7 +1095,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle - 0.1f;
+						float angle = pid->Angle + 0.8f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1201,7 +1201,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				{
 					pid->fire_turn = 0;
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 3) pid->V += 10;
+					if(pid->Error < 3) pid->V += 15;
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error>=-1300)
@@ -1297,7 +1297,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle + 0.1f;
+						float angle = pid->Angle - 0.8f;
 						CorrectAngle(angle);
 					}
 					return;

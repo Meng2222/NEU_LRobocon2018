@@ -46,8 +46,8 @@ void App_Task(void)
 ===============================================================
 */
 //GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1);
-int shootDebug = 0;
-int pidDebug = 1;
+int shootDebug = 1;
+int pidDebug = 0;
 int fortDebug = 0;
 int ballcommand = 0;
 PID_Value *PID_x = NULL;
@@ -115,15 +115,15 @@ void ConfigTask(void)
 		Gundata.Bucket_X[2] = -2200.0;      Gundata.Bucket_Y[2] = 4600.0;
 		Gundata.Bucket_X[3] = -2200.0;      Gundata.Bucket_Y[3] =  200.0;
 		
-		Gundata.Yaw_Angle_Offset[0] =  0.0f;  Gundata.Shooter_Vel_Offset[0] =  1.0f;
-		Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] =  1.0f;
-		Gundata.Yaw_Angle_Offset[2] =  0.0f;  Gundata.Shooter_Vel_Offset[2] =  1.0f;
-		Gundata.Yaw_Angle_Offset[3] =  0.0f;  Gundata.Shooter_Vel_Offset[3] =  1.0f;
+		Gundata.Yaw_Angle_Offset[0] =  0.0f;  Gundata.Shooter_Vel_Offset[0] = -1.0f;
+		Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] = -1.0f;
+		Gundata.Yaw_Angle_Offset[2] =  0.0f;  Gundata.Shooter_Vel_Offset[2] = -1.0f;
+		Gundata.Yaw_Angle_Offset[3] =  0.0f;  Gundata.Shooter_Vel_Offset[3] = -1.0f;
 		
-		Gundata.Yaw_Angle_Offset[4] = -1.5f;  Gundata.Shooter_Vel_Offset[4] =  1.0f;
-		Gundata.Yaw_Angle_Offset[5] = -1.5f;  Gundata.Shooter_Vel_Offset[5] =  1.0f;
-		Gundata.Yaw_Angle_Offset[6] = -1.5f;  Gundata.Shooter_Vel_Offset[6] =  1.0f;
-		Gundata.Yaw_Angle_Offset[7] = -1.5f;  Gundata.Shooter_Vel_Offset[7] =  1.0f;
+		Gundata.Yaw_Angle_Offset[4] = -1.5f;  Gundata.Shooter_Vel_Offset[4] = -1.0f;
+		Gundata.Yaw_Angle_Offset[5] = -1.5f;  Gundata.Shooter_Vel_Offset[5] = -1.0f;
+		Gundata.Yaw_Angle_Offset[6] = -1.5f;  Gundata.Shooter_Vel_Offset[6] = -1.0f;
+		Gundata.Yaw_Angle_Offset[7] = -1.5f;  Gundata.Shooter_Vel_Offset[7] = -1.0f;
 		
 	//	memset(Gundata.Yaw_Angle_Offset, 0, 8);
 	//	memset(Gundata.Shooter_Vel_Offset, 0, 8);
@@ -209,22 +209,22 @@ void WalkTask(void)
 
 		if(fortDebug == 1){
 		cntSendTime++;
-		cntSendTime = cntSendTime % 1;
+		cntSendTime = cntSendTime % 10;
 		if(cntSendTime == 0)
 		{
 			//Scan参数
-			USART_OUT(UART4, (uint8_t*)"ScanSta=%d	DisL=%d	DisR=%d	LX=%d	LY=%d	RX=%d	RY=%d	LeftAng=%d	RightAng=%d	LeftX=%d	LeftY=%d	RightX=%d	RightY=%d	BucX=%d	BucY=%d	ShoSet=%d	YawSet=%d	delay=%d	cntdelay=%d	firecmd=%d\r\n",\
+			USART_OUT(UART4, (uint8_t*)"ScanSta=%d	DisL=%d	DisR=%d	LX=%d	LY=%d	RX=%d	RY=%d	LeftAng=%d	RightAng=%d	LeftX=%d	LeftY=%d	RightX=%d	RightY=%d	BucX=%d	BucY=%d	ShoSet=%d	YawSet=%d	delay=%d	cntdelay=%d\r\n",\
 			(int)Scan.ScanStatus,           (int)Scan.Probe_Left_Distance,  (int)Scan.Probe_Right_Distance,\
 			(int)Scan.Probe_Left_X,         (int)Scan.Probe_Left_Y,         (int)Scan.Probe_Right_X,        (int)Scan.Probe_Right_Y,\
 			(int)Scan.BorderAngleLeft,      (int)Scan.BorderAngleRight,     (int)Scan.BucketBorder_Left_X,  (int)Scan.BucketBorder_Left_Y, (int)Scan.BucketBorder_Right_X, (int)Scan.BucketBorder_Right_Y,\
 			(int)Scan.Probe_Bucket_X,       (int)Scan.Probe_Bucket_Y,       (int)Scan.ShooterVelSet,        (int)Scan.YawPosAngleSet,\
-			(int)Scan.DelayFlag,            (int)Scan.CntDelayTime,         (int)PID_A.fire_command);
+			(int)Scan.DelayFlag,            (int)Scan.CntDelayTime);
 		}}
 		
 		if(PID_x->V != 0 && Error_x->errCnt == 0)
 		{
 			if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 3.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 3.0f &&\
-				    Gundata.ShooterVelSet < 85.0f && CmdRecData.FireFlag_cmd == 1 && Gundata.cntIteration < 10 && target[PID_x->target_Num] == 0)PID_A.fire_command = 1;
+				    Gundata.ShooterVelSet < 85.0f)PID_A.fire_command = 1;
 			else PID_A.fire_command = 0;
 		}
 		else
@@ -234,6 +234,9 @@ void WalkTask(void)
 		}
 		if(pidDebug) UART4_OUT(PID_x,Error_x);
 		shoot(PID_x,target,shootDebug);
+		USART_OUT(UART4, (uint8_t*)"	 %d	",(int)PID_A.fire_command);
+		USART_SendData(UART4,'\r');
+		USART_SendData(UART4,'\n');
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
 		OSSemSet(PeriodSem, 0, &os_err);
