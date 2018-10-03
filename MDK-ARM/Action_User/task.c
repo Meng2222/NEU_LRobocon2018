@@ -81,6 +81,7 @@ void WalkTask(void)
 {
 	static int PE1=0,PE0=0,cycleCnt=0,staticShootFlag_1=0,staticShootFlag_2=0,staticShootFlag_3=0,E=1,push_Ball_Count=0,noPushCnt=0,noPushFlag=1,notFoundcnt=0;
 	static int foundRange=15;
+	static float D1=0,D2=0;
 	static float staticShootAngle_1=0,timeAngle=0,DistanceA=0,DistanceB=0,lightAngle=0,staticShootAngle_2=0;
 	static int pushBallCount=0,statusFlag=0,noBallCount=0,pushBallFlag=1,staticPushBallFlag=1,Cnt=0,laserModelCount,FindBallModelCount,banFirstShoot=150,realCount=0;
 	static float dLeft=0,dRight=0,rps=50,Vx,Vy,V,shootAngle;
@@ -147,12 +148,9 @@ void WalkTask(void)
 			}	
 			else 
 			{
-				if(ReadLaserAValue()>=25)
-				DistanceA=ReadLaserAValue()*2.480+24.8;
-				if(ReadLaserBValue()>=25)
-				DistanceB=ReadLaserBValue()*2.480+24.8;
 				if(staticShootFlag_3!=1)
 				{
+					notFoundcnt++;
 					if(notFoundcnt==0)
 						foundRange=15;
 					notFoundcnt++;
@@ -162,8 +160,11 @@ void WalkTask(void)
 						foundRange=25;
 					if(notFoundcnt==1200)
 					{
-						StdId++;
-						notFoundcnt=0;
+						foundRange=35;
+						notFoundcnt=-1000;
+//						StdId++;
+//						notFoundcnt=0;
+//						changeLightTime=0;
 					}
 					cycleCnt=(StdId+1)/4;
 					lightAngle=getLingtAngle(GetX(),GetY(),(StdId+1)%4)-cycleCnt*360;
@@ -176,26 +177,38 @@ void WalkTask(void)
 					{
 						E=1;
 					}
-					timeAngle+=E*0.13;
+					timeAngle+=E*0.15;
 				}
-
-				if(staticShootFlag_3!=1)
+				if(ReadLaserAValue()>=25)
+				DistanceA=ReadLaserAValue()*2.480+24.8;
+				if(ReadLaserBValue()>=25)
+				DistanceB=ReadLaserBValue()*2.480+24.8;
+				USART_OUT(UART4,(uint8_t *)"%d\t",(int)changeLightTime);
+				USART_OUT(UART4,(uint8_t *)"%d\t",(int)DistanceA);
+				USART_OUT(UART4,(uint8_t *)"%d\t",(int)DistanceB);
+				if(changeLightTime>1800&&staticShootFlag_3!=1)
 				{
-					if(DistanceA>4500&&DistanceB<4500&&fabs(DistanceA-DistanceB)>1500)
+					if(DistanceA>4500&&DistanceB<4500&&fabs(DistanceA-DistanceB)>1500&&staticShootFlag_1!=1)
 					{
+						USART_OUT(UART4,(uint8_t *)"%dt",979);
+						D1=min(DistanceA,DistanceB);
 						staticShootAngle_1=lightAngle-timeAngle;
 						staticShootFlag_1=1;
 					}
-					if(DistanceB>4500&&DistanceA<4500&&fabs(DistanceA-DistanceB)>1500)
+					if(DistanceB>4500&&DistanceA<4500&&fabs(DistanceA-DistanceB)>1500&&staticShootFlag_2!=1)
 					{
+						USART_OUT(UART4,(uint8_t *)"%d\r\n",797);
+						D2=min(DistanceA,DistanceB);
 						staticShootAngle_2=lightAngle-timeAngle;
 						staticShootFlag_2=1;
 					}
-					if(fabs(lightAngle-(staticShootAngle_1+staticShootAngle_2)/2)<=20&&staticShootFlag_1==1&&staticShootFlag_2==1)
+					if(staticShootFlag_1==1&&staticShootFlag_2==1)
 					{
 						notFoundcnt=0;
 						staticShootFlag_3=1;
-						YawPosCtrl((staticShootAngle_1+staticShootAngle_2)/2);
+						staticShootFlag_1=0;
+						staticShootFlag_2=0;
+						YawPosCtrl((staticShootAngle_1+staticShootAngle_2)/2+(D2-D1)/200);
 					}
 				}
 				if(staticShootFlag_3==1)
@@ -203,7 +216,7 @@ void WalkTask(void)
 						push_Ball_Count++;
 						if(fabs(DistanceA-DistanceB)<300)
 						{
-							rps=40/3102.505*(DistanceA+DistanceB)/2+35.7;
+							rps=40/3102.505*(DistanceA+DistanceB)/2+35.7-0.7;
 							if(rps>105)
 								rps=105;
 							ShooterVelCtrl(rps);
@@ -240,24 +253,34 @@ void WalkTask(void)
 						}
 						if(push_Ball_Count>=99990)
 						{
-//							PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,(--count)*PUSH_POSITION);
 							push_Ball_Count=0;
 							staticShootFlag_1=0;
 							staticShootFlag_2=0;
 							staticShootFlag_3=0;
-							StdId=FirstshootJudge();
+							if(FirstshootJudge()<=3)
+								StdId=FirstshootJudge();
+							else
+							{
+								StdId++;
+								StdId%=4;
+							}
+
+//							if(stdIdChangeFlag==0)
+//							StdId=FirstshootJudge();
+//							else
+//							{
+//								StdId++;
+//								StdId%=4;
+//							}
+//							if(StdId>4)
+//							{
+//								StdId=0;
+//								stdIdChangeFlag=1;
+//							}
 							changeLightTime=0;
 						}
-						FindBallModelCount++;
-						if(FindBallModelCount>=3000)
-						{
-							FindBallModel=1;
-							laserModel=0;
-							MotorOn(CAN1,1);
-							MotorOn(CAN1,2);
-						}
-						USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t\r\n",(int)staticPushBallFlag,(int)ballColor,noPushFlag,(int)noPushCnt,(int)LastCount,count);
 					}
+				USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t\r\n",(int)staticShootFlag_1,(int)staticShootFlag_2,staticShootFlag_3,StdId);
 				}
 			} //cnt>250终点	
 		else if(FindBallModel)

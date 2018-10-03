@@ -75,6 +75,13 @@ float k,b,lAngle,setAngle,d;
 int flag;
 extern float yawAngle,x,y,lastX,lastY;
 extern int status;
+float min(float d1,float d2)
+{
+	if(d1>d2)
+		return d2;
+	else
+		return d1;
+}
 void GetFunction(float x1,float y1,float x2,float y2)
 {
 		if(x1-0.1<x2&&x2<x1+0.1)
