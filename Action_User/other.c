@@ -247,10 +247,10 @@ float Avalue;
 float Bvalue;
 void Laser_data(void)
 {
-//	Avalue=2.4479*fort.laserAValueReceive+71.215;	
-//	Bvalue=2.44885*fort.laserBValueReceive+57.925;
-	Avalue=2.4621*fort.laserAValueReceive+29.234;	
-	Bvalue=2.4706*fort.laserBValueReceive+11.899;
+//	Avalue=2.4479f*fort.laserAValueReceive+71.215f;	
+//	Bvalue=2.44885f*fort.laserBValueReceive+57.925f;
+	Avalue=2.4621f*fort.laserAValueReceive+29.234f;	
+	Bvalue=2.4706f*fort.laserBValueReceive+11.899f;
 }
 //====================================================================================
 //                                   多元走行
@@ -615,14 +615,14 @@ void DataProcessing (PID_Value *p)
 		r_fortAngle0=fort.yawPosReceive+Compensation_Angle;
 
 		//计算炮台坐标
-		Fort_X = p->X - (10.5f) * sin(p->Angle * Pi / 180.0);
-		Fort_Y = p->Y + (10.5f) * cos(p->Angle * Pi / 180.0);	
+		Fort_X = p->X - (10.5f) * sin(p->Angle * Pi / 180.0f);
+		Fort_Y = p->Y + (10.5f) * cos(p->Angle * Pi / 180.0f);	
 		//计算激光坐标
 		r_fortAngle1=FortToGround_AngleProcessing(p->Angle,r_fortAngle0);
-		A_Laser_X=Fort_X-40.f*sin(Return_SymmetricRangeValue((r_fortAngle1+90.f),180)*Pi/180)-23.32*sin(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
-		A_Laser_Y=Fort_Y+40.f*cos(Return_SymmetricRangeValue((r_fortAngle1+90.f),180)*Pi/180)+23.32*cos(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
-		B_Laser_X=Fort_X-40.f*sin(Return_SymmetricRangeValue((r_fortAngle1-90.f),180)*Pi/180)-23.32*sin(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
-		B_Laser_Y=Fort_Y+40.f*cos(Return_SymmetricRangeValue((r_fortAngle1-90.f),180)*Pi/180)+23.32*cos(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
+		A_Laser_X=Fort_X-40.f*sin(Return_SymmetricRangeValue((r_fortAngle1+90.f),180)*Pi/180)-23.32f*sin(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
+		A_Laser_Y=Fort_Y+40.f*cos(Return_SymmetricRangeValue((r_fortAngle1+90.f),180)*Pi/180)+23.32f*cos(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
+		B_Laser_X=Fort_X-40.f*sin(Return_SymmetricRangeValue((r_fortAngle1-90.f),180)*Pi/180)-23.32f*sin(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
+		B_Laser_Y=Fort_Y+40.f*cos(Return_SymmetricRangeValue((r_fortAngle1-90.f),180)*Pi/180)+23.32f*cos(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
 }
 
 void SetFortAngle(PID_Value *pos,float set_angle)//
@@ -798,7 +798,7 @@ void  CheckCorner  (float array9 [2][101] , int num)//num从1开始计数,num>6
 			*|__|*
 			\*  */
 			//相关性检测
-			if(ReturnAbsolute(r)<0.93)
+			if(ReturnAbsolute(r)<0.93f)
 			{
 				distance=0;
 				for (int i=sectionPosLength-1 ; i>=2 ; i--)
@@ -1160,7 +1160,7 @@ void Power_On_Self_Test(PID_Value *pos)//【加电自检】
 	t_post++;
 	Laser_data();
 	/*炮台——航向电机——加电自检*/
-		if(t_post<=240){post_fortAngle+=0.5;}
+		if(t_post<=240){post_fortAngle+=0.5f;}
 		if(t_post>240) {post_fortAngle=0;}
 		Set_FortAngle1=SetToFort_AngleProcessing(pos->Angle,r_fortAngle0,fort.yawPosReceive,post_fortAngle);//
 					USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","S","A","n","g",":");
@@ -1205,7 +1205,7 @@ void RadarCorrection(PID_Value *pos)//雷达校正系统
 		DataProcessing (pos);
 		//航向电机—连续扫描指令
 		Laser_data();
-		setangle+=0.5;
+		setangle+=0.5f;
 		if(setangle>360){setangle-=360;CheckPermit=1;}
 		Set_FortAngle1=SetToFort_AngleProcessing(pos->Angle,r_fortAngle0,fort.yawPosReceive,setangle);//
 //				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","S","A","n","g",":");

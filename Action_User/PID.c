@@ -773,6 +773,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
 		p_gun->fire_request = 0;
 		p_gun->fire_command = 0;
+		Scan.FirePermitFlag = 0;
 		flag2 = 0;
 	}
 	else
