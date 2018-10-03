@@ -2,6 +2,7 @@
 #include "pps.h"
 #include "fort.h"
 #include "other.h"
+
 /*
 ===============================================================
 					                        	信号量定义
@@ -90,12 +91,11 @@ void ConfigTask(void)
 	UART4_Init(921600);                                              //串口4初始化，与上位机通信用
 	UART5_Init(921600);
 	USART1_Init(921600);
-	if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1) == 1) ballcommand = 1;
+	if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1) == 1) ballcommand = BLACK_BALL;
 	if(GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_4) == 0)
 	{
 		WaitOpsPrepare();                                                //等待定位系统准备完成
 		PID_Init(PID_x);                                                 //PID参数初始化
-		YawPosCtrl(0);
 		CmdRecData.TarBucketNum_cmd = 0;
 		CmdRecData.FireFlag_cmd = 1;
 		CmdRecData.MoveFlag_cmd = 1;
@@ -147,12 +147,12 @@ void ConfigTask(void)
 		{
 			Laser_Right = fort.laserBValueReceive;                       //左ADC
 			Laser_Left = fort.laserAValueReceive;                        //右ADC
-			if(Laser_Left<100)
+			if(20 < Laser_Left && Laser_Left < 100)
 			{
 				OSMboxPost(adc_msg,(void *)Left);                     
 				OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
 			}
-			else if(Laser_Right<100)
+			else if(20 < Laser_Right && Laser_Right < 100)
 			{
 				OSMboxPost(adc_msg,(void *)Right);
 				OSTaskSuspend(OS_PRIO_SELF);                             //挂起初始化函数
@@ -184,6 +184,8 @@ void WalkTask(void)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);													//等信号量，10ms一次
 		ReadActualPos(CAN2,7);																//读取分球电机位置
+		ReadActualVel(CAN2,5);
+		ReadActualVel(CAN2,6);
 		
 		GetData(PID_x);																		//读取定位系统信息
 		PriorityControl(PID_x,Error_x);
