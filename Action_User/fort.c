@@ -399,7 +399,6 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
 		}			
 	}
 	
-	Scan->FirePermitFlag = 0;
 	//ScanStatus = 2射球状态
 	if(Scan->ScanStatus == 2)
 	{

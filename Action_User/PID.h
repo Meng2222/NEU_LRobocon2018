@@ -49,7 +49,7 @@ float GetSpeedX(void);
 /*返回定位系统的角度*/
 float GetSpeedY(void);
 /*返回定位系统的Z轴角速度值*/
-
+float GetWZ(void);
 
 extern void CorrectAngle(float value);
 
@@ -106,9 +106,24 @@ typedef struct PID
 	u8 fire_turn;
 	u8 dogHungry;
 	u8 stop;
+	Line_Value *l;
+	Arc_Value *r;
+	Coordinate_Value *c;
+	int timeCnt;
 	int food;
 	int Mode;
 	int Mode_Last;
+	int Line_Num;
+	int Line_Num_Next;
+	int Line_Num_Last;
+	int Arc_Num;
+	int Coordinate_Num;
+	int target_Num;
+	int target_Next;
+	int target_Last;
+	int err_line_num;
+	int push_pos_up;
+	int push_pos_down;
 	float Angle_Set;
 	float kp;
 	float ki;
@@ -123,22 +138,8 @@ typedef struct PID
 	float X_Speed;
 	float Y_Speed;
 	float V;
-	float V_Set;
-	int Line_Num;
-	int Line_Num_Next;
-	int Line_Num_Last;
-	int Arc_Num;
-	int Coordinate_Num;
-	int target_Num;
-	int target_Next;
-	int target_Last;
-	int err_line_num;
-	int push_pos_up;
-	int push_pos_down;
-	Line_Value *l;
-	Arc_Value *r;
-	Coordinate_Value *c;
 	float vel;
+	float V_Set;
 }PID_Value;
 
 typedef struct errorDisposal
@@ -186,6 +187,6 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[]);
 void ErrorDisposal(PID_Value *pid,Err *error);
 void GetData(PID_Value *p);
 void shoot(PID_Value *p_gun, int target[], int Debug);
-void PriorityControl(PID_Value *PID,Err *err);
+void PriorityControl(PID_Value *PID,Err *err,int targetn[]);
 void WatchDog(PID_Value *Dog);
 #endif

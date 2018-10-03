@@ -77,8 +77,8 @@ void ConfigTask(void)
 	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
 	ElmoInit(CAN2);                                                  //驱动器初始化
 	ElmoInit(CAN1);                                                  //驱动器初始化
-	VelLoopCfg(CAN1,2,32768000,32768000);                              //左电机速度环初始化
-	VelLoopCfg(CAN1,1,32768000,32768000);                              //右电机速度环初始化
+	VelLoopCfg(CAN1,2,16384000,32768000);                              //左电机速度环初始化
+	VelLoopCfg(CAN1,1,16384000,32768000);                              //右电机速度环初始化
 	VelLoopCfg(CAN2,5, 16384000, 16384000);                               //收球电机
 	VelLoopCfg(CAN2,6, 16384000, 16384000);                               //收球电机
 	PosLoopCfg(CAN2,7, 16384000,16384000,20000000);
@@ -91,7 +91,7 @@ void ConfigTask(void)
 	UART4_Init(921600);                                              //串口4初始化，与上位机通信用
 	UART5_Init(921600);
 	USART1_Init(921600);
-	if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1) == 1) ballcommand = BLACK_BALL;
+	if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_0) == 1) ballcommand = BLACK_BALL;
 	if(GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_4) == 0)
 	{
 		WaitOpsPrepare();                                                //等待定位系统准备完成
@@ -188,7 +188,7 @@ void WalkTask(void)
 		ReadActualVel(CAN2,6);
 		
 		GetData(PID_x);																		//读取定位系统信息
-		PriorityControl(PID_x,Error_x);
+		PriorityControl(PID_x,Error_x,target);
 		WatchDog(PID_x);
 		ErrorDisposal(PID_x,Error_x);														//错误检测
 		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
@@ -200,13 +200,10 @@ void WalkTask(void)
 		GunneryData_Operation(&Gundata, PID_x);												//计算射击诸元
 		YawPosCtrl(Gundata.YawPosAngleSetAct);												//设置航向角
 		ShooterVelCtrl(Gundata.ShooterVelSetAct);}											//设置射球转速
-		else
-		{
-			Scan_Operation(&Scan, PID_x, target);
-			YawPosCtrl(Scan.YawPosAngleSet);
-			ShooterVelCtrl(Scan.ShooterVelSet);
-		}
-
+		else if(PID_x->V == 0){
+		Scan_Operation(&Scan, PID_x, target);
+		YawPosCtrl(Scan.YawPosAngleSet);
+		ShooterVelCtrl(Scan.ShooterVelSet);}
 		if(fortDebug == 1){
 		cntSendTime++;
 		cntSendTime = cntSendTime % 10;
@@ -224,19 +221,19 @@ void WalkTask(void)
 		if(PID_x->V != 0 && Error_x->errCnt == 0)
 		{
 			if(fabs(Gundata.YawPosAngleRec - Gundata.YawPosAngleSet) < 3.0f && fabs(Gundata.ShooterVelRec - Gundata.ShooterVelSet) < 3.0f &&\
-				    Gundata.ShooterVelSet < 85.0f)PID_A.fire_command = 1;
+				    Gundata.ShooterVelSet < 85.0f && target[PID_x->target_Num] == 0)PID_A.fire_command = 1;
 			else PID_A.fire_command = 0;
 		}
-		else
+		else if(PID_x->V == 0)
 		{
 			if(CmdRecData.FireFlag_cmd == 1 && Scan.FirePermitFlag == 1) PID_A.fire_command = 1;
 			else PID_A.fire_command = 0;
 		}
 		if(pidDebug) UART4_OUT(PID_x,Error_x);
 		shoot(PID_x,target,shootDebug);
-		USART_OUT(UART4, (uint8_t*)"	 %d	",(int)PID_A.fire_command);
-		USART_SendData(UART4,'\r');
-		USART_SendData(UART4,'\n');
+//		USART_OUT(UART4, (uint8_t*)"	 %d	",(int)PID_A.fire_command);
+//		USART_SendData(UART4,'\r');
+//		USART_SendData(UART4,'\n');
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
 		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
 		OSSemSet(PeriodSem, 0, &os_err);
