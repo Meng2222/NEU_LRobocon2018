@@ -55,15 +55,50 @@ float Return_NonSymmetricRangeValue(float Num9,float upper_bound,float lower_bou
 	return Num9;
 }
 
+float Return_Angle(float array1[2][101] , int a1 , float array2[2][101] , int a2) //Á½µã¼ä½Ç¶È£¨Êý×é£©¡ª¡ªÏòÁ¿
+{
+	float angle=0.f;
+	angle=((180.f*(atan((array2[1][a2]-array1[1][a1])/(array2[0][a2]-array1[0][a1]))))/Pi);
+	if     ((array2[1][a2]-array1[1][a1])>0&&(array2[0][a2]-array1[0][a1])<0)
+	{return Return_SymmetricRangeValue((angle+180.f),180.f);}
+	else if((array2[1][a2]-array1[1][a1])<0&&(array2[0][a2]-array1[0][a1])<0)
+	{return Return_SymmetricRangeValue((angle-180.f),180.f);}
+	else
+	{return Return_SymmetricRangeValue((angle),180.f);}
+}
+
+float Return_Angle2(float A_X,float A_Y,float B_X,float B_Y) //Á½µã¼ä½Ç¶È£¨×ø±ê£©¡ª¡ª ÏòÁ¿A->B
+{
+	float angle=0.f;
+	angle=((180.f*(atan((B_Y-A_Y)/(B_X-A_X))))/Pi);
+	if     ((B_Y-A_Y)>0&&(B_X-A_X)<0)
+	{return Return_SymmetricRangeValue((angle+180.f),180.f);}
+	else if((B_Y-A_Y)<0&&(B_X-A_X)<0)
+	{return Return_SymmetricRangeValue((angle-180.f),180.f);}
+	else
+	{return Return_SymmetricRangeValue((angle),180.f);}
+}
+
+float Distance (float Array1[2][101] , int a1 , float Array2[2][101] , int a2)//Á½µã¼ä¾àÀë+
+{
+	return (sqrt((Array1[0][a1]-Array2[0][a2])*(Array1[0][a1]-Array2[0][a2])+(Array1[1][a1]-Array2[1][a2])*(Array1[1][a1]-Array2[1][a2])));
+}
+
 float SetToFort_AngleProcessing(float r_veh1,float r_fort0/*Êµ²âÅÚÌ¨½Ç¶È*/,float R_fort0/*¶ÁÈ¡ÅÚÌ¨½Ç¶È*/,float setfortangle1)//ÐÂÅÚÌ¨½Ç¶È´¦Àí£¨¸ø¶¨Ä¿±ê½Ç¶È(³µ×ø±êÏµÏÂ)£¬Éè¶¨ÅÚÌ¨½Ç¶È£©
 {
 	return(Return_SymmetricRangeValue((Return_NonSymmetricRangeValue((r_veh1-setfortangle1),360,0)-Return_NonSymmetricRangeValue(r_fort0,360,0)),180)+R_fort0);
 }
 
-float FortToGround_AngleProcessing(float r_veh1,float r_fort0)//ÐÂÅÚÌ¨½Ç¶È´¦Àí£¨¸ø¶¨Ä¿±ê½Ç¶È(³µ×ø±êÏµÏÂ)£¬Éè¶¨ÅÚÌ¨½Ç¶È£©
+float FortToGround_AngleProcessing(float r_veh1,float r_fort0)//ÐÂÅÚÌ¨½Ç¶È´¦Àí£¨¶ÁÈ¡ÅÚÌ¨½Ç¶Èr_fort0£¬¼ÆËã¶ÔµØ½Ç¶È£©
 {
 	return(Return_SymmetricRangeValue((r_veh1+Return_SymmetricRangeValue(-Return_NonSymmetricRangeValue(r_fort0,360,0),180)),180));
 }
+
+float TargetToFort_AngleProcessing(float Teh_X,float Teh_Y,float Target_X,float Target_Y,float r_Veh1/*¶ÁÈ¡³µ½Ç¶È*/,float r_Fort0/*Êµ²âÅÚÌ¨½Ç¶È*/,float R_Fort0/*¶ÁÈ¡ÅÚÌ¨½Ç¶È*/)//ÐÂÅÚÌ¨½Ç¶È´¦Àí£¨¸ø¶¨Ä¿±ê×ø±ê£¬¼ÆËãÅÚÌ¨½Ç¶È£©
+{
+	return (SetToFort_AngleProcessing(r_Veh1,r_Fort0,R_Fort0,(Return_SymmetricRangeValue((Return_Angle2(Teh_X,Teh_Y,Target_X,Target_Y)-90.f),180.f))));
+}
+
 
 void GetFloat (float Num10, int places)//À¶ÑÀ·¢ËÍ¸¡µãÊý
 {
@@ -109,7 +144,6 @@ int Timer(void)//¼ÆÊ±º¯Êý
 {
 	if(t_Flag==0){t_cnt++;return 0;}
 	if(t_Flag==1){t_cnt=0;return t_cnt;}
-	return 0;
 }
 /*************************************************************************************
                                       »Ø¹é·½³Ì
@@ -121,60 +155,90 @@ float ReturnVectorAngle1(float x1,float y1,float x2,float y2)//·µ»Ø³µ×ø±êÏµÏÂÏòÁ
 	else return Return_SymmetricRangeValue(((180*(atan((y2-y1)/(x2-x1)))/Pi)-90),180);
 }
 
-float ReturnSigma (float array[2][51],int choose_xy, int num)//ÇóÁ¬Ðønum¸öÊýÖ®ºÍ
+float ReturnSigma (float array1[2][101],int choose_xy, int num)//ÇóÁ¬Ðønum¸öÊýÖ®ºÍ¡¾´Ó[1]¿ªÊ¼¡¿
 {
     float Sigma=0;
 	for(int i=1 ; i<=num ; i++)
 	{
-		Sigma+=array[choose_xy][i];
+		Sigma+=array1[choose_xy][i];
 	}
 	return (Sigma);
 }
 
-float ReturnProductSum(float array[2][51] , int num)//ÇóÁ¬Ðønum¸öÊýx*y»ýÖ®ºÍ
+float ReturnProductSum(float array2[2][101] , int num)//ÇóÁ¬Ðønum¸öÊýx*y»ýÖ®ºÍ¡¾´Ó[1]¿ªÊ¼¡¿
 {
     float Product=0;
 	for(int i=1 ; i<=num ; i++)
 	{
-		Product+=((array[0][i])*(array[1][i]));
+		Product+=((array2[0][i])*(array2[1][i]));
 	}
 	return (Product);
 }
 
-float ReturnQuadraticSum(float array[2][51],int choose_xy, int num)//ÇóÁ¬Ðønum¸öÊýµÄÆ½·½Ö®ºÍ
+float ReturnQuadraticSum(float array3[2][101],int choose_xy, int num)//ÇóÁ¬Ðønum¸öÊýµÄÆ½·½Ö®ºÍ¡¾´Ó[1]¿ªÊ¼¡¿
 {
     float QuadraticSum=0;
 	for(int i=1 ; i<=num ; i++)
 	{
-		QuadraticSum+=((array[choose_xy][i])*(array[choose_xy][i]));
+		QuadraticSum+=((array3[choose_xy][i])*(array3[choose_xy][i]));
 	}
 	return (QuadraticSum);
 }
 
-float ReturnAverage (float Array[2][51] , int Choose_xy , int Num)//ÇóÁ¬Ðønum¸öÊýÆ½¾ùÖµ
+float ReturnAverage (float array4[2][101] , int Choose_xy , int Num)//ÇóÁ¬Ðønum¸öÊýÆ½¾ùÖµ¡¾´Ó[1]¿ªÊ¼¡¿
 {
     float Average=0;
-	Average = (ReturnSigma(Array , Choose_xy , Num)/(Num));
+	Average = (ReturnSigma(array4 , Choose_xy , Num)/(Num));
 	return (Average);
 }
 
-float Return_LinearRegressionEquation_k (float ARRAY[2][51], int NUM)//Çó»Ø¹é·½³ÌÐ±ÂÊ
+float Return_LinearRegressionEquation_k (float array5[2][101], int NUM)//Çó»Ø¹é·½³ÌÐ±ÂÊ¡¾´Ó[1]¿ªÊ¼¡¿
 {
-	return (((ReturnProductSum(ARRAY , NUM))-(NUM*(ReturnAverage (ARRAY , 0 , NUM))*(ReturnAverage (ARRAY , 1 , NUM))))/((ReturnQuadraticSum(ARRAY , 0 , NUM))-(NUM*(ReturnAverage (ARRAY , 0 , NUM))*(ReturnAverage (ARRAY , 0 , NUM)))));
+	return (((ReturnProductSum(array5 , NUM))-(NUM*(ReturnAverage (array5 , 0 , NUM))*(ReturnAverage (array5 , 1 , NUM))))/((ReturnQuadraticSum(array5 , 0 , NUM))-(NUM*(ReturnAverage (array5 , 0 , NUM))*(ReturnAverage (array5 , 0 , NUM)))));
 }
 
-float Return_LinearRegressionEquation_b (float array[2][51], int num)//Çó»Ø¹é·½³Ì½Ø¾à
+float Return_LinearRegressionEquation_b (float array6[2][101], int num)//Çó»Ø¹é·½³Ì½Ø¾à¡¾´Ó[1]¿ªÊ¼¡¿
 {
-	return ((ReturnAverage (array , 1 , num))-((Return_LinearRegressionEquation_k (array, num))*(ReturnAverage (array , 0 , num))));
+	return ((ReturnAverage (array6 , 1 , num))-((Return_LinearRegressionEquation_k (array6, num))*(ReturnAverage (array6 , 0 , num))));
 }
 
-float Return_LinearRegressionEquation_angle (float array[2][51], int num)//Çó»Ø¹é·½³Ì·½Ïò
+float Return_LinearRegressionEquation_r (float array7[2][101], int NUM)
 {
-	return 0;
+	return (((ReturnProductSum(array7 , NUM))-(NUM*(ReturnAverage (array7 , 0 , NUM))*(ReturnAverage (array7 , 1 , NUM))))/(sqrt(ReturnAbsolute(((ReturnQuadraticSum(array7 , 0 , NUM))-(NUM*(ReturnAverage (array7 , 0 , NUM))*(ReturnAverage (array7 , 0 , NUM))))*((ReturnQuadraticSum(array7 , 1 , NUM))-(NUM*(ReturnAverage (array7 , 1 , NUM))*(ReturnAverage (array7 , 1 , NUM))))))));
+}
+
+float Return_LinearRegressionEquation_angle (float array7[2][101], int num)//Çó»Ø¹é·½³Ì·½Ïò
+{
+	
+}//¡¾ÔÙÒé¡¿
+
+float ReturnDistance(float array8[2][101] , int pointNum , float k , float b)
+{
+	return (ReturnAbsolute((k*array8[0][pointNum]-array8[1][pointNum]+b)/(sqrt(1.f+k*k))));
+}
+
+void Exchange(float *x, float *y)
+{
+	float  tmp =*x;
+	*x =* y;
+	*y = tmp;
 }
 
 void LinearRegressionEquation_3Coordinates(float x1,float y1,float x2,float y2,float x3,float y3)//Èýµã»Ø¹é·½³Ì
 {
+}
+
+/*************************************************************************************
+                                      other
+*************************************************************************************/
+int cmp_p ( const void *m , const void *n )
+{
+	return *(int *)m - *(int *)n;  //ÉýÐòÅÅÐò++
+}
+
+int cmp_r ( const void *m , const void *n )
+{
+	return *(int *)n - *(int *)m;  //½µÐòÅÅÐò--
 }
 //====================================================================================
 //                                     ¼¤¹â´¥·¢
@@ -183,14 +247,10 @@ float Avalue;
 float Bvalue;
 void Laser_data(void)
 {
-	Avalue=2.4479f*fort.laserAValueReceive+71.215f;	
-	Bvalue=2.44885f*fort.laserBValueReceive+57.925f;
-}
-
-void Laser_Trigger(void)
-{
-	
-	//¼ÆËã¼¤¹â¶ÁÊý(mm)
+//	Avalue=2.4479f*fort.laserAValueReceive+71.215f;	
+//	Bvalue=2.44885f*fort.laserBValueReceive+57.925f;
+	Avalue=2.4621f*fort.laserAValueReceive+29.234f;	
+	Bvalue=2.4706f*fort.laserBValueReceive+11.899f;
 }
 //====================================================================================
 //                                   ¶àÔª×ßÐÐ
@@ -415,14 +475,11 @@ void Shoot_Judge(void)//·¢Çò¼ì²â
 {
 	if(ifPushFlag==1)
 	{
-		if(shooterVel.p100-shooterVel.p90>=6||shooterVel.p100-shooterVel.p80>=6)
+		if(shooterVel.p100-shooterVel.p90>=6||shooterVel.p100-shooterVel.p80>=6)//Í¶ÇòËÙÂÊÏÂ½µ
 		{
 			if(shooterVel.p100-shooterVel.now<=6){ifShootFlag=1;}
-			else{ifShootFlag=0;}
 		}
-		else{ifShootFlag=0;}
 	}
-	else{ifShootFlag=0;}
 	
 	if(ifShootFlag==1)
 	{
@@ -441,7 +498,7 @@ void Shoot_Judge(void)//·¢Çò¼ì²â
 //====================================================================================
 void Bucket_Choose (void)//Ëø¶¨
 {
-
+	
 }
 //====================================================================================
 //                                 ÊÓ¾õÏµÍ³+·ÖÇò»ú¹¹
@@ -449,7 +506,7 @@ void Bucket_Choose (void)//Ëø¶¨
 int ballCalour;// 0Îª°×Çò;1ÎªºÚÇò
 void JudgeBallColour()
 {
-
+	
 }
 //====================================================================================
 //                                   ÐÂ³µ¼¤¹âÄâºÏ
@@ -480,7 +537,6 @@ void GetPositionValue(PID_Value *pid_out)//´®¿ÚÊä³öº¯Êý
 	USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","p","o","s","Y",":");
 	GetFloat (Yvaluereceive, 3);
 }
-
 //====================================================================================
 //                                  ½Ç¶ÈËø¶¨£¨ok£©
 //====================================================================================
@@ -529,8 +585,8 @@ int   abandonFlag=0;        //
 
 float APositionRecord[2][4]={{0},{0}};
 float BPositionRecord[2][4]={{0},{0}};
-float ATargetPositionRecord[2][51]={{0},{0}};
-float BTargetPositionRecord[2][51]={{0},{0}};
+float ATargetPositionRecord[2][101]={{0},{0}};
+float BTargetPositionRecord[2][101]={{0},{0}};
 //int ai,aj,bi,bj,ap,aq,bp,bq;
 
 float Fort_X;
@@ -539,6 +595,20 @@ float A_Laser_X;
 float A_Laser_Y;
 float B_Laser_X;
 float B_Laser_Y;
+
+float Corner[2][101];      //´¢´æÖ±½Çµã¼¯
+int Corner_Num=0;          //CornerÊý×éÓÐÐ§µãÊý¡¾1¡¿
+float CheckPoint[2][101];  //´¢´æËùÓÐµã¼¯
+int Check_Num=0;           //CheckPointÊý×éÓÐÐ§µãÊý¡¾1¡¿
+
+float RangeF[2][101];      //´¢´æ4908+-Êý¾Ý
+int F_Num=0;
+float RangeS[2][101];      //´¢´æ6940+-Êý¾Ý
+int S_Num=0;
+
+int CheckPermit=0;
+float SquarePos[2][4];
+
 void DataProcessing (PID_Value *p)
 {
 		//¼ÆËãÅÚÌ¨½Ç¶È
@@ -576,6 +646,7 @@ void SetFortAngle(PID_Value *pos,float set_angle)//
 		GetFloat (r_fortAngle1, 3);
 
 }
+
 int ifAFirstOFOK=0;
 int ifBFirstOFOK=0;
 int cntNumA=0;
@@ -655,7 +726,6 @@ void FirstOrder_Filter(PID_Value *p)//ÂË²¨º¯Êý
 			}
 		}
 	}
-
 }
 
 void CheckLine(void)
@@ -663,11 +733,336 @@ void CheckLine(void)
 	
 }
 
+int SquareLock=0;
+
+void  CheckCorner  (float array9 [2][101] , int num)//num´Ó1¿ªÊ¼¼ÆÊý,num>6
+{
+	float k;
+	float b;
+	float r;
+	int   CntCorner=0;             		/*Ê¹ÓÃÍê¹é0£¡£¡*/ //µãÔÆÈ·¶¨½Çµã¼ÆÊý
+	int   CntCorner_FB=0;////////////////
+	float SectionPosRecord[2][101];		/*Ê¹ÓÃÍê¹é0£¡£¡*/ //µãÔÆ·Ö¶Î×ø±ê¼ÇÂ¼        ¡¾´Ó[1]¿ªÊ¼¡¿
+	int   sectionPosLength=0;           /*Ê¹ÓÃÍê¹é0£¡£¡*/ //µãÔÆ·Ö¶Î³¤¶È¼ÇÂ¼
+	int   CornerPointNum   [11];   		/*Ê¹ÓÃÍê¹é0£¡£¡*/ //µãÔÆ½ÇµãÊý×éÎ»ÖÃ¼ÇÂ¼    ¡¾´Ó[0]¿ªÊ¼¡¿
+	int   CornerPointNum_FB[11];/////////
+	float distance=0;
+	int   Number=0;
+	int   number=0;
+	float For[2][101]; 
+	float Bac[2][101];
+	int   ifJudgeAngle=0;
+	int   ifCornerIncrease=0;
+	
+	//Ö±Ïß½ÇµãnumÊý×é³õÊ¼»¯&&ÊäÈëÊ×Î»Öµ
+		for(int i=0;i<=10;i++)
+		{
+			CornerPointNum[i]=111;
+		}
+		CornerPointNum[0]=1;
+		CornerPointNum[1]=num;
+	do
+	{
+		ifCornerIncrease=0;
+		//¶ÔcornerNum¸ö½ÇµãÎ»ÖÃ½øÐÐÉýÐòÅÅÁÐ
+		qsort(CornerPointNum,11,sizeof(CornerPointNum[0]),cmp_p);//ÉýÐòÅÅÐò
+		for(int i=0 ; i<=10 ; i++)
+        {
+            CornerPointNum_FB[i]=CornerPointNum[i];
+        }
+		CntCorner_FB=CntCorner;
+		/*¶ÔµãÔÆ½øÐÐ·Ö¶Î*/
+		//½«µãÔÆ·Ö³ÉcornerNum+1¸ö·Ö¶Î
+		for(int j=0 ; j<=CntCorner ; j++)/*Ã¿È·ÈÏÒ»¸ö½Çµã£¬flag=1£¬Cnt++*/
+		{
+			qsort(CornerPointNum_FB,11,sizeof(CornerPointNum_FB[0]),cmp_p);//ÉýÐòÅÅÐò
+			//·Ö¶ÎÌÖÂÛ
+			/*µãÔÆ·Ö¶Î×ø±ê¼ÇÂ¼*/
+			memset(SectionPosRecord,0,sizeof(SectionPosRecord));
+				for(int p=CornerPointNum[j+1] ; p>=CornerPointNum[j] ; p--)
+				{
+					//SectionPosRecord×ø±ê¼ÇÂ¼´Ó[1]¿ªÊ¼
+					SectionPosRecord[0][p-CornerPointNum[j]+1]=array9 [0][p];
+					SectionPosRecord[1][p-CornerPointNum[j]+1]=array9 [1][p];
+				}
+				sectionPosLength=CornerPointNum[j+1]-CornerPointNum[j]+1;
+			/*SectionPosRecordÅÐ¶Ï½áÊøºóÇåÁã*/
+			
+			/*¼ÆËã»Ø¹é·½³Ìk¡¢b*/
+			k=Return_LinearRegressionEquation_k (SectionPosRecord, sectionPosLength);
+			b=Return_LinearRegressionEquation_b (SectionPosRecord, sectionPosLength);
+			r=Return_LinearRegressionEquation_r (SectionPosRecord, sectionPosLength);
+			
+			//¶Ô·Ö¶Î½øÐÐ½Çµã¼ì²â
+			/*__*\
+			*|__|*
+			\*  */
+			//Ïà¹ØÐÔ¼ì²â
+			if(ReturnAbsolute(r)<0.93f)
+			{
+				distance=0;
+				for (int i=sectionPosLength-1 ; i>=2 ; i--)
+				{
+					/**ÅÐ¶ÏÊ×Î»Á½µã¾àÀë£¨>150£©**/
+					if( i>=3 && i<=sectionPosLength-2 && (ReturnDistance(SectionPosRecord , i , k , b)-ReturnDistance(SectionPosRecord , i-1 , k , b))>=0 && (ReturnDistance(SectionPosRecord , i , k , b)-ReturnDistance(SectionPosRecord , i+1 , k , b))>=0)
+					{						
+						//¼ÇÂ¼¸Ã·Ö¶ÎËùÈ¡µ¥Ò»½ÇµãÎ»ÓÚÊý×éµÄÎ»ÖÃ£¨×Ü£©
+						/*¡¾distance¹é0¡¿*/
+						if(ReturnDistance(SectionPosRecord , i , k , b)>distance)
+						{
+							distance=ReturnDistance(SectionPosRecord , i , k , b);
+							number=i;
+							Number=CornerPointNum[j]+i-1;
+							ifJudgeAngle=1;
+						}
+					}
+				}
+				if(ifJudgeAngle==1&&distance>=50)
+				{
+					ifJudgeAngle=0;
+					for(int i=sectionPosLength ; i>=number ; i--)
+					{
+						For[0][i-number+1]=SectionPosRecord[0][i];
+						For[1][i-number+1]=SectionPosRecord[1][i];
+					}
+					for(int i=number ; i>=1 ; i--)
+					{
+						Bac[0][i]=SectionPosRecord[0][i];
+						Bac[1][i]=SectionPosRecord[1][i];
+					}
+					if (ReturnAbsolute(180*atan(Return_LinearRegressionEquation_k(For,sectionPosLength-number+1))/Pi-\
+									   180*atan(Return_LinearRegressionEquation_k(Bac,number))/Pi)>=30) /******************************/
+					{
+						for(int i=0 ; i<=9 ; i++)
+						{
+							if(Number>=CornerPointNum[i]+2&&Number<=CornerPointNum[i+1]-2)
+							{
+								/*º¯Êý¿ªÊ¼¹é0*/
+								
+								if(CornerPointNum_FB[10]==111||CntCorner_FB<=9)
+								{
+									ifCornerIncrease=1;
+									CornerPointNum_FB[10]=Number;
+									CntCorner_FB++;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		//¸±±¾¹éÎ»
+        CntCorner=CntCorner_FB;
+		for(int i=0 ; i<=10 ; i++)
+        {
+            CornerPointNum[i]=CornerPointNum_FB[i];
+        }
+	}
+	/*ÅÐ¶Ï±¾´ÎÊÇ·ñÓÐÐÂ½Çµã²úÉú*/
+	while(ifCornerIncrease==1);
+	
+//			USART_OUT(UART4,(uint8_t*)"%d",CntCorner);
+/*	
+			//·¢¸öÊýÏÈ
+			for (int i=0 ; i<=CntCorner+1 ; i++)
+			{
+					USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","C","X",":");
+					GetFloat (array9 [0][CornerPointNum [i]], 3);
+					USART_OUT(UART4,(uint8_t*)"    %s%s%s","C","Y",":");
+					GetFloat (array9 [1][CornerPointNum [i]], 3);
+			}
+*/
+	float FOR [2][101];
+	float BAC [2][101];
+	int TrueCPNum [11];
+	int TCP_number=0;
+	
+		for(int i=0;i<=10;i++)
+		{
+			TrueCPNum[i]=111;
+		}
+		//¼ÇÂ¼Ê×Î²Á½µã	
+		TrueCPNum [0]=1;
+		TrueCPNum [1]=num;
+	    //ÅÐ¶ÏÏàÁÚÏß¡¢¼ä¸ôÏß¼äÊÇ·ñ´æÔÚ80-100¶ÈµÄ½Ç¡¾ReturnAbsolute¡¿
+	if(CntCorner>=1)
+    {
+		for (int i=1 ; i<=CntCorner ;  i++)
+		{
+			for(int j=CornerPointNum [i-1] ; j<=CornerPointNum [i] ; j++)
+			{
+				FOR[0][j-CornerPointNum[i-1]+1]=array9[0][j];
+				FOR[1][j-CornerPointNum[i-1]+1]=array9[1][j];
+			}
+			for(int j=CornerPointNum [i] ; j<=CornerPointNum [i+1] ; j++)
+			{
+				BAC[0][j-CornerPointNum[i]+1]=array9[0][j];
+				BAC[1][j-CornerPointNum[i]+1]=array9[1][j];
+			}
+			if(ReturnAbsolute( ((atan(Return_LinearRegressionEquation_k(FOR,CornerPointNum [i]-CornerPointNum [i-1]+1)))*180/Pi)-((atan(Return_LinearRegressionEquation_k(BAC,CornerPointNum [i+1]-CornerPointNum [i]+1)))*180/Pi) )>=80&&\
+			   ReturnAbsolute( ((atan(Return_LinearRegressionEquation_k(FOR,CornerPointNum [i]-CornerPointNum [i-1]+1)))*180/Pi)-((atan(Return_LinearRegressionEquation_k(BAC,CornerPointNum [i+1]-CornerPointNum [i]+1)))*180/Pi) )<=100)
+			{
+			    TCP_number++;
+				TrueCPNum [10]=CornerPointNum [i];
+				qsort(TrueCPNum,11,sizeof(TrueCPNum[0]),cmp_p);
+			}
+		}
+	}
+		for(int i=0 ; i<=TCP_number+1 ; i++)
+        {
+			USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","P","X",":");
+			GetFloat (array9 [0][TrueCPNum [i]], 3);
+			USART_OUT(UART4,(uint8_t*)"    %s%s%s","P","Y",":");
+			GetFloat (array9 [1][TrueCPNum [i]], 3);
+        }
+		for(int i=1 ; i<=TCP_number ; i++)
+        {
+			USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","C","X",":");
+			GetFloat (array9 [0][TrueCPNum [i]], 3);
+			USART_OUT(UART4,(uint8_t*)"    %s%s%s","C","Y",":");
+			GetFloat (array9 [1][TrueCPNum [i]], 3);
+        }
+	//´¢´æTCPNÊý×éÊý¾Ý
+	for(int i=1 ; i<=TCP_number ; i++)
+	{
+		Corner_Num++;
+		Corner[0][Corner_Num]=array9[0][TrueCPNum[i]];
+		Corner[1][Corner_Num]=array9[1][TrueCPNum[i]];
+	}
+	for(int i=0 ; i<=TCP_number+1 ; i++)
+	{
+		Check_Num++;
+		CheckPoint[0][Check_Num]=array9[0][TrueCPNum[i]];
+		CheckPoint[1][Check_Num]=array9[1][TrueCPNum[i]];
+	}
+}
+
+void CheckSquare()
+{
+	//¼ì²âÕý·½ÐÎ
+	if(CheckPermit==1)/*±êÖ¾Î»£¨RadarÌá¹©£©*/
+	{
+		for(int i=1 ; i<=Corner_Num ; i++)
+		{
+			if(SquareLock==1)
+			{break;}
+			for (int j=1 ; j<=Check_Num ; j++)
+			{
+				//Èç¹û¾àÀë4908+-
+				if(Distance(Corner,i,CheckPoint,j)>=4808&&Distance(Corner,i,CheckPoint,j)<=5008)
+				{
+					//´¢´æCheckPointÊý¾Ý
+					F_Num++;
+					RangeF[0][F_Num]=CheckPoint[0][j];
+					RangeF[1][F_Num]=CheckPoint[1][j];
+				}
+				//Èç¹û¾àÀë6941+-
+				if(Distance(Corner,i,CheckPoint,j)>=6841&&Distance(Corner,i,CheckPoint,j)<=7041)
+				{
+					//´¢´æCheckPointÊý¾Ý
+					S_Num++;
+					RangeS[0][S_Num]=CheckPoint[0][j];
+					RangeS[1][S_Num]=CheckPoint[1][j];
+				}
+			}
+			//¶ÔRangeF¡¢RangeSÄâºÏÕý·½ÐÎ
+			/*Èç¹û¼ì²âµ½Õý·½ÐÎ£¬ËÄ¸öÊý×éÍ¬Ê±ÇåÁã£¬ËÄ¸ö±äÁ¿Í¬Ê±ÇåÁã£¬CheckPermitÇåÁã*/
+			//Ñ­»·ÔÚRangeFÖÐÕÒ´¹Ö±µã
+			for(int j=1 ; j<=F_Num ; j++)
+			{
+				if(SquareLock==1)
+				{break;}
+				for(int k=1 ; k<=F_Num ; k++)
+				{
+					if(SquareLock==1)
+					{break;}
+					//ÅÐ¶ÏÁ½»¥Ïà´¹Ö±µÄµã
+					if(ReturnAbsolute(Return_Angle(Corner,i,RangeF,j)-Return_Angle(Corner,i,RangeF,k))>=85&&\
+					   ReturnAbsolute(Return_Angle(Corner,i,RangeF,j)-Return_Angle(Corner,i,RangeF,k))<=95&&\
+					   SquareLock==0)
+					{
+						//Ñ­»·ÅÐ¶ÏRangeSÖÐÄÜ×÷Îª½ÇÆ½·ÖÏßµÄµã
+						for(int m=1 ; m<=S_Num ; m++)
+						{
+							if(ReturnAbsolute(Return_Angle(Corner,i,RangeS,m)-Return_Angle(Corner,i,RangeF,j))>=40&&\
+							   ReturnAbsolute(Return_Angle(Corner,i,RangeS,m)-Return_Angle(Corner,i,RangeF,j))<=50&&\
+							   ReturnAbsolute(Return_Angle(Corner,i,RangeS,m)-Return_Angle(Corner,i,RangeF,k))>=40&&\
+							   ReturnAbsolute(Return_Angle(Corner,i,RangeS,m)-Return_Angle(Corner,i,RangeF,k))<=50  )
+							{
+								CheckPermit=0;
+								SquareLock=1;
+								
+								SquarePos[0][0]=Corner[0][i];
+								SquarePos[1][0]=Corner[1][i];
+								SquarePos[0][1]=RangeF[0][j];
+								SquarePos[1][1]=RangeF[1][j];
+								SquarePos[0][2]=RangeF[0][k];
+								SquarePos[1][2]=RangeF[1][k];
+								SquarePos[0][3]=RangeS[0][m];
+								SquarePos[1][3]=RangeS[1][m];
+								
+							}
+							else if (SquareLock==0)//Èý¸öµãÈ·¶¨×îºóÒ»¸öµã£¨Îó²î£¬ÔÙÒé£©
+							{
+								CheckPermit=0;
+								SquareLock=1;
+								
+								SquarePos[0][0]=Corner[0][i];
+								SquarePos[1][0]=Corner[1][i];
+								SquarePos[0][1]=RangeF[0][j];
+								SquarePos[1][1]=RangeF[1][j];
+								SquarePos[0][2]=RangeF[0][k];
+								SquarePos[1][2]=RangeF[1][k];
+								SquarePos[0][3]=(RangeF[0][j]+RangeF[0][k])-Corner[0][i];
+								SquarePos[1][3]=(RangeF[1][j]+RangeF[1][k])-Corner[1][i];
+							}
+						}
+					}
+				}
+				for(int k=1 ; k<=S_Num ; k++)
+				{
+					if(SquareLock==1)
+					{break;}
+					//ÅÐ¶ÏÁ½¼Ð½Ç45¶ÈµÄ½Ç
+					if(ReturnAbsolute(Return_Angle(Corner,i,RangeF,j)-Return_Angle(Corner,i,RangeS,k))>=40&&\
+					   ReturnAbsolute(Return_Angle(Corner,i,RangeF,j)-Return_Angle(Corner,i,RangeS,k))<=50&&
+					   SquareLock==0)
+					{
+								CheckPermit=0;
+								SquareLock=1;
+						
+								SquarePos[0][0]=Corner[0][i];
+								SquarePos[1][0]=Corner[1][i];
+								SquarePos[0][1]=RangeF[0][j];
+								SquarePos[1][1]=RangeF[1][j];
+								SquarePos[0][2]=RangeS[0][k];
+								SquarePos[1][2]=RangeS[1][k];
+								SquarePos[0][3]=Corner[0][i]+RangeS[0][k]-RangeF[0][j];
+								SquarePos[1][3]=Corner[1][i]+RangeS[1][k]-RangeF[1][j];
+					}
+				}
+			}
+			F_Num=0;
+			S_Num=0;
+			memset(RangeF,0,sizeof(RangeF));
+			memset(RangeS,0,sizeof(RangeS));
+		}
+		if(SquareLock==1)
+		{
+			Corner_Num=0;
+			Check_Num=0;
+			memset( Corner     ,0, sizeof(Corner)     );
+			memset( CheckPoint ,0, sizeof(CheckPoint) );
+			//Corner¡¢CheckPointÇåÁã
+			CheckPermit=0;
+		}
+	}
+}
+
 void SecondOrder_Filter(void)//ÂË²¨º¯Êý
 {
 	if(ifAFirstOFOK==1)
 	{
-			/*¶þ½×ÂË²¨*/
 			if(sqrt((APositionRecord[0][2]-APositionRecord[0][1])*(APositionRecord[0][2]-APositionRecord[0][1])+(APositionRecord[1][2]-APositionRecord[1][1])*(APositionRecord[1][2]-APositionRecord[1][1]))<=150||\
 			   sqrt((APositionRecord[0][3]-APositionRecord[0][2])*(APositionRecord[0][3]-APositionRecord[0][2])+(APositionRecord[1][3]-APositionRecord[1][2])*(APositionRecord[1][3]-APositionRecord[1][2]))<=150)
 			{
@@ -676,7 +1071,7 @@ void SecondOrder_Filter(void)//ÂË²¨º¯Êý
 					ATargetPositionRecord[1][0]=APositionRecord[1][2];
 					for(int ai=0 ; ai<=1 ; ai++)
 					{
-						for(int aj=50; aj>=1 ; aj--)
+						for(int aj=100; aj>=1 ; aj--)
 						{
 							ATargetPositionRecord[ai][aj]=ATargetPositionRecord[ai][aj-1];
 						}
@@ -690,18 +1085,19 @@ void SecondOrder_Filter(void)//ÂË²¨º¯Êý
 						\*__*/
 						{
 							/*½âÎöÊý¾Ý*/
+							//½Çµã/Ö±½Ç¼ì²â
 							{
-								
+								CheckCorner  (ATargetPositionRecord , cntNumA);
 							}
 							/*ÊÕÊý*/
 							{
-									for(int i=cntNumA;i>=1;i--)
-									{
-									USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","A","X",":");
-									GetFloat (ATargetPositionRecord[0][i], 3);
-									USART_OUT(UART4,(uint8_t*)"%s%s%s","A","Y",":");
-									GetFloat (ATargetPositionRecord[1][i], 3);
-									}
+//									for(int i=cntNumA;i>=1;i--)
+//									{
+//									USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","A","X",":");
+//									GetFloat (ATargetPositionRecord[0][i], 3);
+//									USART_OUT(UART4,(uint8_t*)"%s%s%s","A","Y",":");
+//									GetFloat (ATargetPositionRecord[1][i], 3);
+//									}
 							}
 						}
 						cntNumA=0;
@@ -713,7 +1109,6 @@ void SecondOrder_Filter(void)//ÂË²¨º¯Êý
 	}
 	if(ifBFirstOFOK==1)
 	{
-			/*¶þ½×ÂË²¨*/
 			if(sqrt((BPositionRecord[0][2]-BPositionRecord[0][1])*(BPositionRecord[0][2]-BPositionRecord[0][1])+(BPositionRecord[1][2]-BPositionRecord[1][1])*(BPositionRecord[1][2]-BPositionRecord[1][1]))<=150||\
 			   sqrt((BPositionRecord[0][3]-BPositionRecord[0][2])*(BPositionRecord[0][3]-BPositionRecord[0][2])+(BPositionRecord[1][3]-BPositionRecord[1][2])*(BPositionRecord[1][3]-BPositionRecord[1][2]))<=150)
 			{
@@ -722,7 +1117,7 @@ void SecondOrder_Filter(void)//ÂË²¨º¯Êý
 					BTargetPositionRecord[1][0]=BPositionRecord[1][2];
 					for(int bi=0 ; bi<=1 ; bi++)
 					{
-						for(int bj=50; bj>=1 ; bj--)
+						for(int bj=100; bj>=1 ; bj--)
 						{
 							BTargetPositionRecord[bi][bj]=BTargetPositionRecord[bi][bj-1];
 						}
@@ -737,17 +1132,17 @@ void SecondOrder_Filter(void)//ÂË²¨º¯Êý
 						{
 							/*½âÎöÊý¾Ý*/
 							{
-								
+								CheckCorner  (BTargetPositionRecord , cntNumB);
 							}
 							/*ÊÕÊý*/
 							{
-									for(int i=cntNumB;i>=1;i--)
-									{
-									USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","B","X",":");
-									GetFloat (BTargetPositionRecord[0][i], 3);
-									USART_OUT(UART4,(uint8_t*)"%s%s%s","B","Y",":");
-									GetFloat (BTargetPositionRecord[1][i], 3);
-									}
+//									for(int i=cntNumB;i>=1;i--)
+//									{
+//									USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","B","X",":");
+//									GetFloat (BTargetPositionRecord[0][i], 3);
+//									USART_OUT(UART4,(uint8_t*)"%s%s%s","B","Y",":");
+//									GetFloat (BTargetPositionRecord[1][i], 3);
+//									}
 							}
 						}
 						cntNumB=0;
@@ -801,49 +1196,131 @@ void Power_On_Self_Test(PID_Value *pos)//¡¾¼Óµç×Ô¼ì¡¿
 	/*POST¼Óµç×Ô¼ìFinish*/
 }
 
+int cntNum=0;
+int pointNum=0;
 void RadarCorrection(PID_Value *pos)//À×´ïÐ£ÕýÏµÍ³
 {
-	DataProcessing (pos);
-	//º½Ïòµç»ú¡ªÁ¬ÐøÉ¨ÃèÖ¸Áî
-	Laser_data();
-	setangle+=0.5f;
-	if(setangle>360){setangle-=360;}
-	Set_FortAngle1=SetToFort_AngleProcessing(pos->Angle,r_fortAngle0,fort.yawPosReceive,setangle);//
-//			USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","S","A","n","g",":");
-//			GetFloat (Set_FortAngle1, 3);
-	//¼ÆËã½Ç¶È
-//	r_fortAngle1=Return_SymmetricRangeValue((pos->Angle+Return_SymmetricRangeValue(-Return_NonSymmetricRangeValue(fort.yawPosReceive,360,0),180)),180);
-	r_fortAngle1=FortToGround_AngleProcessing(pos->Angle,r_fortAngle0);/**///ÅÚÌ¨¶ÔµØ½Ç¶È£¨³µ×ø±êÏµ£©
-			//·µ»Ø½Ç¶È
-			USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","P","A","n","g",":");
-			GetFloat (pos->Angle, 3);
-			USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","F","A","n","g",":");
-			GetFloat (r_fortAngle1, 3);
-	//¼ÆËã×ø±ê
-	r_standardFortAngle=Return_SymmetricRangeValue((r_fortAngle1+90.f),180.f);//ÅÚÌ¨¶ÔµØ½Ç¶È£¨±ê×¼×ø±êÏµ£©
-	A_targetx=Avalue*(cos(Pi*r_standardFortAngle/180.f))+A_Laser_X;/////////|¡ª¡ª¡ª¡ª¸ÄÎªÁ½¼¤¹â×ø±ê
-	A_targety=Avalue*(sin(Pi*r_standardFortAngle/180.f))+A_Laser_Y-2400.f;////|¡ª¡ª¡ª¡ª¸ÄÎªÁ½¼¤¹â×ø±ê
-	B_targetx=Bvalue*(cos(Pi*r_standardFortAngle/180.f))+B_Laser_X;/////////|¡ª¡ª¡ª¡ª¸ÄÎªÁ½¼¤¹â×ø±ê
-	B_targety=Bvalue*(sin(Pi*r_standardFortAngle/180.f))+B_Laser_Y-2400.f;////|¡ª¡ª¡ª¡ª¸ÄÎªÁ½¼¤¹â×ø±ê
-			//·µ»Ø×ø±ê
-			USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","A","T","a","r","X",":");
-			GetFloat (A_targetx, 3);
-			USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","A","T","a","r","Y",":");
-			GetFloat (A_targety, 3);
-			USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","B","T","a","r","X",":");
-			GetFloat (B_targetx, 3);
-			USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","B","T","a","r","Y",":");
-			GetFloat (B_targety, 3);
-	//Êý¾Ý·ÖÎö
-	FirstOrder_Filter(pos);
-	SecondOrder_Filter();
+	if(SquareLock==0)
+	{
+		DataProcessing (pos);
+		//º½Ïòµç»ú¡ªÁ¬ÐøÉ¨ÃèÖ¸Áî
+		Laser_data();
+		setangle+=0.5f;
+		if(setangle>360){setangle-=360;CheckPermit=1;}
+		Set_FortAngle1=SetToFort_AngleProcessing(pos->Angle,r_fortAngle0,fort.yawPosReceive,setangle);//
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","S","A","n","g",":");
+//				GetFloat (Set_FortAngle1, 3);
+		//¼ÆËã½Ç¶È
+//		r_fortAngle1=Return_SymmetricRangeValue((pos->Angle+Return_SymmetricRangeValue(-Return_NonSymmetricRangeValue(fort.yawPosReceive,360,0),180)),180);
+		r_fortAngle1=FortToGround_AngleProcessing(pos->Angle,r_fortAngle0);/**///ÅÚÌ¨¶ÔµØ½Ç¶È£¨³µ×ø±êÏµ£©
+				//·µ»Ø½Ç¶È
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","P","A","n","g",":");
+//				GetFloat (pos->Angle, 3);
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","F","A","n","g",":");
+//				GetFloat (r_fortAngle1, 3);
+		//¼ÆËã×ø±ê
+		r_standardFortAngle=Return_SymmetricRangeValue((r_fortAngle1+90.f),180.f);//ÅÚÌ¨¶ÔµØ½Ç¶È£¨±ê×¼×ø±êÏµ£©
+		A_targetx=Avalue*(cos(Pi*r_standardFortAngle/180.f))+A_Laser_X;/////////|¡ª¡ª¡ª¡ª¸ÄÎªÁ½¼¤¹â×ø±ê
+		A_targety=Avalue*(sin(Pi*r_standardFortAngle/180.f))+A_Laser_Y-2400.f;////|¡ª¡ª¡ª¡ª¸ÄÎªÁ½¼¤¹â×ø±ê
+		B_targetx=Bvalue*(cos(Pi*r_standardFortAngle/180.f))+B_Laser_X;/////////|¡ª¡ª¡ª¡ª¸ÄÎªÁ½¼¤¹â×ø±ê
+		B_targety=Bvalue*(sin(Pi*r_standardFortAngle/180.f))+B_Laser_Y-2400.f;////|¡ª¡ª¡ª¡ª¸ÄÎªÁ½¼¤¹â×ø±ê
+		
+				//·µ»Ø×ø±ê
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","A","T","a","r","X",":");
+//				GetFloat (A_targetx, 3);
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","A","T","a","r","Y",":");
+//				GetFloat (A_targety, 3);
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","B","T","a","r","X",":");
+//				GetFloat (B_targetx, 3);
+//				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","B","T","a","r","Y",":");
+//				GetFloat (B_targety, 3);
+				
+		//Êý¾Ý·ÖÎö
+		{
+		FirstOrder_Filter(pos);
+		SecondOrder_Filter();
+		CheckSquare();
+		}
+	}
+	if(SquareLock==1)
+	{
+		cntNum++;
+		pointNum=(cntNum%1600)/400;
+		TargetToFort_AngleProcessing(Fort_X,Fort_Y-2400.f,SquarePos[0][pointNum],SquarePos[1][pointNum],pos->Angle,r_fortAngle0,fort.yawPosReceive);
+		if(cntNum>=1600)
+		{
+		memset(SquarePos,0,sizeof(SquarePos));
+		cntNum=0;
+		pointNum=0;
+		SquareLock=0;
+		setangle=0;
+		}
+	}
+}
+
+/*
+void CornerLock()
+{
+	
 }
 
 int possibility=0;
-void Check_Target(void)
+void Check_Target(PID_Value *pos)
 {
+	DataProcessing (pos);
 	Laser_data();	
+	setangle+=0.5;
+	if(setangle>360){setangle-=360;}
+	Set_FortAngle1=SetToFort_AngleProcessing(pos->Angle,r_fortAngle0,fort.yawPosReceive,setangle);
 }
+*/
+
+
+//====================================================================================
+//                                       ÍÌÇò¼ì²â
+//====================================================================================
+//×ó5ÓÒ6
+float Lef_v[21];//×ó¹õ×ÓËÙÂÊ¶ÁÈ¡
+float L_Value;  //×ó¹õ×ÓãÐÖµ
+int cnt_L=1;
+float Rig_v[21];//ÓÒ¹õ×ÓËÙÂÊ¶ÁÈ¡
+float R_Value;	//ÓÒ¹õ×ÓãÐÖµ
+int cnt_R=1;
+int Golf_Num=0;	//¼ÆËãGolfÇòÊý
+
+void CntGolf()
+{
+	
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

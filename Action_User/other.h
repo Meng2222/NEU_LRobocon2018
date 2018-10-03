@@ -23,8 +23,14 @@
 #include "fort.h"
 #include "pps.h"
 #include "math.h"
+#include "stm32f4xx_it.h"
 
-#define Compensation_Angle (0.f)
+//#include <cruntime.h>
+#include <stdlib.h>
+//#include <search.h>
+//#include <internal.h>
+
+#define Compensation_Angle (0.f)//сруЩ
 
 typedef struct S_Record
 {

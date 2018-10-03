@@ -46,9 +46,9 @@ void App_Task(void)
 ===============================================================
 */
 //GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1);
-int shootDebug = 1;
+int shootDebug = 0;
 int pidDebug = 0;
-int fortDebug = 0;
+int fortDebug = 1;
 int ballcommand = 0;
 PID_Value *PID_x = NULL;
 PID_Value PID_A;
@@ -130,8 +130,15 @@ void ConfigTask(void)
 
 		//初始化扫描参数
 		Scan.ScanStatus = 0;
-		Scan.ScanPermitFlag = 1;
+		Scan.FirePermitFlag = 0;
+		Scan.DelayFlag = 0;
+		Scan.CntDelayTime = 0;
+		Scan.GetBorderLeftFlag = 0;
+		Scan.GetBorderRightFlag = 0;
+		Scan.ScanPermitFlag = 0;
 		Scan.Yaw_Zero_Offset = 0.0f;
+		Scan.YawPosAngle_Offset = 0.0f;
+		Scan.Shooter_Vel_Offset = 0.0f;
 		
 		//设定各挡板边缘坐标值
 		Scan.Bucket_Border_X[0] =  2000.0;       Scan.Bucket_Border_Y[0] =   -54.0;
@@ -204,19 +211,25 @@ void WalkTask(void)
 		Scan_Operation(&Scan, PID_x, target);
 		YawPosCtrl(Scan.YawPosAngleSet);
 		ShooterVelCtrl(Scan.ShooterVelSet);}
-		if(fortDebug == 1){
-		cntSendTime++;
-		cntSendTime = cntSendTime % 10;
-		if(cntSendTime == 0)
+
+		if(fortDebug == 1)
 		{
-			//Scan参数
-			USART_OUT(UART4, (uint8_t*)"ScanSta=%d	DisL=%d	DisR=%d	LX=%d	LY=%d	RX=%d	RY=%d	LeftAng=%d	RightAng=%d	LeftX=%d	LeftY=%d	RightX=%d	RightY=%d	BucX=%d	BucY=%d	ShoSet=%d	YawSet=%d	delay=%d	cntdelay=%d\r\n",\
-			(int)Scan.ScanStatus,           (int)Scan.Probe_Left_Distance,  (int)Scan.Probe_Right_Distance,\
-			(int)Scan.Probe_Left_X,         (int)Scan.Probe_Left_Y,         (int)Scan.Probe_Right_X,        (int)Scan.Probe_Right_Y,\
-			(int)Scan.BorderAngleLeft,      (int)Scan.BorderAngleRight,     (int)Scan.BucketBorder_Left_X,  (int)Scan.BucketBorder_Left_Y, (int)Scan.BucketBorder_Right_X, (int)Scan.BucketBorder_Right_Y,\
-			(int)Scan.Probe_Bucket_X,       (int)Scan.Probe_Bucket_Y,       (int)Scan.ShooterVelSet,        (int)Scan.YawPosAngleSet,\
-			(int)Scan.DelayFlag,            (int)Scan.CntDelayTime);
-		}}
+			cntSendTime++;
+			cntSendTime = cntSendTime % 10;
+			if(cntSendTime == 0)
+			{
+				//Scan参数
+				USART_OUT(UART4, (uint8_t*)"ScanSta=%d	ScanPer=%d	DisL=%d	DisR=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d\
+											LeftX=%d	LeftY=%d	RightX=%d	RightY=%d	BucX=%d	BucY=%d	delay=%d	cntdelay=%d\r\n",\
+				(int)Scan.ScanStatus,			(int)Scan.ScanPermitFlag,		(int)Scan.Probe_Left_Distance,	(int)Scan.Probe_Right_Distance,\
+				(int)Scan.GetBorderLeftFlag, 	(int)Scan.GetBorderRightFlag,	(int)Scan.ScanAngleStart,		(int)Scan.ScanAngleEnd,	\
+				(int)Scan.Probe_Border_Left_X,	(int)Scan.Probe_Border_Left_Y,	(int)Scan.Probe_Border_Right_X,	(int)Scan.Probe_Border_Right_Y,\
+				(int)Scan.Probe_Bucket_X,		(int)Scan.Probe_Bucket_Y,		(int)Scan.DelayFlag,			(int)Scan.CntDelayTime);
+				USART_OUT(UART4, (uint8_t*)"fireper=%d	firecmd=%d	tar0=%d	tar1=%d	tar2=%d	tar3=%d\r\n",\
+				(int)Scan.FirePermitFlag,		(int)PID_A.fire_command,\
+				(int)target[0], (int)target[1], (int)target[2], (int)target[3]);
+			}
+		}
 		
 		if(PID_x->V != 0 && Error_x->errCnt == 0)
 		{
@@ -234,8 +247,8 @@ void WalkTask(void)
 //		USART_OUT(UART4, (uint8_t*)"	 %d	",(int)PID_A.fire_command);
 //		USART_SendData(UART4,'\r');
 //		USART_SendData(UART4,'\n');
-		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
-		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
+//		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
+//		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
 		OSSemSet(PeriodSem, 0, &os_err);
 	}
 }
