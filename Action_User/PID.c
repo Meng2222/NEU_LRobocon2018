@@ -1095,7 +1095,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle - 0.6f;
+						float angle = pid->Angle - 0.1f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1297,7 +1297,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle + 0.6f;
+						float angle = pid->Angle + 0.1f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1394,6 +1394,7 @@ void WatchDog(PID_Value *Dog)
 {
 	Dog->food -- ;
 	if(Dog->food < 0) Dog->dogHungry = 1;
+	else Dog->dogHungry = 0;
 }
 
 void PriorityControl(PID_Value *PID,Err *err)
@@ -1408,6 +1409,7 @@ void PriorityControl(PID_Value *PID,Err *err)
 			prioritySum += Line_N[i].line_Priority;/*内三圈优先级求和*/
 		}
 	}
+	if(PID->Line_Num < 12 || (PID->Line_Num > 16 && PID->Line_Num <29)) Line_N[PID->Line_Num].line_Priority = 1000;
 	if(prioritySum >= 23500)/*最外圈走形状态*/
 	{
 		if(err->errCnt == 0)/*未避障状态*/

@@ -310,7 +310,7 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
 	
 	//ScanStatus = 0航向角转到扫描起始点
 	if(Scan->ScanStatus == 0)
-	{	
+	{
 		//设定目标桶号
 		for(Scan->i = 0; Scan->i < 4; Scan->i++)
 		{
@@ -399,7 +399,7 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
 		}			
 	}
 	
-	
+	Scan->FirePermitFlag = 0;
 	//ScanStatus = 2射球状态
 	if(Scan->ScanStatus == 2)
 	{
@@ -495,6 +495,6 @@ void SpitBall(void)
 	else
 	{
 		VelCrl(CAN2, 5, 70 * 32768);
-		VelCrl(CAN2, 6, 0 - 70 * 32768);		
+		VelCrl(CAN2, 6, 0 - 70 * 32768);
 	}
 }
