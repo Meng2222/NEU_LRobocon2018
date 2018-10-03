@@ -34,6 +34,8 @@
 #define COUNT_PER_DEGREE  (COUNT_PER_ROUND/360.0f)
 // 宏定义航向角减速比
 #define YAW_REDUCTION_RATIO (4.0f)
+#define BLACK_BALL (1)
+#define WHITE_BALL (0)
 // 发射航向角转换函数 由度转换为脉冲
 // yawAngle为角度，范围180到-180之间，初始位置为0度
 /*返回定位系统的角度*/

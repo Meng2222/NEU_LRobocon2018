@@ -787,7 +787,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 			if(ballcolor == 0) noneCnt += 1;
 			else if(ballcolor == 1) whiteCnt += 1;
 			else if(ballcolor == 2) blackCnt += 1;
-			if(ballcommand == 0)
+			if(ballcommand == WHITE_BALL)
 			{
 				if(noneCnt > 50)
 				{
@@ -796,7 +796,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 					posLast = pos;
 					pos += p_gun->push_pos_down;
 					PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
-					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0, Scan.FirePermitFlag = 0;
+					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0;
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 0);
 //					if(Debug == 1) USART_SendData(UART4,'\r');
 //					if(Debug == 1) USART_SendData(UART4,'\n');
@@ -836,7 +836,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 					posLast = pos;
 					pos += p_gun->push_pos_down;
 					PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
-					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0, Scan.FirePermitFlag = 0;
+					noneCnt = 0, whiteCnt = 0, blackCnt = 0, timeCnt = 0, timeDelay = 0;
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", 0);
 //					if(Debug == 1) USART_SendData(UART4,'\r');
 //					if(Debug == 1) USART_SendData(UART4,'\n');
@@ -868,7 +868,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 				}
 			}
 		}
-		if(posGap > 14000 || posGap < -14000)
+		if((0 < posGap && posGap < 8000) || (0 > posGap && posGap > -8000))
 		{
 			flag = 0;
 			if(pos-posLast > 16000 && flag2 == 0)
