@@ -791,13 +791,13 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		{
 			if(flag == 1) return;
 			timeDelay ++;
-			if(timeDelay < 60) return;
+			if(timeDelay < 80) return;
 			if(ballcolor == 0) noneCnt += 1;
 			else if(ballcolor == 1) whiteCnt += 1;
 			else if(ballcolor == 2) blackCnt += 1;
 			if(ballcommand == WHITE_BALL)
 			{
-				if(noneCnt > 40)
+				if(noneCnt > 50)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -810,7 +810,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(whiteCnt > 40)
+				else if(whiteCnt > 50)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -821,7 +821,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(blackCnt > 40)
+				else if(blackCnt > 50)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -837,7 +837,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 			}
 			else
 			{
-				if(noneCnt > 40)
+				if(noneCnt > 50)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -850,7 +850,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(blackCnt> 40)
+				else if(blackCnt> 50)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -861,7 +861,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(whiteCnt > 40)
+				else if(whiteCnt > 50)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
