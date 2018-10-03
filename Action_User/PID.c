@@ -797,7 +797,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 			else if(ballcolor == 2) blackCnt += 1;
 			if(ballcommand == WHITE_BALL)
 			{
-				if(noneCnt > 20)
+				if(noneCnt > 40)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -810,7 +810,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(whiteCnt > 20)
+				else if(whiteCnt > 40)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -821,7 +821,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(blackCnt > 20)
+				else if(blackCnt > 40)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -837,7 +837,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 			}
 			else
 			{
-				if(noneCnt > 20)
+				if(noneCnt > 40)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -850,7 +850,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(blackCnt> 20)
+				else if(blackCnt> 40)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -861,7 +861,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(whiteCnt > 20)
+				else if(whiteCnt > 40)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -952,8 +952,16 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 {
 	if(pid->stop == 1 && error->flag == 0)
 	{
-		if(pid->Line_Num < 17) pid->Line_Num %= 4;
-		else pid->Line_Num = 19;
+		if(pid->Line_Num < 17)
+		{
+			pid->Line_Num = pid->Line_Num % 4 + 1;
+			if(pid->Line_Num == 4) pid->Line_Num = 0;
+		}
+		else
+		{
+			pid->Line_Num = pid->Line_Num % 4 - 1;
+			if(pid->Line_Num == -1) pid->Line_Num = 3;
+		}
 		PID_Control(pid);
 		pid->V = 1000;
 		if(pid->Y > 1400 && pid->Y < 3400 && pid->X > 0-1000 && pid->X < 1000)
@@ -965,6 +973,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		}
 		return;
 	}
+	error->stop = 0;
 //	else if(pid->stop == 2 && error->flag == 0)
 //	{
 //		pid->vel = 0;
@@ -1388,7 +1397,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		error->Err_Y = pid->Y;
 	}
 	error->timeCnt++;
-	if(error->timeCnt > 150)
+	if(error->timeCnt > 200)
 	{
 		error->timeCnt = 0;
 		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));
