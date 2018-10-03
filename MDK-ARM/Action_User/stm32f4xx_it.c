@@ -43,6 +43,8 @@
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
 Msg_t frontwheelspeedBuffer;
+Msg_t collectball1speedBuffer;
+Msg_t collectball2speedBuffer;
 uint8_t i=0;	
 void CAN1_RX0_IRQHandler(void)
 {
@@ -90,8 +92,22 @@ void CAN2_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	CAN_RxMsg(CAN2,&StdId,buffer2,5); //reveive data
-//	if(StdId==0x01)
+	if(StdId==0x01)
 		ballColor=buffer2[2];
+	if(StdId==0x285)
+	{
+		for (i=0;i<8; i++)
+		{
+			collectball1speedBuffer.data8[i] = buffer2[i];
+		}
+	}	
+	if(StdId==0x286)
+	{
+		for (i=0;i<8; i++)
+		{
+			collectball2speedBuffer.data8[i] = buffer2[i];
+		}
+	}	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -124,6 +140,10 @@ void TIM2_IRQHandler(void)
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 		backwardCount++;
+		if(backwardCount>=810)
+		{
+			backwardCount=0;
+		}	
 		changeLightTime++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
@@ -138,7 +158,7 @@ void TIM2_IRQHandler(void)
 }
 int Get_Time_Flag(void)
 {
-	if(backwardCount>=1200)
+	if(backwardCount>=800)
 	{
 		backwardCount=0;
 		return 1;
