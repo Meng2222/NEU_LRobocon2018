@@ -53,6 +53,7 @@ void resetOK(void);
 int GetMotor1Speed(void);
 int GetMotor2Speed(void);
 int GetMotor7Pos(void);
+int GetMotor5Speed(void);
 int GetMotor6Speed(void);
 int GetMotor7Speed(void);
 #ifdef __cplusplus
