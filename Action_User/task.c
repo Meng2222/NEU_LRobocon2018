@@ -70,32 +70,32 @@ void ConfigTask(void)
 	int Laser_Right = 0;
 	KeyInit2();
 	KeyInit0();
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);                  //系统中断优先级分组2
-	TIM_Init(TIM2,999,83,0,0);                                       //时钟2初始化，1ms周期
-	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);                //can1初始化
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);                //can2初始化
-	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
-	ElmoInit(CAN2);                                                  //驱动器初始化
-	ElmoInit(CAN1);                                                  //驱动器初始化
-	VelLoopCfg(CAN1,2,16384000,32768000);                              //左电机速度环初始化
-	VelLoopCfg(CAN1,1,16384000,32768000);                              //右电机速度环初始化
-	VelLoopCfg(CAN2,5, 16384000, 16384000);                               //收球电机
-	VelLoopCfg(CAN2,6, 16384000, 16384000);                               //收球电机
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);					//系统中断优先级分组2
+	TIM_Init(TIM2,999,83,0,0);										//时钟2初始化，1ms周期
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);				//can1初始化
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);				//can2初始化
+	TIM_Delayms(TIM4,2000);											//延时2s，给定位系统准备时间
+	ElmoInit(CAN2);													//驱动器初始化
+	ElmoInit(CAN1);													//驱动器初始化
+	VelLoopCfg(CAN1,2,16384000,32768000);							//左电机速度环初始化
+	VelLoopCfg(CAN1,1,16384000,32768000);							//右电机速度环初始化
+	VelLoopCfg(CAN2,5, 16384000, 16384000);							//收球电机
+	VelLoopCfg(CAN2,6, 16384000, 16384000);							//收球电机
 	PosLoopCfg(CAN2,7, 16384000,16384000,20000000);
-	MotorOn(CAN1,1);                                                 //右电机使能
-	MotorOn(CAN1,2);                                                 //左电机使能
+	MotorOn(CAN1,1);												//右电机使能
+	MotorOn(CAN1,2);												//左电机使能
 	MotorOn(CAN2,5); 
 	MotorOn(CAN2,6);
 	MotorOn(CAN2,7);
-	USART3_Init(115200);                                             //串口3初始化，定位系统用
-	UART4_Init(921600);                                              //串口4初始化，与上位机通信用
+	USART3_Init(115200);											//串口3初始化，定位系统用
+	UART4_Init(921600);												//串口4初始化，与上位机通信用
 	UART5_Init(921600);
 	USART1_Init(921600);
 	if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_0) == 1) ballcommand = BLACK_BALL;
 	if(GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_4) == 0)
 	{
-		WaitOpsPrepare();                                                //等待定位系统准备完成
-		PID_Init(PID_x);                                                 //PID参数初始化
+		WaitOpsPrepare();											//等待定位系统准备完成
+		PID_Init(PID_x);											//PID参数初始化
 		CmdRecData.TarBucketNum_cmd = 0;
 		CmdRecData.FireFlag_cmd = 1;
 		CmdRecData.MoveFlag_cmd = 1;
@@ -142,6 +142,7 @@ void ConfigTask(void)
 		Scan.YawPosAngle_Offset = -3.3f;
 		Scan.Shooter_Vel_Offset = 2.8f;
 		Scan.SetFireFlag = 1;
+		Scan.ScanV = 0.2f;
 		
 		//设定各挡板边缘坐标值
 		Scan.Bucket_Border_X[0] =  2000.0;       Scan.Bucket_Border_Y[0] =   -54.0;
@@ -227,11 +228,12 @@ void WalkTask(void)
 			if(cntSendTime == 0)
 			{
 				//Scan参数
-				USART_OUT(UART4, (uint8_t*)"PosX=%d	PosY=%d	PosAng=%d	SetFlag=%d	ScanSta=%d	BucketNum=%d	ScanPer=%d i=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	tar0=%d	tar1=%d	tar2=%d	tar3=%d\r\n",\
-				(int)PID_A.X, 					(int)PID_A.Y, 					(int)PID_A.Angle,  (int)Scan.SetTimeFlag,\
-				(int)Scan.ScanStatus,			(int)Scan.BucketNum,     		(int)Scan.ScanPermitFlag, (int)Scan.i,\
-				(int)Scan.GetBorderLeftFlag, 	(int)Scan.GetBorderRightFlag,	(int)Scan.ScanAngleStart,		(int)Scan.ScanAngleEnd, (int)Scan.YawPosAngleSet,\
-				(int)Scan.DelayFlag,			(int)Scan.CntDelayTime, 		(int)target[0], 		(int)target[1], (int)target[2], (int)target[3]);
+				USART_OUT(UART4, (uint8_t*)"PosX=%d	PosY=%d	PosAng=%d	ScanSta=%d	BucketNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	tar0=%d	tar1=%d	tar2=%d	tar3=%d\r\n",\
+				(int)PID_A.X, 					(int)PID_A.Y, 					(int)PID_A.Angle,\
+				(int)Scan.ScanStatus,			(int)Scan.BucketNum,     		(int)Scan.ScanPermitFlag, 	(int)Scan.SetTimeFlag,	(int)Scan.SetFireFlag,\
+				(int)Scan.GetBorderLeftFlag, 	(int)Scan.GetBorderRightFlag,	(int)Scan.ScanAngleStart,	(int)Scan.ScanAngleEnd, (int)Scan.YawPosAngleSet,\
+				(int)Scan.DelayFlag,			(int)Scan.CntDelayTime,\
+				(int)target[0], 				(int)target[1], 				(int)target[2], 			(int)target[3]);
 			}
 		}
 		

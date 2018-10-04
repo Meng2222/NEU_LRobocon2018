@@ -307,7 +307,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 	if(Scan->DelayFlag)
 	{
 		Scan->CntDelayTime++;
-		if(Scan->CntDelayTime > 700)
+		if(Scan->CntDelayTime > 600)
 		{
 			Scan->DelayFlag = 0;
 			Scan->CntDelayTime = 0;
@@ -317,6 +317,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 			Scan->FirePermitFlag = 0;
 			Scan->GetBorderLeftFlag = 0;
 			Scan->GetBorderRightFlag = 0;
+			Scan->ScanV = 0.2f;
 		}
 	}
 	
@@ -370,7 +371,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		if(Scan->ScanPermitFlag == 1)
 		{
 			//如果在扫描状态时，炮台航向角设定值每10ms增加0.2°
-			Scan->YawPosAngleSet = Scan->YawPosAngleSet + 0.2f;
+			Scan->YawPosAngleSet = Scan->YawPosAngleSet + Scan->ScanV;
 			Scan->ShooterVelSet = 60.0f;
 		
 			//计算左右侧激光探测距离和探测点横轴坐标
@@ -460,6 +461,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 					}
 					Scan->YawPosAngleSet = Scan->ScanAngleStart;
 					Scan->ScanPermitFlag = 0;
+					Scan->ScanV = 0.1f;
 				}				
 			}
 		}			
@@ -506,7 +508,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		if(targets[Scan->BucketNum] > 0 && Scan->SetTimeFlag == 1)
 		{
 			Scan->SetTimeFlag = 0;
-			Scan->CntDelayTime = 650;
+			Scan->CntDelayTime = 550;
 			Scan->FirePermitFlag = 0;
 		}
 	}

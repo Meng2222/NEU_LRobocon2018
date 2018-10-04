@@ -116,6 +116,8 @@ typedef struct{
 	int GetBorderRightFlag;
 	int SetFireFlag;
 	
+	float ScanV;
+	
 	float Fort_X;                     //炮台横坐标                            单位mm
 	float Fort_Y;                     //炮台纵坐标                            单位mm
 	float Fort_Angle;                 //炮台航向角检测值换算绝对角度          单位°
