@@ -961,15 +961,15 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		}
 		else
 		{
-			if(pid->Line_Num < 17)
+			if(pid->Line_Num < 17 && pid->Line_Num > 3)
 			{
 				pid->Line_Num = pid->Line_Num % 4 + 1;
 				if(pid->Line_Num == 4) pid->Line_Num = 0;
 			}
-			else
+			else if(pid->Line_Num > 20)
 			{
-				pid->Line_Num = pid->Line_Num % 4 - 1;
-				if(pid->Line_Num == -1) pid->Line_Num = 3;
+				pid->Line_Num = pid->Line_Num % 4 - 1 + 17;
+				if(pid->Line_Num == 16) pid->Line_Num = 20;
 			}
 			PID_Control(pid);
 			pid->V = 1000;
