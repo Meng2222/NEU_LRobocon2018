@@ -47,7 +47,6 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
-int Get_Time_Flag(void);
 typedef union{
 	uint8_t data8[8];
 	int data32[2];

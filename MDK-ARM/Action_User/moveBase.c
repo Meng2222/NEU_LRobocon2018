@@ -249,9 +249,9 @@ void GetShootSituation(uint8_t StdId)
 }	
 int FirstshootJudge(void)
 {
-	int StdId,maxPriority;
+	int StdId=0,maxPriority=0,i=0;
 	maxPriority=bingoFlag[0][0];
-	for(int i=1;i<3;i++)
+	for(i=0;i<=3;i++)
 	{
 		if(bingoFlag[i][0]<bingoFlag[0][0])
 		{
@@ -302,33 +302,42 @@ void DecreaseR(int Radium)
 	if(RchangeFlag)
 		Rchange(-500);	
 }	
-extern int errFlag,semiPushCount,count,backwardCount;
+extern int errFlag,count,FindBallModel,banFirstShoot;
 extern float angle,speed,speedY,speedX;
+int errSituation1,errSituation2;
 void Avoidance()
 {
-		static int errSituation1,errSituation2,statusFlag,lastTime=0,time=0;
-		static float changeAngle;
+		static int errSituation3,statusFlag,lastTime=0,time=0,backwardCount;
+		static float changeAngle,speedAngle;
 		if(errFlag==1)
 		{	
+			backwardCount++;
 			if(errSituation1)
 			{
-				Kp=40;
+				Kp=20;
 				AnglePID(changeAngle,GetAngle());
-				Straight(-1500);
+				if(R<1600)
+					R+=500;
+				if(R>=1600)
+					R-=500;
+				Straight(-1400);
+				if(errTime%2==0&&statusFlag)
+				{
+					status=1-status;
+					statusFlag=0;
+				}	
 			}
 			if(errSituation2)
 			{
 				AnglePID(changeAngle,GetAngle());
 				Straight(1800);
 			}	
-			if(errTime%2==0&&statusFlag)
-			{
-				status=1-status;
-				statusFlag=0;
-				PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--semiPushCount)*PUSH_POSITION/2+count*PUSH_POSITION);
+			if(backwardCount>=60)	
+			{	errFlag=0;
+				backwardCount=0;
+				if(R>=1600)
+					banFirstShoot=150;
 			}	
-			if(Get_Time_Flag())	
-				errFlag=0;
 			time=0;
 			lastTime=0;
 			throwFlag=0;
@@ -336,33 +345,39 @@ void Avoidance()
 		else
 		{
 			time++;
+			GetFunction(lastX,lastY,x,y);
+			speedAngle=lAngle;
 			//与对手相持
-			if((fabs(atan((tan(angle)-speedY/speedX)/(1-tan(angle)*speedY/speedX)))*pi/180)<20&&speed>1200)
+			if(fabs(speedAngle-GetAngle())<20&&speed>1200)
 				lastTime=time;
 			else				
 			{
-				if((fabs(atan((tan(angle)-speedY/speedX)/(1-tan(angle)*speedY/speedX)))*pi/180)>20)
+				//情况2：被对方侧面推着跑，此时有一定速度，车身角度与速度角度不一致
+				if(fabs(speedAngle-GetAngle())>60&&speed>600)
 				{
 					errSituation2=1;
-					changeAngle=-atan(speedY/speedX)*180/pi;
+					errSituation1=0;
+					changeAngle=-speedAngle;
 				}	
-				else if(speed>1200)
+				//情况1：与对方正面相撞
+				else if(speed<1200)
 				{
 					errSituation1=1;
+					errSituation2=0;
 					GetFunction(x,y,0,2400);
 					if(R<=1100)
 						changeAngle=lAngle;
 					else
 						changeAngle=lAngle+180;
-				}			
-			}	
-			if(time-lastTime>=80)
+				}	
+			}				
+			if(time-lastTime>=50)
 			{	
 				errFlag=1;
 				statusFlag=1;
 				errTime++;
 				backwardCount=0;
-			}	
+			}		
 		}	
 }	
 /*激光模式*/

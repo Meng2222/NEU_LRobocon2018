@@ -125,7 +125,6 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
-int backwardCount=0;
 extern int changeLightTime;
 void TIM2_IRQHandler(void)
 {
@@ -139,11 +138,6 @@ void TIM2_IRQHandler(void)
 	OS_EXIT_CRITICAL();
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-		backwardCount++;
-		if(backwardCount>=810)
-		{
-			backwardCount=0;
-		}	
 		changeLightTime++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
@@ -156,16 +150,6 @@ void TIM2_IRQHandler(void)
 	}
 	OSIntExit();
 }
-int Get_Time_Flag(void)
-{
-	if(backwardCount>=800)
-	{
-		backwardCount=0;
-		return 1;
-	}
-	else
-		return 0;		
-}	
 void TIM1_UP_TIM10_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
