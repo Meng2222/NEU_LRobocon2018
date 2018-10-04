@@ -117,13 +117,13 @@ void ConfigTask(void)
 		
 		Gundata.Yaw_Angle_Offset[0] =  0.0f;  Gundata.Shooter_Vel_Offset[0] =  1.0f;
 		Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] =  1.0f;
-		Gundata.Yaw_Angle_Offset[2] =  1.0f;  Gundata.Shooter_Vel_Offset[2] =  1.0f;
+		Gundata.Yaw_Angle_Offset[2] =  0.0f;  Gundata.Shooter_Vel_Offset[2] =  1.0f;
 		Gundata.Yaw_Angle_Offset[3] =  0.0f;  Gundata.Shooter_Vel_Offset[3] =  1.0f;
 		
-		Gundata.Yaw_Angle_Offset[4] = -1.5f;  Gundata.Shooter_Vel_Offset[4] =  1.0f;
-		Gundata.Yaw_Angle_Offset[5] = -1.5f;  Gundata.Shooter_Vel_Offset[5] =  1.0f;
-		Gundata.Yaw_Angle_Offset[6] = -1.5f;  Gundata.Shooter_Vel_Offset[6] =  1.0f;
-		Gundata.Yaw_Angle_Offset[7] = -1.5f;  Gundata.Shooter_Vel_Offset[7] =  1.0f;
+		Gundata.Yaw_Angle_Offset[4] = -2.5f;  Gundata.Shooter_Vel_Offset[4] =  0.0f;
+		Gundata.Yaw_Angle_Offset[5] = -2.5f;  Gundata.Shooter_Vel_Offset[5] =  0.0f;
+		Gundata.Yaw_Angle_Offset[6] = -2.5f;  Gundata.Shooter_Vel_Offset[6] =  0.0f;
+		Gundata.Yaw_Angle_Offset[7] = -2.5f;  Gundata.Shooter_Vel_Offset[7] =  0.0f;
 		
 	//	memset(Gundata.Yaw_Angle_Offset, 0, 8);
 	//	memset(Gundata.Shooter_Vel_Offset, 0, 8);
@@ -137,9 +137,9 @@ void ConfigTask(void)
 		Scan.GetBorderLeftFlag = 0;
 		Scan.GetBorderRightFlag = 0;
 		Scan.ScanPermitFlag = 0;
-		Scan.Yaw_Zero_Offset = 0.5f;
-		Scan.YawPosAngle_Offset = 0.0f;
-		Scan.Shooter_Vel_Offset = 2.0f;
+		Scan.Yaw_Zero_Offset = 2.5f;
+		Scan.YawPosAngle_Offset = -2.5f;
+		Scan.Shooter_Vel_Offset = 4.0f;
 		
 		//设定各挡板边缘坐标值
 		Scan.Bucket_Border_X[0] =  2000.0;       Scan.Bucket_Border_Y[0] =   -54.0;
@@ -225,15 +225,11 @@ void WalkTask(void)
 			if(cntSendTime == 0)
 			{
 				//Scan参数
-				USART_OUT(UART4, (uint8_t*)"ScanSta=%d	ScanPer=%d	DisL=%d	DisR=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d\
-											LeftX=%d	LeftY=%d	RightX=%d	RightY=%d	BucX=%d	BucY=%d	delay=%d	cntdelay=%d\r\n",\
-				(int)Scan.ScanStatus,			(int)Scan.ScanPermitFlag,		(int)Scan.Probe_Left_Distance,	(int)Scan.Probe_Right_Distance,\
-				(int)Scan.GetBorderLeftFlag, 	(int)Scan.GetBorderRightFlag,	(int)Scan.ScanAngleStart,		(int)Scan.ScanAngleEnd,	\
-				(int)Scan.Probe_Border_Left_X,	(int)Scan.Probe_Border_Left_Y,	(int)Scan.Probe_Border_Right_X,	(int)Scan.Probe_Border_Right_Y,\
-				(int)Scan.Probe_Bucket_X,		(int)Scan.Probe_Bucket_Y,		(int)Scan.DelayFlag,			(int)Scan.CntDelayTime);
-				USART_OUT(UART4, (uint8_t*)"fireper=%d	firecmd=%d	tar0=%d	tar1=%d	tar2=%d	tar3=%d\r\n",\
-				(int)Scan.FirePermitFlag,		(int)PID_A.fire_command,\
-				(int)target[0], (int)target[1], (int)target[2], (int)target[3]);
+				USART_OUT(UART4, (uint8_t*)"PosX=%d	PosY=%d	PosAng=%d	ScanSta=%d	BucketNum=%d	ScanPer=%d i=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	tar0=%d	tar1=%d	tar2=%d	tar3=%d\r\n",\
+				(int)PID_A.X, 					(int)PID_A.Y, 					(int)PID_A.Angle,\
+				(int)Scan.ScanStatus,			(int)Scan.BucketNum,     		(int)Scan.ScanPermitFlag, (int)Scan.i,\
+				(int)Scan.GetBorderLeftFlag, 	(int)Scan.GetBorderRightFlag,	(int)Scan.ScanAngleStart,		(int)Scan.ScanAngleEnd, (int)Scan.YawPosAngleSet,\
+				(int)Scan.DelayFlag,			(int)Scan.CntDelayTime, 		(int)target[0], 		(int)target[1], (int)target[2], (int)target[3]);
 			}
 		}
 		

@@ -284,7 +284,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 * @author 陈昕炜
 * @note   用于Fort中
 */
-void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
+void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 {
 	//读取炮台航向角实际值
 	Scan->YawPosAngleRec = fort.yawPosReceive;
@@ -299,12 +299,14 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
 	if(Scan->DelayFlag)
 	{
 		Scan->CntDelayTime++;
-		if(Scan->CntDelayTime > 800)
+		if(Scan->CntDelayTime > 1000)
 		{
 			Scan->DelayFlag = 0;
 			Scan->CntDelayTime = 0;
 			Scan->ScanStatus = 0;
 			Scan->FirePermitFlag = 0;
+			Scan->GetBorderLeftFlag = 0;
+			Scan->GetBorderRightFlag = 0;
 		}
 	}
 	
@@ -312,15 +314,16 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
 	if(Scan->ScanStatus == 0)
 	{
 		//设定目标桶号
-		Scan->BucketNum++;
-		Scan->BucketNum = Scan->BucketNum % 4;
-//		for(Scan->i = 0; Scan->i < 4; Scan->i++)
-//		{
-//			if(targets[Scan->i] == 0)
-//			{
-//				Scan->BucketNum = Scan->i;
-//			}
-//		}
+//		Scan->BucketNum++;
+//		Scan->BucketNum = Scan->BucketNum % 4;
+		for(Scan->i = 0; Scan->i < 4; Scan->i++)
+		{
+			if(targets[Scan->i] == 0)
+			{
+				Pos->target_Num = Scan->i;
+				Scan->BucketNum = Scan->i;
+			}
+		}
 		
 		//炮塔到目标桶挡板边缘横轴距离以及计算指向挡板边缘航向角设定值A、B
 		Scan->FortToBorder_Distance_X = Scan->Bucket_Border_X[Scan->BucketNum * 2] - Scan->Fort_X;
@@ -357,7 +360,7 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
 		if(Scan->ScanPermitFlag == 1)
 		{
 			//如果在扫描状态时，炮台航向角设定值每10ms增加0.2°
-			Scan->YawPosAngleSet = Scan->YawPosAngleSet + 0.2f;
+			Scan->YawPosAngleSet = Scan->YawPosAngleSet + 0.1f;
 			Scan->ShooterVelSet = 60.0f;
 		
 			//计算左右侧激光探测距离和探测点横轴坐标
@@ -431,18 +434,18 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
 				{
 					if(Scan->GetBorderLeftFlag == 0 && Scan->GetBorderRightFlag == 0)
 					{
-						Scan->ScanAngleStart = Scan->ScanAngleStart - 10.0f;
-						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   + 10.0f;
+						Scan->ScanAngleStart = Scan->ScanAngleStart - 25.0f;
+						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   + 25.0f;
 					}
 					if(Scan->GetBorderLeftFlag == 0 && Scan->GetBorderRightFlag == 1)
 					{				
-						Scan->ScanAngleStart = Scan->ScanAngleStart - 10.0f;
-						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   - 10.0f;					
+						Scan->ScanAngleStart = Scan->ScanAngleStart - 25.0f;
+						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   - 25.0f;					
 					}
 					if(Scan->GetBorderLeftFlag == 1 && Scan->GetBorderRightFlag == 0)
 					{				
-						Scan->ScanAngleStart = Scan->ScanAngleStart + 10.0f;
-						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   + 10.0f;					
+						Scan->ScanAngleStart = Scan->ScanAngleStart + 25.0f;
+						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   + 25.0f;		
 					}
 					Scan->YawPosAngleSet = Scan->ScanAngleStart;
 					Scan->ScanPermitFlag = 0;
@@ -488,9 +491,9 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
 		}
 		
 		//判断数组0是否变1
-		if(targets[Scan->i] == 1)
+		if(targets[Scan->BucketNum] > 0)
 		{
-			Scan->CntDelayTime = 750;
+			Scan->CntDelayTime = 1100;
 		}
 	}
 }
