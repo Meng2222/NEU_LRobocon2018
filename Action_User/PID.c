@@ -952,24 +952,28 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 {
 	if(pid->stop == 1 && error->flag == 0)
 	{
-		if(pid->Line_Num < 17)
-		{
-			pid->Line_Num = pid->Line_Num % 4 + 1;
-			if(pid->Line_Num == 4) pid->Line_Num = 0;
-		}
-		else
-		{
-			pid->Line_Num = pid->Line_Num % 4 - 1;
-			if(pid->Line_Num == -1) pid->Line_Num = 3;
-		}
-		PID_Control(pid);
-		pid->V = 1000;
 		if(pid->Y > 1400 && pid->Y < 3400 && pid->X > 0-1000 && pid->X < 1000)
 		{
 			pid->vel = 0;
 			pid->V = 0;
 			error->stop = 1;
 			error->timeCnt = 0;
+		}
+		else
+		{
+			if(pid->Line_Num < 17)
+			{
+				pid->Line_Num = pid->Line_Num % 4 + 1;
+				if(pid->Line_Num == 4) pid->Line_Num = 0;
+			}
+			else
+			{
+				pid->Line_Num = pid->Line_Num % 4 - 1;
+				if(pid->Line_Num == -1) pid->Line_Num = 3;
+			}
+			PID_Control(pid);
+			pid->V = 1000;
+			error->stop = 0;
 		}
 		return;
 	}
@@ -1437,6 +1441,22 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 		{
 			if(Line_N[i].line_Priority >= 3) Line_N[i].line_Priority = 1000;
 			prioritySum += Line_N[i].line_Priority;/*内三圈优先级求和*/
+		}
+	}
+	if(targetn[0] + targetn[1] + targetn[2] + targetn[3] > 2)
+	{
+		err->errCnt += 1;
+		if(PID->fire_request == 1)
+		{
+			PID->stop = 1;
+			for( i = 0 ; i < 29 ; i ++ )/*锁住内三圈优先级*/
+			{
+				if(i < 12 || (i > 16 && i <29))
+				{
+					Line_N[i].line_Priority = 1000;
+					prioritySum += Line_N[i].line_Priority;/*内三圈优先级求和*/
+				}
+			}
 		}
 	}
 	if(PID->Line_Num < 12 || (PID->Line_Num > 16 && PID->Line_Num <29)) Line_N[PID->Line_Num].line_Priority = 1000;
