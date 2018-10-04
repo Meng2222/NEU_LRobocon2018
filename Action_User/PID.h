@@ -106,6 +106,8 @@ typedef struct PID
 	u8 fire_turn;
 	u8 dogHungry;
 	u8 stop;
+	u8 stop1;
+	u8 stop2;
 	Line_Value *l;
 	Arc_Value *r;
 	Coordinate_Value *c;

@@ -459,10 +459,10 @@ void PID_Line_Init(void)                                                     //Ö
 	
 	
 	
-	Line_N[40].x1 = -1800;
-	Line_N[40].y1 = 600;
-	Line_N[40].x2 = -1800;
-	Line_N[40].y2 = 4200;
+	Line_N[40].x1 = 2200;
+	Line_N[40].y1 = 200;
+	Line_N[40].x2 = 2200;
+	Line_N[40].y2 = 4600;
 	Line_N[40].line_kp = 20;
 	Line_N[40].line_A = 0;
 	Line_N[40].line_B = 0;
@@ -471,10 +471,10 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[40].line_Error = 0;
 	Line_N[40].line_Priority = 1000;
 	
-	Line_N[41].x1 = -1800;
-	Line_N[41].y1 = 600;
-	Line_N[41].x2 = -1800;
-	Line_N[41].y2 = 4200;
+	Line_N[41].x1 = 2200;
+	Line_N[41].y1 = 4600;
+	Line_N[41].x2 = -2200;
+	Line_N[41].y2 = 4600;
 	Line_N[41].line_kp = 20;
 	Line_N[41].line_A = 0;
 	Line_N[41].line_B = 0;
@@ -483,10 +483,10 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[41].line_Error = 0;
 	Line_N[41].line_Priority = 1000;
 	
-	Line_N[42].x1 = -1800;
-	Line_N[42].y1 = 600;
-	Line_N[42].x2 = -1800;
-	Line_N[42].y2 = 4200;
+	Line_N[42].x1 = -2200;
+	Line_N[42].y1 = 4600;
+	Line_N[42].x2 = -2200;
+	Line_N[42].y2 = 200;
 	Line_N[42].line_kp = 20;
 	Line_N[42].line_A = 0;
 	Line_N[42].line_B = 0;
@@ -495,10 +495,10 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[42].line_Error = 0;
 	Line_N[42].line_Priority = 1000;
 	
-	Line_N[43].x1 = -1800;
-	Line_N[43].y1 = 600;
-	Line_N[43].x2 = -1800;
-	Line_N[43].y2 = 4200;
+	Line_N[43].x1 = -2200;
+	Line_N[43].y1 = 200;
+	Line_N[43].x2 = 2200;
+	Line_N[43].y2 = 200;
 	Line_N[43].line_kp = 20;
 	Line_N[43].line_A = 0;
 	Line_N[43].line_B = 0;
@@ -507,10 +507,12 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[43].line_Error = 0;
 	Line_N[43].line_Priority = 1000;
 	
-	Line_N[50].x1 = -1800;
-	Line_N[50].y1 = 600;
-	Line_N[50].x2 = -1800;
-	Line_N[50].y2 = 4200;
+	
+	
+	Line_N[50].x1 = -2200;
+	Line_N[50].y1 = 200;
+	Line_N[50].x2 = -2200;
+	Line_N[50].y2 = 4600;
 	Line_N[50].line_kp = 20;
 	Line_N[50].line_A = 0;
 	Line_N[50].line_B = 0;
@@ -519,10 +521,10 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[50].line_Error = 0;
 	Line_N[50].line_Priority = 1000;
 	
-	Line_N[51].x1 = -1800;
-	Line_N[51].y1 = 600;
-	Line_N[51].x2 = -1800;
-	Line_N[51].y2 = 4200;
+	Line_N[51].x1 = -2200;
+	Line_N[51].y1 = 4600;
+	Line_N[51].x2 = 2200;
+	Line_N[51].y2 = 4600;
 	Line_N[51].line_kp = 20;
 	Line_N[51].line_A = 0;
 	Line_N[51].line_B = 0;
@@ -531,10 +533,10 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[51].line_Error = 0;
 	Line_N[51].line_Priority = 1000;
 	
-	Line_N[52].x1 = -1800;
-	Line_N[52].y1 = 600;
-	Line_N[52].x2 = -1800;
-	Line_N[52].y2 = 4200;
+	Line_N[52].x1 = 2200;
+	Line_N[52].y1 = 4600;
+	Line_N[52].x2 = 2200;
+	Line_N[52].y2 = 200;
 	Line_N[52].line_kp = 20;
 	Line_N[52].line_A = 0;
 	Line_N[52].line_B = 0;
@@ -543,10 +545,10 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[52].line_Error = 0;
 	Line_N[52].line_Priority = 1000;
 	
-	Line_N[53].x1 = -1800;
-	Line_N[53].y1 = 600;
-	Line_N[53].x2 = -1800;
-	Line_N[53].y2 = 4200;
+	Line_N[53].x1 = 2200;
+	Line_N[53].y1 = 200;
+	Line_N[53].x2 = -2200;
+	Line_N[53].y2 = 200;
 	Line_N[53].line_kp = 20;
 	Line_N[53].line_A = 0;
 	Line_N[53].line_B = 0;
@@ -686,19 +688,6 @@ void PID_Control(PID_Value *p)                                               //P
 	p->Error = p->Angle_Set - p->Angle;
 	if((p->Error) > 180) p->Error -= 360;
 	else if((p->Error) < -180) p->Error += 360;
-//	if ((p->Error) > -10 && (p->Error) < 10)
-//	{
-//		p->kp = 20;
-//		p->kd = 100;
-//		p->ki = 0.05;
-//	}
-//	else
-//	{
-//		p->kp = 20;
-//		p->kd = 50;
-//		p->ki = 0;
-//	}
-//	if(p->V_Set < 100 && p->V_Set > -100) p->kp = 5;
 	p->ITerm += p->ki * p->Error;
 	p->ITerm = constrain(p->ITerm,2000.0f,-2000.0f);
 	p->DTerm = p->Angle_Last - p->Angle;
@@ -1424,67 +1413,94 @@ void WatchDog(PID_Value *Dog)
 	if(Dog->food < 0) Dog->dogHungry = 1;
 	else Dog->dogHungry = 0;
 }
-
 void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 {
-	int i = 0;
-	int prioritySum = 0;
-	PID->timeCnt ++;
-	if(err->flag == 1) return;
-	for( i = 0 ; i < 29 ; i ++ )/*Ëø×¡ÄÚÈýÈ¦ÓÅÏÈ¼¶*/
+	int i = 0;/*forÑ­»·²ÎÊý*/
+	int prioritySum = 0;/*Í³¼ÆÓÅÏÈ¼¶Ê±ÓÃ*/
+	PID->timeCnt ++ ;/*±ÈÈü¼ÆÊ±*/
+	if(err->flag == 1) return;/*±ÜÕÏÊ±ÍË³ö*/
+	if(PID->timeCnt < 1500) return;/*15sÄÚÕý³£ÊÕÇò*/
+	else if(PID->timeCnt < 18000)/*ÔÝÊ±ÉèÖÃÎª180s±ÈÈüÊ±³¤*/
 	{
-		if(i < 12 || (i > 16 && i <29))
+		if(PID->dogHungry == 0 && PID->stop1 == 0)/*15sºóÓÐÇòÈ¥³¡µØÖÐÑëÉ¨ÃèÉäÇò*//*Ìõ¼þÎªÎ´½øÈë¹ýÎÞÇò×´Ì¬*/
 		{
-			if(Line_N[i].line_Priority >= 3) Line_N[i].line_Priority = 1000;
-			prioritySum += Line_N[i].line_Priority;/*ÄÚÈýÈ¦ÓÅÏÈ¼¶ÇóºÍ*/
-		}
-	}
-	if(PID->Line_Num < 12 || (PID->Line_Num > 16 && PID->Line_Num <29)) Line_N[PID->Line_Num].line_Priority = 1000;
-	if((prioritySum >= 23500 && ((PID->Line_Num > 11 && PID->Line_Num < 17) || PID->Line_Num > 28)) || PID->stop == 1)/*×îÍâÈ¦×ßÐÎ×´Ì¬*/
-	{
-		if(err->errCnt == 0 && PID->timeCnt < 3000)/*Î´±ÜÕÏ×´Ì¬*/
-		{
-			if(PID->dogHungry == 0)/*ÓÐÇò*/
-			{
-				if(targetn[0] + targetn[1] + targetn[2] + targetn[3] >= 2) err->errCnt += 1;
-				return;
-			}
-			else/*ÎÞÇò*/
-			{
-				if(PID->timeCnt > 2400) err->errCnt += 1;
-				return;
-			}
-		}
-		else/*É¨Ãè×ßÐÎ*/
-		{
-			if(PID->dogHungry == 0)/*ÓÐÇò*/
-			{
-				PID->stop = 1;/*È¥³¡ÖÐÑëÍ¶Çò*/
-			}
-			else/*ÎÞÇò*/
-			{
-				PID->stop = 0;
-				if(PID->Line_Num < 17)
+				for(i = 0 ; i < 4 ; i ++ )/*¸üÐÂ×ßÐÎÓÅÏÈ¼¶*/
 				{
-					for(i = 0 ; i < 4 ; i ++ )
-					{
-//						Line_N[i].line_Priority = 0;
-						Line_N[i + 4].line_Priority = 1;
-						Line_N[i + 8].line_Priority = 2;
-						Line_N[i + 12].line_Priority = 3;
-					}
+					Line_N[i + 17].line_Priority = Line_N[i].line_Priority = 1000;
+					Line_N[i + 21].line_Priority = Line_N[i + 4].line_Priority = 1000;
+					Line_N[i + 25].line_Priority = Line_N[i + 8].line_Priority = 1000;
+					Line_N[i + 29].line_Priority = Line_N[i + 12].line_Priority = 1;
+					Line_N[i + 40].line_Priority = Line_N[i + 50].line_Priority = 2;
 				}
-				else
-				{
-					for(i = 0 ; i < 4 ; i ++ )
-					{
-//						Line_N[i + 17].line_Priority = 0;
-						Line_N[i + 21].line_Priority = 1;
-						Line_N[i + 25].line_Priority = 2;
-						Line_N[i + 29].line_Priority = 3;
-					}
-				}
-			}
+				PID->stop = 1;
+		}
+		else/*15sºó½øÈëÎÞÇò×´Ì¬£¬ÏÈÈ¥É¨±ß£¬ÔÙ±ä¹ìÉ¨ÄÚ³¡£¬ÆÚ¼äÓÐÇò½øÈë´ý·¢×´Ì¬Á¢¼´ÕÒ×î½üµÄÎ´Í¶ÇòÍ°Í¶Çò£¬Ò»Ìõ±ßÉÏ¿ÉÍ¶Á½¸öÍ°*/
+		{
+			PID->stop1 = 1;/*Í£Ö¹ÖÐ³¡É¨ÃèÄ£Ê½£¬¿ªÊ¼±ßÊÕÇò±ßÉ¨ÃèÍ¶Çò*/
+			
 		}
 	}
 }
+//void PriorityControl(PID_Value *PID,Err *err,int targetn[])
+//{
+//	int i = 0;
+//	int prioritySum = 0;
+//	PID->timeCnt ++;
+//	if(err->flag == 1) return;
+//	for( i = 0 ; i < 29 ; i ++ )/*Ëø×¡ÄÚÈýÈ¦ÓÅÏÈ¼¶*/
+//	{
+//		if(i < 12 || (i > 16 && i < 29))
+//		{
+//			if(Line_N[i].line_Priority >= 3) Line_N[i].line_Priority = 1000;
+//			prioritySum += Line_N[i].line_Priority;/*ÄÚÈýÈ¦ÓÅÏÈ¼¶ÇóºÍ*/
+//		}
+//	}
+//	if(PID->Line_Num < 12 || (PID->Line_Num > 16 && PID->Line_Num <29)) Line_N[PID->Line_Num].line_Priority = 1000;
+//	if((prioritySum >= 23500 && ((PID->Line_Num > 11 && PID->Line_Num < 17) || PID->Line_Num > 28)) || PID->stop == 1)/*×îÍâÈ¦×ßÐÎ×´Ì¬*/
+//	{
+//		if(err->errCnt == 0 && PID->timeCnt < 3000)/*Î´±ÜÕÏ×´Ì¬*/
+//		{
+//			if(PID->dogHungry == 0)/*ÓÐÇò*/
+//			{
+//				if(targetn[0] + targetn[1] + targetn[2] + targetn[3] >= 2) err->errCnt += 1;
+//				return;
+//			}
+//			else/*ÎÞÇò*/
+//			{
+//				if(PID->timeCnt > 2400) err->errCnt += 1;
+//				return;
+//			}
+//		}
+//		else/*É¨Ãè×ßÐÎ*/
+//		{
+//			if(PID->dogHungry == 0)/*ÓÐÇò*/
+//			{
+//				PID->stop = 1;/*È¥³¡ÖÐÑëÍ¶Çò*/
+//			}
+//			else/*ÎÞÇò*/
+//			{
+//				PID->stop = 0;
+//				if(PID->Line_Num < 17)
+//				{
+//					for(i = 0 ; i < 4 ; i ++ )
+//					{
+////						Line_N[i].line_Priority = 0;
+//						Line_N[i + 4].line_Priority = 2;
+//						Line_N[i + 8].line_Priority = 3;
+//						Line_N[i + 12].line_Priority = 1;
+//					}
+//				}
+//				else
+//				{
+//					for(i = 0 ; i < 4 ; i ++ )
+//					{
+////						Line_N[i + 17].line_Priority = 0;
+//						Line_N[i + 21].line_Priority = 2;
+//						Line_N[i + 25].line_Priority = 3;
+//						Line_N[i + 29].line_Priority = 1;
+//					}
+//				}
+//			}
+//		}
+//	}
+//}
