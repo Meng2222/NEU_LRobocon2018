@@ -212,6 +212,11 @@ void WalkTask(void)
 		Scan_Operation(&Scan, PID_x, target);
 		YawPosCtrl(Scan.YawPosAngleSet);
 		ShooterVelCtrl(Scan.ShooterVelSet);}
+		else
+		{
+			YawPosCtrl(0);
+			ShooterVelCtrl(50);
+		}
 
 		if(fortDebug == 1)
 		{
@@ -245,11 +250,6 @@ void WalkTask(void)
 		}
 		if(pidDebug) UART4_OUT(PID_x,Error_x);
 		shoot(PID_x,target,shootDebug);
-//		USART_OUT(UART4, (uint8_t*)"	 %d	",(int)PID_A.fire_command);
-//		USART_SendData(UART4,'\r');
-//		USART_SendData(UART4,'\n');
-//		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\r');
-//		if(fortDebug == 1 || pidDebug == 1) USART_SendData(UART4,'\n');
 		OSSemSet(PeriodSem, 0, &os_err);
 	}
 }

@@ -492,7 +492,7 @@ void Scan_Operation(ScanData *Scan, PID_Value const *Pos, int targets[])
 		{
 			Scan->CntDelayTime = 750;
 		}
-	}	
+	}
 }
 
 
