@@ -879,7 +879,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		if((0 < posGap && posGap < 8000) || (0 > posGap && posGap > -8000))
 		{
 			flag = 0;
-			if(pos-posLast > 16000 && flag2 == 0)
+			if(pos-posLast > 8000 && flag2 == 0)
 			{
 				flag2 = 1;
 				targets[p_gun->target_Num] += 1;

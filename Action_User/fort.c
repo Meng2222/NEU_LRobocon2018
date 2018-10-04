@@ -303,15 +303,17 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 	Scan->Fort_Y = Pos->Y + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0f);
 	Scan->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive - Scan->Yaw_Zero_Offset);
 	
-	//扫描时间计时，4s时强制将ScanStatus置为0
+	//扫描时间计时，6s时强制将ScanStatus置为0
 	if(Scan->DelayFlag)
 	{
 		Scan->CntDelayTime++;
-		if(Scan->CntDelayTime > 1000)
+		if(Scan->CntDelayTime > 700)
 		{
 			Scan->DelayFlag = 0;
 			Scan->CntDelayTime = 0;
 			Scan->ScanStatus = 0;
+			Scan->SetTimeFlag = 1;
+			Scan->SetFireFlag = 1;
 			Scan->FirePermitFlag = 0;
 			Scan->GetBorderLeftFlag = 0;
 			Scan->GetBorderRightFlag = 0;
@@ -337,12 +339,12 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		Scan->FortToBorder_Distance_X = Scan->Bucket_Border_X[Scan->BucketNum * 2] - Scan->Fort_X;
 		Scan->FortToBorder_Distance_Y = Scan->Bucket_Border_Y[Scan->BucketNum * 2] - Scan->Fort_Y;
 		Scan->ScanAngleTar = Tar_Angle_Operation(Scan->FortToBorder_Distance_X, Scan->FortToBorder_Distance_Y);
-		Scan->ScanAngleEnd = Constrain_float_Angle(Pos->Angle - Scan->ScanAngleTar + Scan->Yaw_Zero_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec + 10.0f;	
+		Scan->ScanAngleEnd = Constrain_float_Angle(Pos->Angle - Scan->ScanAngleTar + Scan->Yaw_Zero_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec + 15.0f;	
 
 		Scan->FortToBorder_Distance_X = Scan->Bucket_Border_X[Scan->BucketNum * 2 + 1] - Scan->Fort_X;
 		Scan->FortToBorder_Distance_Y = Scan->Bucket_Border_Y[Scan->BucketNum * 2 + 1] - Scan->Fort_Y;	
 		Scan->ScanAngleTar = Tar_Angle_Operation(Scan->FortToBorder_Distance_X, Scan->FortToBorder_Distance_Y);
-		Scan->ScanAngleStart  = Constrain_float_Angle(Pos->Angle - Scan->ScanAngleTar + Scan->Yaw_Zero_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec - 10.0f;		
+		Scan->ScanAngleStart  = Constrain_float_Angle(Pos->Angle - Scan->ScanAngleTar + Scan->Yaw_Zero_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec - 15.0f;		
 		
 		//航向角设定为位于最左侧的扫描起始点
 		Scan->YawPosAngleSet = Scan->ScanAngleStart;	
@@ -429,6 +431,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 				
 				if(Scan->GetBorderLeftFlag == 1 && Scan->GetBorderRightFlag == 1)
 				{
+					
 					Scan->Probe_Border_Left_X_Temp  = Scan->Probe_Border_Left_X;
 					Scan->Probe_Border_Left_Y_Temp  = Scan->Probe_Border_Left_Y;
 					Scan->Probe_Border_Right_X_Temp = Scan->Probe_Border_Right_X;	
@@ -493,15 +496,18 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		Scan->YawPosAngleSet = Constrain_float_Angle(Pos->Angle - Scan->YawPosAngleTar + Scan->Yaw_Zero_Offset + Scan->YawPosAngle_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec;	
 
 		//到达航向角和射球电机转速设定值时允许开火
-		if((fabs(Scan->YawPosAngleRec - Scan->YawPosAngleSet) < 1.0f) && (fabs(Scan->ShooterVelRec - Scan->ShooterVelSet) < 1.0f))
+		if((fabs(Scan->YawPosAngleRec - Scan->YawPosAngleSet) < 1.0f) && (fabs(Scan->ShooterVelRec - Scan->ShooterVelSet) < 2.0f) && Scan->SetFireFlag == 1)
 		{
 			Scan->FirePermitFlag = 1;
+			Scan->SetFireFlag = 0;
 		}
 		
 		//判断数组0是否变1
-		if(targets[Scan->BucketNum] > 0)
+		if(targets[Scan->BucketNum] > 0 && Scan->SetTimeFlag == 1)
 		{
-			Scan->CntDelayTime = 950;
+			Scan->SetTimeFlag = 0;
+			Scan->CntDelayTime = 650;
+			Scan->FirePermitFlag = 0;
 		}
 	}
 }

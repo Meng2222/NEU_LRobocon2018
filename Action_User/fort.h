@@ -110,9 +110,11 @@ typedef struct{
 	int BucketNum;                    //目标桶号
 	int i;
 	int DelayFlag;
-	int CntDelayTime;	
+	int CntDelayTime;
+	int SetTimeFlag;	
 	int GetBorderLeftFlag;
 	int GetBorderRightFlag;
+	int SetFireFlag;
 	
 	float Fort_X;                     //炮台横坐标                            单位mm
 	float Fort_Y;                     //炮台纵坐标                            单位mm
@@ -143,6 +145,10 @@ typedef struct{
 	float Probe_Border_Left_Y_Temp;
 	float Probe_Border_Right_X_Temp;
 	float Probe_Border_Right_Y_Temp;
+	
+	float Probe_Border_Distance_X;
+	float Probe_Border_Distance_Y;
+	float Probe_Border_Distance;
 	
 	float Probe_Border_Left_X;        //左侧挡板边缘横坐标					  单位mm
 	float Probe_Border_Left_Y;        //左侧挡板边缘纵坐标					  单位mm
