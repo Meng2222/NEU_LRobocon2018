@@ -107,7 +107,7 @@ void ConfigTask(void)
 		
 		//距离精度
 		Gundata.Distance_Accuracy = 10.0;
-		Gundata.Yaw_Zero_Offset = 2.5f;
+		Gundata.Yaw_Zero_Offset = 1.5f;
 		
 		//设定各桶编号及坐标
 		Gundata.Bucket_X[0] =  2200.0;      Gundata.Bucket_Y[0] =  200.0;
@@ -115,15 +115,15 @@ void ConfigTask(void)
 		Gundata.Bucket_X[2] = -2200.0;      Gundata.Bucket_Y[2] = 4600.0;
 		Gundata.Bucket_X[3] = -2200.0;      Gundata.Bucket_Y[3] =  200.0;
 		
-		Gundata.Yaw_Angle_Offset[0] =  0.0f;  Gundata.Shooter_Vel_Offset[0] =  1.0f;
-		Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] =  1.0f;
-		Gundata.Yaw_Angle_Offset[2] =  0.0f;  Gundata.Shooter_Vel_Offset[2] =  1.0f;
-		Gundata.Yaw_Angle_Offset[3] =  0.0f;  Gundata.Shooter_Vel_Offset[3] =  1.0f;
+		Gundata.Yaw_Angle_Offset[0] =  0.0f;  Gundata.Shooter_Vel_Offset[0] =  0.0f;
+		Gundata.Yaw_Angle_Offset[1] =  0.0f;  Gundata.Shooter_Vel_Offset[1] =  0.0f;
+		Gundata.Yaw_Angle_Offset[2] =  0.0f;  Gundata.Shooter_Vel_Offset[2] =  0.0f;
+		Gundata.Yaw_Angle_Offset[3] =  0.0f;  Gundata.Shooter_Vel_Offset[3] =  0.0f;
 		
-		Gundata.Yaw_Angle_Offset[4] = -2.5f;  Gundata.Shooter_Vel_Offset[4] =  0.0f;
-		Gundata.Yaw_Angle_Offset[5] = -2.5f;  Gundata.Shooter_Vel_Offset[5] =  0.0f;
-		Gundata.Yaw_Angle_Offset[6] = -2.5f;  Gundata.Shooter_Vel_Offset[6] =  0.0f;
-		Gundata.Yaw_Angle_Offset[7] = -2.5f;  Gundata.Shooter_Vel_Offset[7] =  0.0f;
+		Gundata.Yaw_Angle_Offset[4] =  0.0f;  Gundata.Shooter_Vel_Offset[4] =  0.0f;
+		Gundata.Yaw_Angle_Offset[5] =  0.0f;  Gundata.Shooter_Vel_Offset[5] =  0.0f;
+		Gundata.Yaw_Angle_Offset[6] =  0.0f;  Gundata.Shooter_Vel_Offset[6] =  0.0f;
+		Gundata.Yaw_Angle_Offset[7] =  0.0f;  Gundata.Shooter_Vel_Offset[7] =  0.0f;
 		
 	//	memset(Gundata.Yaw_Angle_Offset, 0, 8);
 	//	memset(Gundata.Shooter_Vel_Offset, 0, 8);
@@ -137,9 +137,9 @@ void ConfigTask(void)
 		Scan.GetBorderLeftFlag = 0;
 		Scan.GetBorderRightFlag = 0;
 		Scan.ScanPermitFlag = 0;
-		Scan.Yaw_Zero_Offset = 2.5f;
-		Scan.YawPosAngle_Offset = -2.5f;
-		Scan.Shooter_Vel_Offset = 4.0f;
+		Scan.Yaw_Zero_Offset = 1.5f;
+		Scan.YawPosAngle_Offset = 0.0f;
+		Scan.Shooter_Vel_Offset = 0.0f;
 		
 		//设定各挡板边缘坐标值
 		Scan.Bucket_Border_X[0] =  2000.0;       Scan.Bucket_Border_Y[0] =   -54.0;
