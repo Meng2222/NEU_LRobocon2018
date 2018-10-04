@@ -356,11 +356,11 @@ void GetValueFromPC(u8 data)
 	{
 		if(bufferI_cmd > 4 && strncmp(buffer_cmd, "YAO+", 4) == 0)//设置航向角度补偿
 		{
-			Gundata.Yaw_Angle_Offset[(int)(buffer_cmd[4] - 0x30)] = (float)(buffer_cmd[5] - 0x30) * 10.0f + (float)(buffer_cmd[6] - 0x30) * 1.0f + ((float)(buffer_cmd[7] - 0x30)) * 0.1f;
+			Gundata.YawAngle_Offset[(int)(buffer_cmd[4] - 0x30)] = (float)(buffer_cmd[5] - 0x30) * 10.0f + (float)(buffer_cmd[6] - 0x30) * 1.0f + ((float)(buffer_cmd[7] - 0x30)) * 0.1f;
 		}
 		else if(bufferI_cmd > 4 && strncmp(buffer_cmd, "YAO-", 4) == 0)
 		{
-			Gundata.Yaw_Angle_Offset[(int)(buffer_cmd[4] - 0x30)] = ((float)(buffer_cmd[5] - 0x30) * 10.0f + (float)(buffer_cmd[6] - 0x30) * 1.0f + ((float)(buffer_cmd[7] - 0x30)) * 0.1f) * -1.0f;
+			Gundata.YawAngle_Offset[(int)(buffer_cmd[4] - 0x30)] = ((float)(buffer_cmd[5] - 0x30) * 10.0f + (float)(buffer_cmd[6] - 0x30) * 1.0f + ((float)(buffer_cmd[7] - 0x30)) * 0.1f) * -1.0f;
 		}
 		else if(bufferI_cmd > 4 && strncmp(buffer_cmd, "YZO+", 4) == 0)//设置航向电机归零补偿角度
 		{
@@ -379,11 +379,11 @@ void GetValueFromPC(u8 data)
 		
 		if(bufferI_cmd > 4 && strncmp(buffer_cmd, "SVO+", 4) == 0)//设置射球电机转速补偿
 		{
-			Gundata.Shooter_Vel_Offset[(int)(buffer_cmd[4] - 0x30)] = (float)(buffer_cmd[5] - 0x30) * 10.0f + (float)(buffer_cmd[6] - 0x30) * 1.0f + ((float)(buffer_cmd[7] - 0x30)) * 0.1f;
+			Gundata.ShooterVel_Offset[(int)(buffer_cmd[4] - 0x30)] = (float)(buffer_cmd[5] - 0x30) * 10.0f + (float)(buffer_cmd[6] - 0x30) * 1.0f + ((float)(buffer_cmd[7] - 0x30)) * 0.1f;
 		}
 		else if(bufferI_cmd > 4 && strncmp(buffer_cmd, "SVO-", 4) == 0)
 		{
-			Gundata.Shooter_Vel_Offset[(int)(buffer_cmd[4] - 0x30)] = ((float)(buffer_cmd[5] - 0x30) * 10.0f + (float)(buffer_cmd[6] - 0x30) * 1.0f + ((float)(buffer_cmd[7] - 0x30)) * 0.1f) * -1.0f;
+			Gundata.ShooterVel_Offset[(int)(buffer_cmd[4] - 0x30)] = ((float)(buffer_cmd[5] - 0x30) * 10.0f + (float)(buffer_cmd[6] - 0x30) * 1.0f + ((float)(buffer_cmd[7] - 0x30)) * 0.1f) * -1.0f;
 		}		
 		else if(bufferI_cmd > 2 && strncmp(buffer_cmd, "VE", 2) == 0)//设置射球电机转速
 		{

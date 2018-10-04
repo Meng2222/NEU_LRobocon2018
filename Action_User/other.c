@@ -432,7 +432,7 @@ void ShooterVel_Record(void)//¼ÇÂ¼Êý¾Ý
 	shooterVel.p30=shooterVel.p20;
 	shooterVel.p20=shooterVel.p10;
 	shooterVel.p10=shooterVel.now;
-	shooterVel.now=Gundata.ShooterVelRec;
+	shooterVel.now=Gundata.ShooterVel_Rec;
 }
 
 int ifShootFlag=0;
