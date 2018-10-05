@@ -442,7 +442,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 			}
 			else
 			{
-				Scan->GetBorderRightFlag = 0;				
+				Scan->GetBorderRightFlag = 0;
 			}
 			
 			
