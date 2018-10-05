@@ -1329,7 +1329,7 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 				Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 2;
 				Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 1;
 				Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 0;
-				Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 1000;
+				Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 4;
 			}
 		}
 		
