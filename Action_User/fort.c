@@ -303,7 +303,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 	if(Scan->DelayFlag)
 	{
 		Scan->CntDelayTime++;
-		if(Scan->CntDelayTime > 1000)
+		if(Scan->CntDelayTime > 3000)
 		{
 			Scan->DelayFlag = 0;
 			Scan->CntDelayTime = 0;
@@ -364,7 +364,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		if(Scan->ScanPermitFlag == 1)
 		{
 			//如果在扫描状态时，炮台航向角设定值每10ms增加0.2°
-			Scan->YawPosAngleSet = Scan->YawPosAngleSet + 0.1f;
+			Scan->YawPosAngleSet = Scan->YawPosAngleSet + 0.05f;
 			Scan->ShooterVelSet = 60.0f;
 		
 			//计算左右侧激光探测距离和探测点横轴坐标
@@ -497,7 +497,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		//判断数组0是否变1
 		if(targets[Scan->BucketNum] > 0)
 		{
-			Scan->CntDelayTime = 1100;
+			Scan->CntDelayTime = 350.f;
 		}
 	}
 }

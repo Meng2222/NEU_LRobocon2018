@@ -77,7 +77,7 @@ void PID_Line_Init(void)                                                     //÷
 	Line_N[2].line_C = 0;
 	Line_N[2].line_Angle = 0;
 	Line_N[2].line_Error = 0;
-	Line_N[2].line_Priority = 0;
+	Line_N[2].line_Priority = 1000;
 	
 	Line_N[3].x1 = -600;
 	Line_N[3].y1 = 1800;
@@ -125,7 +125,7 @@ void PID_Line_Init(void)                                                     //÷
 	Line_N[6].line_C = 0;
 	Line_N[6].line_Angle = 0;
 	Line_N[6].line_Error = 0;
-	Line_N[6].line_Priority = 1000;
+	Line_N[6].line_Priority = 0;
 	
 	Line_N[7].x1 = -1000;
 	Line_N[7].y1 = 1400;
@@ -185,7 +185,7 @@ void PID_Line_Init(void)                                                     //÷
 	Line_N[11].line_C = 0;
 	Line_N[11].line_Angle = 0;
 	Line_N[11].line_Error = 0;
-	Line_N[11].line_Priority = 0;
+	Line_N[11].line_Priority = 1000;
 	
 	Line_N[12].x1 = 1800;
 	Line_N[12].y1 = 600;
@@ -319,7 +319,7 @@ void PID_Line_Init(void)                                                     //÷
 	Line_N[20].line_C = 0;
 	Line_N[20].line_Angle = 0;
 	Line_N[20].line_Error = 0;
-	Line_N[20].line_Priority = 0;
+	Line_N[20].line_Priority = 1000;
 	
 	Line_N[23].x1 = 600;
 	Line_N[23].y1 = 1800;
@@ -367,7 +367,7 @@ void PID_Line_Init(void)                                                     //÷
 	Line_N[24].line_C = 0;
 	Line_N[24].line_Angle = 0;
 	Line_N[24].line_Error = 0;
-	Line_N[24].line_Priority = 1000;
+	Line_N[24].line_Priority = 0;
 	
 	Line_N[27].x1 = 1000;
 	Line_N[27].y1 = 1400;
@@ -427,7 +427,7 @@ void PID_Line_Init(void)                                                     //÷
 	Line_N[31].line_C = 0;
 	Line_N[31].line_Angle = 0;
 	Line_N[31].line_Error = 0;
-	Line_N[31].line_Priority = 0;
+	Line_N[31].line_Priority = 1000;
 	
 	Line_N[34].x1 = -1800;
 	Line_N[34].y1 = 600;
@@ -731,7 +731,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0;
 	if (p_gun->fire_request)
 	{
-		p_gun->food = 1300;
+		p_gun->food = 1000;
 		if(!p_gun->fire_command) return;
 		posLast = pos;
 		pos += p_gun->push_pos_up;
@@ -906,11 +906,10 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 	static u8 flag = 0;/*◊‘À¯flag*/
 	int i = 0;/*for—≠ª∑”√*/
 	
-	if(pid->stop2 == 1) return;
 	/*÷–≥°Õ∂«Úøÿ÷∆*/
 	if(pid->stop == 1 && error->flag == 0)
 	{
-		if(pid->Y > 1400 && pid->Y < 3400 && pid->X > 0-1000 && pid->X < 1000)
+		if(pid->Y > 1600 && pid->Y < 3200 && pid->X > 0-800 && pid->X < 800)
 		{
 			pid->vel = 0;
 			pid->V = 0;
@@ -1236,7 +1235,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //¥
 		error->Err_Y = pid->Y;
 	}
 	error->timeCnt++;
-	if(error->timeCnt > 150)
+	if(error->timeCnt > 500)
 	{
 		error->timeCnt = 0;
 		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));
@@ -1263,121 +1262,23 @@ void WatchDog(PID_Value *Dog)
 /*–¬Àº¬∑£∫«Ú≤÷π‹¿Ì£¨«Ú ˝¥Û”⁄10∏ˆ∫Û÷±Ω”»•◊Óƒ⁄»¶Õ∂«Ú*/
 void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 {
-	static int flag1 = 0;
-	static int flag2 = 0;
 	int i = 0;/*for—≠ª∑≤Œ ˝*/
 	PID->timeCnt ++ ;/*±»»¸º∆ ±*/
 	
-	if(PID->timeCnt < 4000 && PID->Line_Num == 9 && flag1 < 3)
-	{
-		if(flag1 == 0)
-		{
-			flag2 = PID->timeCnt;
-			flag1 += 1;
-		}
-		else return;
-		if(flag2 != 0)
-		{
-			if(PID->timeCnt - flag2 > 500)
-			{
-				PID->stop2 = 0;
-				return;
-			}
-		}
-		if(targetn[1] != 0 && targetn[2] != 0)
-		{
-			PID->stop2 = 0;
-			return;
-		}
-		PID->V = 0;
-		PID->vel = 0;
-		PID->stop2 = 1;
-	}
-	else if(PID->timeCnt < 4000 && PID->Line_Num == 11 && flag1 < 3)
-	{
-		if(flag1 == 1)
-		{
-			flag2 = PID->timeCnt;
-			flag1 += 1;
-		}
-		else return;
-		if(flag2 != 0)
-		{
-			if(PID->timeCnt - flag2 > 500)
-			{
-				PID->stop2 = 0;
-				return;
-			}
-		}
-		if(targetn[0] != 0 && targetn[3] != 0)
-		{
-			PID->stop2 = 0;
-			return;
-		}
-		PID->V = 0;
-		PID->vel = 0;
-		PID->stop2 = 1;
-	}
-	else if(PID->timeCnt < 4000 && PID->Line_Num == 29 && flag1 < 3)
-	{
-		if(flag1 == 0)
-		{
-			flag2 = PID->timeCnt;
-			flag1 += 1;
-		}
-		else return;
-		if(flag2 != 0)
-		{
-			if(PID->timeCnt - flag2 > 500)
-			{
-				PID->stop2 = 0;
-				return;
-			}
-		}
-		if(targetn[1] != 0 && targetn[2] != 0)
-		{
-			PID->stop2 = 0;
-			return;
-		}
-		PID->V = 0;
-		PID->vel = 0;
-		PID->stop2 = 1;
-	}
-	else if(PID->timeCnt < 4000 && PID->Line_Num == 11 && flag1 < 3)
-	{
-		if(flag1 == 1)
-		{
-			flag2 = PID->timeCnt;
-			flag1 += 1;
-		}
-		else return;
-		if(flag2 != 0)
-		{
-			if(PID->timeCnt - flag2 > 500)
-			{
-				PID->stop2 = 0;
-				return;
-			}
-		}
-		if(targetn[0] != 0 && targetn[3] != 0)
-		{
-			PID->stop2 = 0;
-			return;
-		}
-		PID->V = 0;
-		PID->vel = 0;
-		PID->stop2 = 1;
-	}
-	else PID->stop2 = 0;
 	
 	/*20sƒ⁄’˝≥£ ’«Ú*/
-	if(PID->timeCnt < 4000) return;
+	if(PID->timeCnt < 1000)
+	{
+		if(PID->Line_Num == 6 || PID->Line_Num == 24) PID->stop = 1;
+		return;
+	}
+	if(PID->timeCnt == 1000) PID->stop = 0;
 	
 	/*Œﬁ«ÚÕÀ≥ˆ…®√Ë◊¥Ã¨*/
 	if(PID->dogHungry == 1) PID->stop = 0;
 	
 	/*10s ±»•Õ‚»¶Õ∂«Ú*/
-	if(PID->timeCnt == 4000)
+	if(PID->timeCnt == 1000)
 	{
 		for(i = 0 ; i < 4 ; i ++ )
 		{
@@ -1401,7 +1302,7 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 	
 	
 	/*‘› ±…Ë÷√Œ™180s±»»¸ ±≥§*/
-	else if(PID->timeCnt < 18000)
+	if(PID->timeCnt < 18000 && PID->timeCnt > 1000)
 	{
 		err->errCnt = 1;
 		/*”–«Ú»•≥°µÿ÷–—Î…®√Ë…‰«Ú*/

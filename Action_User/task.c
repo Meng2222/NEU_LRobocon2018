@@ -67,7 +67,7 @@ void ConfigTask(void)
 {
 	PID_x = &PID_A;
 	Error_x = &Error_A;
-	Error_A.Err_X = 0,Error_A.Err_Y = 0,Error_A.flag = 0,Error_A.timeCnt = 0,Error_A.distance = 0,Error_A.err_distance = 200;
+	Error_A.Err_X = 0,Error_A.Err_Y = 0,Error_A.flag = 0,Error_A.timeCnt = 0,Error_A.distance = 0,Error_A.err_distance = 100;
 	int Laser_Left = 0;
 	int Laser_Right = 0;
 	KeyInit2();
