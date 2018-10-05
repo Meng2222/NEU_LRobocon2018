@@ -53,6 +53,10 @@ void SetSpeedX(float setValue);
 void SetSpeedY(float setValue);
 void SetWZ(float setValue);
 
+void CorrectX(float value);
+void CorrectY(float value);
+void CorrectAngle(float value);
+
 /*定位系统准备完毕*/
 uint8_t GetOpsReady(void);
 /*返回定位系统的角度*/

@@ -770,7 +770,7 @@ void GO(PID_Value *p_GO)                                                     //µ
 extern int ballcommand;
 void shoot(PID_Value *p_gun, int targets[], int Debug)                                                 //ÉäÇòº¯Êı
 {
-	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0, flag2 = 0;
+	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0;
 	if (p_gun->fire_request)
 	{
 		p_gun->food = 1300;
@@ -781,7 +781,10 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		p_gun->fire_request = 0;
 		p_gun->fire_command = 0;
 		Scan.FirePermitFlag = 0;
-		flag2 = 0;
+		targets[p_gun->target_Num] += 1;
+		if(targets[0] != 0 && targets[1] != 0 && targets[2] != 0 && targets[3] != 0){
+			targets[0] = 0 , targets[1] = 0 , targets[2] = 0 , targets[3] = 0;}
+		if(Debug == 1) USART_OUT(UART4,(uint8_t*)"fire	%d	%d	%d	%d	\r\n", (int)targets[0],(int)targets[1],(int)targets[2],(int)targets[3]);
 	}
 	else
 	{
@@ -879,14 +882,6 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		if((0 < posGap && posGap < 8000) || (0 > posGap && posGap > -8000))
 		{
 			flag = 0;
-			if(pos-posLast > 8000 && flag2 == 0)
-			{
-				flag2 = 1;
-				targets[p_gun->target_Num] += 1;
-				if(targets[0] != 0 && targets[1] != 0 && targets[2] != 0 && targets[3] != 0){
-					targets[0] = 0 , targets[1] = 0 , targets[2] = 0 , targets[3] = 0;}
-				if(Debug == 1) USART_OUT(UART4,(uint8_t*)"fire	%d	%d	%d	%d	\r\n", (int)targets[0],(int)targets[1],(int)targets[2],(int)targets[3]);
-			}
 		}
 		if(timeCnt > 600)
 		{
