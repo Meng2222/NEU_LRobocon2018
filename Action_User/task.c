@@ -198,13 +198,19 @@ void WalkTask(void)
 		ReadActualVel(CAN2,6);																//读取收球辊子转速
 		
 		GetData(PID_x);																		//读取定位系统信息
-		PriorityControl(PID_x,Error_x,target);												//走形优先级管理
+		
 		WatchDog(PID_x);																	//球数看门狗
-		ErrorDisposal(PID_x,Error_x);														//错误检测
+//		ErrorDisposal(PID_x,Error_x);														//错误检测
 		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
+		PriorityControl(PID_x,Error_x,target);												//走形优先级管理
 		GO(PID_x);																			//电机控制
 		
 		GetData(PID_x);																		//读取定位系统信息
+		
+		
+		Error_x->errCnt = 1;
+		
+		
 		if(PID_x->V != 0 && Error_x->errCnt == 0){											/*未避障模式*/
 		Gundata.BucketNum = PID_A.target_Num;												//设置目标桶号
 		GunneryData_Operation(&Gundata, PID_x);												//计算射击诸元
