@@ -380,44 +380,72 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 			Scan->Probe_Right_X = Scan->Laser_Right_X - Scan->Probe_Right_Distance * sin(Scan->Fort_Angle * Pi / 180.0f);
 			Scan->Probe_Right_Y = Scan->Laser_Right_Y + Scan->Probe_Right_Distance * cos(Scan->Fort_Angle * Pi / 180.0f);		
 
-			
 			//识别目标桶两侧挡板边缘，统一为从左往右扫描
 			//当右侧激光距离值突然变短，标记左侧挡板边缘坐标点
 			if((Scan->Probe_Left_Distance - Scan->Probe_Right_Distance) > 1500.0f)
 			{
-				if((-3000.0f < Scan->Probe_Right_X && Scan->Probe_Right_X < -1400.0f) || (1400.0f < Scan->Probe_Right_X && Scan->Probe_Right_X < 3000.0f))
+				switch(Scan->BucketNum)
 				{
-					if((-600.0f < Scan->Probe_Right_Y && Scan->Probe_Right_Y < 1000.0f) || (3800.0f < Scan->Probe_Right_Y && Scan->Probe_Right_Y < 5400.0f))
-					{
-						Scan->Probe_Border_Left_X = Scan->Probe_Right_X;
-						Scan->Probe_Border_Left_Y = Scan->Probe_Right_Y;
-						Scan->Probe_Border_Left_Angle = Scan->YawPosAngleSet;
-					}
+					case 0:
+						if((2000.0f < Scan->Probe_Right_X && Scan->Probe_Right_X < 2800.0f) || (0.0f < Scan->Probe_Right_Y && Scan->Probe_Right_Y < 800.0f)){Scan->GetBorderLeftFlag = 1;}
+						break;	
+					case 1:
+						if((1600.0f < Scan->Probe_Right_X && Scan->Probe_Right_X < 2400.0f) || (4400.0f < Scan->Probe_Right_Y && Scan->Probe_Right_Y < 5200.0f)){Scan->GetBorderLeftFlag = 1;}
+						break;
+					case 2:
+						if((-2800.0f < Scan->Probe_Right_X && Scan->Probe_Right_X < -2000.0f) || (4000.0f < Scan->Probe_Right_Y && Scan->Probe_Right_Y < 4800.0f)){Scan->GetBorderLeftFlag = 1;}
+						break;
+					case 3:
+						if((-2400.0f < Scan->Probe_Right_X && Scan->Probe_Right_X < -1600.0f) || (-400.0f < Scan->Probe_Right_Y && Scan->Probe_Right_Y < 400.0f)){Scan->GetBorderLeftFlag = 1;}
+						break;							
 				}
 			}
+
+
 			//当右侧激光距离值突然变长，标记右侧挡板边缘坐标点	
 			if((Scan->Probe_Right_Distance - Scan->Probe_Left_Distance) > 1500.0f)
 			{
-				if((-3000.0f < Scan->Probe_Left_X && Scan->Probe_Left_X < -1400.0f) || (1400.0f < Scan->Probe_Left_X && Scan->Probe_Left_X < 3000.0f))
+				switch(Scan->BucketNum)
 				{
-					if((-600.0f < Scan->Probe_Left_Y && Scan->Probe_Left_Y < 1000.0f) || (3800.0f < Scan->Probe_Left_Y && Scan->Probe_Left_Y < 5400.0f))
-					{
-						Scan->Probe_Border_Right_X = Scan->Probe_Left_X;
-						Scan->Probe_Border_Right_Y = Scan->Probe_Left_Y;
-						Scan->Probe_Border_Right_Angle = Scan->YawPosAngleSet;
-					}
+					case 0:
+						if((1600.0f < Scan->Probe_Left_X && Scan->Probe_Left_X < 2400.0f) || (-400.0f < Scan->Probe_Left_Y && Scan->Probe_Left_Y < 400.0f)){Scan->GetBorderRightFlag = 1;}
+						break;	
+					case 1:
+						if((2000.0f < Scan->Probe_Left_X && Scan->Probe_Left_X < 2800.0f) || (4000.0f < Scan->Probe_Left_Y && Scan->Probe_Left_Y < 4800.0f)){Scan->GetBorderRightFlag = 1;}
+						break;
+					case 2:
+						if((-2400.0f < Scan->Probe_Left_X && Scan->Probe_Left_X < -1600.0f) || (4400.0f < Scan->Probe_Left_Y && Scan->Probe_Left_Y < 5200.0f)){Scan->GetBorderRightFlag = 1;}
+						break;
+					case 3:
+						if((-2800.0f < Scan->Probe_Left_X && Scan->Probe_Left_X < -2000.0f) || (0.0f < Scan->Probe_Left_Y && Scan->Probe_Left_Y < 800.0f)){Scan->GetBorderRightFlag = 1;}
+						break;							
 				}
 			}
-		
-			if(Scan->Probe_Border_Left_X != Scan->Probe_Border_Left_X_Temp)
+
+			
+			if(Scan->GetBorderLeftFlag == 1 && (Scan->Probe_Border_Left_X != Scan->Probe_Border_Left_X_Temp))
 			{
-				Scan->GetBorderLeftFlag  = 1;
+				Scan->Probe_Border_Left_X = Scan->Probe_Right_X;
+				Scan->Probe_Border_Left_Y = Scan->Probe_Right_Y;
+				Scan->Probe_Border_Left_Angle = Scan->YawPosAngleSet;
 			}
-			if(Scan->Probe_Border_Right_X != Scan->Probe_Border_Right_X_Temp)
+			else
 			{
-				Scan->GetBorderRightFlag = 1;
-			} 
-				
+				Scan->GetBorderLeftFlag = 0;
+			}	
+			
+			if(Scan->GetBorderRightFlag == 1 && (Scan->Probe_Border_Right_X != Scan->Probe_Border_Right_X_Temp))
+			{		
+				Scan->Probe_Border_Right_X = Scan->Probe_Left_X;
+				Scan->Probe_Border_Right_Y = Scan->Probe_Left_Y;
+				Scan->Probe_Border_Right_Angle = Scan->YawPosAngleSet;
+			}
+			else
+			{
+				Scan->GetBorderRightFlag = 0;				
+			}
+			
+			
 			//如果炮台航向角设定值大于较大的航向角设定值
 			if(Scan->YawPosAngleSet > Scan->ScanAngleEnd)
 			{			

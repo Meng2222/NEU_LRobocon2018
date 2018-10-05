@@ -46,8 +46,8 @@ void App_Task(void)
 ===============================================================
 */
 int shootDebug = 0;
-int pidDebug = 1;
-int fortDebug = 0;
+int pidDebug = 0;
+int fortDebug = 1;
 int radarDebug = 0; /*雷达*/
 int rollerDebug = 0;/*辊子*/
 int ballcommand = 0;
@@ -142,7 +142,7 @@ void ConfigTask(void)
 		Scan.ScanPermitFlag = 0;
 		Scan.Yaw_Zero_Offset = 1.0f;
 		Scan.YawPosAngle_Offset = -3.3f;
-		Scan.Shooter_Vel_Offset = 2.8f;
+		Scan.Shooter_Vel_Offset = 2.3f;
 		
 		Scan.SetTimeFlag = 1;
 		Scan.SetFireFlag = 1;
@@ -211,6 +211,7 @@ void WalkTask(void)
 		
 		WatchDog(PID_x);																	//球数看门狗
 		ErrorDisposal(PID_x,Error_x);														//错误检测
+		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
 		PriorityControl(PID_x,Error_x,target);												//走形优先级管理
 		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
 		GO(PID_x);																			//电机控制
