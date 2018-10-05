@@ -902,8 +902,9 @@ void UART4_OUT(PID_Value *pid_out , Err*error1)                                 
 
 void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])                     //新版走线
 {
-	static u8 flag = 0;
+	static u8 flag = 0;/*自锁flag*/
 	int i = 0;/*for循环用*/
+	
 	
 	
 	if(flag == 0 && dir == Right)/*更改第一条边优先级*/
@@ -1233,14 +1234,23 @@ void WatchDog(PID_Value *Dog)
 void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 {
 	int i = 0;/*for循环参数*/
-	int prioritySum = 0;/*统计优先级时用*/
 	PID->timeCnt ++ ;/*比赛计时*/
 	
 	/*无球退出扫描状态*/
 	if(PID->dogHungry == 1) PID->stop = 0;
 	
-	/*10s时*/
-	
+	/*10s时去外圈投球*/
+	if(PID->timeCnt == 1000)
+	{
+		for(i = 0 ; i < 4 ; i ++ )
+		{
+			Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 1000;
+			Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 1000;
+			Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 1000;
+			Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 1;
+			Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 1000;
+		}
+	}
 	
 	/*避障时退出*/
 	if(err->flag == 1) return;
@@ -1248,7 +1258,7 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 	/*扫描状态退出*/
 	if(PID->stop == 1) return;
 	
-	/*15s内正常收球*/
+	/*20s内正常收球*/
 	if(PID->timeCnt < 2000) return;
 	
 	/*暂时设置为180s比赛时长*/
@@ -1281,7 +1291,21 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 			/*停止中场扫描模式，开始边收球边扫描投球*/
 			PID->stop1 = 1;
 			
-			/**/
+			/*有球去场中央投球*/
+			if(PID->dogHungry == 0)
+			{
+				PID->stop = 1;
+				
+				/*更新走形优先级*/
+				for(i = 0 ; i < 4 ; i ++ )
+				{
+					Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 5;
+					Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 4;
+					Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 3;
+					Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 1;
+					Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 2;
+				}
+			}
 		}
 	}
 }

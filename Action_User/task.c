@@ -62,6 +62,7 @@ extern FortType fort;
 extern GunneryData Gundata;
 extern Command CmdRecData;
 extern ScanData Scan;
+extern int Entrepot[2];
 void ConfigTask(void)
 {
 	PID_x = &PID_A;
