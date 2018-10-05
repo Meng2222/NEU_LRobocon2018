@@ -67,7 +67,7 @@ void ConfigTask(void)
 {
 	PID_x = &PID_A;
 	Error_x = &Error_A;
-	Error_A.Err_X = 0,Error_A.Err_Y = 0,Error_A.flag = 0,Error_A.timeCnt = 0,Error_A.distance = 0,Error_A.err_distance = 100;
+	Error_A.Err_X = 0,Error_A.Err_Y = 0,Error_A.flag = 0,Error_A.timeCnt = 0,Error_A.distance = 0,Error_A.err_distance = 200;
 	int Laser_Left = 0;
 	int Laser_Right = 0;
 	KeyInit2();
@@ -211,7 +211,6 @@ void WalkTask(void)
 		YawPosCtrl(Gundata.YawPosAngleSetAct);												//设置航向角
 		ShooterVelCtrl(Gundata.ShooterVelSetAct);}											//设置射球转速
 		else if(PID_x->V == 0){																/*扫描模式*/
-		Scan_Operation(&Scan, PID_x, target);
 		YawPosCtrl(Scan.YawPosAngleSet);
 		ShooterVelCtrl(Scan.ShooterVelSet);}
 		else

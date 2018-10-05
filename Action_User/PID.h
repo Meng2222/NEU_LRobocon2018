@@ -105,6 +105,7 @@ typedef struct PID
 	u8 fire_cornor;
 	u8 fire_turn;
 	u8 dogHungry;
+	u8 doglast;
 	u8 stop;
 	u8 stop1;
 	u8 stop2;

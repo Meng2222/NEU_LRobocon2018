@@ -589,6 +589,7 @@ void PID_Init(PID_Value *PID_a)                                              //P
 	PID_a->fire_flag = 0;
 	PID_a->food = 1500;
 	PID_a->dogHungry = 0;
+	PID_a->doglast = 1;
 
 	PID_Line_Init();
 	PID_a->l = &Line_N[PID_a->Line_Num];
@@ -905,7 +906,35 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 	static u8 flag = 0;/*×ÔËøflag*/
 	int i = 0;/*forÑ­»·ÓÃ*/
 	
-	
+	/*ÖĞ³¡Í¶Çò¿ØÖÆ*/
+	if(pid->stop == 1 && error->flag == 0)
+	{
+		if(pid->Y > 1400 && pid->Y < 3400 && pid->X > 0-1000 && pid->X < 1000)
+		{
+			pid->vel = 0;
+			pid->V = 0;
+			error->stop = 1;
+			error->timeCnt = 0;
+		}
+		else
+		{
+			if(pid->Line_Num < 20 && pid->Line_Num > 3)
+			{
+				pid->Line_Num = pid->Line_Num % 4 + 1;
+				if(pid->Line_Num == 4) pid->Line_Num = 0;
+			}
+			else if(pid->Line_Num > 23)
+			{
+				pid->Line_Num = pid->Line_Num % 4 - 1 + 20;
+				if(pid->Line_Num == 19) pid->Line_Num = 23;
+			}
+			PID_Control(pid);
+			pid->V = 1000;
+			error->stop = 0;
+		}
+		return;
+	}
+	error->stop = 0;
 	
 	if(flag == 0 && dir == Right)/*¸ü¸ÄµÚÒ»Ìõ±ßÓÅÏÈ¼¶*/
 	{
@@ -1206,7 +1235,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		error->Err_Y = pid->Y;
 	}
 	error->timeCnt++;
-	if(error->timeCnt > 200)
+	if(error->timeCnt > 150)
 	{
 		error->timeCnt = 0;
 		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));
@@ -1244,11 +1273,11 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 	{
 		for(i = 0 ; i < 4 ; i ++ )
 		{
-			Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 1000;
-			Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 1000;
-			Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 1000;
+			Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 5;
+			Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 4;
+			Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 3;
 			Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 1;
-			Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 1000;
+			Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 2;
 		}
 	}
 	
@@ -1258,54 +1287,40 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 	/*É¨Ãè×´Ì¬ÍË³ö*/
 	if(PID->stop == 1) return;
 	
+	/*ÓĞÇòÎŞÇò×´Ì¬ÇĞ»»Ê±²Å½øÈë¹ÜÀí²ã*/
+	if(PID->doglast == PID->dogHungry) return;
+	
 	/*20sÄÚÕı³£ÊÕÇò*/
 	if(PID->timeCnt < 2000) return;
 	
 	/*ÔİÊ±ÉèÖÃÎª180s±ÈÈüÊ±³¤*/
 	else if(PID->timeCnt < 18000)
 	{
+		err->errCnt = 1;
+		/*ÓĞÇòÈ¥³¡µØÖĞÑëÉ¨ÃèÉäÇò*/
+		if(PID->dogHungry == 0)
+		{
+			
+			/*³¡µØÖĞÑëÉ¨ÃèÍ¶Çò*/
+			PID->stop = 1;
+		}
 		
-		/*15sºóÓĞÇòÈ¥³¡µØÖĞÑëÉ¨ÃèÉäÇò*//*Ìõ¼şÎªÎ´½øÈë¹ıÎŞÇò×´Ì¬*/
-		if(PID->dogHungry == 0 && PID->stop1 == 0)
+		/*ÎŞÇò×´Ì¬£¬ÏÈÈ¥É¨±ß£¬ÔÙÉ¨ÄÚ³¡£¬ÆÚ¼äÓĞÇò½øÈë´ı·¢×´Ì¬Á¢¼´»Ø³¡µØÖĞÑëÍ¶Çò*/
+		else
 		{
 			
 			/*¸üĞÂ×ßĞÎÓÅÏÈ¼¶*/
 			for(i = 0 ; i < 4 ; i ++ )
 			{
-				Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 1000;
-				Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 1000;
-				Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 1000;
+				Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 5;
+				Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 4;
+				Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 3;
 				Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 1;
 				Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 2;
 			}
-			
-			/*³¡µØÖĞÑëÉ¨ÃèÍ¶Çò*/
-			PID->stop = 1;
-			PID->stop1 = 1;
 		}
 		
-		/*15sºó½øÈë¹ıÎŞÇò×´Ì¬£¬ÏÈÈ¥É¨±ß£¬ÔÙ±ä¹ìÉ¨ÄÚ³¡£¬ÆÚ¼äÓĞÇò½øÈë´ı·¢×´Ì¬Á¢¼´ÕÒ×î½üµÄÎ´Í¶ÇòÍ°Í¶Çò£¬Ò»Ìõ±ßÉÏ¿ÉÍ¶Á½¸öÍ°*/
-		else
-		{
-			
-			/*Í£Ö¹ÖĞ³¡É¨ÃèÄ£Ê½£¬¿ªÊ¼±ßÊÕÇò±ßÉ¨ÃèÍ¶Çò*/
-			PID->stop1 = 1;
-			
-			/*ÓĞÇòÈ¥³¡ÖĞÑëÍ¶Çò*/
-			if(PID->dogHungry == 0)
-			{
-				PID->stop = 1;
-				
-				/*¸üĞÂ×ßĞÎÓÅÏÈ¼¶*/
-				for(i = 0 ; i < 4 ; i ++ )
-				{
-					Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 5;
-					Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 4;
-					Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 3;
-					Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 1;
-					Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 2;
-				}
-			}
-		}
+		/*¸³Öµ*/
+		PID->doglast = PID->dogHungry;
 	}
 }

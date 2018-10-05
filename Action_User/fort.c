@@ -101,6 +101,9 @@ void bufferInit()
 * @attention 该函数请插入到对应的串口中断中
 							注意清除标志位
 */
+extern PID_Value *PID_x;
+extern Err *Error_x;
+extern int target[4];
 void GetValueFromFort(uint8_t data)
 {
 	buffer[bufferI] = data;
@@ -134,6 +137,7 @@ void GetValueFromFort(uint8_t data)
 			for(int i = 0; i < 4; i++)
 					fort.usartReceiveData.data8[i] = buffer[i + 2];
 				fort.laserBValueReceive = fort.usartReceiveData.dataFloat;
+				Scan_Operation(&Scan, PID_x, target);
 		}
 		bufferInit();
 	}
