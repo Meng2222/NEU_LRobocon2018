@@ -83,8 +83,8 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2,5, 16384000, 16384000);							//收球电机
 	VelLoopCfg(CAN2,6, 16384000, 16384000);							//收球电机
 	PosLoopCfg(CAN2,7, 16384000,16384000,20000000);
-	MotorOn(CAN1,1);												//右电机使能
-	MotorOn(CAN1,2);												//左电机使能
+	MotorOff(CAN1,1);												//右电机使能
+	MotorOff(CAN1,2);												//左电机使能
 	MotorOn(CAN2,5); 
 	MotorOn(CAN2,6);
 	MotorOn(CAN2,7);
@@ -143,7 +143,12 @@ void ConfigTask(void)
 		Scan.YawAngle_Offset = -3.3f;
 		Scan.ShooterVel_Offset = 2.8f;
 		Scan.SetFireFlag = 1;
-		Scan.ScanVel = 0.2f;
+		Scan.ScanVel = 0.f;
+		
+		Scan.Pro_Border_Left_X_Last = 0.0f;
+		Scan.Pro_Border_Left_Y_Last = 0.0f;	
+		Scan.Pro_Border_Right_X_Last = 0.0f;
+		Scan.Pro_Border_Right_Y_Last = 0.0f;			
 		
 		//设定各挡板边缘坐标值
 		Scan.Pos_Border_X[0] =  2000.0;       Scan.Pos_Border_Y[0] =   -54.0;
@@ -199,14 +204,15 @@ void WalkTask(void)
 		ReadActualVel(CAN2,5);
 		ReadActualVel(CAN2,6);
 		
-		GetData(PID_x);													//读取定位系统信息
-		PriorityControl(PID_x,Error_x,target);
-		WatchDog(PID_x);
-		PID_Priority(PID_x,direction,Error_x,target);					//走形计算函数
-		ErrorDisposal(PID_x,Error_x);									//错误检测
-		GO(PID_x);														//电机控制
+//		GetData(PID_x);													//读取定位系统信息
+//		PriorityControl(PID_x,Error_x,target);
+//		WatchDog(PID_x);
+//		PID_Priority(PID_x,direction,Error_x,target);					//走形计算函数
+//		ErrorDisposal(PID_x,Error_x);									//错误检测
+//		GO(PID_x);														//电机控制
 		
 		GetData(PID_x);													//读取定位系统信息
+		PID_x->V = 0;
 		if(PID_x->V != 0 && Error_x->errCnt == 0)
 		{
 			Gundata.BucketNum = PID_A.target_Num;						//设置目标桶号
@@ -216,7 +222,7 @@ void WalkTask(void)
 		}
 		else if(PID_x->V == 0)
 		{
-			Scan_Operation(&Scan, PID_x, target);
+			Scan_Operation(&Scan, &Gundata, PID_x, target);
 			YawPosCtrl(Scan.YawAngle_Set);
 			ShooterVelCtrl(Scan.ShooterVel_Set);
 			
@@ -244,14 +250,17 @@ void WalkTask(void)
 //				(int)Scan.ScanStatus,	(int)Scan.BucketNum,		(int)Scan.ScanPermitFlag,	(int)Scan.SetTimeFlag,		(int)Scan.SetFireFlag,\
 //				(int)Scan.GetLeftFlag,	(int)Scan.GetRightFlag,		(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,		(int)Scan.DelayFlag,	(int)Scan.CntDelayTime,\
 //				(int)target[0],			(int)target[1], 			(int)target[2],				(int)target[3]);
+				
 				//Cal参数
-				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	ScanSta=%d	BucNum=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	ActX=%d	ActY=%d	ActAng=%d	TheX=%d	TheY=%d	TheAng=%d	LeftX=%d	LeftY=%d	RightX=%d	RightY=%d\r\n",\
-				(int)PID_A.X, 				(int)PID_A.Y, 				(int)PID_A.Angle,\
-				(int)Scan.ScanStatus,		(int)Scan.BucketNum,		(int)Scan.GetLeftFlag,			(int)Scan.GetRightFlag,\
-				(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,\
-				(int)Cal.LToR_Act_Dist_X,	(int)Cal.LToR_Act_Dist_Y,	(int)Cal.LToR_Act_Angle,\
-				(int)Cal.LToR_The_Dist_X,	(int)Cal.LToR_The_Dist_Y,	(int)Cal.LToR_The_Angle,\
-				(int)Cal.Pos_Border_Left_X,	(int)Cal.Pos_Border_Left_Y,	(int)Cal.Pos_Border_Right_X,	(int)Cal.Pos_Border_Right_Y);
+				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	ScanSta=%d	BucNum=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	OToRAng=%d	OToRDis=%d	OToLAng=%d	OToLD0is=%d	ProBLX=%d	ProBLY=%d	ProBRX=%d	ProBRY=%d	ActX=%d	ActY=%d	ActAng=%d	TheAng=%d	CalBLX=%d	CalBLY=%d	CalBRX=%d	CalBRY=%d\r\n",\
+				(int)PID_A.X, 					(int)PID_A.Y, 					(int)PID_A.Angle,\
+				(int)Scan.ScanStatus,			(int)Scan.BucketNum,			(int)Scan.GetLeftFlag,			(int)Scan.GetRightFlag,\
+				(int)Scan.ScanAngle_Start,		(int)Scan.ScanAngle_End,		(int)Scan.YawAngle_Set,\
+				(int)Cal.OToRight_Angle, 		(int)Cal.OToRight_Dist,			(int)Cal.OToLeft_Angle,			(int)Cal.OToLeft_Dist,\
+//				(int)Scan.Pro_Left_Dist,		(int)Scan.Pro_Right_Dist,		(int)Scan.Pro_Left_X,			(int)Scan.Pro_Left_Y,			(int)Scan.Pro_Right_X,	(int)Scan.Pro_Right_Y,
+				(int)Scan.Pro_Border_Left_X,	(int)Scan.Pro_Border_Left_Y,	(int)Scan.Pro_Border_Right_X,	(int)Scan.Pro_Border_Right_Y,\
+				(int)Cal.LToR_Act_Dist_X,		(int)Cal.LToR_Act_Dist_Y,		(int)Cal.LToR_Act_Angle,		(int)Cal.LToR_The_Angle,\
+				(int)Cal.Pos_Border_Left_X,		(int)Cal.Pos_Border_Left_Y,		(int)Cal.Pos_Border_Right_X,	(int)Cal.Pos_Border_Right_Y);
 			}
 		}
 		

@@ -111,6 +111,7 @@ typedef struct{
 	int GetRightFlag;					//扫描到右侧挡板边缘标志位
 	int ScanStatus;						//扫描状态                              0走行	1扫描	2射球
 	int ScanPermitFlag;					//允许开始扫描标志位
+	int ScanEndFlag;
 	int SetTimeFlag;					//允许设定延时标志位	
 	int SetFireFlag;					//允许设定射球标志位
 	int i;								//计数
@@ -131,49 +132,57 @@ typedef struct{
 	float Pos_Border_Y[8];				//逆时针排序的挡板边缘纵坐标			单位mm
 										//													6|_   _|1 
 										//													   7 0
-	float Dist_FToBorder_X;				//炮塔到目标桶挡板边缘横轴距离			单位mm
-	float Dist_FToBorder_Y;				//炮塔到目标桶挡板边缘纵轴距离			单位mm
+	float Dist_FToBorder_Left_X;		//炮塔到目标桶左挡板边缘横轴距离		单位mm
+	float Dist_FToBorder_Left_Y;		//炮塔到目标桶左挡板边缘纵轴距离		单位mm
+	float Dist_FToBorder_Right_X;		//炮塔到目标桶右挡板边缘横轴距离		单位mm
+	float Dist_FToBorder_Right_Y;		//炮塔到目标桶右挡板边缘纵轴距离		单位mm
 
-	float Dist_FToBucket_X;				//炮塔到目标桶横轴距离					单位mm
-	float Dist_FToBucket_Y;				//炮塔到目标桶纵轴距离					单位mm
-	
-	float ScanAngle_Tar;				//指向挡板边缘航向角目标值				单位°
+	float Dist_FToBucket_X_Pro;			//炮塔到目标桶横轴距离探测值			单位mm
+	float Dist_FToBucket_Y_Pro;			//炮塔到目标桶纵轴距离探测值			单位mm
+	float Dist_FToBucket_X_The;			//炮塔到目标桶横轴距离理论值			单位mm
+	float Dist_FToBucket_Y_The;			//炮塔到目标桶纵轴距离理论值			单位mm
+
+	float ScanAngle_Tar_Left;			//指向左挡板边缘航向角目标值			单位°
+	float ScanAngle_Tar_Right;			//指向右挡板边缘航向角目标值			单位°
+	float ScanAngle_Set_Left;			//指向左挡板边缘航向角目标值			单位°
+	float ScanAngle_Set_Right;			//指向右挡板边缘航向角目标值			单位°
 	float ScanAngle_End;				//位于最右侧的扫描起始航向角设定值		单位°
 	float ScanAngle_Start;				//位于最左侧的扫描终止航向角设定值		单位°
 
-	float Probe_Left_Dist;				//左侧激光探测点距离值					单位mm	
-	float Probe_Left_X;					//左侧激光探测点横坐标					单位mm
-	float Probe_Left_Y;					//左侧激光探测点纵坐标					单位mm
-	float Probe_Right_Dist;				//右侧激光探测点距离值					单位mm	
-	float Probe_Right_X;				//右侧激光探测点横坐标					单位mm
-	float Probe_Right_Y;				//右侧激光探测点纵坐标					单位mm
+	float Pro_Left_Dist;				//左侧激光探测点距离值					单位mm	
+	float Pro_Left_X;					//左侧激光探测点横坐标					单位mm
+	float Pro_Left_Y;					//左侧激光探测点纵坐标					单位mm
+	float Pro_Right_Dist;				//右侧激光探测点距离值					单位mm	
+	float Pro_Right_X;					//右侧激光探测点横坐标					单位mm
+	float Pro_Right_Y;					//右侧激光探测点纵坐标					单位mm
 	
-	float Probe_Border_Left_X_Last;		//探测到的上一个左侧挡板边缘横坐标		单位mm	
-	float Probe_Border_Left_Y_Last;		//探测到的上一个左侧挡板边缘纵坐标		单位mm
-	float Probe_Border_Right_X_Last;	//探测到的上一个右侧挡板边缘横坐标		单位mm
-	float Probe_Border_Right_Y_Last;	//探测到的上一个右侧挡板边缘纵坐标		单位mm
+	float Pro_Border_Left_X_Last;		//探测到的上一个左侧挡板边缘横坐标		单位mm	
+	float Pro_Border_Left_Y_Last;		//探测到的上一个左侧挡板边缘纵坐标		单位mm
+	float Pro_Border_Right_X_Last;		//探测到的上一个右侧挡板边缘横坐标		单位mm
+	float Pro_Border_Right_Y_Last;		//探测到的上一个右侧挡板边缘纵坐标		单位mm
 	
-	float Probe_LToR_Dist_X;			//左侧挡板边缘到右侧挡板边缘横轴距离	单位mm
-	float Probe_LToR_Dist_Y;			//左侧挡板边缘到右侧挡板边缘纵轴距离	单位mm
-	float Probe_LToR_Dist;				//左侧挡板边缘到右侧挡板边缘距离		单位mm
+	float Pro_LToR_Dist_X;				//左侧挡板边缘到右侧挡板边缘横轴距离	单位mm
+	float Pro_LToR_Dist_Y;				//左侧挡板边缘到右侧挡板边缘纵轴距离	单位mm
+	float Pro_LToR_Dist;				//左侧挡板边缘到右侧挡板边缘距离		单位mm
 	
-	float Probe_Border_Left_X;			//左侧挡板边缘横坐标					单位mm
-	float Probe_Border_Left_Y;			//左侧挡板边缘纵坐标					单位mm
-	float Probe_Border_Left_Angle;		//炮塔指向左侧挡板边缘的定位系统角度	单位mm
-	float Probe_Border_Right_X;			//右侧挡板边缘横坐标					单位mm
-	float Probe_Border_Right_Y;			//右侧挡板边缘纵坐标					单位mm
-	float Probe_Border_Right_Angle;		//炮塔指向左侧挡板边缘的定位系统角度	单位mm
+	float Pro_Border_Left_X;			//探测的左侧挡板边缘横坐标				单位mm
+	float Pro_Border_Left_Y;			//探测的左侧挡板边缘纵坐标				单位mm
+	float Pro_Border_Left_Angle;		//探测的左侧挡板边缘的定位系统角度		单位mm
+	float Pro_Border_Right_X;			//探测的右侧挡板边缘横坐标				单位mm
+	float Pro_Border_Right_Y;			//探测的右侧挡板边缘纵坐标				单位mm
+	float Pro_Border_Right_Angle;		//探测的右侧挡板边缘的定位系统角度		单位mm
 	
-	float Probe_Bucket_X;				//探测到的桶横坐标						单位mm
-	float Probe_Bucket_Y;				//探测到的桶纵坐标						单位mm
-	float Probe_Bucket_Dist;			//探测到的桶距离						单位mm
+	float Pro_Bucket_X;					//探测到的桶横坐标						单位mm
+	float Pro_Bucket_Y;					//探测到的桶纵坐标						单位mm
+	float Pro_Bucket_Dist;				//探测到的桶距离						单位mm
 
 	float ShooterVel_Rec;				//射球电机转速实际值					单位rad/s
 	float ShooterVel_Set;				//射球电机转速设定值					单位rad/s
 	float ShooterVel_Offset;			//射球电机转速补偿值					单位rad/s
 	
 	float YawAngle_Rec;					//炮塔航向角实际值						单位°
-	float YawAngle_Tar;					//炮塔航向角目标值						单位°              
+	float YawAngle_Tar_Pro;				//炮塔航向角探测目标值					单位°
+	float YawAngle_Tar_The;				//炮塔航向角理论目标值					单位°	
 	float YawAngle_Set;					//炮塔航向角设定值						单位°
 	float YawAngle_Zero_Offset;			//炮塔航向角归零补偿值					单位°
 	float YawAngle_Offset;				//炮塔航向角补偿值						单位°
@@ -193,8 +202,10 @@ typedef struct{
 	float Coor_Error_Y;	
 	float Coor_Error_Angle;
 
-	float OToP_Angle;
-	float OToP_Dist;
+	float OToRight_Angle;
+	float OToRight_Dist;
+	float OToLeft_Angle;
+	float OToLeft_Dist;
 	
 	float Pos_Border_Left_X;
 	float Pos_Border_Left_Y;
@@ -219,7 +230,7 @@ void ReadLaserBValue(void);
 void GetValueFromFort(uint8_t data);
 
 void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos);
-void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[]);
+void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int targets[]);
 void Calibration_Operation(CalibrationData *Cal, ScanData *Scan, GunneryData *Gun, PID_Value const *Pos);
 float Tar_Angle_Operation(float Dist_X, float Dist_Y);
 
