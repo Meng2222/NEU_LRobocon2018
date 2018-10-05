@@ -362,6 +362,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		
 		if(Scan->ScanPermitFlag == 1)
 		{
+
 			//如果在扫描状态时，炮台航向角设定值每10ms增加0.1°
 			Scan->YawPosAngleSet = Scan->YawPosAngleSet + Scan->ScanVel;
 			Scan->ShooterVelSet = 60.0f;
