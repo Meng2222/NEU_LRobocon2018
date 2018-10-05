@@ -1239,6 +1239,9 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 	/*无球退出扫描状态*/
 	if(PID->dogHungry == 1) PID->stop = 0;
 	
+	/*10s时*/
+	
+	
 	/*避障时退出*/
 	if(err->flag == 1) return;
 	
@@ -1246,7 +1249,7 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 	if(PID->stop == 1) return;
 	
 	/*15s内正常收球*/
-	if(PID->timeCnt < 1500) return;
+	if(PID->timeCnt < 2000) return;
 	
 	/*暂时设置为180s比赛时长*/
 	else if(PID->timeCnt < 18000)
