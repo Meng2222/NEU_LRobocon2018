@@ -858,16 +858,21 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 
 void UART4_OUT(PID_Value *pid_out , Err*error1)                                           //´®¿ÚÊä³öº¯Êý
 {
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->stop);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)error1->flag);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->timeCnt);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->doglast);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->dogHungry);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->corner);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)error1->flag);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->food);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)error1->errCnt);
@@ -897,8 +902,8 @@ void UART4_OUT(PID_Value *pid_out , Err*error1)                                 
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.ShooterVelSet);		
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.Angle_Deviation);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)gundata.cntIteration);
-//	USART_SendData(UART4,'\r');
-//	USART_SendData(UART4,'\n');
+	USART_SendData(UART4,'\r');
+	USART_SendData(UART4,'\n');
 }
 
 void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])                     //ÐÂ°æ×ßÏß
@@ -1036,7 +1041,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			timeCnt1++;
 			
 			/*ÏÞÊ±1s*//*±£Ö¤²»»á×ÔÐýµÄÊ±¼ä*/
-			if(timeCnt1 < 100)
+			if(timeCnt1 < 150)
 			{
 				pid->Angle += 180;
 				pid->kp = 5;
@@ -1045,7 +1050,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			}
 			
 			/*ÏÞÊ±1s*//*±£Ö¤²»»á×ÔÐýµÄÊ±¼ä*/
-			else if(timeCnt1 < 200)
+			else if(timeCnt1 < 300)
 			{
 				pid->kp = 5;
 				PID_Control(pid);
@@ -1178,7 +1183,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			timeCnt2++;
 			
 			/*ÏÞÊ±1s*//*±£Ö¤²»»á×ÔÐýµÄÊ±¼ä*/
-			if(timeCnt2 < 100)
+			if(timeCnt2 < 150)
 			{
 				pid->Angle += 180;
 				pid->kp = 5;
@@ -1187,7 +1192,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			}
 			
 			/*ÏÞÊ±1s*//*±£Ö¤²»»á×ÔÐýµÄÊ±¼ä*/
-			else if(timeCnt2 < 200)
+			else if(timeCnt2 < 300)
 			{
 				pid->kp = 5;
 				PID_Control(pid);
@@ -1235,7 +1240,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		error->Err_Y = pid->Y;
 	}
 	error->timeCnt++;
-	if(error->timeCnt > 500)
+	if(error->timeCnt > 150)
 	{
 		error->timeCnt = 0;
 		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));
@@ -1320,11 +1325,11 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 			/*¸üÐÂ×ßÐÎÓÅÏÈ¼¶*/
 			for(i = 0 ; i < 4 ; i ++ )
 			{
-				Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 5;
-				Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 4;
-				Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 3;
-				Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 1;
-				Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 2;
+				Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 3;
+				Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 2;
+				Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 1;
+				Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 0;
+				Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 1000;
 			}
 		}
 		
