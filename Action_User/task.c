@@ -48,6 +48,8 @@ void App_Task(void)
 int shootDebug = 0;
 int pidDebug = 1;
 int fortDebug = 0;
+int radarDebug = 0; /*雷达*/
+int rollerDebug = 0;/*辊子*/
 int ballcommand = 0;
 PID_Value *PID_x = NULL;
 PID_Value PID_A;
@@ -216,6 +218,16 @@ void WalkTask(void)
 			YawPosCtrl(0);
 			ShooterVelCtrl(50);
 		}
+		
+//=================================================================================================================
+		//激光
+//		RadarCorrection(PID_x);			/*雷达扫描*/
+//		YawPosCtrl(Set_FortAngle1);		//设定航向角
+//		ShooterVelCtrl(25);				//设定射球转速
+		//收球检测
+		CntGolf();
+		//发球检测
+//=================================================================================================================
 
 		if(fortDebug == 1)
 		{

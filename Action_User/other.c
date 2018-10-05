@@ -1,5 +1,19 @@
 #include "other.h"
+/*
+		  ______          ___________   _______________   _____________     ___________      ____     ___
+		 /      \        /           \ /               \ /             \   /           \    /    \   /   \  
+		/   /\   \      /    ________/ \_____     _____/ \____     ____/  /    _____    \  |      \  |    |
+	   /   /  \   \    |    /                |   |            |   |      |    /     \    | |       \ |    |  
+	  /   /____\   \   |   |                 |   |            |   |      |   |       |   | |    \   \|    |
+	 /   ________   \  |   |                 |   |            |   |      |   |       |   | |    |\   \    |
+	|   /        \   \ |    \________        |   |        ____|   |____  |    \_____/    | |    | \       | 
+    |   |        |   |  \            \       |   |       /             \  \             /  |    |  \      |
+    |___|        |___|   \___________/        \_/        \_____________/   \___________/    \___/   \____/  
+*/
+
 extern GunneryData Gundata;
+extern int radarDebug;
+extern int rollerDebug;
 //====================================================================================
 //                                    数据处理
 //====================================================================================
@@ -99,7 +113,7 @@ float TargetToFort_AngleProcessing(float Teh_X,float Teh_Y,float Target_X,float 
 	return (SetToFort_AngleProcessing(r_Veh1,r_Fort0,R_Fort0,(Return_SymmetricRangeValue((Return_Angle2(Teh_X,Teh_Y,Target_X,Target_Y)-90.f),180.f))));
 }
 
-
+/***************************BUG封印*****************************/
 void GetFloat (float Num10, int places)//蓝牙发送浮点数
 {
 	if(Num10<0){USART_OUT(UART4,(uint8_t*)"%s","-");}
@@ -113,6 +127,7 @@ void GetFloat (float Num10, int places)//蓝牙发送浮点数
 		USART_OUT(UART4,(uint8_t*)"%d  ",(int)Num10);
 	}
 }
+/***************************BUG封印*****************************/
 
 float ReturnRadian(float ANG)
 {
@@ -122,6 +137,16 @@ float ReturnRadian(float ANG)
 float ReturnAngle(float ANG)
 {
 	return (ANG*180/Pi);
+}
+
+float ReturnArrayMin (int Num , float array[])
+{
+	float min=11111111.f;
+	for(int i=Num ; i>=0 ; i--)
+	{
+		if((min-array[i])>0){min=array[i];}
+	}
+	return min;
 }
 /*************************************************************************************
                                       时间处理*
@@ -138,12 +163,6 @@ void Delay(int countTime)//延迟函数
 	}
 	t_cnt=0;
 	t_Flag=0;
-}
-
-int Timer(void)//计时函数
-{
-	if(t_Flag==0){t_cnt++;return 0;}
-	if(t_Flag==1){t_cnt=0;return t_cnt;}
 }
 /*************************************************************************************
                                       回归方程
@@ -209,7 +228,7 @@ float Return_LinearRegressionEquation_r (float array7[2][101], int NUM)
 
 float Return_LinearRegressionEquation_angle (float array7[2][101], int num)//求回归方程方向
 {
-	
+	return 0;
 }//【再议】
 
 float ReturnDistance(float array8[2][101] , int pointNum , float k , float b)
@@ -247,10 +266,10 @@ float Avalue;
 float Bvalue;
 void Laser_data(void)
 {
-//	Avalue=2.4479f*fort.laserAValueReceive+71.215f;	
-//	Bvalue=2.44885f*fort.laserBValueReceive+57.925f;
-	Avalue=2.4621f*fort.laserAValueReceive+29.234f;	
-	Bvalue=2.4706f*fort.laserBValueReceive+11.899f;
+//	Avalue=2.4479*fort.laserAValueReceive+71.215;	
+//	Bvalue=2.44885*fort.laserBValueReceive+57.925;
+	Avalue=(float)(2.4621f*fort.laserAValueReceive+29.234f);	
+	Bvalue=(float)(2.4706f*fort.laserBValueReceive+11.899f);
 }
 //====================================================================================
 //                                   多元走行
@@ -413,85 +432,6 @@ void Collision_Process(void)//碰撞处理++
 //		//投球后laserlock归0
 //	}
 //}
-//====================================================================================
-//                                     发球检测
-//====================================================================================
-extern PID_Value PID_A;
-int ifPushFlag;
-Record shooterVel;
-
-void ShooterVel_Record(void)//记录数据
-{
-    shooterVel.p100=shooterVel.p90;
-	shooterVel.p90=shooterVel.p80;
-	shooterVel.p80=shooterVel.p70;
-	shooterVel.p70=shooterVel.p60;
-	shooterVel.p60=shooterVel.p50;
-	shooterVel.p50=shooterVel.p40;
-	shooterVel.p40=shooterVel.p30;
-	shooterVel.p30=shooterVel.p20;
-	shooterVel.p20=shooterVel.p10;
-	shooterVel.p10=shooterVel.now;
-	shooterVel.now=Gundata.ShooterVelRec;
-}
-
-int ifShootFlag=0;
-int ifPushFlag_remain=0;
-int t_ifpushflag=0;
-void Remain_ifPushFlag(void)//ifPushFlag标志持续250ms
-{
-	ifPushFlag=PID_A.fire_command;
-	
-	if(ifPushFlag==1){ifPushFlag_remain=1;}
-	if(ifPushFlag_remain==1)
-	{
-		t_ifpushflag++;
-		if(t_ifpushflag<=35){ifPushFlag=1;}
-		if(t_ifpushflag>35) {ifPushFlag_remain=0;t_ifpushflag=0;}
-	}
-}
-
-//void Filter(void)//滤波函数
-//{}
-void Data_Processing(void)//数据处理
-{
-//滤波
-//积分
-//微分
-}
-
-//射击次数
-int Bucket_0_ShootNum=0;
-int Bucket_1_ShootNum=0;
-int Bucket_2_ShootNum=0;
-int Bucket_3_ShootNum=0;
-//击中次数
-int Bucket_0_HitNum=0;
-int Bucket_1_HitNum=0;
-int Bucket_2_HitNum=0;
-int Bucket_3_HitNum=0;
-
-void Shoot_Judge(void)//发球检测
-{
-	if(ifPushFlag==1)
-	{
-		if(shooterVel.p100-shooterVel.p90>=6||shooterVel.p100-shooterVel.p80>=6)//投球速率下降
-		{
-			if(shooterVel.p100-shooterVel.now<=6){ifShootFlag=1;}
-		}
-	}
-	
-	if(ifShootFlag==1)
-	{
-		ifPushFlag_remain=0;
-		t_ifpushflag=0;
-		if(Gundata.BucketNum==0){Bucket_0_ShootNum++;}
-		if(Gundata.BucketNum==1){Bucket_1_ShootNum++;}	
-		if(Gundata.BucketNum==2){Bucket_2_ShootNum++;}
-		if(Gundata.BucketNum==3){Bucket_3_ShootNum++;}	
-		ifShootFlag=0;
-	}
-}
 
 //====================================================================================
 //                                  投球逻辑/adc（全场）
@@ -553,7 +493,7 @@ void SetFortAngle(PID_Value *pos,float set_angle)//
 //====================================================================================
 //                                  雷达实验
 //====================================================================================
-float setangle=0;           //
+float setangle=0.f;           //
 
 float r_fortAngle1;         //
 float r_fortAngle0;         //
@@ -619,10 +559,10 @@ void DataProcessing (PID_Value *p)
 		Fort_Y = p->Y + (10.5f) * cos(p->Angle * Pi / 180.0f);	
 		//计算激光坐标
 		r_fortAngle1=FortToGround_AngleProcessing(p->Angle,r_fortAngle0);
-		A_Laser_X=Fort_X-40.f*sin(Return_SymmetricRangeValue((r_fortAngle1+90.f),180)*Pi/180)-23.32f*sin(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
-		A_Laser_Y=Fort_Y+40.f*cos(Return_SymmetricRangeValue((r_fortAngle1+90.f),180)*Pi/180)+23.32f*cos(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
-		B_Laser_X=Fort_X-40.f*sin(Return_SymmetricRangeValue((r_fortAngle1-90.f),180)*Pi/180)-23.32f*sin(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
-		B_Laser_Y=Fort_Y+40.f*cos(Return_SymmetricRangeValue((r_fortAngle1-90.f),180)*Pi/180)+23.32f*cos(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
+		A_Laser_X=Fort_X-40.f*sin(Return_SymmetricRangeValue((r_fortAngle1+90.f),180)*Pi/180)-23.32*sin(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
+		A_Laser_Y=Fort_Y+40.f*cos(Return_SymmetricRangeValue((r_fortAngle1+90.f),180)*Pi/180)+23.32*cos(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
+		B_Laser_X=Fort_X-40.f*sin(Return_SymmetricRangeValue((r_fortAngle1-90.f),180)*Pi/180)-23.32*sin(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
+		B_Laser_Y=Fort_Y+40.f*cos(Return_SymmetricRangeValue((r_fortAngle1-90.f),180)*Pi/180)+23.32*cos(Return_SymmetricRangeValue(r_fortAngle1,180)*Pi/180.f);
 }
 
 void SetFortAngle(PID_Value *pos,float set_angle)//
@@ -861,17 +801,21 @@ void  CheckCorner  (float array9 [2][101] , int num)//num从1开始计数,num>6
 	/*判断本次是否有新角点产生*/
 	while(ifCornerIncrease==1);
 	
-//			USART_OUT(UART4,(uint8_t*)"%d",CntCorner);
-/*	
-			//发个数先
-			for (int i=0 ; i<=CntCorner+1 ; i++)
-			{
-					USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","C","X",":");
-					GetFloat (array9 [0][CornerPointNum [i]], 3);
-					USART_OUT(UART4,(uint8_t*)"    %s%s%s","C","Y",":");
-					GetFloat (array9 [1][CornerPointNum [i]], 3);
-			}
-*/
+		/**********发数**********/
+		if(radarDebug==1)
+		{
+//				//USART_OUT(UART4,(uint8_t*)"%d",CntCorner);
+//				//发个数先
+//				for (int i=0 ; i<=CntCorner+1 ; i++)
+//				{
+//						USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","C","X",":");
+//						GetFloat (array9 [0][CornerPointNum [i]], 3);
+//						USART_OUT(UART4,(uint8_t*)"    %s%s%s","C","Y",":");
+//						GetFloat (array9 [1][CornerPointNum [i]], 3);
+//				}
+		}
+		/**********发数**********/
+
 	float FOR [2][101];
 	float BAC [2][101];
 	int TrueCPNum [11];
@@ -908,20 +852,34 @@ void  CheckCorner  (float array9 [2][101] , int num)//num从1开始计数,num>6
 			}
 		}
 	}
-		for(int i=0 ; i<=TCP_number+1 ; i++)
-        {
-			USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","P","X",":");
-			GetFloat (array9 [0][TrueCPNum [i]], 3);
-			USART_OUT(UART4,(uint8_t*)"    %s%s%s","P","Y",":");
-			GetFloat (array9 [1][TrueCPNum [i]], 3);
-        }
-		for(int i=1 ; i<=TCP_number ; i++)
-        {
-			USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","C","X",":");
-			GetFloat (array9 [0][TrueCPNum [i]], 3);
-			USART_OUT(UART4,(uint8_t*)"    %s%s%s","C","Y",":");
-			GetFloat (array9 [1][TrueCPNum [i]], 3);
-        }
+	
+	
+		/**********发数**********/
+		if(radarDebug==1)
+		{
+//				for(int i=0 ; i<=TCP_number+1 ; i++)
+//				{
+//					USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","P","X",":");
+//					GetFloat (array9 [0][TrueCPNum [i]], 3);
+//					USART_OUT(UART4,(uint8_t*)"    %s%s%s","P","Y",":");
+//					GetFloat (array9 [1][TrueCPNum [i]], 3);
+//				}
+		}
+		/**********发数**********/
+		/**********发数**********/
+		if(radarDebug==1)
+		{
+				for(int i=1 ; i<=TCP_number ; i++)
+				{
+					USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","C","X",":");
+					GetFloat (array9 [0][TrueCPNum [i]], 3);
+					USART_OUT(UART4,(uint8_t*)"    %s%s%s","C","Y",":");
+					GetFloat (array9 [1][TrueCPNum [i]], 3);
+				}
+		}
+		/**********发数**********/
+		
+		
 	//储存TCPN数组数据
 	for(int i=1 ; i<=TCP_number ; i++)
 	{
@@ -942,6 +900,115 @@ void CheckSquare()
 	//检测正方形
 	if(CheckPermit==1)/*标志位（Radar提供）*/
 	{
+/////////////////////////////////////////////////////////////////////////////////////////	    
+		/*角点正方形检测*/
+        for(int i=1 ; i<=Corner_Num ; i++)
+		{
+			if(SquareLock==1)
+			{break;}
+			for (int j=1 ; j<=Corner_Num ; j++)
+			{
+				//如果距离4908+-
+				if(Distance(Corner,i,Corner,j)>=4808&&Distance(Corner,i,Corner,j)<=5008)
+				{
+					//储存CheckPoint数据
+					F_Num++;
+					RangeF[0][F_Num]=Corner[0][j];
+					RangeF[1][F_Num]=Corner[1][j];
+				}
+				//如果距离6941+-
+				if(Distance(Corner,i,Corner,j)>=6841&&Distance(Corner,i,Corner,j)<=7041)
+				{
+					//储存CheckPoint数据
+					S_Num++;
+					RangeS[0][S_Num]=Corner[0][j];
+					RangeS[1][S_Num]=Corner[1][j];
+				}
+			}
+			//对RangeF、RangeS拟合正方形
+			/*如果检测到正方形，四个数组同时清零，四个变量同时清零，CheckPermit清零*/
+			//循环在RangeF中找垂直点
+			for(int j=1 ; j<=F_Num ; j++)
+			{
+				if(SquareLock==1)
+				{break;}
+				for(int k=1 ; k<=F_Num ; k++)
+				{
+					if(SquareLock==1)
+					{break;}
+					//判断两互相垂直的点
+					if(ReturnAbsolute(Return_Angle(Corner,i,RangeF,j)-Return_Angle(Corner,i,RangeF,k))>=85&&\
+					   ReturnAbsolute(Return_Angle(Corner,i,RangeF,j)-Return_Angle(Corner,i,RangeF,k))<=95&&\
+					   SquareLock==0)
+					{
+						//循环判断RangeS中能作为角平分线的点
+						for(int m=1 ; m<=S_Num ; m++)
+						{
+							if(ReturnAbsolute(Return_Angle(Corner,i,RangeS,m)-Return_Angle(Corner,i,RangeF,j))>=40&&\
+							   ReturnAbsolute(Return_Angle(Corner,i,RangeS,m)-Return_Angle(Corner,i,RangeF,j))<=50&&\
+							   ReturnAbsolute(Return_Angle(Corner,i,RangeS,m)-Return_Angle(Corner,i,RangeF,k))>=40&&\
+							   ReturnAbsolute(Return_Angle(Corner,i,RangeS,m)-Return_Angle(Corner,i,RangeF,k))<=50&&\
+                               SquareLock==0)
+							{
+								CheckPermit=0;
+								SquareLock=1;
+								
+								SquarePos[0][0]=Corner[0][i];
+								SquarePos[1][0]=Corner[1][i];
+								SquarePos[0][1]=RangeF[0][j];
+								SquarePos[1][1]=RangeF[1][j];
+								SquarePos[0][2]=RangeS[0][m];
+								SquarePos[1][2]=RangeS[1][m];
+								SquarePos[0][3]=RangeF[0][k];
+								SquarePos[1][3]=RangeF[1][k];
+								
+							}
+							else if (SquareLock==0)//三个点确定最后一个点（误差，再议）
+							{
+								CheckPermit=0;
+								SquareLock=1;
+								
+								SquarePos[0][0]=Corner[0][i];
+								SquarePos[1][0]=Corner[1][i];
+								SquarePos[0][1]=RangeF[0][j];
+								SquarePos[1][1]=RangeF[1][j];
+								SquarePos[0][2]=(RangeF[0][j]+RangeF[0][k])-Corner[0][i];
+								SquarePos[1][2]=(RangeF[1][j]+RangeF[1][k])-Corner[1][i];
+								SquarePos[0][3]=RangeF[0][k];
+								SquarePos[1][3]=RangeF[1][k];
+							}
+						}
+					}
+				}
+				for(int k=1 ; k<=S_Num ; k++)
+				{
+					if(SquareLock==1)
+					{break;}
+					//判断两夹角45度的角
+					if(ReturnAbsolute(Return_Angle(Corner,i,RangeF,j)-Return_Angle(Corner,i,RangeS,k))>=40&&\
+					   ReturnAbsolute(Return_Angle(Corner,i,RangeF,j)-Return_Angle(Corner,i,RangeS,k))<=50&&\
+					   SquareLock==0)
+					{
+								CheckPermit=0;
+								SquareLock=1;
+						
+								SquarePos[0][0]=Corner[0][i];
+								SquarePos[1][0]=Corner[1][i];
+								SquarePos[0][1]=RangeF[0][j];
+								SquarePos[1][1]=RangeF[1][j];
+								SquarePos[0][2]=RangeS[0][k];
+								SquarePos[1][2]=RangeS[1][k];
+								SquarePos[0][3]=Corner[0][i]+RangeS[0][k]-RangeF[0][j];
+								SquarePos[1][3]=Corner[1][i]+RangeS[1][k]-RangeF[1][j];
+					}
+				}
+			}
+			F_Num=0;
+			S_Num=0;
+			memset(RangeF,0,sizeof(RangeF));
+			memset(RangeS,0,sizeof(RangeS));
+		}
+/////////////////////////////////////////////////////////////////////////////////////////
 		for(int i=1 ; i<=Corner_Num ; i++)
 		{
 			if(SquareLock==1)
@@ -1055,6 +1122,20 @@ void CheckSquare()
 			memset( CheckPoint ,0, sizeof(CheckPoint) );
 			//Corner、CheckPoint清零
 			CheckPermit=0;
+		
+			/**********发数**********/
+			if(radarDebug==1)
+			{
+//					for(int i=0 ; i<=3 ; i++)
+//					{
+//						USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","A","X",":");
+//						GetFloat (SquarePos[0][i], 3);
+//						USART_OUT(UART4,(uint8_t*)"    %s%s%s","A","Y",":");
+//						GetFloat (SquarePos[1][i], 3);
+//					}
+			}
+			/**********发数**********/
+		
 		}
 	}
 }
@@ -1089,16 +1170,20 @@ void SecondOrder_Filter(void)//滤波函数
 							{
 								CheckCorner  (ATargetPositionRecord , cntNumA);
 							}
-							/*收数*/
+							
+							/**********发数**********/
+							if(radarDebug==1)
 							{
-//									for(int i=cntNumA;i>=1;i--)
-//									{
-//									USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","A","X",":");
-//									GetFloat (ATargetPositionRecord[0][i], 3);
-//									USART_OUT(UART4,(uint8_t*)"%s%s%s","A","Y",":");
-//									GetFloat (ATargetPositionRecord[1][i], 3);
-//									}
+									for(int i=cntNumA;i>=1;i--)
+									{
+										USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","A","X",":");
+										GetFloat (ATargetPositionRecord[0][i], 3);
+										USART_OUT(UART4,(uint8_t*)"%s%s%s","A","Y",":");
+										GetFloat (ATargetPositionRecord[1][i], 3);
+									}
 							}
+							/**********发数**********/
+
 						}
 						cntNumA=0;
 						//ATargetPositionRecord数组清零
@@ -1134,16 +1219,20 @@ void SecondOrder_Filter(void)//滤波函数
 							{
 								CheckCorner  (BTargetPositionRecord , cntNumB);
 							}
-							/*收数*/
+							
+							/**********发数**********/
+							if(radarDebug==1)
 							{
-//									for(int i=cntNumB;i>=1;i--)
-//									{
-//									USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","B","X",":");
-//									GetFloat (BTargetPositionRecord[0][i], 3);
-//									USART_OUT(UART4,(uint8_t*)"%s%s%s","B","Y",":");
-//									GetFloat (BTargetPositionRecord[1][i], 3);
-//									}
+									for(int i=cntNumB;i>=1;i--)
+									{
+										USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s","B","X",":");
+										GetFloat (BTargetPositionRecord[0][i], 3);
+										USART_OUT(UART4,(uint8_t*)"%s%s%s","B","Y",":");
+										GetFloat (BTargetPositionRecord[1][i], 3);
+									}
 							}
+							/**********发数**********/
+							
 						}
 						cntNumB=0;
 						//ATargetPositionRecord数组清零
@@ -1160,8 +1249,8 @@ void Power_On_Self_Test(PID_Value *pos)//【加电自检】
 	t_post++;
 	Laser_data();
 	/*炮台——航向电机——加电自检*/
-		if(t_post<=240){post_fortAngle+=0.5f;}
-		if(t_post>240) {post_fortAngle=0;}
+		if(t_post<=240.f){post_fortAngle+=0.5f;}
+		if(t_post>240.f) {post_fortAngle=0.f;}
 		Set_FortAngle1=SetToFort_AngleProcessing(pos->Angle,r_fortAngle0,fort.yawPosReceive,post_fortAngle);//
 					USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","S","A","n","g",":");
 					GetFloat (Set_FortAngle1, 3);
@@ -1196,7 +1285,7 @@ void Power_On_Self_Test(PID_Value *pos)//【加电自检】
 	/*POST加电自检Finish*/
 }
 
-int cntNum=0;
+int cntScanTime=0;
 int pointNum=0;
 void RadarCorrection(PID_Value *pos)//雷达校正系统
 {
@@ -1213,11 +1302,19 @@ void RadarCorrection(PID_Value *pos)//雷达校正系统
 		//计算角度
 //		r_fortAngle1=Return_SymmetricRangeValue((pos->Angle+Return_SymmetricRangeValue(-Return_NonSymmetricRangeValue(fort.yawPosReceive,360,0),180)),180);
 		r_fortAngle1=FortToGround_AngleProcessing(pos->Angle,r_fortAngle0);/**///炮台对地角度（车坐标系）
+		
+			/**********发数**********/
+			if(radarDebug==1)
+			{
 				//返回角度
 //				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","P","A","n","g",":");
 //				GetFloat (pos->Angle, 3);
 //				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s","F","A","n","g",":");
 //				GetFloat (r_fortAngle1, 3);
+			}
+			/**********发数**********/
+
+			
 		//计算坐标
 		r_standardFortAngle=Return_SymmetricRangeValue((r_fortAngle1+90.f),180.f);//炮台对地角度（标准坐标系）
 		A_targetx=Avalue*(cos(Pi*r_standardFortAngle/180.f))+A_Laser_X;/////////|————改为两激光坐标
@@ -1225,6 +1322,9 @@ void RadarCorrection(PID_Value *pos)//雷达校正系统
 		B_targetx=Bvalue*(cos(Pi*r_standardFortAngle/180.f))+B_Laser_X;/////////|————改为两激光坐标
 		B_targety=Bvalue*(sin(Pi*r_standardFortAngle/180.f))+B_Laser_Y-2400.f;////|————改为两激光坐标
 		
+			/**********发数**********/
+			if(radarDebug==1)
+			{
 				//返回坐标
 //				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","A","T","a","r","X",":");
 //				GetFloat (A_targetx, 3);
@@ -1234,6 +1334,9 @@ void RadarCorrection(PID_Value *pos)//雷达校正系统
 //				GetFloat (B_targetx, 3);
 //				USART_OUT(UART4,(uint8_t*)"%s%s%s%s%s%s","B","T","a","r","Y",":");
 //				GetFloat (B_targety, 3);
+			}
+			/**********发数**********/
+			
 				
 		//数据分析
 		{
@@ -1243,17 +1346,46 @@ void RadarCorrection(PID_Value *pos)//雷达校正系统
 		}
 	}
 	if(SquareLock==1)
-	{
-		cntNum++;
-		pointNum=(cntNum%1600)/400;
-		TargetToFort_AngleProcessing(Fort_X,Fort_Y-2400.f,SquarePos[0][pointNum],SquarePos[1][pointNum],pos->Angle,r_fortAngle0,fort.yawPosReceive);
-		if(cntNum>=1600)
+	{	
+		cntScanTime++;
+		pointNum=(int)((cntScanTime%1600)/400);
+		
+		/*重新排列SquarePos数组*/
+		
+		Set_FortAngle1=TargetToFort_AngleProcessing(Fort_X,Fort_Y,SquarePos[0][pointNum],SquarePos[1][pointNum]+2400.f,pos->Angle,r_fortAngle0,fort.yawPosReceive);
+		
+			/**********发数**********/
+			if(radarDebug==1)
+			{
+				USART_OUT(UART4,(uint8_t*)"\r\n%s%s%s%s%s%s","S","Q","U","R","E",":");
+				GetFloat (SquarePos[0][0], 3);
+				GetFloat (SquarePos[1][0], 3);
+				GetFloat (SquarePos[0][1], 3);
+				GetFloat (SquarePos[1][1], 3);
+				GetFloat (SquarePos[0][2], 3);
+				GetFloat (SquarePos[1][2], 3);
+				GetFloat (SquarePos[0][3], 3);
+				GetFloat (SquarePos[1][3], 3);
+				USART_OUT(UART4,(uint8_t*)"\r\n");
+				GetFloat (pointNum, 0);
+				GetFloat (Fort_X       , 3);
+				GetFloat (Fort_Y-2400.f, 3);
+				GetFloat (SquarePos[0][pointNum], 3);
+				GetFloat (SquarePos[1][pointNum], 3);
+				USART_OUT(UART4,(uint8_t*)"\r\n");
+				GetFloat (pos->Angle, 3);
+				GetFloat (r_fortAngle0, 3);
+				GetFloat (fort.yawPosReceive, 3);
+				GetFloat (Set_FortAngle1, 3);
+			}
+			/**********发数**********/
+		if(cntScanTime>=1600)
 		{
-		memset(SquarePos,0,sizeof(SquarePos));
-		cntNum=0;
-		pointNum=0;
-		SquareLock=0;
-		setangle=0;
+			memset(SquarePos,0,sizeof(SquarePos));
+			cntScanTime=0;
+			pointNum=0;
+			SquareLock=0;
+			setangle=0;
 		}
 	}
 }
@@ -1280,18 +1412,398 @@ void Check_Target(PID_Value *pos)
 //                                       吞球检测
 //====================================================================================
 //左5右6
-float Lef_v[21];//左辊子速率读取
-float L_Value;  //左辊子阈值
-int cnt_L=1;
-float Rig_v[21];//右辊子速率读取
-float R_Value;	//右辊子阈值
-int cnt_R=1;
-int Golf_Num=0;	//计算Golf球数
+float Lef_v[51];				//左辊子速率读取
+float FLef_v[51];				//左辊子速率读取
+float L_Value;  				//左辊子阈值
+int cntL=0;						//L速率记录
+int LIntegration=0;				//L积分计算
+int cnt_L_Cliff=0;				//L断点计数
 
-void CntGolf()
+float Rig_v[51];				//右辊子速率读取
+float FRig_v[51];				//右辊子速率读取
+float R_Value;					//右辊子阈值
+int cntR=0;						//R速率记录
+int RIntegration=0;				//R积分计算
+int cnt_R_Cliff=0;				//R断点计数
+
+//int Golf_num;                    
+int Golf_Num=0;					//计算Golf吞球数
+int Entrepot[2]={0,0};			//计算仓库Golf吞球数（[0]左[1]右）
+
+int RollerStuck[2]={0,0};		//卡球标志位
+int cnt_L_Stuck=0;				//L卡球计时 && L故障处理计时
+int cnt_R_Stuck=0;				//R卡球计时 && R故障处理计时
+int RollerBored[2]={0,0};		//空缺标志位
+int cnt_L_Leisure;				//L空缺计时
+int cnt_R_Leisure;				//R空缺计时
+int Bored=0;					//空缺标志位
+int RollerParalyze[2]={0,0};	//瘫痪标志位
+int cnt_L_Paralyze=0;
+int cnt_R_Paralyze=0;
+int XiMaTa;
+
+void CntGolf(void)
 {
+	if(RollerStuck[0]==0)	{VelCrl(CAN2, 5,   SET_ROLLER_SPEED * 32768);}
+	if(RollerStuck[1]==0)	{VelCrl(CAN2, 6, 0-SET_ROLLER_SPEED * 32768);}
+	
+	//数据记录
+	cntL++;
+	Lef_v[0] = 0.f+GetMotor5Speed()/32768;
+	cntR++;
+	Rig_v[0] = 0.f-GetMotor6Speed()/32768;
+	
+	//储存500ms辊子转速
+	for(int i=50 ; i>=1 ; i--)
+	{
+		Lef_v[i]=Lef_v[i-1];
+		Rig_v[i]=Rig_v[i-1];
+	}
+	for(int i=50 ; i>=0 ; i--)
+	{
+		FLef_v[i]=Lef_v[i];
+		FRig_v[i]=Rig_v[i];
+	}
+	
+	//一维滤波(向下滤波)
+	if(FLef_v[2]-FLef_v[1]>=0 && FLef_v[2]-FLef_v[3]>=0){FLef_v[2]=(FLef_v[3]+FLef_v[1])/2;}
+	if(FRig_v[2]-FRig_v[1]>=0 && FRig_v[2]-FRig_v[3]>=0){FRig_v[2]=(FRig_v[3]+FRig_v[1])/2;}
 	
 	
+	//故障处理
+	if(RollerStuck[0]==1)	
+	{
+		cnt_L_Stuck++ ; 
+		if(cnt_L_Stuck<100)
+		{
+			MotorOff(CAN2,5);
+		}			
+		else if(cnt_L_Stuck==100)
+		{
+			MotorOn(CAN2,5);
+		}
+		else if(cnt_L_Stuck>100&&cnt_L_Stuck<=350)
+		{
+			VelCrl(CAN2, 5, 0-SET_ROLLER_SPEED * 32768);
+		}
+		else
+		{
+			VelCrl(CAN2, 5,   SET_ROLLER_SPEED * 32768);
+			if(Lef_v[0]>=SET_ROLLER_SPEED-10)
+			{
+			cnt_L_Stuck=0;
+			RollerStuck[0]=0;
+			}
+			else{/*瘫痪判断*/}
+		}
+	}
+	if(RollerStuck[1]==1)	
+	{
+		cnt_R_Stuck++ ;
+		if(cnt_R_Stuck<100)
+		{
+			MotorOff(CAN2,6);
+		}
+		else if(cnt_R_Stuck==100)
+		{
+			MotorOn(CAN2,6);
+		}
+		else if(cnt_R_Stuck>100&&cnt_R_Stuck<=350)
+		{
+			VelCrl(CAN2, 6,   SET_ROLLER_SPEED * 32768);
+		}
+		else
+		{
+			VelCrl(CAN2, 6, 0-SET_ROLLER_SPEED * 32768);
+			if(Rig_v[0]>=SET_ROLLER_SPEED-10)
+			{
+			cnt_R_Stuck=0;
+			RollerStuck[1]=0;
+			}
+			else{/*瘫痪判断*/}
+		}
+	}
+	if(RollerStuck[0]==1&&RollerStuck[1]==1)
+	{
+		USART_OUT(UART4,(uint8_t*)"\r\n%s","! ! ! XiMaTa ! ! !");
+	}
+	
+	/**********发数**********/
+	if(rollerDebug==1)
+	{
+		USART_OUT(UART4,(uint8_t*)"%s","L:");
+		GetFloat (Lef_v[2] , 0);
+		USART_OUT(UART4,(uint8_t*)"%s","R:");
+		GetFloat (Rig_v[2] , 0);
+		USART_OUT(UART4,(uint8_t*)"%s","FL:");
+		GetFloat (FLef_v[2] , 0);
+		USART_OUT(UART4,(uint8_t*)"%s","FR:");
+		GetFloat (FRig_v[2] , 0);
+	}
+	/**********发数**********/
+	
+	/**********发数**********/
+	if(rollerDebug==1)
+	{
+		USART_OUT(UART4,(uint8_t*)"%s","LEFT:");
+		GetFloat (Entrepot[0] , 0);
+		USART_OUT(UART4,(uint8_t*)"%s","RIGHT:");
+		GetFloat (Entrepot[1] , 0);
+	}
+	/**********发数**********/
+	
+	/*数据处理*/
+	//以数据接近设定值打断点
+	//数组以[2]为起始位，[cntL]为终止位,实际长度为(cntL-1)
+	
+	
+	
+	/*LEFT*/
+	if(FLef_v[0]>=(SET_ROLLER_SPEED - LEFT_ROLLER_THRESHOLD))
+	{
+		//【计时】连续未收球————【Bored标志位】
+		cnt_L_Leisure+=cntL;
+		//空档判断
+		//如果数组长度小于【阈值】，判定为连续未收球
+		if(cntL-1<3/*给定长度*/)
+		{
+			if(cnt_L_Leisure>=1500/*给定时间*/){RollerBored[0]=1;}
+		}
+		
+		//如果数组长度大于【阈值】
+		if(cntL-1>=3/*给定长度*/)
+		{
+			//积分
+			for(int i=cntL ; i>=2 ; i--)
+			{
+				LIntegration+=(SET_ROLLER_SPEED-FLef_v[i]);
+			}
+//			//下降断点【每超过一次阈值，断点数+1】
+//			//平衡区/极值判断（断点）
+//			//上升区判断
+//			//【分类】
+//			for(int i=cntL ; i>=4 ; i--)
+//			{
+//				if(Lef_v[i]-Lef_v[i-1]>=5/*给定断点阈值*/ || Lef_v[i]-Lef_v[i-2]>=5/*给定断点阈值*/)	{}		/*断点判断*/
+//				
+//				if(Lef_v[i]-Lef_v[i-1]>=0)	{cntDecline++;}			/*下降判断（下降标志位++；上升标志位=0；记录拐点）*/
+//				
+//				if(Lef_v[i]-Lef_v[i-1]>=0)	{cntRise++;}			/*上升判断（上升标志位++；下降标志位=0；记录拐点）*/
+//				
+//				for()												/*平衡区判断*/
+//				{
+//					
+//				}
+//			}
+			//计数判断————【统计】++
+			if((ReturnArrayMin(cntL,FLef_v))<=65||(cntL-1)>=3)
+			{
+				RollerBored[0]=0;
+				cnt_L_Leisure=0;
+				Entrepot[0]++;
+				if((ReturnArrayMin(cntL,FLef_v))<=56/*54*/&&(cntL-1)>=8/*9*/&&LIntegration>=111)
+				{
+					Entrepot[0]++;
+					if((ReturnArrayMin(cntL,FLef_v))<=43&&(cntL-1)>=11)
+					{
+						Entrepot[0]++;
+						if((ReturnArrayMin(cntL,FLef_v))<=38&&(cntL-1)>=14&&LIntegration>=300)
+						{
+							Entrepot[0]++;
+						}
+					}
+				}
+			}
+			
+			/**********发数**********/
+			if(rollerDebug==1)
+			{
+				USART_OUT(UART4,(uint8_t*)"%s","LInt：");
+				GetFloat ((LIntegration) , 0);
+				USART_OUT(UART4,(uint8_t*)"%s","LNUM:");
+				GetFloat ((cntL-1) , 0);
+				USART_OUT(UART4,(uint8_t*)"%s","LMIN:");
+				GetFloat ((ReturnArrayMin(cntL,FLef_v)) , 0);
+			}
+			/**********发数**********/
+			
+		/*IF计数增加 {RollerBored[0]归0；cnt_L_Leisure归0}*/
+				
+			//卡球判断（1.转速范围/2.极值判断/3.上升区判断）————【计时】
+			{
+			//卡球解决方案（正转时进球数+[2+]，反转解决进球数+[0]）————【延迟】
+			//反转时屏蔽数据下降判断————【标志位】
+			//判断瘫痪情况————【解决】————最终速度给定为正转
+			}
+			//干扰球判断（转速滤波）————【实验】
+			
+		}
+		//归0
+		cntL=0;
+		LIntegration=0;
+	}
+	
+	
+	
+	/*RIGHT*/
+	if(FRig_v[0]>=(SET_ROLLER_SPEED - RIGHT_ROLLER_THRESHOLD))
+	{
+		//【计时】连续未收球————【Bored标志位】
+		cnt_R_Leisure+=cntR;
+		//空档判断
+		//如果数组长度小于【阈值】，判定为连续未收球
+		if(cntR-1<3/*给定长度*/)
+		{
+			if(cnt_R_Leisure>=1500/*给定时间*/){RollerBored[1]=1;}
+		}
+		
+		//如果数组长度大于【阈值】
+		if(cntR-1>=3/*给定长度*/)
+		{
+			//积分
+			for(int i=cntR ; i>=2 ; i--)
+			{
+				RIntegration+=(SET_ROLLER_SPEED-FRig_v[i]);
+			}
+			
+			//计数判断————【统计】++
+			if((ReturnArrayMin(cntR,FRig_v))<=64&&(cntR-1)>=3)
+			{
+				RollerBored[1]=0;
+				cnt_R_Leisure=0;
+				Entrepot[1]++;
+				if((ReturnArrayMin(cntR,FRig_v))<=59/*56*/&&(cntR-1)>=10/*12*/&&RIntegration>=111)
+				{
+					Entrepot[1]++;
+					if((ReturnArrayMin(cntR,FRig_v))<=53&&(cntR-1)>=18)
+					{
+						Entrepot[1]++;
+						if((ReturnArrayMin(cntR,FRig_v))<=40&&cntR-1>=23&&cnt_R_Leisure>=404)
+						{
+							Entrepot[1]++;
+						}
+					}
+				}
+			}
+			
+			/**********发数**********/
+			if(rollerDebug==1)
+			{
+				USART_OUT(UART4,(uint8_t*)"%s","RInt：");
+				GetFloat ((RIntegration) , 0);
+				USART_OUT(UART4,(uint8_t*)"%s","RNUM:");
+				GetFloat ((cntR-1) , 0);
+				USART_OUT(UART4,(uint8_t*)"%s","RMIN:");
+				GetFloat ((ReturnArrayMin(cntR,FRig_v)) , 0);
+			}
+			/**********发数**********/
+			
+		/*IF计数增加 {RollerBored[0]归0；cnt_L_Leisure归0}*/
+		
+			
+			//卡球判断（1.转速范围/2.极值判断/3.上升区判断）————【计时】
+			{
+			//卡球解决方案（正转时进球数+[2+]，反转解决进球数+[0]）————【延迟】
+			//反转时屏蔽数据下降判断————【标志位】
+			//判断瘫痪情况————【解决】————最终速度给定为正转
+			}
+			//干扰球判断（转速滤波）————【实验】
+		}
+		//归0
+		cntR=0;
+		RIntegration=0;
+	}
+	//故障判断Stuck
+	if(RollerStuck[0]==0)
+	{
+		if(FLef_v[0]<=15)
+		{
+			cnt_L_Stuck++;
+			if(cnt_L_Stuck>=200)
+			{
+				RollerStuck[0]=1;
+				cnt_L_Stuck=0;
+			}
+		}
+		else if (FLef_v[0]>=(SET_ROLLER_SPEED-10)){cnt_L_Stuck=0;}
+	}
+	if(RollerStuck[1]==0)
+	{
+		if(FRig_v[0]<=15)
+		{
+			cnt_R_Stuck++;
+			if(cnt_R_Stuck>=200)
+			{
+				RollerStuck[1]=1;
+				cnt_R_Stuck=0;
+			}
+		}
+		else if (FRig_v[0]>=(SET_ROLLER_SPEED-10)){cnt_R_Stuck=0;}
+	}
+}
+
+//====================================================================================
+//                                     发球检测
+//====================================================================================
+extern PID_Value PID_A;
+float shooterVel_v[11];		//包胶轮转速Record
+int ifPushFlag;				//推球标志位
+int ifPushFlag_remain=0;	//推球标志位延迟
+int t_ifpushflag=0;			//推球标志位延迟计数
+int ifShootFlag=0;			//射球标志位
+
+void Remain_ifPushFlag(void)
+{
+	ifPushFlag=PID_A.fire_command;
+	
+	if(ifPushFlag==1){ifPushFlag_remain=1;}
+	if(ifPushFlag_remain==1)
+	{
+		t_ifpushflag++;
+		if(t_ifpushflag<=35){ifPushFlag=1;}
+		if(t_ifpushflag>35 ){ifPushFlag_remain=0;t_ifpushflag=0;}
+	}
+}
+
+void Filter(void)			//滤波函数
+{}
+void Data_Processing(void)	//数据处理
+{
+	//滤波
+	//积分
+	//微分
+}
+
+//射击次数
+int Bucket_ShootNum[4];
+//击中次数
+int Bucket_HitNum[4];
+
+void Shoot_Judge(void)//发球检测
+{
+	shooterVel_v[0]=Gundata.ShooterVelRec;
+	for(int i=10 ; i>=1 ; i--)
+	{
+		shooterVel_v[i]=shooterVel_v[i-1];
+	}
+	
+	Remain_ifPushFlag();
+	
+	if(ifPushFlag==1)
+	{
+		if(shooterVel_v[10]-shooterVel_v[9]>=6||shooterVel_v[10]-shooterVel_v[8]>=6)//投球速率下降
+		{
+			if(shooterVel_v[10]-shooterVel_v[0]<=6){ifShootFlag=1;}
+		}
+	}
+	
+	if(ifShootFlag==1)
+	{
+		ifPushFlag_remain=0;
+		t_ifpushflag=0;
+		Bucket_ShootNum[Gundata.BucketNum]++;
+		ifShootFlag=0;
+	}
 }
 
 
@@ -1299,43 +1811,7 @@ void CntGolf()
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void Entertainment(void)
+void SendLogo(void)
 {
 /*
 USART_OUT(UART4,(uint8_t*)"%s\r\n","		  ______           ___________   _______________   _____________     ___________      ____     ___");
@@ -1349,18 +1825,6 @@ USART_OUT(UART4,(uint8_t*)"%s\r\n","   /   /          \   \  \            \     
 USART_OUT(UART4,(uint8_t*)"%s\r\n","  |___/            \___|  \___________/        \_/        \_____________/   \___________/    \___/   \____/");
 */
 }
-
-/*
-		  ______          ___________   _______________   _____________     ___________      ____     ___
-		 /      \        /           \ /               \ /             \   /           \    /    \   /   \  
-		/   /\   \      /    ________/ \_____     _____/ \____     ____/  /    _____    \  |      \  |    |
-	   /   /  \   \    |    /                |   |            |   |      |    /     \    | |       \ |    |  
-	  /   /____\   \   |   |                 |   |            |   |      |   |       |   | |    \   \|    |
-	 /   ________   \  |   |                 |   |            |   |      |   |       |   | |    |\   \    |
-	|   /        \   \ |    \________        |   |        ____|   |____  |    \_____/    | |    | \       | 
-    |   |        |   |  \            \       |   |       /             \  \             /  |    |  \      |
-    |___|        |___|   \___________/        \_/        \_____________/   \___________/    \___/   \____/  
-*/
 /*
 		  ______           ___________   _______________   _____________     ___________      ____     ___
 		 /      \         /           \ /               \ /             \   /           \    /    \   /   \  
