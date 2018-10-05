@@ -103,16 +103,22 @@ typedef struct                      //                                    2  _  
 * @author 陈昕炜
 * @note   定义一个ScanData类型
 */
-typedef struct{    
-	int ScanStatus;                   //扫描状态                              0走行   1扫描 2射球
+typedef struct{
+	int BucketNum;                    //目标桶号	
+	int CntDelayTime;
+	int DelayFlag;	
 	int FirePermitFlag;               //允许射球                              0不允许 1允许
-	int ScanPermitFlag;
-	int BucketNum;                    //目标桶号
-	int i;
-	int DelayFlag;
-	int CntDelayTime;	
 	int GetBorderLeftFlag;
 	int GetBorderRightFlag;
+
+	int ScanStatus;                   //扫描状态                              0走行   1扫描 2射球
+	int ScanPermitFlag;
+	int SetTimeFlag;					//允许设定延时标志位	
+	int SetFireFlag;					//允许设定射球标志位
+	int i;
+	float ScanVel;						//扫描速度								单位°/3ms
+
+
 	
 	float Fort_X;                     //炮台横坐标                            单位mm
 	float Fort_Y;                     //炮台纵坐标                            单位mm

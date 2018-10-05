@@ -194,13 +194,13 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	if(Pos->direction == CW) {Gun->Square_Mode = 1;}
 	
 	//读取两侧炮台激光探测到的距离
-	Gun->Distance_Laser_Left  = 2.4482f * fort.laserAValueReceive + 50.697f;
-	Gun->Distance_Laser_Right = 2.4443f * fort.laserBValueReceive + 41.860f;
+	Gun->Distance_Laser_Left  = 2.4637f * fort.laserAValueReceive + 32.629f;
+	Gun->Distance_Laser_Right = 2.4617f * fort.laserBValueReceive + 22.944f;
 	
 	//炮台坐标系补偿
 	Gun->Fort_X = Pos->X - (FORT_TO_BACK_WHEEL) * sin(Pos->Angle * Pi / 180.0f);
 	Gun->Fort_Y = Pos->Y + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0f);
-	Gun->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive + Gun->Yaw_Zero_Offset);
+	Gun->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive - Gun->Yaw_Zero_Offset);
 	
 	//初始化目标桶到炮台的横纵轴距离和距离
 	Gun->Distance_Fort_X = Gun->Bucket_X[Gun->BucketNum] - Gun->Fort_X;
@@ -247,8 +247,8 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	while(((Gun->Distance_Deviation_X > Gun->Distance_Accuracy) || (Gun->Distance_Deviation_Y > Gun->Distance_Accuracy)) && (Gun->cntIteration < 10));
 	
     //根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
-	Gun->ShooterVelSet = 0.0136f * Gun->Distance_Shoot + 30.274f + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
-	Gun->No_Offset_Vel = 0.0136f * Gun->Distance_Fort  + 30.274f + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+	Gun->ShooterVelSet = 0.0128f * Gun->Distance_Shoot + 31.577f + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
+	Gun->No_Offset_Vel = 0.0128f * Gun->Distance_Fort  + 31.577f + Gun->Shooter_Vel_Offset[Gun->BucketNum + Gun->Square_Mode * 4];
 	
 	//计算炮台航向角目标值
 	Gun->YawPosAngleTar  = Tar_Angle_Operation(Gun->Distance_Shoot_X, Gun->Distance_Shoot_Y);
@@ -263,20 +263,16 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	/*ZYJ Predictor*/
 	if(Pos->direction == ACW)
 	{
-		Gun->YawPosAngleSetAct = Gun->YawPosAngleSet;
-		Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSetAct,90,0);
+		Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSet,90,0);
 		if(Gun->YawPosAngleSetAct > 79) Gun->YawPosAngleSetAct = 0;
-		Gun->ShooterVelSetAct = Gun->ShooterVelSet;
-		Gun->ShooterVelSetAct = constrain0(Gun->ShooterVelSetAct,90,50);
+		Gun->ShooterVelSetAct = constrain0(Gun->ShooterVelSet,90,50);
 		if(Gun->ShooterVelSetAct < 54) Gun->ShooterVelSetAct = 80;
 	}
 	else
 	{
-		Gun->YawPosAngleSetAct = Gun->YawPosAngleSet;
-		Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSetAct,0,-90);
+		Gun->YawPosAngleSetAct = constrain0(Gun->YawPosAngleSet,0,-90);
 		if(Gun->YawPosAngleSetAct < -79) Gun->YawPosAngleSetAct = 0;
-		Gun->ShooterVelSetAct = Gun->ShooterVelSet;
-		Gun->ShooterVelSetAct = constrain0(Gun->ShooterVelSetAct,90,50);
+		Gun->ShooterVelSetAct = constrain0(Gun->ShooterVelSet,90,50);
 		if(Gun->ShooterVelSetAct < 54) Gun->ShooterVelSetAct = 80;
 	}
 }
@@ -297,20 +293,25 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 	//炮台坐标系补偿	
 	Scan->Fort_X = Pos->X - (FORT_TO_BACK_WHEEL) * sin(Pos->Angle * Pi / 180.0f);
 	Scan->Fort_Y = Pos->Y + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0f);
-	Scan->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive + Scan->Yaw_Zero_Offset);
+	Scan->Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive - Scan->Yaw_Zero_Offset);
 	
-	//扫描时间计时，4s时强制将ScanStatus置为0
+	//扫描时间计时，7s时强制将ScanStatus置为0
 	if(Scan->DelayFlag)
 	{
 		Scan->CntDelayTime++;
-		if(Scan->CntDelayTime > 1000)
+		if(Scan->CntDelayTime > 2100)
 		{
-			Scan->DelayFlag = 0;
 			Scan->CntDelayTime = 0;
-			Scan->ScanStatus = 0;
+			Scan->DelayFlag = 0;
 			Scan->FirePermitFlag = 0;
+			
 			Scan->GetBorderLeftFlag = 0;
 			Scan->GetBorderRightFlag = 0;
+			Scan->ScanStatus = 0;
+
+			Scan->SetTimeFlag = 1;
+			Scan->SetFireFlag = 1;
+			Scan->ScanVel = 0.1f;
 		}
 	}
 	
@@ -318,8 +319,6 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 	if(Scan->ScanStatus == 0)
 	{
 		//设定目标桶号
-//		Scan->BucketNum++;
-//		Scan->BucketNum = Scan->BucketNum % 4;
 		for(Scan->i = 0; Scan->i < 4; Scan->i++)
 		{
 			if(targets[Scan->i] == 0)
@@ -333,18 +332,18 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		Scan->FortToBorder_Distance_X = Scan->Bucket_Border_X[Scan->BucketNum * 2] - Scan->Fort_X;
 		Scan->FortToBorder_Distance_Y = Scan->Bucket_Border_Y[Scan->BucketNum * 2] - Scan->Fort_Y;
 		Scan->ScanAngleTar = Tar_Angle_Operation(Scan->FortToBorder_Distance_X, Scan->FortToBorder_Distance_Y);
-		Scan->ScanAngleEnd = Constrain_float_Angle(Pos->Angle - Scan->ScanAngleTar + Scan->Yaw_Zero_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec + 10.0f;	
+		Scan->ScanAngleEnd = Constrain_float_Angle(Pos->Angle - Scan->ScanAngleTar + Scan->Yaw_Zero_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec + 15.0f;	
 
 		Scan->FortToBorder_Distance_X = Scan->Bucket_Border_X[Scan->BucketNum * 2 + 1] - Scan->Fort_X;
 		Scan->FortToBorder_Distance_Y = Scan->Bucket_Border_Y[Scan->BucketNum * 2 + 1] - Scan->Fort_Y;	
 		Scan->ScanAngleTar = Tar_Angle_Operation(Scan->FortToBorder_Distance_X, Scan->FortToBorder_Distance_Y);
-		Scan->ScanAngleStart  = Constrain_float_Angle(Pos->Angle - Scan->ScanAngleTar + Scan->Yaw_Zero_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec - 10.0f;		
+		Scan->ScanAngleStart  = Constrain_float_Angle(Pos->Angle - Scan->ScanAngleTar + Scan->Yaw_Zero_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec - 15.0f;		
 		
 		//航向角设定为位于最左侧的扫描起始点
 		Scan->YawPosAngleSet = Scan->ScanAngleStart;	
 		Scan->ShooterVelSet = 60.0f;
 
-		if(fabs(Scan->YawPosAngleRec - Scan->ScanAngleStart) < 2.0f)
+		if(fabs(Scan->YawPosAngleRec - Scan->ScanAngleStart) < 1.0f)
 		{
 			Scan->DelayFlag = 1;
 			Scan->ScanStatus = 1;
@@ -363,18 +362,18 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		
 		if(Scan->ScanPermitFlag == 1)
 		{
-			//如果在扫描状态时，炮台航向角设定值每10ms增加0.2°
-			Scan->YawPosAngleSet = Scan->YawPosAngleSet + 0.1f;
+			//如果在扫描状态时，炮台航向角设定值每10ms增加0.1°
+			Scan->YawPosAngleSet = Scan->YawPosAngleSet + Scan->ScanVel;
 			Scan->ShooterVelSet = 60.0f;
 		
 			//计算左右侧激光探测距离和探测点横轴坐标
-			Scan->Probe_Left_Distance  = 2.4482f * fort.laserAValueReceive + 50.697f;
+			Scan->Probe_Left_Distance  = 2.4637f * fort.laserAValueReceive + 32.629f;
 			Scan->Laser_Left_X  = Scan->Fort_X - (FORT_TO_LASER_X) * sin((Scan->Fort_Angle + 90.0f) * Pi / 180.0f) - (FORT_TO_LASER_Y) * sin(Scan->Fort_Angle * Pi / 180.0f);
 			Scan->Laser_Left_Y  = Scan->Fort_Y + (FORT_TO_LASER_X) * cos((Scan->Fort_Angle + 90.0f) * Pi / 180.0f) + (FORT_TO_LASER_Y) * cos(Scan->Fort_Angle * Pi / 180.0f);					
 			Scan->Probe_Left_X  = Scan->Laser_Left_X  - Scan->Probe_Left_Distance  * sin(Scan->Fort_Angle * Pi / 180.0f);
 			Scan->Probe_Left_Y  = Scan->Laser_Left_Y  + Scan->Probe_Left_Distance  * cos(Scan->Fort_Angle * Pi / 180.0f);	
 			
-			Scan->Probe_Right_Distance = 2.4443f * fort.laserBValueReceive + 41.860f;
+			Scan->Probe_Right_Distance = 2.4617f * fort.laserBValueReceive + 22.944f;
 			Scan->Laser_Right_X = Scan->Fort_X - (FORT_TO_LASER_X) * sin((Scan->Fort_Angle - 90.0f) * Pi / 180.0f) - (FORT_TO_LASER_Y) * sin(Scan->Fort_Angle * Pi / 180.0f);
 			Scan->Laser_Right_Y = Scan->Fort_Y + (FORT_TO_LASER_X) * cos((Scan->Fort_Angle - 90.0f) * Pi / 180.0f) + (FORT_TO_LASER_Y) * cos(Scan->Fort_Angle * Pi / 180.0f);	
 			Scan->Probe_Right_X = Scan->Laser_Right_X - Scan->Probe_Right_Distance * sin(Scan->Fort_Angle * Pi / 180.0f);
@@ -409,20 +408,18 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 				}
 			}
 		
-		
+			if(Scan->Probe_Border_Left_X != Scan->Probe_Border_Left_X_Temp)
+			{
+				Scan->GetBorderLeftFlag  = 1;
+			}
+			if(Scan->Probe_Border_Right_X != Scan->Probe_Border_Right_X_Temp)
+			{
+				Scan->GetBorderRightFlag = 1;
+			} 
+				
 			//如果炮台航向角设定值大于较大的航向角设定值
 			if(Scan->YawPosAngleSet > Scan->ScanAngleEnd)
-			{
-				if(Scan->Probe_Border_Left_X != Scan->Probe_Border_Left_X_Temp)
-				{
-					Scan->GetBorderLeftFlag  = 1;
-				}
-				if(Scan->Probe_Border_Right_X != Scan->Probe_Border_Right_X_Temp)
-				{
-					Scan->GetBorderRightFlag = 1;
-				} 
-				
-				
+			{			
 				if(Scan->GetBorderLeftFlag == 1 && Scan->GetBorderRightFlag == 1)
 				{
 					Scan->Probe_Border_Left_X_Temp  = Scan->Probe_Border_Left_X;
@@ -438,21 +435,22 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 				{
 					if(Scan->GetBorderLeftFlag == 0 && Scan->GetBorderRightFlag == 0)
 					{
-						Scan->ScanAngleStart = Scan->ScanAngleStart - 25.0f;
-						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   + 25.0f;
+						Scan->ScanAngleStart = Scan->ScanAngleStart - 20.0f;
+						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   + 20.0f;
 					}
 					if(Scan->GetBorderLeftFlag == 0 && Scan->GetBorderRightFlag == 1)
 					{				
-						Scan->ScanAngleStart = Scan->ScanAngleStart - 25.0f;
-						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   - 25.0f;					
+						Scan->ScanAngleStart = Scan->ScanAngleStart - 20.0f;
+						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   - 20.0f;					
 					}
 					if(Scan->GetBorderLeftFlag == 1 && Scan->GetBorderRightFlag == 0)
 					{				
-						Scan->ScanAngleStart = Scan->ScanAngleStart + 25.0f;
-						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   + 25.0f;		
+						Scan->ScanAngleStart = Scan->ScanAngleStart + 20.0f;
+						Scan->ScanAngleEnd   = Scan->ScanAngleEnd   + 20.0f;		
 					}
 					Scan->YawPosAngleSet = Scan->ScanAngleStart;
 					Scan->ScanPermitFlag = 0;
+					Scan->ScanVel = 0.1f;
 				}				
 			}
 		}			
@@ -482,22 +480,25 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		
 		//根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
 		Scan->Probe_Bucket_Distance = sqrt(Scan->FortToBucket_Distance_X * Scan->FortToBucket_Distance_X + Scan->FortToBucket_Distance_Y * Scan->FortToBucket_Distance_Y);
-		Scan->ShooterVelSet = 0.0136f * Scan->Probe_Bucket_Distance + 30.274f + Scan->Shooter_Vel_Offset;
+		Scan->ShooterVelSet = 0.0128f * Scan->Probe_Bucket_Distance + 31.577f + Scan->Shooter_Vel_Offset;
 		
 		//计算炮台航向角目标值和设定值
 		Scan->YawPosAngleTar = Tar_Angle_Operation(Scan->FortToBucket_Distance_X, Scan->FortToBucket_Distance_Y);
 		Scan->YawPosAngleSet = Constrain_float_Angle(Pos->Angle - Scan->YawPosAngleTar + Scan->Yaw_Zero_Offset + Scan->YawPosAngle_Offset - Constrain_float_Angle(Scan->YawPosAngleRec)) + Scan->YawPosAngleRec;	
 
 		//到达航向角和射球电机转速设定值时允许开火
-		if((fabs(Scan->YawPosAngleRec - Scan->YawPosAngleSet) < 1.0f) && (fabs(Scan->ShooterVelRec - Scan->ShooterVelSet) < 1.0f))
+		if((fabs(Scan->YawPosAngleRec - Scan->YawPosAngleSet) < 1.0f) && (fabs(Scan->ShooterVelRec - Scan->ShooterVelSet) < 1.0f) && Scan->SetFireFlag == 1)
 		{
 			Scan->FirePermitFlag = 1;
+			Scan->SetFireFlag = 0;
 		}
 		
 		//判断数组0是否变1
-		if(targets[Scan->BucketNum] > 0)
+		if(targets[Scan->BucketNum] > 0 && Scan->SetTimeFlag == 1)
 		{
-			Scan->CntDelayTime = 1100;
+			Scan->CntDelayTime = 1800;
+			Scan->SetTimeFlag = 0;
+			Scan->FirePermitFlag = 0;
 		}
 	}
 }
