@@ -107,13 +107,14 @@ typedef struct{
 	int CntDelayTime;					//延时计数
 	int DelayFlag;						//延时标志位
 	int FirePermitFlag;					//允许射球标志位
-	int GetBorderLeftFlag;				//扫描到左侧挡板边缘标志位
-	int GetBorderRightFlag;				//扫描到右侧挡板边缘标志位
+	int GetLeftFlag;					//扫描到左侧挡板边缘标志位
+	int GetRightFlag;					//扫描到右侧挡板边缘标志位
 	int ScanStatus;						//扫描状态                              0走行	1扫描	2射球
 	int ScanPermitFlag;					//允许开始扫描标志位
 	int SetTimeFlag;					//允许设定延时标志位	
 	int SetFireFlag;					//允许设定射球标志位
 	int i;								//计数
+	int GetBucketFlag;					//
 	float ScanVel;						//扫描速度								单位°/10ms
 	
 	
@@ -179,6 +180,36 @@ typedef struct{
 }ScanData;
 
 
+typedef struct{
+	float LToR_Act_Dist_X;
+	float LToR_Act_Dist_Y;	
+	float LToR_Act_Angle;
+
+	float LToR_The_Dist_X;
+	float LToR_The_Dist_Y;	
+	float LToR_The_Angle;
+	
+	float Coor_Error_X;
+	float Coor_Error_Y;	
+	float Coor_Error_Angle;
+
+	float OToP_Angle;
+	float OToP_Dist;
+	
+	float Pos_Border_Left_X;
+	float Pos_Border_Left_Y;
+	float Pos_Border_Right_X;
+	float Pos_Border_Right_Y;
+	
+	float Pos_Bucket_X;
+	float Pos_Bucket_Y;
+
+	float Car_Angle;
+	float Car_X;
+	float Car_Y;
+}CalibrationData;
+
+
 void YawPosCtrl(float ang);
 void ShooterVelCtrl(float rps);
 void ReadShooterVel(void);
@@ -189,6 +220,7 @@ void GetValueFromFort(uint8_t data);
 
 void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos);
 void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[]);
+void Calibration_Operation(CalibrationData *Cal, ScanData *Scan, GunneryData *Gun, PID_Value const *Pos);
 float Tar_Angle_Operation(float Dist_X, float Dist_Y);
 
 extern FortType fort;

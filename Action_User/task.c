@@ -61,6 +61,7 @@ extern FortType fort;
 extern GunneryData Gundata;
 extern Command CmdRecData;
 extern ScanData Scan;
+extern CalibrationData Cal;
 void ConfigTask(void)
 {
 	PID_x = &PID_A;
@@ -135,8 +136,8 @@ void ConfigTask(void)
 		Scan.DelayFlag = 0;
 		Scan.CntDelayTime = 0;
 		Scan.SetTimeFlag = 0;
-		Scan.GetBorderLeftFlag = 0;
-		Scan.GetBorderRightFlag = 0;
+		Scan.GetLeftFlag = 0;
+		Scan.GetRightFlag = 0;
 		Scan.ScanPermitFlag = 0;
 		Scan.YawAngle_Zero_Offset = 1.0f;
 		Scan.YawAngle_Offset = -3.3f;
@@ -218,6 +219,12 @@ void WalkTask(void)
 			Scan_Operation(&Scan, PID_x, target);
 			YawPosCtrl(Scan.YawAngle_Set);
 			ShooterVelCtrl(Scan.ShooterVel_Set);
+			
+			if(Scan.GetBucketFlag == 1)
+			{
+				Scan.GetBucketFlag = 0;
+				Calibration_Operation(&Cal, &Scan, &Gundata, PID_x);
+			}
 		}
 		else
 		{
@@ -231,13 +238,20 @@ void WalkTask(void)
 			cntSendTime = cntSendTime % 10;
 			if(cntSendTime == 0)
 			{
-				//Scan参数
-				USART_OUT(UART4, (uint8_t*)"PosX=%d	PosY=%d	PosAng=%d	ScanSta=%d	BucketNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	tar0=%d	tar1=%d	tar2=%d	tar3=%d\r\n",\
-				(int)PID_A.X, 					(int)PID_A.Y, 					(int)PID_A.Angle,\
-				(int)Scan.ScanStatus,			(int)Scan.BucketNum,     		(int)Scan.ScanPermitFlag, 	(int)Scan.SetTimeFlag,	(int)Scan.SetFireFlag,\
-				(int)Scan.GetBorderLeftFlag, 	(int)Scan.GetBorderRightFlag,	(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End, (int)Scan.YawAngle_Set,\
-				(int)Scan.DelayFlag,			(int)Scan.CntDelayTime,\
-				(int)target[0], 				(int)target[1], 				(int)target[2], 			(int)target[3]);
+//				//Scan参数
+//				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	SpeX=%d	SpeY=%d	WZ=%d	ScanSta=%d	BucNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	T0=%d	T1=%d	T2=%d	T3=%d\r\n",\
+//				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,			(int)PID_A.X_Speed,			(int)PID_A.Y_Speed,			(int)GetWZ(),\
+//				(int)Scan.ScanStatus,	(int)Scan.BucketNum,		(int)Scan.ScanPermitFlag,	(int)Scan.SetTimeFlag,		(int)Scan.SetFireFlag,\
+//				(int)Scan.GetLeftFlag,	(int)Scan.GetRightFlag,		(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,		(int)Scan.DelayFlag,	(int)Scan.CntDelayTime,\
+//				(int)target[0],			(int)target[1], 			(int)target[2],				(int)target[3]);
+				//Cal参数
+				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	ScanSta=%d	BucNum=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	ActX=%d	ActY=%d	ActAng=%d	TheX=%d	TheY=%d	TheAng=%d	LeftX=%d	LeftY=%d	RightX=%d	RightY=%d\r\n",\
+				(int)PID_A.X, 				(int)PID_A.Y, 				(int)PID_A.Angle,\
+				(int)Scan.ScanStatus,		(int)Scan.BucketNum,		(int)Scan.GetLeftFlag,			(int)Scan.GetRightFlag,\
+				(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,\
+				(int)Cal.LToR_Act_Dist_X,	(int)Cal.LToR_Act_Dist_Y,	(int)Cal.LToR_Act_Angle,\
+				(int)Cal.LToR_The_Dist_X,	(int)Cal.LToR_The_Dist_Y,	(int)Cal.LToR_The_Angle,\
+				(int)Cal.Pos_Border_Left_X,	(int)Cal.Pos_Border_Left_Y,	(int)Cal.Pos_Border_Right_X,	(int)Cal.Pos_Border_Right_Y);
 			}
 		}
 		

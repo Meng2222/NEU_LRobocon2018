@@ -41,6 +41,7 @@
 FortType fort;
 GunneryData Gundata;
 ScanData Scan;
+CalibrationData Cal;
 int bufferI = 0;
 char buffer[20] = {0};
 /**
@@ -312,8 +313,8 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 			Scan->CntDelayTime = 0;
 			Scan->DelayFlag = 0;
 			Scan->FirePermitFlag = 0;
-			Scan->GetBorderLeftFlag = 0;
-			Scan->GetBorderRightFlag = 0;
+			Scan->GetLeftFlag = 0;
+			Scan->GetRightFlag = 0;
 			Scan->ScanStatus = 0;
 			Scan->SetTimeFlag = 1;
 			Scan->SetFireFlag = 1;
@@ -420,39 +421,39 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 			{
 				if(Scan->Probe_Border_Left_X != Scan->Probe_Border_Left_X_Last)
 				{
-					Scan->GetBorderLeftFlag  = 1;
+					Scan->GetLeftFlag = 1;
 				}
 				if(Scan->Probe_Border_Right_X != Scan->Probe_Border_Right_X_Last)
 				{
-					Scan->GetBorderRightFlag = 1;
+					Scan->GetRightFlag = 1;
 				} 
 				
 				
-				if(Scan->GetBorderLeftFlag == 1 && Scan->GetBorderRightFlag == 1)
+				if(Scan->GetLeftFlag == 1 && Scan->GetRightFlag == 1)
 				{
-					
 					Scan->Probe_Border_Left_X_Last  = Scan->Probe_Border_Left_X;
 					Scan->Probe_Border_Left_Y_Last  = Scan->Probe_Border_Left_Y;
 					Scan->Probe_Border_Right_X_Last = Scan->Probe_Border_Right_X;	
 					Scan->Probe_Border_Right_Y_Last = Scan->Probe_Border_Right_Y;
 					
-					Scan->GetBorderLeftFlag  = 0;
-					Scan->GetBorderRightFlag = 0;			
+					Scan->GetLeftFlag  = 0;
+					Scan->GetRightFlag = 0;	
+					Scan->GetBucketFlag = 1;					
 					Scan->ScanStatus = 2;
 				}
 				else
 				{
-					if(Scan->GetBorderLeftFlag == 0 && Scan->GetBorderRightFlag == 0)
+					if(Scan->GetLeftFlag == 0 && Scan->GetRightFlag == 0)
 					{
 						Scan->ScanAngle_Start = Scan->ScanAngle_Start - 25.0f;
 						Scan->ScanAngle_End   = Scan->ScanAngle_End   + 25.0f;
 					}
-					if(Scan->GetBorderLeftFlag == 0 && Scan->GetBorderRightFlag == 1)
+					if(Scan->GetLeftFlag == 0 && Scan->GetRightFlag == 1)
 					{				
 						Scan->ScanAngle_Start = Scan->ScanAngle_Start - 25.0f;
 						Scan->ScanAngle_End   = Scan->ScanAngle_End   - 25.0f;					
 					}
-					if(Scan->GetBorderLeftFlag == 1 && Scan->GetBorderRightFlag == 0)
+					if(Scan->GetLeftFlag == 1 && Scan->GetRightFlag == 0)
 					{				
 						Scan->ScanAngle_Start = Scan->ScanAngle_Start + 25.0f;
 						Scan->ScanAngle_End   = Scan->ScanAngle_End   + 25.0f;		
@@ -509,6 +510,61 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 			Scan->CntDelayTime = 500;
 			Scan->FirePermitFlag = 0;
 		}
+	}
+}
+
+
+void Calibration_Operation(CalibrationData *Cal, ScanData *Scan, GunneryData *Gun, PID_Value const *Pos)
+{
+	Cal->LToR_Act_Dist_X = Scan->Probe_Border_Right_X - Scan->Probe_Border_Left_X;
+	Cal->LToR_Act_Dist_Y = Scan->Probe_Border_Right_Y - Scan->Probe_Border_Left_Y;
+	Cal->LToR_Act_Angle = Tar_Angle_Operation(Cal->LToR_Act_Dist_X, Cal->LToR_Act_Dist_Y);
+	
+	Cal->LToR_The_Dist_X = Scan->Pos_Border_X[Scan->BucketNum * 2] - Scan->Pos_Border_X[Scan->BucketNum * 2 + 1];
+	Cal->LToR_The_Dist_Y = Scan->Pos_Border_Y[Scan->BucketNum * 2] - Scan->Pos_Border_Y[Scan->BucketNum * 2 + 1];
+	Cal->LToR_The_Angle = Tar_Angle_Operation(Cal->LToR_The_Dist_X, Cal->LToR_The_Dist_Y);	
+
+	Cal->Coor_Error_Angle = Cal->LToR_The_Angle - Cal->LToR_Act_Angle;
+	
+	Cal->OToP_Angle = Tar_Angle_Operation(Scan->Probe_Border_Right_X, Scan->Probe_Border_Right_Y);
+	Cal->OToP_Dist = sqrt(Scan->Probe_Border_Right_X * Scan->Probe_Border_Right_X + Scan->Probe_Border_Right_Y * Scan->Probe_Border_Right_Y);
+	Cal->Pos_Border_Right_X = Cal->OToP_Dist * sin(Cal->OToP_Angle + Cal->Coor_Error_Angle) * -1.0f;
+	Cal->Pos_Border_Right_Y = Cal->OToP_Dist * cos(Cal->OToP_Angle + Cal->Coor_Error_Angle);
+
+	Cal->OToP_Angle = Tar_Angle_Operation(Scan->Probe_Border_Left_X, Scan->Probe_Border_Left_Y);
+	Cal->OToP_Dist = sqrt(Scan->Probe_Border_Left_X * Scan->Probe_Border_Left_X + Scan->Probe_Border_Left_Y * Scan->Probe_Border_Left_Y);	
+	Cal->Pos_Border_Left_X = Cal->OToP_Dist * sin(Cal->OToP_Angle + Cal->Coor_Error_Angle) * -1.0f;;
+	Cal->Pos_Border_Left_Y = Cal->OToP_Dist * cos(Cal->OToP_Angle + Cal->Coor_Error_Angle);
+	
+	switch(Scan->BucketNum)
+	{
+		case 0:
+			Cal->Pos_Bucket_X = (Cal->Pos_Border_Left_X + Cal->Pos_Border_Right_X - 54.0f) / 2.0f;
+			Cal->Pos_Bucket_Y = (Cal->Pos_Border_Left_Y + Cal->Pos_Border_Right_Y + 54.0f) / 2.0f;
+		case 1:
+			Cal->Pos_Bucket_X = (Cal->Pos_Border_Left_X + Cal->Pos_Border_Right_X - 54.0f) / 2.0f;
+			Cal->Pos_Bucket_Y = (Cal->Pos_Border_Left_Y + Cal->Pos_Border_Right_Y - 54.0f) / 2.0f;
+		case 2:
+			Cal->Pos_Bucket_X = (Cal->Pos_Border_Left_X + Cal->Pos_Border_Right_X + 54.0f) / 2.0f;
+			Cal->Pos_Bucket_Y = (Cal->Pos_Border_Left_Y + Cal->Pos_Border_Right_Y - 54.0f) / 2.0f;				
+		case 3:
+			Cal->Pos_Bucket_X = (Cal->Pos_Border_Left_X + Cal->Pos_Border_Right_X + 54.0f) / 2.0f;
+			Cal->Pos_Bucket_Y = (Cal->Pos_Border_Left_Y + Cal->Pos_Border_Right_Y + 54.0f) / 2.0f;
+	}	
+	
+	
+	Cal->Coor_Error_X = Gun->Pos_Bucket_X[Scan->BucketNum] - Cal->Pos_Bucket_X;
+	Cal->Coor_Error_Y = Gun->Pos_Bucket_Y[Scan->BucketNum] - Cal->Pos_Bucket_Y;
+	
+	Cal->Car_Angle = Pos->Angle + Cal->Coor_Error_Angle;
+	Cal->Car_X = Pos->X + Cal->Coor_Error_X;
+	Cal->Car_Y = Pos->Y + Cal->Coor_Error_Y;
+	
+	if(fabs(Cal->Coor_Error_Angle) > 5.0f || fabs(Cal->Coor_Error_X) > 200.0f || fabs(Cal->Coor_Error_Y) > 200.0f)
+	{
+		CorrectAngle(Cal->Car_Angle);
+		CorrectX(Cal->Car_X);
+		CorrectY(Cal->Car_Y);
 	}
 }
 
