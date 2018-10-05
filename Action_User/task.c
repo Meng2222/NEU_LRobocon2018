@@ -45,10 +45,9 @@ void App_Task(void)
                                              初始化任务
 ===============================================================
 */
-//GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1);
 int shootDebug = 0;
-int pidDebug = 0;
-int fortDebug = 1;
+int pidDebug = 1;
+int fortDebug = 0;
 int ballcommand = 0;
 PID_Value *PID_x = NULL;
 PID_Value PID_A;
@@ -77,8 +76,8 @@ void ConfigTask(void)
 	TIM_Delayms(TIM4,2000);                                          //延时2s，给定位系统准备时间
 	ElmoInit(CAN2);                                                  //驱动器初始化
 	ElmoInit(CAN1);                                                  //驱动器初始化
-	VelLoopCfg(CAN1,2,16384000,32768000);                              //左电机速度环初始化
-	VelLoopCfg(CAN1,1,16384000,32768000);                              //右电机速度环初始化
+	VelLoopCfg(CAN1,2,1638400,1638400);                              //左电机速度环初始化
+	VelLoopCfg(CAN1,1,1638400,1638400);                              //右电机速度环初始化
 	VelLoopCfg(CAN2,5, 16384000, 16384000);                               //收球电机
 	VelLoopCfg(CAN2,6, 16384000, 16384000);                               //收球电机
 	PosLoopCfg(CAN2,7, 16384000,16384000,20000000);
@@ -192,23 +191,23 @@ void WalkTask(void)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);													//等信号量，10ms一次
 		ReadActualPos(CAN2,7);																//读取分球电机位置
-		ReadActualVel(CAN2,5);
-		ReadActualVel(CAN2,6);
+		ReadActualVel(CAN2,5);																//读取收球辊子转速
+		ReadActualVel(CAN2,6);																//读取收球辊子转速
 		
 		GetData(PID_x);																		//读取定位系统信息
-		PriorityControl(PID_x,Error_x,target);
-		WatchDog(PID_x);
+		PriorityControl(PID_x,Error_x,target);												//走形优先级管理
+		WatchDog(PID_x);																	//球数看门狗
 		ErrorDisposal(PID_x,Error_x);														//错误检测
 		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
 		GO(PID_x);																			//电机控制
 		
 		GetData(PID_x);																		//读取定位系统信息
-		if(PID_x->V != 0 && Error_x->errCnt == 0){
+		if(PID_x->V != 0 && Error_x->errCnt == 0){											/*未避障模式*/
 		Gundata.BucketNum = PID_A.target_Num;												//设置目标桶号
 		GunneryData_Operation(&Gundata, PID_x);												//计算射击诸元
 		YawPosCtrl(Gundata.YawPosAngleSetAct);												//设置航向角
 		ShooterVelCtrl(Gundata.ShooterVelSetAct);}											//设置射球转速
-		else if(PID_x->V == 0){
+		else if(PID_x->V == 0){																/*扫描模式*/
 		Scan_Operation(&Scan, PID_x, target);
 		YawPosCtrl(Scan.YawPosAngleSet);
 		ShooterVelCtrl(Scan.ShooterVelSet);}
