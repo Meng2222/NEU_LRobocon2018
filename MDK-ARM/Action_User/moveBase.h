@@ -82,6 +82,7 @@ void Rchange(int Rchange);
 void IncreaseR(int Radium);
 void DecreaseR(int Radium);
 void Avoidance();
+void ShakeShoot(void);
 float getLingtAngle(float xi,float yi,int tragetCnt);
 #define pi 3.141592f
 //后轮电机的CAN ID号
@@ -103,7 +104,11 @@ float getLingtAngle(float xi,float yi,int tragetCnt);
 //电机与轮子减速比
 #define WHEEL_REDUCTION_RATIO										  (1.004f)
 //己方的球(1是白球,2是黑球)
-#define MY_BALL_COLOR													(2)
+#define MY_BALL_COLOR													(1)
+#define SWAP(x,y)\
+x=x+y;\
+y=x-y;\
+x=x-y;
 /**
   * @}
   */

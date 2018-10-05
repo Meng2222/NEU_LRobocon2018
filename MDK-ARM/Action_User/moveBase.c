@@ -26,6 +26,7 @@
 #include "stm32f4xx_usart.h"
 #include "math.h"
 #include "pps.h"
+#include "fort.h"
 /* Private typedef ------------------------------------------------------------------------------------*/
 /* Private define -------------------------------------------------------------------------------------*/
 /* Private macro --------------------------------------------------------------------------------------*/
@@ -190,9 +191,11 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
 extern float Distance,shootX,shootY,angle,antiRad,location[4][2];
-extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag;
+extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,shakeShootFlag;
 void GetYawangle(uint8_t StdId)
 {
+	if(shakeShootFlag)
+		antiRad=0;
 	if(status==0)
 	{	
 		GetFunction(shootX,shootY,location[StdId][0],location[StdId][1]);
@@ -276,12 +279,12 @@ void IncreaseR(int Radium)
 {	
 	if(status==0)
 	{
-		if(x>-100&&lastX<-100&&y<2400&&R<Radium)
+		if(x<-100&&lastX>-100&&y>2400&&R<Radium)
 			RchangeFlag=1;
 	}	
 	else
 	{
-		if(x<100&&lastX>100&&y<2400&&R<Radium)
+		if(x>100&&lastX<100&&y>2400&&R<Radium)
 			RchangeFlag=1;
 	}		
 	if(RchangeFlag)
@@ -291,20 +294,20 @@ void DecreaseR(int Radium)
 {	
 	if(status==0)
 	{
-		if(x>-100&&lastX<-100&&y<2400&&R>Radium)
+		if(x<-100&&lastX>-100&&y>2400&&R>Radium)
 			RchangeFlag=1;
 	}	
 	else
 	{
-		if(x<100&&lastX>100&&y<2400&&R>Radium)
+		if(x>100&&lastX<100&&y>2400&&R>Radium)
 			RchangeFlag=1;
 	}		
 	if(RchangeFlag)
 		Rchange(-500);	
 }	
-extern int errFlag,count,FindBallModel,banFirstShoot;
-extern float angle,speed,speedY,speedX;
-int errSituation1,errSituation2;
+extern int errFlag,count,FindBallModel,banFirstShoot,shootCnt,shakeShootCnt,ballColor;
+extern float angle,speed,speedY,speedX,T0,T1,rps;
+int errSituation1,errSituation2,shakeShootOff=200,shutOffCnt=0;
 void Avoidance()
 {
 		static int errSituation3,statusFlag,lastTime=0,time=0,backwardCount;
@@ -314,12 +317,10 @@ void Avoidance()
 			backwardCount++;
 			if(errSituation1)
 			{
-				Kp=20;
+				Kp=10;
 				AnglePID(changeAngle,GetAngle());
 				if(R<1600)
 					R+=500;
-				if(R>=1600)
-					R-=500;
 				Straight(-1400);
 				if(errTime%2==0&&statusFlag)
 				{
@@ -332,7 +333,7 @@ void Avoidance()
 				AnglePID(changeAngle,GetAngle());
 				Straight(1800);
 			}	
-			if(backwardCount>=60)	
+			if(backwardCount>=120)	
 			{	errFlag=0;
 				backwardCount=0;
 				if(R>=1600)
@@ -353,11 +354,11 @@ void Avoidance()
 			else				
 			{
 				//情况2：被对方侧面推着跑，此时有一定速度，车身角度与速度角度不一致
-				if(fabs(speedAngle-GetAngle())>60&&speed>600)
+				if(fabs(speedAngle-GetAngle())>40&&speed>600)
 				{
 					errSituation2=1;
 					errSituation1=0;
-					changeAngle=-speedAngle;
+					changeAngle=speedAngle;
 				}	
 				//情况1：与对方正面相撞
 				else if(speed<1200)
@@ -369,9 +370,14 @@ void Avoidance()
 						changeAngle=lAngle;
 					else
 						changeAngle=lAngle+180;
+				}
+				if(FindBallModel)
+				{
+					errSituation1=1;
+					errSituation2=0;
 				}	
 			}				
-			if(time-lastTime>=50)
+			if(time-lastTime>=80)
 			{	
 				errFlag=1;
 				statusFlag=1;
@@ -379,6 +385,50 @@ void Avoidance()
 				backwardCount=0;
 			}		
 		}	
+}	
+/*凯化*/
+void ShakeShoot(void)
+{
+	VelCrl(CAN1,1,0);				
+	VelCrl(CAN1,2,0);
+	errFlag=1;
+	if(status==0)
+	{
+		if(x>-400&&x<400&&y<2400)
+			GetShootSituation(0);
+		if(y<2800&&y>2000&&x>0)
+			GetShootSituation(1);
+		if(x>-400&&x<400&&y>2400)
+			GetShootSituation(2);			
+		if(y<2800&&y>2000&&x<0)
+			GetShootSituation(3);		
+	}
+	else
+	{
+		if(x>-400&&x<400&&y<2400)
+			GetShootSituation(3);
+		if(y<2800&&y>2000&&x>0)
+			GetShootSituation(0);
+		if(x>-400&&x<400&&y>2400)
+			GetShootSituation(1);			
+		if(y<2800&&y>2000&&x<0)
+			GetShootSituation(2);		
+	}				
+	shutOffCnt++;
+	if(shakeShootCnt>0)
+		shakeShootOff--;
+	if(shakeShootOff==0||(ballColor!=MY_BALL_COLOR&&shakeShootCnt==0))
+	{
+		banFirstShoot=200;
+		errFlag=0;
+		shakeShootCnt=0;
+		shakeShootFlag=0;
+		shakeShootOff=100;
+	}	
+	else if(fabs(rps-ReadRps())<1)
+		throwFlag=1;
+	else
+		throwFlag=0;
 }	
 /*激光模式*/
 float getLingtAngle(float xi,float yi,int tragetCnt)
