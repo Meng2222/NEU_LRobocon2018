@@ -16,6 +16,9 @@
 #define FORT_TO_LASER_Y (23.32f)								//炮台到激光器纵轴距离			23.32mm
 #define LASER_LEFT (0)											//左侧激光编号					0
 #define LASER_RIGHT (1)											//右侧激光编号					1
+#define CLOCKWISE (1)											//顺时针						1
+#define ANTI_CLOCKWISE (0)										//逆时针						0
+#define SCAN_ERROR (600.0f)
 
 typedef union
 {
@@ -29,10 +32,10 @@ typedef struct
 {
 	usartData_t usartTransmitData;
 	usartData_t usartReceiveData;
-	float yawPosReceive ;
+	float yawPosReceive;
 	float shooterVelReceive;
-	float laserAValueReceive ;
-	float laserBValueReceive ; 
+	float laserAValueReceive;
+	float laserBValueReceive;
 }FortType;
 
 
@@ -119,6 +122,7 @@ typedef struct{
 	int ScanShootFlag;
 	int i;								//计数
 	int min;
+	int Bubble_Mode;
 
 	float ScanVel;						//扫描速度								单位°/10ms
 
@@ -205,10 +209,10 @@ typedef struct{
 	float Coor_Error_Y;	
 	float Coor_Error_Angle;
 
-	float OToRight_Angle;
-	float OToRight_Dist;
 	float OToLeft_Angle;
 	float OToLeft_Dist;
+	float OToRight_Angle;
+	float OToRight_Dist;
 	
 	float Pos_Border_Left_X;
 	float Pos_Border_Left_Y;

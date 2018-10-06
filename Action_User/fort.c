@@ -313,6 +313,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 			Scan->GetLeftFlag = 0;
 			Scan->GetRightFlag = 0;
 			Scan->ScanStatus = 0;
+			
 			Scan->SetTimeFlag = 1;
 			Scan->SetFireFlag = 1;
 			Scan->ScanVel = 0.1f;
@@ -323,15 +324,33 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 	if(Scan->ScanStatus == 0)
 	{
 		//设定目标桶号
-		for(Scan->i = 1, Scan->min = 0; Scan->i < 4; Scan->i++)
+		switch(Scan->Bubble_Mode)
 		{
-			if(targets[Scan->i] < targets[Scan->min])
-			{
-				Scan->min = Scan->i;
-			}
-		}
+			case CLOCKWISE:
+				for(Scan->i = 1, Scan->min = 0; Scan->i < 4; Scan->i++)
+				{
+					if(targets[Scan->i] <= targets[Scan->min])
+					{
+						Scan->min = Scan->i;
+					}
+				}
+				break;
+			case ANTI_CLOCKWISE:
+				for(Scan->i = 2, Scan->min = 3; Scan->i >= 0; Scan->i--)
+				{
+					if(targets[Scan->i] <= targets[Scan->min])
+					{
+						Scan->min = Scan->i;
+					}
+				}
+				break;	
+		}				
 		Pos->target_Num = Scan->min;
 		Scan->BucketNum = Scan->min;
+		if(targets[0] == targets[1] && targets[0] == targets[2] && targets[0] == targets[3])
+		{
+			Scan->Bubble_Mode = !Scan->Bubble_Mode;
+		}
 		
 		//炮塔到目标桶左右挡板边缘横轴距离以及计算指向左右挡板边缘航向角设定值
 		Scan->Dist_FToBorder_Left_X = Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] - Scan->Pos_Fort_X;
@@ -389,25 +408,24 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 				
 			//识别目标桶两侧挡板边缘，统一为从左往右扫描
 			//当右侧激光距离值突然变短，标记左侧挡板边缘坐标点
-
 			if((Scan->Pro_Left_Dist - Scan->Pro_Right_Dist) > 1200.0f)
 			{
-				if((-3000.0f < Scan->Pro_Right_X && Scan->Pro_Right_X < -1400.0f) || (1400.0f < Scan->Pro_Right_X && Scan->Pro_Right_X < 3000.0f))
+				if((Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] - SCAN_ERROR) < Scan->Pro_Right_X && Scan->Pro_Right_X < (Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] + SCAN_ERROR))
 				{
-					if((-600.0f < Scan->Pro_Right_Y && Scan->Pro_Right_Y < 1000.0f) || (3800.0f < Scan->Pro_Right_Y && Scan->Pro_Right_Y < 5400.0f))
+					if((Scan->Pos_Border_Y[Scan->BucketNum * 2 + 1] - SCAN_ERROR) < Scan->Pro_Right_Y && Scan->Pro_Right_Y < (Scan->Pos_Border_Y[Scan->BucketNum * 2 + 1] + SCAN_ERROR))
 					{
 						Scan->Pro_Border_Left_X = Scan->Pro_Right_X;
 						Scan->Pro_Border_Left_Y = Scan->Pro_Right_Y;
 						Scan->Pro_Border_Left_Angle = Scan->YawAngle_Set;
 					}
 				}
-			}
+			}		
 			//当右侧激光距离值突然变长，标记右侧挡板边缘坐标点	
 			if((Scan->Pro_Right_Dist - Scan->Pro_Left_Dist) > 1200.0f)
 			{
-				if((-3000.0f < Scan->Pro_Left_X && Scan->Pro_Left_X < -1400.0f) || (1400.0f < Scan->Pro_Left_X && Scan->Pro_Left_X < 3000.0f))
+				if((Scan->Pos_Border_X[Scan->BucketNum * 2] - SCAN_ERROR) < Scan->Pro_Left_X && Scan->Pro_Left_X < (Scan->Pos_Border_X[Scan->BucketNum * 2] + SCAN_ERROR))
 				{
-					if((-600.0f < Scan->Pro_Left_Y && Scan->Pro_Left_Y < 1000.0f) || (3800.0f < Scan->Pro_Left_Y && Scan->Pro_Left_Y < 5400.0f))
+					if((Scan->Pos_Border_Y[Scan->BucketNum * 2] - SCAN_ERROR) < Scan->Pro_Left_Y && Scan->Pro_Left_Y < (Scan->Pos_Border_Y[Scan->BucketNum * 2] + SCAN_ERROR))
 					{
 						Scan->Pro_Border_Right_X = Scan->Pro_Left_X;
 						Scan->Pro_Border_Right_Y = Scan->Pro_Left_Y;
@@ -416,19 +434,18 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 				}
 			}
 		
-		
+			if(Scan->Pro_Border_Left_X != Scan->Pro_Border_Left_X_Last)
+			{
+				Scan->GetLeftFlag  = 1;
+			}
+			if(Scan->Pro_Border_Right_X != Scan->Pro_Border_Right_X_Last)
+			{
+				Scan->GetRightFlag = 1;
+			} 
+			
 			//如果炮台航向角设定值大于较大的航向角设定值
 			if(Scan->YawAngle_Set > Scan->ScanAngle_End)
 			{
-				if(Scan->Pro_Border_Left_X != Scan->Pro_Border_Left_X_Last)
-				{
-					Scan->GetLeftFlag  = 1;
-				}
-				if(Scan->Pro_Border_Right_X != Scan->Pro_Border_Right_X_Last)
-				{
-					Scan->GetRightFlag = 1;
-				} 
-				
 				if(Scan->GetLeftFlag == 1 && Scan->GetRightFlag == 1)
 				{
 					Scan->Pro_Border_Left_X_Last  = Scan->Pro_Border_Left_X;
@@ -560,12 +577,12 @@ void Calibration_Operation(CalibrationData *Cal, ScanData *Scan, GunneryData *Gu
 	Cal->Car_X = Pos->X + Cal->Coor_Error_X;
 	Cal->Car_Y = Pos->Y + Cal->Coor_Error_Y;
 	
-	if(fabs(Cal->Coor_Error_Angle) > 5.0f || fabs(Cal->Coor_Error_X) > 200.0f || fabs(Cal->Coor_Error_Y) > 200.0f)
-	{
-		CorrectAngle(Cal->Car_Angle);
-		CorrectX(Cal->Car_X);
-		CorrectY(Cal->Car_Y);
-	}
+//	if(fabs(Cal->Coor_Error_Angle) > 5.0f || fabs(Cal->Coor_Error_X) > 200.0f || fabs(Cal->Coor_Error_Y) > 200.0f)
+//	{
+//		CorrectAngle(Cal->Car_Angle);
+//		CorrectX(Cal->Car_X);
+//		CorrectY(Cal->Car_Y);
+//	}
 }
 
 
