@@ -260,32 +260,28 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	/*ZYJ Predictor*/
 	if(Pos->direction == ACW)
 	{
-
 		Gun->YawAngle_SetAct = Constrain_Float(Gun->YawAngle_Set, 90,  0);
-		if(Gun->YawAngle_SetAct > 79)
+		if(Gun->YawAngle_SetAct > 70)
 		{
 			Gun->YawAngle_SetAct = 0;
 		}
-		Gun->ShooterVel_SetAct  = Constrain_Float(Gun->ShooterVel_Set , 90, 50);
-		if(Gun->ShooterVel_SetAct  < 54)
-		{
-			Gun->ShooterVel_SetAct = 80;
-		}
 	}
-	else
+	if(Pos->direction == CW)
 	{
 		Gun->YawAngle_SetAct = Constrain_Float(Gun->YawAngle_Set, 0, -90);
-		if(Gun->YawAngle_SetAct < -79)
+		if(Gun->YawAngle_SetAct < -70)
 		{
 			Gun->YawAngle_SetAct = 0;
 		}
-		Gun->ShooterVel_SetAct  = Constrain_Float(Gun->ShooterVel_Set , 90, 50);
-		if(Gun->ShooterVel_SetAct  < 54)
-		{
-			Gun->ShooterVel_SetAct = 80;
-		}
+	}
+	Gun->ShooterVel_SetAct  = Constrain_Float(Gun->ShooterVel_Set , 90, 50);
+	if(Gun->ShooterVel_SetAct  < 54)
+	{
+		Gun->ShooterVel_SetAct = 80;
 	}
 }
+
+
 /**
 * @brief  扫描数据处理
 * @param  *Scan：              扫描参数结构体指针

@@ -164,7 +164,7 @@ void ConfigTask(void)
 		
 
 		int startFlag = 1;
-		int cntSendTime = 0, cntLeftTrigger = 0, cntRightTrigger = 0;
+		int cntSendTime = 0, cntClearTime = 0, cntLeftTrigger = 0, cntRightTrigger = 0;
 		int Laser_Left, Laser_Right;
 		while(startFlag)
 		{
@@ -191,8 +191,7 @@ void ConfigTask(void)
 			}
 			else
 			{
-				cntLeftTrigger = 0;
-				cntRightTrigger = 0;
+				cntClearTime++;
 			}
 
 			//连续触发0.2s则触发成功
@@ -207,6 +206,11 @@ void ConfigTask(void)
 				OSMboxPost(adc_msg,(void *)Right);
 				USART_OUT(UART4, (uint8_t*)"Go Anti-Clockwise\r\n");
 				OSTaskSuspend(OS_PRIO_SELF);
+			}
+			else if(cntClearTime > 20)
+			{
+				cntLeftTrigger = 0;
+				cntRightTrigger = 0;
 			}
 		}
 	}
