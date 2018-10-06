@@ -69,6 +69,7 @@ void Straight(float v);
 void Spin(float R,float v);
 float min(float d1,float d2);
 void TurnRight(float angle,float v);
+void GetDistance1(uint8_t StdId);
 void AnglePID(float setAngle,float feedbackAngle);
 void GetFunction(float x1,float y1,float x2,float y2);
 void linePID(float x1,float y1,float x2,float y2,float v);

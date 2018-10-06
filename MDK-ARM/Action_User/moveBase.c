@@ -42,6 +42,7 @@
 
 float Kp=90,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Vk=0,errl,lastErr1;
 extern int R;
+
 void Straight(float v)
 {
 	VelCrl(CAN1,1,-v*CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO/(pi*WHEEL_DIAMETER));
@@ -227,6 +228,10 @@ void GetYawangle(uint8_t StdId)
 void GetDistance(uint8_t StdId)
 {
 	Distance=sqrtf((shootX-location[StdId][0])*(shootX-location[StdId][0])+(shootY-location[StdId][1])*(shootY-location[StdId][1]));
+}	
+void GetDistance1(uint8_t StdId)
+{
+	Distance=sqrtf((x-location[StdId][0])*(x-location[StdId][0])+(y-location[StdId][1])*(y-location[StdId][1]));
 }	
 void BingoJudge(uint8_t StdId)
 {
