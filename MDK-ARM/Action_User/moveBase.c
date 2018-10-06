@@ -83,6 +83,17 @@ float min(float d1,float d2)
 	else
 		return d1;
 }
+extern int scanCnt[10];
+int findMostGroup()
+{
+	int a=0;
+	for(int i=0;i<=9;i++)
+	{
+		if(scanCnt[a]<scanCnt[i])
+			a=i;
+	}
+	return a;
+}
 void GetFunction(float x1,float y1,float x2,float y2)
 {
 		if(x1-0.1<x2&&x2<x1+0.1)

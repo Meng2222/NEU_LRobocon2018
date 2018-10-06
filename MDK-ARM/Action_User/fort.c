@@ -137,7 +137,7 @@ float ReadLaserBValue(void)
 float ReadRps(void)
 {
 	return fort.shooterVelReceive;
-}	
+}
 float ReadyawPos(void)
 {
 	return fort.yawPosReceive;

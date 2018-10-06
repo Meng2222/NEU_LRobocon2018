@@ -84,6 +84,7 @@ void DecreaseR(int Radium);
 void Avoidance();
 void ShakeShoot(void);
 float getLingtAngle(float xi,float yi,int tragetCnt);
+int findMostGroup();
 #define pi 3.141592f
 //后轮电机的CAN ID号
 #define BACK_WHEEL_ID             1
