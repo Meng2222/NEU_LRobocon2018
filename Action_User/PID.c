@@ -198,7 +198,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[12].line_Angle = 0;
 	Line_N[12].line_Error = 0;
 	Line_N[12].line_Priority = 1000;
-		
+	
 	Line_N[13].x1 = 1800;
 	Line_N[13].y1 = 4200;
 	Line_N[13].x2 = -1800;
@@ -906,41 +906,15 @@ void UART4_OUT(PID_Value *pid_out , Err*error1)                                 
 	USART_SendData(UART4,'\n');
 }
 
+/*¸ø¶¨³õÊ¼ÏßºÅºÍ¸÷ÏßÓÅÏÈ¼¶¿ÉÒÔ×Ô¼º×ß·½ĞÎ*/
+/*pid->stopÍ£³µ*/
+/*ĞèÒªµ¥¶ÀµÄ±ÜÕÏº¯ÊıÖ§³Ö*/
 void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])                     //ĞÂ°æ×ßÏß
 {
 	static u8 flag = 0;/*×ÔËøflag*/
 	int i = 0;/*forÑ­»·ÓÃ*/
 	
-	/*ÖĞ³¡Í¶Çò¿ØÖÆ*/
-	if(pid->stop == 1 && error->flag == 0)
-	{
-		if(pid->Y > 1600 && pid->Y < 3200 && pid->X > 0-800 && pid->X < 800)
-		{
-			pid->vel = 0;
-			pid->V = 0;
-			error->stop = 1;
-			error->timeCnt = 0;
-		}
-		else
-		{
-			if(pid->Line_Num < 20 && pid->Line_Num > 3)
-			{
-				pid->Line_Num = pid->Line_Num % 4 + 1;
-				if(pid->Line_Num == 4) pid->Line_Num = 0;
-			}
-			else if(pid->Line_Num > 23)
-			{
-				pid->Line_Num = pid->Line_Num % 4 - 1 + 20;
-				if(pid->Line_Num == 19) pid->Line_Num = 23;
-			}
-			PID_Control(pid);
-			pid->V = 1000;
-			error->stop = 0;
-		}
-		return;
-	}
-	error->stop = 0;
-	
+	/*³õÊ¼±ßºÅ*/
 	if(flag == 0 && dir == Right)/*¸ü¸ÄµÚÒ»Ìõ±ßÓÅÏÈ¼¶*/
 	{
 		pid->Line_Num = 0;
@@ -962,111 +936,80 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		}
 	}
 	
+	/*±ÜÕÏ»òÍ£³µÊ±ÍË³ö*/
+	if(error->flag == 1) return;
+	if(pid->stop == 1)
+	{
+		pid->V = 0;
+		pid->vel = 0;
+		return;
+	}
+	
 	/*ACW·½Ïò*/
 	if(pid->Line_Num < 20)
 	{
-		if(error->flag == 0)/*Î´±ÜÕÏ*/
+		/*ÉèÖÃpid²ÎÊı*/
+		pid->kp = 15;
+		pid->kd = 100;
+		pid->direction = ACW;
+		pid->Mode = Line;
+		
+		/*pidÔËËãº¯Êı£¬¼ÆËãV£¬vel*/
+		PID_Control(pid);
+		
+		/*¸ø³öÄ¿±êÍ°ºÅ*/
+		pid->target_Num = pid->Line_Num % 4 + 1;
+		if(pid->target_Num == 4) pid->target_Num = 0;
+		
+		/*Ñ°ÕÒÏÂÒ»Ìõ±ßÓÅÏÈ¼¶×î¸ßµÄÏßºÅ*/
+		pid->Line_Num_Last = pid->Line_Num;
+		priority priority1 = {0};
+		for(i=0;i<5;i++)
 		{
-			
-			/*ÉèÖÃpid²ÎÊı*/
-			pid->kp = 15;
-			pid->kd = 100;
-			pid->direction = ACW;
-			pid->Mode = Line;
-			
-			/*pidÔËËãº¯Êı£¬¼ÆËãV£¬vel*/
+			if(i == 0)
+			{
+				priority1.priority = Line_N[4*i+pid->target_Num].line_Priority;
+				priority1.line_num = 4*i+pid->target_Num;
+			}
+			if(priority1.priority > Line_N[4*i+pid->target_Num].line_Priority)
+			{
+				priority1.priority = Line_N[4*i+pid->target_Num].line_Priority;
+				priority1.line_num = 4*i+pid->target_Num;
+			}
+		}
+		
+		/*»»Ïß*/
+		pid->Line_Num_Next = pid->Line_Num = priority1.line_num;
+		pid->target_Next = pid->Line_Num_Next % 4 + 1;
+		if(pid->target_Next == 4) pid->target_Next = 0;
+		
+		/*Ô¤¹À¾àÏÂÒ»Ìõ±ßµÄ¾àÀë*/
+		PID_Pre(pid);
+		
+		/*1mÒÔÉÏÏßºÅÇĞ»Ø£¬ËÙ¶È¸ø1m5*/
+		if(pid->l->line_Error>800)
+		{
+			pid->Line_Num = pid->Line_Num_Last;
+			pid->V = 1500;
+		}
+		
+		/*1mÒÔÄÚ»»Ïß²¢ÖØĞÂ¼ÆËãV,vel*/
+		else if(pid->l->line_Error<=800)
+		{
+			pid->Line_Num = pid->Line_Num_Next;
 			PID_Control(pid);
 			
-			/*¸ø³öÄ¿±êÍ°ºÅ*/
-			pid->target_Num = pid->Line_Num % 4 + 1;
-			if(pid->target_Num == 4) pid->target_Num = 0;
+			/*Ğ£×¼¶¨Î»ÏµÍ³*/
+			float angle = pid->Angle + 0.8f;
+			CorrectAngle(angle);
 			
-			/*Ñ°ÕÒÏÂÒ»Ìõ±ßÓÅÏÈ¼¶×î¸ßµÄÏßºÅ*/
-			pid->Line_Num_Last = pid->Line_Num;
-			priority priority1 = {0};
+			/*ÓÅÏÈ¼¶¹ÜÀí*/
 			for(i=0;i<5;i++)
 			{
-				pid->Line_Num_Next = pid->Line_Num = 4*i+pid->target_Num;
-				pid->l = &Line_N[pid->Line_Num];
-				if(i == 0)
-				{
-					priority1.priority = pid->l->line_Priority;
-					priority1.line_num = pid->Line_Num;
-				}
-				if(priority1.priority > pid->l->line_Priority)
-				{
-					priority1.priority = pid->l->line_Priority;
-					priority1.line_num = pid->Line_Num;
-				}
-			}
-			
-			/*»»Ïß*/
-			pid->Line_Num_Next = pid->Line_Num = priority1.line_num;
-			pid->target_Next = pid->Line_Num_Next % 4 + 1;
-			if(pid->target_Next == 4) pid->target_Next = 0;
-			
-			/*Ô¤¹À¾àÏÂÒ»Ìõ±ßµÄ¾àÀë*/
-			PID_Pre(pid);
-			
-			/*1mÒÔÉÏÏßºÅÇĞ»Ø£¬ËÙ¶È¸ø1m5*/
-			if(pid->l->line_Error>800)
-			{
-				pid->Line_Num = pid->Line_Num_Last;
-				pid->V = 1500;
-			}
-			
-			/*1mÒÔÄÚ»»Ïß²¢ÖØĞÂ¼ÆËãV,vel*/
-			else if(pid->l->line_Error<=800)
-			{
-				pid->Line_Num = pid->Line_Num_Next;
-				PID_Control(pid);
-				
-				/*Ğ£×¼¶¨Î»ÏµÍ³*/
-				float angle = pid->Angle + 0.8f;
-				CorrectAngle(angle);
-				
-				/*ÓÅÏÈ¼¶¹ÜÀí*/
-				for(i=0;i<5;i++)
-				{
-					Line_N[4*i+pid->target_Num].line_Priority--;
-					if(Line_N[4*i+pid->target_Num].line_Priority == -1) Line_N[4*i+pid->target_Num].line_Priority = 4;
-				}
+				Line_N[4*i+pid->target_Num].line_Priority--;
+				if(Line_N[4*i+pid->target_Num].line_Priority == -1) Line_N[4*i+pid->target_Num].line_Priority = 4;
 			}
 		}
-		
-		/*±ÜÕÏÄ£Ê½*/
-		else
-		{
-			static int timeCnt1 = 0;
-			timeCnt1++;
-			
-			/*ÏŞÊ±1s*//*±£Ö¤²»»á×ÔĞıµÄÊ±¼ä*/
-			if(timeCnt1 < 150)
-			{
-				pid->Angle += 180;
-				pid->kp = 5;
-				PID_Control(pid);
-				pid->V = -1000;
-			}
-			
-			/*ÏŞÊ±1s*//*±£Ö¤²»»á×ÔĞıµÄÊ±¼ä*/
-			else if(timeCnt1 < 300)
-			{
-				pid->kp = 5;
-				PID_Control(pid);
-				pid->V = 1000;
-			}
-			
-			/*»Ø¹éÕı³£×ßĞÎ*/
-			else
-			{
-				timeCnt1 = 0;/*±êÖ¾Î»¹éÁã*/
-				error->flag = 0;
-				pid->Line_Num += 20;
-				pid->l = &Line_N[pid->Line_Num];/*ÏßºÅÇĞ»Ø*/
-			}
-		}
-		
 		/*±£Ö¤Á½¸ö·½ÏòÍ¬Ò»¸ùÏßÓÅÏÈ¼¶ÏàÍ¬*/
 		for(i=0;i<20;i++)
 		{
@@ -1077,143 +1020,101 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 	/*CW·½Ïò*/
 	else if(pid->Line_Num > 19)
 	{
-		if(error->flag == 0)
+		/*ÉèÖÃpid²ÎÊı*/
+		pid->kp = 15;
+		pid->kd = 100;
+		pid->direction = CW;
+		pid->Mode = Line;
+		
+		/*pidÔËËãº¯Êı£¬¼ÆËãV£¬vel*/
+		PID_Control(pid);
+		
+		/*¸ø³öÄ¿±êÍ°ºÅ*/
+		pid->target_Num = pid->Line_Num % 4;
+		
+		/*Ñ°ÕÒÏÂÒ»Ìõ±ßÓÅÏÈ¼¶×î¸ßµÄÏßºÅ*/
+		pid->Line_Num_Last = pid->Line_Num;
+		priority priority2 = {0};
+		if(pid->target_Num != 0)
 		{
-			
-			/*ÉèÖÃpid²ÎÊı*/
-			pid->kp = 15;
-			pid->kd = 100;
-			pid->direction = CW;
-			pid->Mode = Line;
-			
-			/*pidÔËËãº¯Êı£¬¼ÆËãV£¬vel*/
+			for(i=5;i<10;i++)
+			{
+				if(i == 5)
+				{
+					priority2.priority = Line_N[4*i+pid->target_Num-1].line_Priority;
+					priority2.line_num = 4*i+pid->target_Num-1;
+				}
+				if(priority2.priority > Line_N[4*i+pid->target_Num-1].line_Priority)
+				{
+					priority2.priority = Line_N[4*i+pid->target_Num-1].line_Priority;
+					priority2.line_num = 4*i+pid->target_Num-1;
+				}
+			}
+		}
+		else if(pid->target_Num == 0)
+		{
+			for(i=5;i<10;i++)
+			{
+				if(i == 5)
+				{
+					priority2.priority = Line_N[4*i+3].line_Priority;
+					priority2.line_num = 4*i+3;
+				}
+				if(priority2.priority > Line_N[4*i+3].line_Priority)
+				{
+					priority2.priority = Line_N[4*i+3].line_Priority;
+					priority2.line_num = 4*i+3;
+				}
+			}
+		}
+		
+		/*»»Ïß*/
+		pid->Line_Num_Next = pid->Line_Num = priority2.line_num;
+		pid->target_Next = pid->Line_Num_Next % 4;
+		
+		/*Ô¤¹À¾àÏÂÒ»Ìõ±ßµÄ¾àÀë*/
+		PID_Pre(pid);
+		
+		/*1mÒÔÉÏÏßºÅÇĞ»Ø£¬ËÙ¶È¸ø1m5*/
+		if(pid->l->line_Error <-800)
+		{
+			pid->Line_Num = pid->Line_Num_Last;
+			pid->V = 1500;
+		}
+		
+		/*1mÒÔÄÚ»»Ïß²¢ÖØĞÂ¼ÆËãV,vel*/
+		else if(pid->l->line_Error>=-800)
+		{
+			pid->Line_Num = pid->Line_Num_Next;
 			PID_Control(pid);
 			
-			/*¸ø³öÄ¿±êÍ°ºÅ*/
-			pid->target_Num = pid->Line_Num % 4;
+			/*Ğ£×¼¶¨Î»ÏµÍ³*/
+			float angle = pid->Angle - 0.8f;
+			CorrectAngle(angle);
 			
-			/*Ñ°ÕÒÏÂÒ»Ìõ±ßÓÅÏÈ¼¶×î¸ßµÄÏßºÅ*/
-			pid->Line_Num_Last = pid->Line_Num;
-			priority priority2 = {0};
+			/*ÓÅÏÈ¼¶¹ÜÀí*/
 			if(pid->target_Num != 0)
 			{
 				for(i=5;i<10;i++)
 				{
-					pid->Line_Num_Next = pid->Line_Num = 4*i+pid->target_Num-1;
-					pid->l = &Line_N[pid->Line_Num];
-					if(i == 5)
-					{
-						priority2.priority = pid->l->line_Priority;
-						priority2.line_num = pid->Line_Num;
-					}
-					if(priority2.priority > pid->l->line_Priority)
-					{
-						priority2.priority = pid->l->line_Priority;
-						priority2.line_num = pid->Line_Num;
-					}
+					Line_N[4*i+pid->target_Num-1].line_Priority--;
+					if(Line_N[4*i+pid->target_Num-1].line_Priority == -1) Line_N[4*i+pid->target_Num-1].line_Priority = 4;
 				}
 			}
 			else if(pid->target_Num == 0)
 			{
 				for(i=5;i<10;i++)
 				{
-					pid->Line_Num_Next = pid->Line_Num = 4*i+3;
-					pid->l = &Line_N[pid->Line_Num];
-					if(i == 5)
-					{
-						priority2.priority = pid->l->line_Priority;
-						priority2.line_num = pid->Line_Num;
-					}
-					if(priority2.priority > pid->l->line_Priority)
-					{
-						priority2.priority = pid->l->line_Priority;
-						priority2.line_num = pid->Line_Num;
-					}
-				}
-			}
-			
-			/*»»Ïß*/
-			pid->Line_Num_Next = pid->Line_Num = priority2.line_num;
-			pid->target_Next = pid->Line_Num_Next % 4;
-			
-			/*Ô¤¹À¾àÏÂÒ»Ìõ±ßµÄ¾àÀë*/
-			PID_Pre(pid);
-			
-			/*1mÒÔÉÏÏßºÅÇĞ»Ø£¬ËÙ¶È¸ø1m5*/
-			if(pid->l->line_Error <-800)
-			{
-				pid->Line_Num = pid->Line_Num_Last;
-				pid->V = 1500;
-			}
-			
-			/*1mÒÔÄÚ»»Ïß²¢ÖØĞÂ¼ÆËãV,vel*/
-			else if(pid->l->line_Error>=-800)
-			{
-				pid->Line_Num = pid->Line_Num_Next;
-				PID_Control(pid);
-				
-				/*Ğ£×¼¶¨Î»ÏµÍ³*/
-				float angle = pid->Angle - 0.8f;
-				CorrectAngle(angle);
-				
-				/*ÓÅÏÈ¼¶¹ÜÀí*/
-				if(pid->target_Num != 0)
-				{
-					for(i=5;i<10;i++)
-					{
-						Line_N[4*i+pid->target_Num-1].line_Priority--;
-						if(Line_N[4*i+pid->target_Num-1].line_Priority == -1) Line_N[4*i+pid->target_Num-1].line_Priority = 4;
-					}
-				}
-				else if(pid->target_Num == 0)
-				{
-					for(i=5;i<10;i++)
-					{
-						Line_N[4*i+3].line_Priority--;
-						if(Line_N[4*i+3].line_Priority == -1) Line_N[4*i+3].line_Priority = 4;
-					}
+					Line_N[4*i+3].line_Priority--;
+					if(Line_N[4*i+3].line_Priority == -1) Line_N[4*i+3].line_Priority = 4;
 				}
 			}
 		}
-		
-		/*±ÜÕÏÄ£Ê½*/
-		else
-		{
-			static int timeCnt2 = 0;
-			timeCnt2++;
-			
-			/*ÏŞÊ±1s*//*±£Ö¤²»»á×ÔĞıµÄÊ±¼ä*/
-			if(timeCnt2 < 150)
-			{
-				pid->Angle += 180;
-				pid->kp = 5;
-				PID_Control(pid);
-				pid->V = -1000;
-			}
-			
-			/*ÏŞÊ±1s*//*±£Ö¤²»»á×ÔĞıµÄÊ±¼ä*/
-			else if(timeCnt2 < 300)
-			{
-				pid->kp = 5;
-				PID_Control(pid);
-				pid->V = 1000;
-			}
-			
-			/*»Ø¹éÕı³£×ßĞÎ*/
-			else
-			{
-				timeCnt2 = 0;/*±êÖ¾Î»¹éÁã*/
-				error->flag = 0;
-				pid->Line_Num -= 20;
-				pid->l = &Line_N[pid->Line_Num];/*ÏßºÅÇĞ»Ø*/
-			}
-		}
-		
-		/*±£Ö¤Á½¸ö·½ÏòÍ¬Ò»¸ùÏßÓÅÏÈ¼¶ÏàÍ¬*/
-		for(i=0;i<20;i++)
-		{
-			Line_N[i].line_Priority = Line_N[i+17].line_Priority;
-		}
+	}
+	/*±£Ö¤Á½¸ö·½ÏòÍ¬Ò»¸ùÏßÓÅÏÈ¼¶ÏàÍ¬*/
+	for(i=0;i<20;i++)
+	{
+		Line_N[i].line_Priority = Line_N[i+17].line_Priority;
 	}
 }
 
@@ -1233,107 +1134,32 @@ void GetData(PID_Value *p)                                                   //¶
 
 void ErrorDisposal(PID_Value *pid,Err *error)                                //´íÎó¼ì²â
 {
-	if(error->flag == 1 || error->stop == 1) return;
-	if(error->timeCnt == 0)
-	{
-		error->Err_X = pid->X;
-		error->Err_Y = pid->Y;
-	}
-	error->timeCnt++;
-	if(error->timeCnt > 150)
+	if(error->flag == 1 || error->stop == 1)
 	{
 		error->timeCnt = 0;
-		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));
-		if(error->distance < error->err_distance)
+		return;
+	}
+	if(((float)sqrt(pid->X_Speed * pid->X_Speed + pid->Y_Speed * pid->Y_Speed)) < 600.f/* ||\
+		((float)sqrt(pid->X_Speed * pid->X_Speed + pid->Y_Speed * pid->Y_Speed)) > 1800.f*/)
+	{
+		error->timeCnt ++ ;
+		if(error->timeCnt > 300)
 		{
 			error->flag = 1;
-			error->errCnt += 1;
-			pid->err_line_num = pid->Line_Num;
-			if(pid->Line_Num < 8) pid->Line_Num += 8;
-			else if(pid->Line_Num > 7 && pid->Line_Num < 20) pid->Line_Num -= 8;
-			else if(pid->Line_Num > 19 && pid->Line_Num < 28) pid->Line_Num += 8;
-			else if(pid->Line_Num > 27 && pid->Line_Num < 40) pid->Line_Num -= 8;
+			error->timeCnt = 0;
 		}
 	}
+	else error->timeCnt = 0;
 }
 
-void WatchDog(PID_Value *Dog)
+void PID_Error(PID_Value *pid, u8 dir, Err *error, int targetp[])
 {
-	Dog->food -- ;
-	if(Dog->food < 0) Dog->dogHungry = 1;
-	else Dog->dogHungry = 0;
+	if(error->flag == 0) return;
+	
 }
 
 /*ĞÂË¼Â·£ºÇò²Ö¹ÜÀí£¬ÇòÊı´óÓÚ10¸öºóÖ±½ÓÈ¥×îÄÚÈ¦Í¶Çò*/
 void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 {
-	int i = 0;/*forÑ­»·²ÎÊı*/
-	PID->timeCnt ++ ;/*±ÈÈü¼ÆÊ±*/
 	
-	
-	/*20sÄÚÕı³£ÊÕÇò*/
-	if(PID->timeCnt < 1000)
-	{
-		if(PID->Line_Num == 6 || PID->Line_Num == 24) PID->stop = 1;
-		return;
-	}
-	if(PID->timeCnt == 1000) PID->stop = 0;
-	
-	/*ÎŞÇòÍË³öÉ¨Ãè×´Ì¬*/
-	if(PID->dogHungry == 1) PID->stop = 0;
-	
-	/*10sÊ±È¥ÍâÈ¦Í¶Çò*/
-	if(PID->timeCnt == 1000)
-	{
-		for(i = 0 ; i < 4 ; i ++ )
-		{
-			Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 5;
-			Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 4;
-			Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 3;
-			Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 1;
-			Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 2;
-		}
-	}
-	
-	/*±ÜÕÏÊ±ÍË³ö*/
-	if(err->flag == 1) return;
-	
-	/*É¨Ãè×´Ì¬ÍË³ö*/
-	if(PID->stop == 1) return;
-	
-	/*ÓĞÇòÎŞÇò×´Ì¬ÇĞ»»Ê±²Å½øÈë¹ÜÀí²ã*/
-	if(PID->doglast == PID->dogHungry) return;
-	
-	
-	
-	/*ÔİÊ±ÉèÖÃÎª180s±ÈÈüÊ±³¤*/
-	if(PID->timeCnt < 18000 && PID->timeCnt > 1000)
-	{
-		err->errCnt = 1;
-		/*ÓĞÇòÈ¥³¡µØÖĞÑëÉ¨ÃèÉäÇò*/
-		if(PID->dogHungry == 0)
-		{
-			
-			/*³¡µØÖĞÑëÉ¨ÃèÍ¶Çò*/
-			PID->stop = 1;
-		}
-		
-		/*ÎŞÇò×´Ì¬£¬ÏÈÈ¥É¨±ß£¬ÔÙÉ¨ÄÚ³¡£¬ÆÚ¼äÓĞÇò½øÈë´ı·¢×´Ì¬Á¢¼´»Ø³¡µØÖĞÑëÍ¶Çò*/
-		else
-		{
-			
-			/*¸üĞÂ×ßĞÎÓÅÏÈ¼¶*/
-			for(i = 0 ; i < 4 ; i ++ )
-			{
-				Line_N[i + 20].line_Priority = Line_N[i].line_Priority = 3;
-				Line_N[i + 24].line_Priority = Line_N[i + 4].line_Priority = 2;
-				Line_N[i + 28].line_Priority = Line_N[i + 8].line_Priority = 1;
-				Line_N[i + 32].line_Priority = Line_N[i + 12].line_Priority = 0;
-				Line_N[i + 36].line_Priority = Line_N[i + 16].line_Priority = 4;
-			}
-		}
-		
-		/*¸³Öµ*/
-		PID->doglast = PID->dogHungry;
-	}
 }

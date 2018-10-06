@@ -192,4 +192,5 @@ void GetData(PID_Value *p);
 void shoot(PID_Value *p_gun, int target[], int Debug);
 void PriorityControl(PID_Value *PID,Err *err,int targetn[]);
 void WatchDog(PID_Value *Dog);
+void PID_Error(PID_Value *pid, u8 dir, Err *error, int targetp[]);
 #endif

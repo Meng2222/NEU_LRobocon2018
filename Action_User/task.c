@@ -209,16 +209,15 @@ void WalkTask(void)
 		
 		GetData(PID_x);																		//读取定位系统信息
 		
-		WatchDog(PID_x);																	//球数看门狗
-		ErrorDisposal(PID_x,Error_x);														//错误检测
-		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
+		ErrorDisposal(PID_x,Error_x);														//避障检测
+		
 		PriorityControl(PID_x,Error_x,target);												//走形优先级管理
+		
 		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
+		
 		GO(PID_x);																			//电机控制
 		
 		GetData(PID_x);																		//读取定位系统信息
-		
-		
 		Error_x->errCnt = 1;
 		
 		
