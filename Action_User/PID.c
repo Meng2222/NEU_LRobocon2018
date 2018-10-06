@@ -1484,8 +1484,8 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 					for(i = 0 ; i < 4 ; i ++ )
 					{
 //						Line_N[i].line_Priority = 0;
-						Line_N[i + 4].line_Priority = 1;
-						Line_N[i + 8].line_Priority = 2;
+						Line_N[i + 4].line_Priority = 1000;
+						Line_N[i + 8].line_Priority = 1000;
 						Line_N[i + 12].line_Priority = 3;
 					}
 				}
@@ -1494,8 +1494,8 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 					for(i = 0 ; i < 4 ; i ++ )
 					{
 //						Line_N[i + 17].line_Priority = 0;
-						Line_N[i + 21].line_Priority = 1;
-						Line_N[i + 25].line_Priority = 2;
+						Line_N[i + 21].line_Priority = 1000;
+						Line_N[i + 25].line_Priority = 1000;
 						Line_N[i + 29].line_Priority = 3;
 					}
 				}
