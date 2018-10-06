@@ -230,7 +230,7 @@ void ReadLaserBValue(void);
 void GetValueFromFort(uint8_t data);
 
 void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos);
-void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int targets[]);
+void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[]);
 void Calibration_Operation(CalibrationData *Cal, ScanData *Scan, GunneryData *Gun, PID_Value const *Pos);
 float Tar_Angle_Operation(float Dist_X, float Dist_Y);
 

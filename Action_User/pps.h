@@ -53,7 +53,6 @@ void SetSpeedX(float setValue);
 void SetSpeedY(float setValue);
 void SetWZ(float setValue);
 
-
 void CorrectX(float value);
 void CorrectY(float value);
 void CorrectAngle(float value);
