@@ -41,6 +41,7 @@
 FortType fort;
 GunneryData Gundata;
 ScanData Scan;
+CalibrationData Cal;
 int bufferI = 0;
 char buffer[20] = {0};
 /**
@@ -259,6 +260,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 	/*ZYJ Predictor*/
 	if(Pos->direction == ACW)
 	{
+
 		Gun->YawAngle_SetAct = Constrain_Float(Gun->YawAngle_Set, 90,  0);
 		if(Gun->YawAngle_SetAct > 79)
 		{
@@ -391,6 +393,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 				
 			//识别目标桶两侧挡板边缘，统一为从左往右扫描
 			//当右侧激光距离值突然变短，标记左侧挡板边缘坐标点
+
 			if((Scan->Pro_Left_Dist - Scan->Pro_Right_Dist) > 1200.0f)
 			{
 				if((-3000.0f < Scan->Pro_Right_X && Scan->Pro_Right_X < -1400.0f) || (1400.0f < Scan->Pro_Right_X && Scan->Pro_Right_X < 3000.0f))
@@ -430,7 +433,6 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 					Scan->GetRightFlag = 1;
 				} 
 				
-				
 				if(Scan->GetLeftFlag == 1 && Scan->GetRightFlag == 1)
 				{
 					Scan->Pro_Border_Left_X_Last  = Scan->Pro_Border_Left_X;
@@ -447,18 +449,19 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 				{
 					if(Scan->GetLeftFlag == 0 && Scan->GetRightFlag == 0)
 					{
-						Scan->ScanAngle_Start = Scan->ScanAngle_Start - 25.0f;
-						Scan->ScanAngle_End   = Scan->ScanAngle_End   + 25.0f;
+						Scan->ScanAngle_Start = Scan->ScanAngle_Start - 20.0f;
+						Scan->ScanAngle_End   = Scan->ScanAngle_End   + 20.0f;
 					}
 					if(Scan->GetLeftFlag == 0 && Scan->GetRightFlag == 1)
 					{				
-						Scan->ScanAngle_Start = Scan->ScanAngle_Start - 25.0f;
-						Scan->ScanAngle_End   = Scan->ScanAngle_End   - 25.0f;					
+						Scan->ScanAngle_Start = Scan->ScanAngle_Start - 20.0f;
+						Scan->ScanAngle_End   = Scan->ScanAngle_End   - 20.0f;					
 					}
 					if(Scan->GetLeftFlag == 1 && Scan->GetRightFlag == 0)
 					{				
-						Scan->ScanAngle_Start = Scan->ScanAngle_Start + 25.0f;
-						Scan->ScanAngle_End   = Scan->ScanAngle_End   + 25.0f;		
+						Scan->ScanAngle_Start = Scan->ScanAngle_Start + 20.0f;
+						Scan->ScanAngle_End   = Scan->ScanAngle_End   + 20.0f;		
+
 					}
 					Scan->YawAngle_Set = Scan->ScanAngle_Start;
 					Scan->ScanPermitFlag = 0;

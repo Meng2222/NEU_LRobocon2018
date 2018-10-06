@@ -61,6 +61,7 @@ extern FortType fort;
 extern GunneryData Gundata;
 extern Command CmdRecData;
 extern ScanData Scan;
+extern CalibrationData Cal;
 void ConfigTask(void)
 {
 	PID_x = &PID_A;
@@ -80,8 +81,8 @@ void ConfigTask(void)
 	VelLoopCfg(CAN2,5, 16384000, 16384000);							//收球电机
 	VelLoopCfg(CAN2,6, 16384000, 16384000);							//收球电机
 	PosLoopCfg(CAN2,7, 16384000,16384000,20000000);
-	MotorOn(CAN1,1);												//右电机使能
-	MotorOn(CAN1,2);												//左电机使能
+	MotorOff(CAN1,1);												//右电机使能
+	MotorOff(CAN1,2);												//左电机使能
 	MotorOn(CAN2,5); 
 	MotorOn(CAN2,6);
 	MotorOn(CAN2,7);
@@ -130,6 +131,7 @@ void ConfigTask(void)
 		//初始化扫描参数
 		Scan.BucketNum = 0;
 		Scan.CntDelayTime = 0;
+
 		Scan.DelayFlag = 0;	
 		Scan.FirePermitFlag = 0;	
 		Scan.GetLeftFlag = 0;
