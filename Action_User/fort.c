@@ -325,14 +325,15 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 	if(Scan->ScanStatus == 0)
 	{
 		//设定目标桶号
-		for(Scan->i = 0; Scan->i < 4; Scan->i++)
+		for(Scan->i = 1, Scan->min = 0; Scan->i < 4; Scan->i++)
 		{
-			if(targets[Scan->i] == 0)
+			if(targets[Scan->i] < targets[Scan->min])
 			{
-				Pos->target_Num = Scan->i;
-				Scan->BucketNum = Scan->i;
+				Scan->min = Scan->i;
 			}
 		}
+		Pos->target_Num = Scan->min;
+		Scan->BucketNum = Scan->min;
 		
 		//炮塔到目标桶左右挡板边缘横轴距离以及计算指向左右挡板边缘航向角设定值
 		Scan->Dist_FToBorder_Left_X = Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] - Scan->Pos_Fort_X;
