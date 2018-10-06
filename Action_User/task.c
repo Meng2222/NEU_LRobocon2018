@@ -107,6 +107,7 @@ void ConfigTask(void)
 		//距离精度
 		Gundata.Dist_Error_Accuracy = 10.0;
 		Gundata.YawAngle_Zero_Offset = 1.0f;
+		Gundata.MovingShootFlag = 0;
 		
 		//设定各桶编号及坐标
 		Gundata.Pos_Bucket_X[0] =  2200.0;	Gundata.Pos_Bucket_X[0] =  200.0;
@@ -124,8 +125,8 @@ void ConfigTask(void)
 		Gundata.YawAngle_Offset[6] = -2.5f;	Gundata.ShooterVel_Offset[6] =  1.0f;
 		Gundata.YawAngle_Offset[7] = -2.5f;	Gundata.ShooterVel_Offset[7] =  1.0f;
 		
-	//	memset(Gundata.Yaw_Angle_Offset, 0, 8);
-	//	memset(Gundata.Shooter_Vel_Offset, 0, 8);
+//		memset(Gundata.Yaw_Angle_Offset, 0, 8);
+//		memset(Gundata.Shooter_Vel_Offset, 0, 8);
 
 		//初始化扫描参数
 		Scan.BucketNum = 0;
@@ -139,6 +140,7 @@ void ConfigTask(void)
 		Scan.SetTimeFlag = 1;
 		Scan.SetFireFlag = 1;
 		Scan.ScanPermitFlag = 0;
+		Scan.ScanShootFlag = 0;
 		
 		Scan.YawAngle_Zero_Offset = 1.0f;
 		Scan.YawAngle_Offset = -3.3f;
@@ -162,7 +164,7 @@ void ConfigTask(void)
 		
 
 		int startFlag = 1;
-		int cntSendTime = 0, cntClearTime = 0, cntLeftTrigger = 0, cntRightTrigger = 0;
+		int cntSendTime = 0, cntLeftTrigger = 0, cntRightTrigger = 0;
 		int Laser_Left, Laser_Right;
 		while(startFlag)
 		{
@@ -189,10 +191,11 @@ void ConfigTask(void)
 			}
 			else
 			{
-				cntClearTime++;
+				cntLeftTrigger = 0;
+				cntRightTrigger = 0;
 			}
 
-			//连续触发0.2s则触发成功，超过0.5s无触发触发次数清零
+			//连续触发0.2s则触发成功
 			if(cntLeftTrigger > 20)
 			{
 				OSMboxPost(adc_msg,(void *)Left);
@@ -204,11 +207,6 @@ void ConfigTask(void)
 				OSMboxPost(adc_msg,(void *)Right);
 				USART_OUT(UART4, (uint8_t*)"Go Anti-Clockwise\r\n");
 				OSTaskSuspend(OS_PRIO_SELF);
-			}
-			else if(cntClearTime > 50)
-			{
-				cntLeftTrigger = 0;
-				cntRightTrigger = 0;
 			}
 		}
 	}
@@ -250,6 +248,8 @@ void WalkTask(void)
 		GetData(PID_x);										//读取定位系统信息
 		if(PID_x->V != 0 && Error_x->errCnt == 0)
 		{
+			Gundata.MovingShootFlag = 1;
+			Scan.ScanShootFlag = 0;
 			Gundata.BucketNum = PID_A.target_Num;			//设置目标桶号
 			GunneryData_Operation(&Gundata, PID_x);			//计算射击诸元
 			YawPosCtrl(Gundata.YawAngle_SetAct);			//设置航向角
@@ -257,6 +257,8 @@ void WalkTask(void)
 		}
 		else if(PID_x->V == 0)
 		{
+			Gundata.MovingShootFlag = 0;
+			Scan.ScanShootFlag = 1;
 			Scan_Operation(&Scan, PID_x, target);
 			YawPosCtrl(Scan.YawAngle_Set);
 			ShooterVelCtrl(Scan.ShooterVel_Set);
@@ -274,8 +276,9 @@ void WalkTask(void)
 			if(cntSendTime == 0)
 			{
 				//Scan参数
-				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	WZ=%d	LaserA=%d	LaserB=%d	ScanSta=%d	BucketNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	t0=%d	t1=%d	t2=%d	t3=%d\r\n",\
-				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,			(int)GetWZ(),				(int)fort.laserAValueReceive,	(int)fort.laserBValueReceive,\
+				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	SpeX=%d	SpeY=%d	WZ=%d	LaserA=%d	LaserB=%d	ScanSta=%d	BucketNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	Tar0=%d	Tar1=%d	Tar2=%d	Tar3=%d\r\n",\
+				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,			(int)PID_A.X_Speed,			(int)PID_A.Y_Speed,			(int)GetWZ(),\
+				(int)fort.laserAValueReceive,						(int)fort.laserBValueReceive,\
 				(int)Scan.ScanStatus,	(int)Scan.BucketNum,		(int)Scan.ScanPermitFlag, 	(int)Scan.SetTimeFlag,		(int)Scan.SetFireFlag,\
 				(int)Scan.GetLeftFlag,	(int)Scan.GetRightFlag,		(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,\
 				(int)Scan.DelayFlag,	(int)Scan.CntDelayTime,\

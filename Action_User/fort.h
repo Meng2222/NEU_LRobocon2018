@@ -48,6 +48,7 @@ typedef struct							//										2  _   _  1
 	int CntIteration;           	    //迭代次数								3         0
 	int Square_Mode;            	    //方形走行方向							Square_Mode = 0时    逆时针
 										//										Square_Mode = 1时    顺时针
+	int MovingShootFlag;
 	
 	float Pos_Fort_X;					//炮塔横坐标							单位mm
 	float Pos_Fort_Y;					//炮塔纵坐标							单位mm
@@ -109,16 +110,18 @@ typedef struct{
 	int FirePermitFlag;					//允许射球标志位
 	int GetLeftFlag;					//扫描到左侧挡板边缘标志位
 	int GetRightFlag;					//扫描到右侧挡板边缘标志位
+	int GetBucketFlag;					
 	int ScanStatus;						//扫描状态                              0走行	1扫描	2射球
 	int ScanPermitFlag;					//允许开始扫描标志位
 	int ScanEndFlag;
 	int SetTimeFlag;					//允许设定延时标志位	
 	int SetFireFlag;					//允许设定射球标志位
+	int ScanShootFlag;
 	int i;								//计数
-	int GetBucketFlag;					//
+	int min;
+
 	float ScanVel;						//扫描速度								单位°/10ms
-	
-	
+
 	float Pos_Fort_X;					//炮塔横坐标							单位mm
 	float Pos_Fort_Y;					//炮塔纵坐标							单位mm
 	float Pos_Fort_Angle;				//炮塔航向角检测值换算定位系统角度		单位°

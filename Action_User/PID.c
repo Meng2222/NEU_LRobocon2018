@@ -781,9 +781,20 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		p_gun->fire_request = 0;
 		p_gun->fire_command = 0;
 		Scan.FirePermitFlag = 0;
-		targets[p_gun->target_Num] += 1;
-		if(targets[0] != 0 && targets[1] != 0 && targets[2] != 0 && targets[3] != 0){
-			targets[0] = 0 , targets[1] = 0 , targets[2] = 0 , targets[3] = 0;}
+		if(Gundata.MovingShootFlag && !Scan.ScanShootFlag)
+		{
+			targets[p_gun->target_Num] += 1;
+		}
+		if(!Gundata.MovingShootFlag && Scan.ScanShootFlag)
+		{
+			targets[p_gun->target_Num] += 2;
+		}
+		
+		if(targets[0] > 1 && targets[1] > 1 && targets[2] > 1 && targets[3] > 1)
+		{
+			targets[0] = 0 , targets[1] = 0 , targets[2] = 0 , targets[3] = 0;
+		}
+		
 		if(Debug == 1) USART_OUT(UART4,(uint8_t*)"fire	%d	%d	%d	%d	\r\n", (int)targets[0],(int)targets[1],(int)targets[2],(int)targets[3]);
 	}
 	else
