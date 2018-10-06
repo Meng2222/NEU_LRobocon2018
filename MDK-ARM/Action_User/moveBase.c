@@ -201,8 +201,8 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 	Straight(v);
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
-extern float Distance,shootX,shootY,angle,antiRad,location[4][2];
-extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,shakeShootFlag;
+extern float Distance,shootX,shootY,angle,antiRad,location[4][2],speed;
+extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,shakeShootFlag,banFirstShoot;
 void GetYawangle(uint8_t StdId)
 {
 	if(shakeShootFlag)
@@ -253,6 +253,18 @@ void BingoJudge(uint8_t StdId)
 			}	
 		}
 	}
+	
+	if(speed<1300||speed>1700||errTime>2)
+	{	
+		throwFlag=0;
+		banFirstShoot=120;
+	}	
+	GetFunction(x,y,0,2400);
+	if((status==0&&fabs(GetAngle()-lAngle+90)>10)||(status==0&&fabs(GetAngle()-lAngle+90)>10))
+	{
+		throwFlag=0;
+		banFirstShoot=120;
+	}	
 }
 
 void GetShootSituation(uint8_t StdId)
@@ -316,8 +328,8 @@ void DecreaseR(int Radium)
 	if(RchangeFlag)
 		Rchange(-500);	
 }	
-extern int errFlag,count,FindBallModel,banFirstShoot,shootCnt,shakeShootCnt,ballColor;
-extern float angle,speed,speedY,speedX,T0,T1,rps;
+extern int errFlag,count,FindBallModel,shootCnt,shakeShootCnt,ballColor;
+extern float angle,speed,speedY,speedX,T0,T1,rps,realR;
 int errSituation1,errSituation2,shakeShootOff=200,shutOffCnt=0;
 void Avoidance()
 {
@@ -333,7 +345,7 @@ void Avoidance()
 				if(R<1600)
 					R+=500;
 				Straight(-1400);
-				if(errTime%2==0&&statusFlag)
+				if(errTime%3==0&&statusFlag)
 				{
 					status=1-status;
 					statusFlag=0;
@@ -372,8 +384,16 @@ void Avoidance()
 					changeAngle=speedAngle;
 				}	
 				//情况1：与对方正面相撞
-				else if(speed<1200)
+				else if(speed<1100)
 				{
+					if(realR>800&&realR<1900)
+					{
+						errSituation2=1;
+						errSituation1=0;
+						changeAngle=GetAngle();
+					}	
+					else
+					{	
 					errSituation1=1;
 					errSituation2=0;
 					GetFunction(x,y,0,2400);
@@ -381,6 +401,7 @@ void Avoidance()
 						changeAngle=lAngle;
 					else
 						changeAngle=lAngle+180;
+					}
 				}
 				if(FindBallModel)
 				{

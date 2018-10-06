@@ -45,6 +45,7 @@
 Msg_t frontwheelspeedBuffer;
 Msg_t collectball1speedBuffer;
 Msg_t collectball2speedBuffer;
+Msg_t pushballmotorPosBuffer;
 uint8_t i=0;	
 void CAN1_RX0_IRQHandler(void)
 {
@@ -91,7 +92,7 @@ void CAN2_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	CAN_RxMsg(CAN2,&StdId,buffer2,5); //reveive data
+	CAN_RxMsg(CAN2,&StdId,buffer2,8); //reveive data
 	if(StdId==0x01)
 		ballColor=buffer2[2];
 	if(StdId==0x285)
@@ -106,6 +107,13 @@ void CAN2_RX0_IRQHandler(void)
 		for (i=0;i<8; i++)
 		{
 			collectball2speedBuffer.data8[i] = buffer2[i];
+		}
+	}	
+	if(StdId==0x287)
+	{
+		for (i=0;i<8; i++)
+		{
+			pushballmotorPosBuffer.data8[i] = buffer2[i];
 		}
 	}	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
@@ -125,7 +133,7 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
-extern int changeLightTime;
+extern int changeLightTime,touchLaserTime;
 void TIM2_IRQHandler(void)
 {
 #define PERIOD_COUNTER 10
@@ -139,6 +147,7 @@ void TIM2_IRQHandler(void)
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
 		changeLightTime++;
+		touchLaserTime++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
