@@ -18,7 +18,11 @@
 #define LASER_RIGHT (1)											//右侧激光编号					1
 #define CLOCKWISE (1)											//顺时针						1
 #define ANTI_CLOCKWISE (0)										//逆时针						0
-#define SCAN_ERROR (700.0f)
+#define SCAN_POS_ERROR (1000.0f)
+#define SCAN_DIST_ERROR (100.0f)
+#define SCAN_ANGLE_ERROR (20.0f)
+#define BORDER_LENGTH (454.0f)
+#define BORDER_ANGLE (90.0f)
 
 typedef union
 {
@@ -95,9 +99,6 @@ typedef struct							//										2  _   _  1
 	float Dist_Error_Accuracy;			//迭代精度要求							单位mm
 	float Dist_Error_X;					//横轴距离偏差							单位mm
 	float Dist_Error_Y;					//纵轴距离偏差							单位mm 
-
-	float Dist_Laser_Left;				//左侧激光探测点距离					单位mm
-	float Dist_Laser_Right;				//右侧激光探测点距离					单位mm
 }GunneryData;
 
 
@@ -128,15 +129,20 @@ typedef struct{
 	int SetFireFlag;					//允许设定射球标志位
 	int SetTimeFlag;
 		
+	int ScanMaxFlag;
 		
-int DistChange_L;
-int DistChange_R;
-int PosOK_L;
-int PosOK_R;
-int LengthOK_L;
-int LengthOK_R;
-int DepthOK_L;
-int DepthOK_R;
+	int DistChange_L;
+	int DistChange_R;
+	int PosOK_L;
+	int PosOK_R;
+	int DistOK_L;
+	int DistOK_R;
+	int AngleOK;
+	
+	int PosLeft;
+	int PosRight;
+	int LaserAValue;
+	int LaserBValue;
 
 	float ScanVel;						//扫描速度								单位°/10ms
 
@@ -180,6 +186,7 @@ int DepthOK_R;
 	float Max_To_Left_Angle;
 	float Max_To_Right_Dist;
 	float Max_To_Right_Angle;
+	float Left_To_Right_Angle;
 	
 	float Pro_Border_Left_X;			//探测的左侧挡板边缘横坐标				单位mm
 	float Pro_Border_Left_Y;			//探测的左侧挡板边缘纵坐标				单位mm
@@ -258,6 +265,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int target
 void Calibration_Operation(CalibrationData *Cal, ScanData *Scan, GunneryData *Gun, PID_Value *Pos);
 float Tar_Angle_Operation(float Dist_X, float Dist_Y);
 int Bubble_Min(int num, int array[], int bubbleMode);
+float Dist_Operation(float a_point_x, float a_point_y, float b_point_x, float b_point_y);
 
 extern FortType fort;
 

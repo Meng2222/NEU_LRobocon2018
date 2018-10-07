@@ -763,7 +763,18 @@ void GO(PID_Value *p_GO)                                                     //µ
 extern int ballcommand;
 void shoot(PID_Value *p_gun, int targets[], int Debug)                                                 //ÉäÇòº¯Êý
 {
+
 	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0;
+	if((12000 < (pos % 32768)) && (pos % 32768) < 22000)
+	{
+		Scan.PosRight = 1;
+		Scan.PosLeft = 0;
+	}
+	else
+	{
+		Scan.PosRight = 0;
+		Scan.PosLeft = 1;			
+	}
 	if (p_gun->fire_request)
 	{
 		p_gun->food = 1300;
@@ -771,9 +782,16 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		posLast = pos;
 		pos += p_gun->push_pos_up;
 		PosCrl(CAN2,7,ABSOLUTE_MODE,pos);
+
 		p_gun->fire_request = 0;
 		p_gun->fire_command = 0;
 		Scan.FirePermitFlag = 0;
+		
+		if(Scan.SetTimeFlag == 1)
+		{
+			Scan.SetTimeFlag = 0;
+			Scan.CntDelayTime = 550;	
+		}
 		
 		if(Gundata.MovingShootFlag && !Scan.ScanShootFlag)	{targets[p_gun->target_Num] += 1;}
 		else	{targets[p_gun->target_Num] += 2;}
@@ -790,7 +808,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 	{
 		posGap = GetMotor7Pos() - pos;
 		timeCnt++;
-		if(posGap > (0.f-600.f) && posGap < 100)
+		if(posGap > (0.f-700.f) && posGap < 100)
 		{
 			if(flag == 1) return;
 			timeDelay ++;

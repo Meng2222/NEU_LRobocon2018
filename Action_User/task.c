@@ -103,10 +103,10 @@ void ConfigTask(void)
 		CmdRecData.ShooterVelSet_cmd = 0;
 		VelCrl(CAN2, 5, 70 * 32768);
 		VelCrl(CAN2, 6, 0-70 * 32768);
-		
+		YawPosCtrl(20);
 		//距离精度
 		Gundata.Dist_Error_Accuracy = 10.0;
-		Gundata.YawAngle_Zero_Offset = 1.0f;
+		Gundata.YawAngle_Zero_Offset = 0.0f;
 		Gundata.MovingShootFlag = 0;
 		
 		//设定各桶编号及坐标
@@ -115,15 +115,15 @@ void ConfigTask(void)
 		Gundata.Pos_Bucket_X[2] = -2200.0;	Gundata.Pos_Bucket_Y[2] = 4600.0;
 		Gundata.Pos_Bucket_X[3] = -2200.0;	Gundata.Pos_Bucket_Y[3] =  200.0;
 		
-		Gundata.YawAngle_Offset[0] =  1.5f;	Gundata.ShooterVel_Offset[0] =  2.0f;
-		Gundata.YawAngle_Offset[1] =  1.5f;	Gundata.ShooterVel_Offset[1] =  2.0f;
-		Gundata.YawAngle_Offset[2] =  1.5f;	Gundata.ShooterVel_Offset[2] =  2.0f;
-		Gundata.YawAngle_Offset[3] =  1.5f;	Gundata.ShooterVel_Offset[3] =  2.0f;
+		Gundata.YawAngle_Offset[0] =  -1.0f;	Gundata.ShooterVel_Offset[0] =  2.0f;
+		Gundata.YawAngle_Offset[1] =  -1.5f;	Gundata.ShooterVel_Offset[1] =  2.5f;
+		Gundata.YawAngle_Offset[2] =  -1.0f;	Gundata.ShooterVel_Offset[2] =  -2.0f;
+		Gundata.YawAngle_Offset[3] =  -1.0f;	Gundata.ShooterVel_Offset[3] =  3.5f;
 		
-		Gundata.YawAngle_Offset[4] = -2.5f;	Gundata.ShooterVel_Offset[4] =  2.0f;
-		Gundata.YawAngle_Offset[5] = -2.5f;	Gundata.ShooterVel_Offset[5] =  2.0f;
-		Gundata.YawAngle_Offset[6] = -2.5f;	Gundata.ShooterVel_Offset[6] =  2.0f;
-		Gundata.YawAngle_Offset[7] = -2.5f;	Gundata.ShooterVel_Offset[7] =  2.0f;
+		Gundata.YawAngle_Offset[4] =  0.0f;	Gundata.ShooterVel_Offset[4] =  0.0f;
+		Gundata.YawAngle_Offset[5] =  0.0f;	Gundata.ShooterVel_Offset[5] =  0.0f;
+		Gundata.YawAngle_Offset[6] =  0.0f;	Gundata.ShooterVel_Offset[6] =  0.0f;
+		Gundata.YawAngle_Offset[7] =  0.0f;	Gundata.ShooterVel_Offset[7] =  0.0f;
 		
 //		memset(Gundata.Yaw_Angle_Offset, 0, 8);
 //		memset(Gundata.Shooter_Vel_Offset, 0, 8);
@@ -147,7 +147,8 @@ void ConfigTask(void)
 		
 		Scan.YawAngle_Zero_Offset = 0.0f;
 		Scan.YawAngle_Offset = -2.0f;
-		Scan.ScanVel = 0.05f;			
+		Scan.ShooterVel_Offset = 3.0f;
+		Scan.ScanVel = 0.03f;			
 		
 		//设定各挡板边缘坐标值
 		Scan.Pos_Border_X[0] =  2000.0;       Scan.Pos_Border_Y[0] =   -54.0;
@@ -163,11 +164,11 @@ void ConfigTask(void)
 		Scan.DistChange_R = 0;
 		Scan.PosOK_L = 0;
 		Scan.PosOK_R = 0;
-		Scan.LengthOK_L = 0;
-		Scan.LengthOK_R = 0;
-		Scan.DepthOK_L = 0;
-		Scan.DepthOK_R = 0;
-
+		Scan.DistOK_L = 0;
+		Scan.DistOK_R = 0;
+		Scan.AngleOK = 0;
+		
+		Scan.ScanMaxFlag = 1;
 
 		int startFlag = 1;
 		int cntSendTime = 0, cntClearTime = 0, cntLeftTrigger = 0, cntRightTrigger = 0;
@@ -285,6 +286,7 @@ void WalkTask(void)
 					Scan.GetLeftFlag = 0;
 					Scan.GetRightFlag = 0;
 	
+					Scan.ScanPermitFlag = 0;
 					Scan.FirePermitFlag = 0;					
 					Scan.ScanStatus = 0;
 					Scan.SetTimeFlag = 1;
@@ -295,10 +297,11 @@ void WalkTask(void)
 					Scan.DistChange_R = 0;
 					Scan.PosOK_L = 0;
 					Scan.PosOK_R = 0;
-					Scan.LengthOK_L = 0;
-					Scan.LengthOK_R = 0;
-					Scan.DepthOK_L = 0;
-					Scan.DepthOK_R = 0;
+					Scan.DistOK_L = 0;
+					Scan.DistOK_R = 0;
+					Scan.AngleOK = 0;
+					
+					Scan.ScanMaxFlag = 1;
 				}
 			}
 			YawPosCtrl(Scan.YawAngle_Set);
@@ -323,14 +326,26 @@ void WalkTask(void)
 			cntSendTime = cntSendTime % 10;
 			if(cntSendTime == 0)
 			{
+				//比赛收数
+//				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	SpeX=%d	SpeY=%d	WZ=%d	LaserA=%d	LaserB=%d	ScanSta=%d	BucNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	Tar0=%d	Tar1=%d	Tar2=%d	Tar3=%d\r\n",\
+//				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,			(int)PID_A.X_Speed,			(int)PID_A.Y_Speed,			(int)GetWZ(),\
+//				(int)fort.laserAValueReceive,						(int)fort.laserBValueReceive,\
+//				(int)Scan.ScanStatus,	(int)Scan.BucketNum,		(int)Scan.ScanPermitFlag, 	(int)Scan.SetTimeFlag,		(int)Scan.SetFireFlag,\
+//				(int)Scan.GetLeftFlag,	(int)Scan.GetRightFlag,		(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,\
+//				(int)Scan.DelayFlag,	(int)Scan.CntDelayTime,\
+//				(int)target[0],			(int)target[1],				(int)target[2], 			(int)target[3]);
+
 				//Scan参数
-				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	SpeX=%d	SpeY=%d	WZ=%d	LaserA=%d	LaserB=%d	ScanSta=%d	BucketNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	Tar0=%d	Tar1=%d	Tar2=%d	Tar3=%d\r\n",\
-				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,			(int)PID_A.X_Speed,			(int)PID_A.Y_Speed,			(int)GetWZ(),\
-				(int)fort.laserAValueReceive,						(int)fort.laserBValueReceive,\
-				(int)Scan.ScanStatus,	(int)Scan.BucketNum,		(int)Scan.ScanPermitFlag, 	(int)Scan.SetTimeFlag,		(int)Scan.SetFireFlag,\
-				(int)Scan.GetLeftFlag,	(int)Scan.GetRightFlag,		(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,\
-				(int)Scan.DelayFlag,	(int)Scan.CntDelayTime,\
-				(int)target[0],			(int)target[1],				(int)target[2], 			(int)target[3]);\
+				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	ScanSta=%d	BucNum=%d	ScanPer=%d	FirePer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	ScanMax=%d	Del=%d	cntDel=%d	cntFireDel=%d	StartAng=%d	TarNum=%d	ProBLX=%d	ProBLY=%d	ProBRX=%d	ProBRY=%d	DisCL=%d	DisCR=%d	PPSL=%d	PPSR=%d	DisL=%d	DisR=%d	Ang=%d	MaxDis=%d	MaxX=%d	MaxY=%d	MTLDis=%d	MTLAng=%d	MTRDis=%d	MTRAng=%d	LTRAng=%d	tar0=%d tar1=%d tar2=%d tar3=%d\r\n",\
+				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,\
+				(int)Scan.ScanStatus,	(int)Scan.BucketNum,		(int)Scan.ScanPermitFlag, 	(int)Scan.FirePermitFlag,	(int)Scan.SetTimeFlag,		(int)Scan.SetFireFlag,\
+				(int)Scan.GetLeftFlag,	(int)Scan.GetRightFlag,		(int)Scan.ScanMaxFlag,		(int)Scan.DelayFlag,		(int)Scan.CntDelayTime,		(int)Scan.CntFireDelayTime,	(int)Scan.ScanAngle_Start,	(int)PID_A.target_Num,\
+				(int)Scan.Pro_Border_Left_X,	(int)Scan.Pro_Border_Left_Y,	(int)Scan.Pro_Border_Right_X,	(int)Scan.Pro_Border_Right_Y,\
+				(int)Scan.DistChange_L,	(int)Scan.DistChange_R,		(int)Scan.PosOK_L,			(int)Scan.PosOK_R,\
+				(int)Scan.DistOK_L, 	(int)Scan.DistOK_R,			(int)Scan.AngleOK,\
+				(int)Scan.Pro_Max_Dist, (int)Scan.Pro_Max_X, 		(int)Scan.Pro_Max_Y,\
+				(int)Scan.Max_To_Left_Dist, (int)Scan.Max_To_Left_Angle, (int)Scan.Max_To_Right_Dist, (int)Scan.Max_To_Right_Angle, (int)Scan.Left_To_Right_Angle,\
+				(int)target[0],			(int)target[1],				(int)target[2],				(int)target[3]);
 				
 		
 //				//Cal参数
@@ -347,7 +362,7 @@ void WalkTask(void)
 		
 		if(PID_x->V != 0 && Error_x->errCnt == 0)
 		{
-			if(fabs(Gundata.YawAngle_Rec - Gundata.YawAngle_Set) < 3.0f && fabs(Gundata.ShooterVel_Rec - Gundata.ShooterVel_Set) < 3.0f &&\
+			if(fabs(Gundata.YawAngle_Rec - Gundata.YawAngle_Set) < 3.0f && fabs(Gundata.ShooterVel_Rec - Gundata.ShooterVel_Set) < 4.0f &&\
 				    Gundata.ShooterVel_Set < 85.0f && target[PID_x->target_Num] < 2 && GetWZ() < 100.0f)PID_A.fire_command = 1;
 			else PID_A.fire_command = 0;
 		}
