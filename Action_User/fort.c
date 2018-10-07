@@ -42,6 +42,9 @@ FortType fort;
 GunneryData Gundata;
 ScanData Scan;
 CalibrationData Cal;
+extern PID_Value *PID_x;
+extern int target[4];
+
 int bufferI = 0;
 char buffer[20] = {0};
 /**
@@ -135,6 +138,10 @@ void GetValueFromFort(uint8_t data)
 			for(int i = 0; i < 4; i++)
 					fort.usartReceiveData.data8[i] = buffer[i + 2];
 				fort.laserBValueReceive = fort.usartReceiveData.dataFloat;
+			if(PID_x->V == 0)
+			{
+				Scan_Operation(&Scan, &Gundata, PID_x, target);
+			}
 		}
 		bufferInit();
 	}
@@ -173,6 +180,33 @@ float Constrain_float_Angle(float angle)
 	return angle;
 }
 
+int Bubble_Min(int num, int array[], int bubbleMode)
+{
+	int i, min;
+	switch(bubbleMode)
+	{
+		case CLOCKWISE:
+			for(int i = 1, min = 0; i < num; i++)
+			{
+				if(array[i] <= array[min])
+				{
+					min = i;
+				}
+			}
+			break;
+		case ANTI_CLOCKWISE:
+			for(i = num - 2, min = num - 1; i >= 0; i--)
+			{
+				if(array[i] <= array[min])
+				{
+					min = i;
+				}
+			}
+			break;
+	}
+	return min;	
+}	
+
 
 /**
 * @brief  计算射击诸元
@@ -181,7 +215,7 @@ float Constrain_float_Angle(float angle)
 * @author 陈昕炜
 * @note   
 */
-void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
+void GunneryData_Operation(GunneryData *Gun, PID_Value *Pos)
 {
 	//读取炮塔航向角实际值和射球电机转速实际值	
 	Gun->YawAngle_Rec = fort.yawPosReceive;
@@ -258,27 +292,17 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 						 + Gun->YawAngle_Rec;			
 	
 	/*ZYJ Predictor*/
-	if(Pos->direction == ACW)
+	switch(Pos->direction)
 	{
-		Gun->YawAngle_SetAct = Constrain_Float(Gun->YawAngle_Set, 90,  0);
-		if(Gun->YawAngle_SetAct > 70)
-		{
-			Gun->YawAngle_SetAct = 0;
-		}
-	}
-	if(Pos->direction == CW)
-	{
-		Gun->YawAngle_SetAct = Constrain_Float(Gun->YawAngle_Set, 0, -90);
-		if(Gun->YawAngle_SetAct < -70)
-		{
-			Gun->YawAngle_SetAct = 0;
-		}
+		case ACW:
+			Gun->YawAngle_SetAct = Constrain_Float(Gun->YawAngle_Set, 90,  0);
+			if(Gun->YawAngle_SetAct > 79)	{Gun->YawAngle_SetAct = 0;}
+		case CW:
+			Gun->YawAngle_SetAct = Constrain_Float(Gun->YawAngle_Set, 0, -90);
+			if(Gun->YawAngle_SetAct < -79)	{Gun->YawAngle_SetAct = 0;}
 	}
 	Gun->ShooterVel_SetAct  = Constrain_Float(Gun->ShooterVel_Set , 90, 50);
-	if(Gun->ShooterVel_SetAct  < 54)
-	{
-		Gun->ShooterVel_SetAct = 80;
-	}
+	if(Gun->ShooterVel_SetAct  < 54)	{Gun->ShooterVel_SetAct = 80;}
 }
 
 
@@ -290,7 +314,7 @@ void GunneryData_Operation(GunneryData *Gun, PID_Value const *Pos)
 * @author 陈昕炜
 * @note   用于Fort中
 */
-void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
+void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntShootBall[])
 {
 	//读取炮塔航向角实际值
 	Scan->YawAngle_Rec = fort.yawPosReceive;
@@ -301,56 +325,14 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 	Scan->Pos_Fort_Y = Pos->Y + (FORT_TO_BACK_WHEEL) * cos(Pos->Angle * Pi / 180.0f);
 	Scan->Pos_Fort_Angle = Constrain_float_Angle(Pos->Angle - fort.yawPosReceive - Scan->YawAngle_Zero_Offset);
 	
-	//扫描时间计时，6s时强制将ScanStatus置为0
-	if(Scan->DelayFlag)
-	{
-		Scan->CntDelayTime++;
-		if(Scan->CntDelayTime > 600)
-		{
-			Scan->CntDelayTime = 0;
-			Scan->DelayFlag = 0;
-			Scan->FirePermitFlag = 0;
-			Scan->GetLeftFlag = 0;
-			Scan->GetRightFlag = 0;
-			Scan->ScanStatus = 0;
-			
-			Scan->SetTimeFlag = 1;
-			Scan->SetFireFlag = 1;
-			Scan->ScanVel = 0.1f;
-		}
-	}
 	
 	//ScanStatus = 0航向角转到扫描起始点
 	if(Scan->ScanStatus == 0)
 	{
-		//设定目标桶号
-		switch(Scan->Bubble_Mode)
-		{
-			case CLOCKWISE:
-				for(Scan->i = 1, Scan->min = 0; Scan->i < 4; Scan->i++)
-				{
-					if(targets[Scan->i] <= targets[Scan->min])
-					{
-						Scan->min = Scan->i;
-					}
-				}
-				break;
-			case ANTI_CLOCKWISE:
-				for(Scan->i = 2, Scan->min = 3; Scan->i >= 0; Scan->i--)
-				{
-					if(targets[Scan->i] <= targets[Scan->min])
-					{
-						Scan->min = Scan->i;
-					}
-				}
-				break;	
-		}				
-		Pos->target_Num = Scan->min;
-		Scan->BucketNum = Scan->min;
-		if(targets[0] == targets[1] && targets[0] == targets[2] && targets[0] == targets[3])
-		{
-			Scan->Bubble_Mode = !Scan->Bubble_Mode;
-		}
+		//设定目标桶号			
+		Pos->target_Num = Bubble_Min(4, cntShootBall, Scan->Bubble_Mode);
+		Scan->BucketNum = Pos->target_Num;
+
 		
 		//炮塔到目标桶左右挡板边缘横轴距离以及计算指向左右挡板边缘航向角设定值
 		Scan->Dist_FToBorder_Left_X = Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] - Scan->Pos_Fort_X;
@@ -362,20 +344,17 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 		Scan->Dist_FToBorder_Right_Y = Scan->Pos_Border_Y[Scan->BucketNum * 2] - Scan->Pos_Fort_Y;
 		Scan->ScanAngle_Tar_Right = Tar_Angle_Operation(Scan->Dist_FToBorder_Right_X, Scan->Dist_FToBorder_Right_Y);
 		Scan->ScanAngle_Set_Right = Constrain_float_Angle(Pos->Angle - Scan->ScanAngle_Tar_Right + Scan->YawAngle_Zero_Offset - Constrain_float_Angle(Scan->YawAngle_Rec)) + Scan->YawAngle_Rec;	
-
+		
 		Scan->ScanAngle_Start = Scan->ScanAngle_Set_Left - 15.0f;
 		Scan->ScanAngle_End = Scan->ScanAngle_Set_Right + 15.0f;
-		
+	
+	
 		//炮塔航向角设定为位于最左侧的扫描起始点
 		Scan->YawAngle_Set = Scan->ScanAngle_Start;
 		Scan->ShooterVel_Set = 60.0f;
 
-		if(fabs(Scan->YawAngle_Rec - Scan->ScanAngle_Start) < 1.0f)
-		{
-			Scan->DelayFlag = 1;
-			Scan->ScanStatus = 1;
-			Scan->ScanPermitFlag = 1;
-		}
+		Scan->ScanStatus = 1;
+		Scan->DelayFlag = 1;
 	}		
 	
 	
@@ -410,29 +389,50 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 			//当右侧激光距离值突然变短，标记左侧挡板边缘坐标点
 			if((Scan->Pro_Left_Dist - Scan->Pro_Right_Dist) > 1200.0f)
 			{
-				if((Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] - SCAN_ERROR) < Scan->Pro_Right_X && Scan->Pro_Right_X < (Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] + SCAN_ERROR))
+				Scan->DistChange_L = 1;
+				if(((Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] - SCAN_ERROR) < Scan->Pro_Right_X) && (Scan->Pro_Right_X < (Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] + SCAN_ERROR)))
 				{
-					if((Scan->Pos_Border_Y[Scan->BucketNum * 2 + 1] - SCAN_ERROR) < Scan->Pro_Right_Y && Scan->Pro_Right_Y < (Scan->Pos_Border_Y[Scan->BucketNum * 2 + 1] + SCAN_ERROR))
+					if(((Scan->Pos_Border_Y[Scan->BucketNum * 2 + 1] - SCAN_ERROR) < Scan->Pro_Right_Y) && (Scan->Pro_Right_Y < (Scan->Pos_Border_Y[Scan->BucketNum * 2 + 1] + SCAN_ERROR)))
 					{
+						Scan->PosOK_L = 1;
+						
 						Scan->Pro_Border_Left_X = Scan->Pro_Right_X;
 						Scan->Pro_Border_Left_Y = Scan->Pro_Right_Y;
 						Scan->Pro_Border_Left_Angle = Scan->YawAngle_Set;
+						
+						Scan->Pro_Max_Dist = Scan->Pro_Right_Dist;
 					}
 				}
 			}		
 			//当右侧激光距离值突然变长，标记右侧挡板边缘坐标点	
 			if((Scan->Pro_Right_Dist - Scan->Pro_Left_Dist) > 1200.0f)
 			{
-				if((Scan->Pos_Border_X[Scan->BucketNum * 2] - SCAN_ERROR) < Scan->Pro_Left_X && Scan->Pro_Left_X < (Scan->Pos_Border_X[Scan->BucketNum * 2] + SCAN_ERROR))
+				Scan->DistChange_R = 1;
+				if(((Scan->Pos_Border_X[Scan->BucketNum * 2] - SCAN_ERROR) < Scan->Pro_Left_X) && (Scan->Pro_Left_X < (Scan->Pos_Border_X[Scan->BucketNum * 2] + SCAN_ERROR)))
 				{
-					if((Scan->Pos_Border_Y[Scan->BucketNum * 2] - SCAN_ERROR) < Scan->Pro_Left_Y && Scan->Pro_Left_Y < (Scan->Pos_Border_Y[Scan->BucketNum * 2] + SCAN_ERROR))
+					if(((Scan->Pos_Border_Y[Scan->BucketNum * 2] - SCAN_ERROR) < Scan->Pro_Left_Y) && (Scan->Pro_Left_Y < (Scan->Pos_Border_Y[Scan->BucketNum * 2] + SCAN_ERROR)))
 					{
+						Scan->PosOK_R = 1;
+						
 						Scan->Pro_Border_Right_X = Scan->Pro_Left_X;
 						Scan->Pro_Border_Right_Y = Scan->Pro_Left_Y;
 						Scan->Pro_Border_Right_Angle = Scan->YawAngle_Set;
 					}
 				}
 			}
+			                                                                                                                                                                                                            
+			if(Scan->PosOK_L == 1)
+			{
+				if(Scan->Pro_Max_Dist < Scan->Pro_Right_Dist)
+				{
+					Scan->Pro_Max_Dist = Scan->Pro_Right_Dist;
+					Scan->Pro_Max_X = Scan->Pro_Right_X;
+					Scan->Pro_Max_Y = Scan->Pro_Right_Y;
+				}
+			}
+			
+				
+			
 		
 			if(Scan->Pro_Border_Left_X != Scan->Pro_Border_Left_X_Last)
 			{
@@ -446,13 +446,12 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 			//如果炮台航向角设定值大于较大的航向角设定值
 			if(Scan->YawAngle_Set > Scan->ScanAngle_End)
 			{
+				 
+				
+				
+				
 				if(Scan->GetLeftFlag == 1 && Scan->GetRightFlag == 1)
-				{
-					Scan->Pro_Border_Left_X_Last  = Scan->Pro_Border_Left_X;
-					Scan->Pro_Border_Left_Y_Last  = Scan->Pro_Border_Left_Y;
-					Scan->Pro_Border_Right_X_Last = Scan->Pro_Border_Right_X;	
-					Scan->Pro_Border_Right_Y_Last = Scan->Pro_Border_Right_Y;
-					
+				{	
 					Scan->GetLeftFlag  = 0;
 					Scan->GetRightFlag = 0;	
 					Scan->GetBucketFlag = 1;					
@@ -478,7 +477,7 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 					}
 					Scan->YawAngle_Set = Scan->ScanAngle_Start;
 					Scan->ScanPermitFlag = 0;
-					Scan->ScanVel = 0.1f;
+					Scan->ScanVel = 0.05f;
 				}				
 			}
 		}			
@@ -503,36 +502,42 @@ void Scan_Operation(ScanData *Scan, PID_Value *Pos, int targets[])
 				Scan->Pro_Bucket_X = (Scan->Pro_Border_Left_X + Scan->Pro_Border_Right_X + 54.0f) / 2.0f;
 				Scan->Pro_Bucket_Y = (Scan->Pro_Border_Left_Y + Scan->Pro_Border_Right_Y + 54.0f) / 2.0f;
 		}
-		Scan->Dist_FToBucket_X_Pro = Scan->Pro_Bucket_X - Scan->Pos_Fort_X;
-		Scan->Dist_FToBucket_Y_Pro = Scan->Pro_Bucket_Y - Scan->Pos_Fort_Y;
+		Scan->Pro_Bucket_Dist_X = Scan->Pro_Bucket_X - Scan->Pos_Fort_X;
+		Scan->Pro_Bucket_Dist_Y = Scan->Pro_Bucket_Y - Scan->Pos_Fort_Y;
 		
 		//根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
-		Scan->Pro_Bucket_Dist = sqrt(Scan->Dist_FToBucket_X_Pro * Scan->Dist_FToBucket_X_Pro + Scan->Dist_FToBucket_Y_Pro * Scan->Dist_FToBucket_Y_Pro);
+		Scan->Pro_Bucket_Dist = sqrt(Scan->Pro_Bucket_Dist_X * Scan->Pro_Bucket_Dist_X + Scan->Pro_Bucket_Dist_Y * Scan->Pro_Bucket_Dist_Y);
 		Scan->ShooterVel_Set = 0.0128f * Scan->Pro_Bucket_Dist + 31.577f + Scan->ShooterVel_Offset;
 		
 		//计算炮塔航向角目标值和设定值
-		Scan->YawAngle_Tar_Pro = Tar_Angle_Operation(Scan->Dist_FToBucket_X_Pro, Scan->Dist_FToBucket_Y_Pro);
+		Scan->YawAngle_Tar_Pro = Tar_Angle_Operation(Scan->Pro_Bucket_Dist_X, Scan->Pro_Bucket_Dist_Y);
 		Scan->YawAngle_Set = Constrain_float_Angle(Pos->Angle - Scan->YawAngle_Tar_Pro + Scan->YawAngle_Zero_Offset + Scan->YawAngle_Offset - Constrain_float_Angle(Scan->YawAngle_Rec)) + Scan->YawAngle_Rec;	
 		
 		//到达航向角和射球电机转速设定值时允许开火
-		if((fabs(Scan->YawAngle_Rec - Scan->YawAngle_Set) < 1.0f) && (fabs(Scan->ShooterVel_Rec - Scan->ShooterVel_Set) < 2.0f) && Scan->SetFireFlag == 1)
+		if((fabs(Scan->YawAngle_Rec - Scan->YawAngle_Set) < 1.0f) && (fabs(Scan->ShooterVel_Rec - Scan->ShooterVel_Set) < 1.0f) && Scan->SetFireFlag == 1)
 		{
-			Scan->FirePermitFlag = 1;
-			Scan->SetFireFlag = 0;
-		}	
+			Scan->CntFireDelayTime++;
+			if(Scan->CntFireDelayTime > 20)
+			{
+				Scan->CntFireDelayTime = 0;
+				Scan->FirePermitFlag = 1;
+				Scan->SetFireFlag = 0;
+			}
+		}
+	
 		
 		//判断数组0是否变1
-		if(targets[Scan->BucketNum] > 0 && Scan->SetTimeFlag == 1)
+		if(Scan->FirePermitFlag == 0 && Scan->SetTimeFlag == 1)
 		{
 			Scan->SetTimeFlag = 0;
-			Scan->CntDelayTime = 500;
+			Scan->CntDelayTime = 550;
 			Scan->FirePermitFlag = 0;
 		}
 	}
 }
 
 
-void Calibration_Operation(CalibrationData *Cal, ScanData *Scan, GunneryData *Gun, PID_Value const *Pos)
+void Calibration_Operation(CalibrationData *Cal, ScanData *Scan, GunneryData *Gun, PID_Value *Pos)
 {
 	Cal->LToR_Act_Dist_X = Scan->Pro_Border_Right_X - Scan->Pro_Border_Left_X;
 	Cal->LToR_Act_Dist_Y = Scan->Pro_Border_Right_Y - Scan->Pro_Border_Left_Y;

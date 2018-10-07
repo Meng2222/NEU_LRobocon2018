@@ -756,13 +756,6 @@ void PID_Pre(PID_Value *p)                                                   //È
 
 void GO(PID_Value *p_GO)                                                     //µç»ú¿ØÖÆº¯Êý
 {
-	static int flag = 0;
-	if(fabs(GetWZ()) > 200 || flag == 1)
-	{
-		flag = 1;
-		VelCrl(CAN1,2,0);
-		VelCrl(CAN1,1,0);
-	}
 	VelCrl(CAN1,2,(int)((0+(32768/(120*Pi))*(p_GO->vel))+(32768/(120*Pi))*(p_GO->V)));
 	VelCrl(CAN1,1,(int)((0+(32768/(120*Pi))*(p_GO->vel))-(32768/(120*Pi))*(p_GO->V)));
 }
@@ -781,15 +774,16 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		p_gun->fire_request = 0;
 		p_gun->fire_command = 0;
 		Scan.FirePermitFlag = 0;
-		if(Gundata.MovingShootFlag && !Scan.ScanShootFlag)
-		{
-			targets[p_gun->target_Num] += 1;
-		}
-		if(!Gundata.MovingShootFlag && Scan.ScanShootFlag)
-		{
-			targets[p_gun->target_Num] += 2;
-		}
 		
+		if(Gundata.MovingShootFlag && !Scan.ScanShootFlag)	{targets[p_gun->target_Num] += 1;}
+		else	{targets[p_gun->target_Num] += 2;}
+		
+		Scan.CntFireTimes++;
+		if(Scan.CntFireTimes > 3)
+		{
+			Scan.CntFireTimes = 0;
+			Scan.Bubble_Mode = !Scan.Bubble_Mode;
+		}
 		if(Debug == 1) USART_OUT(UART4,(uint8_t*)"fire	%d	%d	%d	%d	\r\n", (int)targets[0],(int)targets[1],(int)targets[2],(int)targets[3]);
 	}
 	else
@@ -800,13 +794,13 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		{
 			if(flag == 1) return;
 			timeDelay ++;
-			if(timeDelay < 80) return;
+			if(timeDelay < 60) return;
 			if(ballcolor == 0) noneCnt += 1;
 			else if(ballcolor == 1) whiteCnt += 1;
 			else if(ballcolor == 2) blackCnt += 1;
 			if(ballcommand == WHITE_BALL)
 			{
-				if(noneCnt > 50)
+				if(noneCnt > 20)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -819,7 +813,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(whiteCnt > 50)
+				else if(whiteCnt > 20)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -830,7 +824,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(blackCnt > 50)
+				else if(blackCnt > 20)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -846,7 +840,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 			}
 			else
 			{
-				if(noneCnt > 50)
+				if(noneCnt > 20)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -859,7 +853,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(blackCnt> 50)
+				else if(blackCnt> 20)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -870,7 +864,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 //					if(Debug == 1) USART_SendData(UART4,'\n');
 					flag = 1;
 				}
-				else if(whiteCnt > 50)
+				else if(whiteCnt > 20)
 				{
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 //					if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -1489,20 +1483,20 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 				{
 					for(i = 0 ; i < 4 ; i ++ )
 					{
-//						Line_N[i].line_Priority = 0;
-						Line_N[i + 4].line_Priority = 2;
-						Line_N[i + 8].line_Priority = 3;
-						Line_N[i + 12].line_Priority = 1;
+						Line_N[i].line_Priority = 0;
+						Line_N[i + 4].line_Priority = 1;
+						Line_N[i + 8].line_Priority = 2;
+						Line_N[i + 12].line_Priority = 3;
 					}
 				}
 				else
 				{
 					for(i = 0 ; i < 4 ; i ++ )
 					{
-//						Line_N[i + 17].line_Priority = 0;
-						Line_N[i + 21].line_Priority = 2;
-						Line_N[i + 25].line_Priority = 3;
-						Line_N[i + 29].line_Priority = 1;
+						Line_N[i + 17].line_Priority = 0;
+						Line_N[i + 21].line_Priority = 1;
+						Line_N[i + 25].line_Priority = 2;
+						Line_N[i + 29].line_Priority = 3;
 					}
 				}
 			}
