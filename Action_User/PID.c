@@ -149,7 +149,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[8].line_C = 0;
 	Line_N[8].line_Angle = 0;
 	Line_N[8].line_Error = 0;
-	Line_N[8].line_Priority = 2;
+	Line_N[8].line_Priority = 1000;
 	
 	Line_N[9].x1 = 1400;
 	Line_N[9].y1 = 3800;
@@ -161,7 +161,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[9].line_C = 0;
 	Line_N[9].line_Angle = 0;
 	Line_N[9].line_Error = 0;
-	Line_N[9].line_Priority = 2;
+	Line_N[9].line_Priority = 1000;
 	
 	Line_N[10].x1 = -1400;
 	Line_N[10].y1 = 3800;
@@ -173,7 +173,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[10].line_C = 0;
 	Line_N[10].line_Angle = 0;
 	Line_N[10].line_Error = 0;
-	Line_N[10].line_Priority = 2;
+	Line_N[10].line_Priority = 1000;
 	
 	Line_N[11].x1 = -1400;
 	Line_N[11].y1 = 1000;
@@ -185,7 +185,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[11].line_C = 0;
 	Line_N[11].line_Angle = 0;
 	Line_N[11].line_Error = 0;
-	Line_N[11].line_Priority = 2;
+	Line_N[11].line_Priority = 1000;
 	
 	Line_N[12].x1 = 1800;
 	Line_N[12].y1 = 600;
@@ -357,7 +357,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[27].line_C = 0;
 	Line_N[27].line_Angle = 0;
 	Line_N[27].line_Error = 0;
-	Line_N[27].line_Priority = 2;
+	Line_N[27].line_Priority = 1000;
 	
 	Line_N[26].x1 = -1400;
 	Line_N[26].y1 = 3800;
@@ -369,7 +369,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[26].line_C = 0;
 	Line_N[26].line_Angle = 0;
 	Line_N[26].line_Error = 0;
-	Line_N[26].line_Priority = 2;
+	Line_N[26].line_Priority = 1000;
 	
 	Line_N[25].x1 = 1400;
 	Line_N[25].y1 = 3800;
@@ -381,7 +381,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[25].line_C = 0;
 	Line_N[25].line_Angle = 0;
 	Line_N[25].line_Error = 0;
-	Line_N[25].line_Priority = 2;
+	Line_N[25].line_Priority = 1000;
 	
 	Line_N[28].x1 = 1400;
 	Line_N[28].y1 = 1000;
@@ -393,7 +393,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[28].line_C = 0;
 	Line_N[28].line_Angle = 0;
 	Line_N[28].line_Error = 0;
-	Line_N[28].line_Priority = 2;
+	Line_N[28].line_Priority = 1000;
 	
 	Line_N[31].x1 = -1800;
 	Line_N[31].y1 = 600;
@@ -1140,7 +1140,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle + 0.8f;
+						float angle = pid->Angle + 1.f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1342,7 +1342,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle - 0.8f;
+						float angle = pid->Angle - 1.f;
 						CorrectAngle(angle);
 					}
 					return;

@@ -307,7 +307,7 @@ void WalkTask(void)
 			YawPosCtrl(Scan.YawAngle_Set);
 			ShooterVelCtrl(Scan.ShooterVel_Set);
 			
-			if(Scan.GetBucketFlag == 1)	
+			if(Scan.GetBucketFlag == 1)
 			{
 				Scan.GetBucketFlag = 0;
 				Calibration_Operation(&Cal, &Scan, &Gundata, PID_x);
