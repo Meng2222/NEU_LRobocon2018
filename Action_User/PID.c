@@ -529,28 +529,68 @@ void PID_Line_Init(void)                                                     //Ö
 void PID_Arc_Init(void)                                                      //Ô²ĞÎ²ÎÊı³õÊ¼»¯
 {
 	Arc_N[0].x0 = 0;
-	Arc_N[0].y0 = 2200;
+	Arc_N[0].y0 = 2400;
 	Arc_N[0].r0 = 600;
 	Arc_N[0].arc_Angle = 0;
 	Arc_N[0].arc_Error = 0;
-	Arc_N[0].arc_Direction = CW;
+	Arc_N[0].arc_Direction = ACW;
 	Arc_N[0].arc_kp = 20;
 	
 	Arc_N[1].x0 = 0;
-	Arc_N[1].y0 = 2200;
-	Arc_N[1].r0 = 1100;
+	Arc_N[1].y0 = 2400;
+	Arc_N[1].r0 = 1000;
 	Arc_N[1].arc_Angle = 0;
 	Arc_N[1].arc_Error = 0;
-	Arc_N[1].arc_Direction = CW;
+	Arc_N[1].arc_Direction = ACW;
 	Arc_N[1].arc_kp = 20;
 	
 	Arc_N[2].x0 = 0;
-	Arc_N[2].y0 = 2200;
-	Arc_N[2].r0 = 1600;
+	Arc_N[2].y0 = 2400;
+	Arc_N[2].r0 = 1400;
 	Arc_N[2].arc_Angle = 0;
 	Arc_N[2].arc_Error = 0;
-	Arc_N[2].arc_Direction = CW;
+	Arc_N[2].arc_Direction = ACW;
 	Arc_N[2].arc_kp = 20;
+	
+	Arc_N[3].x0 = 0;
+	Arc_N[3].y0 = 2400;
+	Arc_N[3].r0 = 1800;
+	Arc_N[3].arc_Angle = 0;
+	Arc_N[3].arc_Error = 0;
+	Arc_N[3].arc_Direction = ACW;
+	Arc_N[3].arc_kp = 20;
+	
+	Arc_N[4].x0 = 0;
+	Arc_N[4].y0 = 2400;
+	Arc_N[4].r0 = 600;
+	Arc_N[4].arc_Angle = 0;
+	Arc_N[4].arc_Error = 0;
+	Arc_N[4].arc_Direction = CW;
+	Arc_N[4].arc_kp = 20;
+	
+	Arc_N[5].x0 = 0;
+	Arc_N[5].y0 = 2400;
+	Arc_N[5].r0 = 1000;
+	Arc_N[5].arc_Angle = 0;
+	Arc_N[5].arc_Error = 0;
+	Arc_N[5].arc_Direction = CW;
+	Arc_N[5].arc_kp = 20;
+	
+	Arc_N[6].x0 = 0;
+	Arc_N[6].y0 = 2400;
+	Arc_N[6].r0 = 1400;
+	Arc_N[6].arc_Angle = 0;
+	Arc_N[6].arc_Error = 0;
+	Arc_N[6].arc_Direction = CW;
+	Arc_N[6].arc_kp = 20;
+	
+	Arc_N[7].x0 = 0;
+	Arc_N[7].y0 = 2400;
+	Arc_N[7].r0 = 1800;
+	Arc_N[7].arc_Angle = 0;
+	Arc_N[7].arc_Error = 0;
+	Arc_N[7].arc_Direction = CW;
+	Arc_N[7].arc_kp = 20;
 }
 
 void PID_Coordinate_Init(void)                                               //×ø±ê²ÎÊı³õÊ¼»¯
@@ -569,7 +609,7 @@ void PID_Init(PID_Value *PID_a)                                              //P
 	PID_a->Error = 0;
 	PID_a->kp = 10;
 	PID_a->ki = 0;
-	PID_a->kd = 100;
+	PID_a->kd = 10;
 	PID_a->Mode = Line;
 	PID_a->Mode_Last = Line;
 	PID_a->V = 1200;
@@ -623,6 +663,8 @@ void PID_Control(PID_Value *p)                                               //P
 			if((p->r->arc_Angle)>180) (p->r->arc_Angle) -= 360;
 			else if((p->r->arc_Angle)<-180) (p->r->arc_Angle) += 360;
 			if(p->r->arc_Direction == CW) (p->r->arc_Angle) -= 180;
+			if((p->r->arc_Angle)>180) (p->r->arc_Angle) -= 360;
+			else if((p->r->arc_Angle)<-180) (p->r->arc_Angle) += 360;
 			if(p->r->arc_Direction == CW) (p->r->arc_Angle) = (p->r->arc_Angle)-(p->r->arc_Error)/(p->r->arc_kp);
 			else if(p->r->arc_Direction == ACW) (p->r->arc_Angle) = (p->r->arc_Angle)+(p->r->arc_Error)/(p->r->arc_kp);
 			if((p->r->arc_Angle)>180) (p->r->arc_Angle) -= 360;
@@ -731,7 +773,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0;
 	if (p_gun->fire_request)
 	{
-		p_gun->food = 1000;
+		p_gun->food = 700;
 		if(!p_gun->fire_command) return;
 		posLast = pos;
 		pos += p_gun->push_pos_up;
@@ -841,7 +883,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		{
 			flag = 0;
 		}
-		if(timeCnt > 600)
+		if(timeCnt > 500)
 		{
 			if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)pos);
 			if(Debug == 1) USART_OUT(UART4,(uint8_t*)"%d	", (int)GetMotor7Pos());
@@ -858,17 +900,26 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 
 void UART4_OUT(PID_Value *pid_out , Err*error1)                                           //´®¿ÚÊä³öº¯Êı
 {
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->stop);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Mode);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Line_Num);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Arc_Num);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)error1->flag);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->vel);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->stop);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->stop1);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->stop2);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)error1->timeCnt);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->timeCnt);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X);
 	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->doglast);
-	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->dogHungry);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
-//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->doglast);
+//	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->dogHungry);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->X_Speed);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Y_Speed);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Angle_Set);
+	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->Error);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)GetWZ());
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->corner);
 //	USART_OUT(UART4,(uint8_t*)"%d	", (int)pid_out->V);
@@ -906,8 +957,69 @@ void UART4_OUT(PID_Value *pid_out , Err*error1)                                 
 	USART_SendData(UART4,'\n');
 }
 
+void PID_Round(PID_Value *pid, u8 dir, Err *error, int targetp[])
+{
+	
+	/*×ßÏßÄ£Ê½»ò±ÜÕÏÄ£Ê½»òÍ£³µÄ£Ê½ÍË³ö*/
+	if(pid->Mode == Line) return;
+	if(error->flag == 1) return;
+	if(pid->stop == 1) return;
+	
+	/*Ô²ĞÎ×ßĞÎ*/
+	pid->Mode = Arc;
+	
+	/*µ¥¶ÀÉèÖÃpid²ÎÊı*/
+	switch(pid->Arc_Num % 4)
+	{
+		case 0:
+			pid->kp = 14;
+			pid->ki = 0.05;
+			pid->kd = 100;
+			pid->V = 1200;
+			pid->Arc_dir = 0;
+		case 1:
+			pid->kp = 14;
+			pid->ki = 0.05;
+			pid->kd = 100;
+			pid->V = 1400;
+		case 2:
+			pid->kp = 16;
+			pid->ki = 0.05;
+			pid->kd = 150;
+			pid->V = 1600;
+		case 3:
+			pid->kp = 16;
+			pid->ki = 0.05;
+			pid->kd = 200;
+			pid->V = 1800;
+			pid->Arc_dir = 1;
+	}
+	
+	/*¼ÆËãV,vel*/
+	PID_Control(pid);
+	
+	/*»»ÏßÂß¼­*/
+	/*¼ÆÊ±ÎªÁãÊ±¼ÇÂ¼ÏÖÔÚ³µ×ÓµÄ½Ç¶È£¬ÑÓÊ±Á½ÃëÒÔºóÔÙ¶È×ªµ½´Ë½Ç¶ÈÈÏ¶¨Îª×ª¹ıÒ»È¦*/
+	/*¿¼ÂÇ±ÜÕÏ¼æÈİĞÔÎÊÌâ*/
+	/*¸ÄÎªÎ»ÖÃ*/
+	static int timeDelay = 0;
+	if(pid->Arc_flag == 0)
+	{
+		pid->Arc_last_X = pid->X;
+		pid->Arc_last_Y = pid->Y;
+		pid->Arc_flag = 1;
+	}
+	timeDelay ++ ;
+	if(timeDelay > 300 && sqrt((pid->X - pid->Arc_last_X) * (pid->X - pid->Arc_last_X) + (pid->Y - pid->Arc_last_Y) * (pid->Y - pid->Arc_last_Y)) < 500.f && pid->Arc_flag == 1)
+	{
+		pid->Arc_flag = 0;
+		timeDelay = 0;
+		if(pid->Arc_dir == 0) pid->Arc_Num += 1;
+		else pid->Arc_Num -= 1;
+	}
+}
+
 /*¸ø¶¨³õÊ¼ÏßºÅºÍ¸÷ÏßÓÅÏÈ¼¶¿ÉÒÔ×Ô¼º×ß·½ĞÎ*/
-/*pid->stopÍ£³µ*/
 /*ĞèÒªµ¥¶ÀµÄ±ÜÕÏº¯ÊıÖ§³Ö*/
 void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])                     //ĞÂ°æ×ßÏß
 {
@@ -936,14 +1048,10 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		}
 	}
 	
-	/*±ÜÕÏ»òÍ£³µÊ±ÍË³ö*/
+	/*×ßÔ²»ò±ÜÕÏ»òÍ£³µÊ±ÍË³ö*/
 	if(error->flag == 1) return;
-	if(pid->stop == 1)
-	{
-		pid->V = 0;
-		pid->vel = 0;
-		return;
-	}
+	if(pid->stop == 1) return;
+	if(pid->Mode == Arc) return;
 	
 	/*ACW·½Ïò*/
 	if(pid->Line_Num < 20)
@@ -990,12 +1098,13 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		if(pid->l->line_Error>800)
 		{
 			pid->Line_Num = pid->Line_Num_Last;
-			pid->V = 1500;
+			pid->V = 1200;
 		}
 		
 		/*1mÒÔÄÚ»»Ïß²¢ÖØĞÂ¼ÆËãV,vel*/
 		else if(pid->l->line_Error<=800)
 		{
+			pid->lineCnt ++ ;
 			pid->Line_Num = pid->Line_Num_Next;
 			PID_Control(pid);
 			
@@ -1079,12 +1188,13 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		if(pid->l->line_Error <-800)
 		{
 			pid->Line_Num = pid->Line_Num_Last;
-			pid->V = 1500;
+			pid->V = 1200;
 		}
 		
 		/*1mÒÔÄÚ»»Ïß²¢ÖØĞÂ¼ÆËãV,vel*/
 		else if(pid->l->line_Error>=-800)
 		{
+			pid->lineCnt ++ ;
 			pid->Line_Num = pid->Line_Num_Next;
 			PID_Control(pid);
 			
@@ -1118,6 +1228,47 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 	}
 }
 
+/**/
+void PID_Stop(PID_Value *pid,Err *error)
+{
+	
+	/*·ÇÍ£³µÄ£Ê½ÍË³ö*/
+	static int timeDelay1 = 0;
+	if(pid->stop == 0)
+	{
+		timeDelay1 = 0;
+		return;
+	}
+	
+	/*ÖĞ³¡Í£³µÄ£Ê½*/
+	if(pid->stop1 == 1)
+	{
+		if(pid->Arc_Num < 4) pid->Arc_Num = 0;
+		else pid->Arc_Num = 4;
+		PID_Control(pid);
+		if((float)sqrt(pid->X * pid->X + (pid->Y-2400) * (pid->Y-2400)) < 1000)
+		{
+			timeDelay1 ++ ;
+			pid->V = 0;
+			pid->vel = 0;
+		}
+		
+		/*ÖĞ³¡Í£³µ±ÜÕÏ*/
+		
+	}
+	
+	/*Ô­µØÍ£³µÄ£Ê½*/
+	else if(pid->stop2 == 1)
+	{
+		timeDelay1 ++ ;
+		pid->V = 0;
+		pid->vel = 0;
+		
+		/*Ô­µØÍ£³µ±ÜÕÏ*/
+		
+	}
+}
+
 void GetData(PID_Value *p)                                                   //¶ÁÊı
 {
 	if(GetAngle() > 180 || GetAngle() < -180) return;
@@ -1126,7 +1277,7 @@ void GetData(PID_Value *p)                                                   //¶
 	else if(GetSpeedY() > 3000 || GetSpeedY() < -3000) return;
 	else if(GetSpeedX() > 3000 || GetSpeedX() < -3000) return;
 	p->Angle = GetAngle();
-	p->X = GetX() + 170.08f * sin((p->Angle)*(Pi/180));
+	p->X = GetX() + 170.68f * sin((p->Angle)*(Pi/180));
 	p->Y = GetY() + 75.03f + 170.68f - 170.68f * cos((p->Angle)*(Pi/180));
 	p->X_Speed = GetSpeedX();
 	p->Y_Speed = GetSpeedY();
@@ -1134,32 +1285,190 @@ void GetData(PID_Value *p)                                                   //¶
 
 void ErrorDisposal(PID_Value *pid,Err *error)                                //´íÎó¼ì²â
 {
-	if(error->flag == 1 || error->stop == 1)
+	if(error->flag == 1 || pid->stop == 1)
 	{
-		error->timeCnt = 0;
+		error->timeCnt1 = 0;
 		return;
 	}
-	if(((float)sqrt(pid->X_Speed * pid->X_Speed + pid->Y_Speed * pid->Y_Speed)) < 600.f/* ||\
+	if(((float)sqrt(pid->X_Speed * pid->X_Speed + pid->Y_Speed * pid->Y_Speed)) < 100.f/* ||\
 		((float)sqrt(pid->X_Speed * pid->X_Speed + pid->Y_Speed * pid->Y_Speed)) > 1800.f*/)
 	{
-		error->timeCnt ++ ;
-		if(error->timeCnt > 300)
+		error->timeCnt1 ++ ;
+		if(error->timeCnt1 > 300)
 		{
+			error->errCnt += 1;
 			error->flag = 1;
-			error->timeCnt = 0;
+			error->timeCnt1 = 0;
 		}
 	}
-	else error->timeCnt = 0;
+	else error->timeCnt1 = 0;
 }
 
+/*ĞÂË¼Â·£º±ÜÕÏµ½½Ç¶È²î×îĞ¡µÄÄÇ¸öÔ²£¬·À×ÔĞıºÍ¿¨ËÀ*/
+/*¿¼ÂÇÄ¿Ç°µÄÈÆĞĞ·½Ïò*/
 void PID_Error(PID_Value *pid, u8 dir, Err *error, int targetp[])
 {
+	
+	/*ÎŞĞè±ÜÕÏ¾ÍÍË³ö*/
 	if(error->flag == 0) return;
 	
+	/*×îÄÚÈ¦·½ĞÎ±ÜÕÏ*/
+	if(pid->Mode == Line && pid->lineCnt < 4)
+	{
+		error->timeCnt ++ ;
+		
+		/*ÄæÊ±ÕëÓÒºó±ÜÕÏ*/
+		if(dir == ACW)
+		{
+			pid->V = -1200;
+			pid->vel = 300;
+			pid->Arc_Num = 4;
+		}
+		
+		/*Ë³Ê±Õë×óºó±ÜÕÏ*/
+		else
+		{
+			pid->V = -1200;
+			pid->vel = -300;
+			pid->Arc_Num = 0;
+		}
+		
+		/*Ò»Ãë°ëºó»Ø¹é*/
+		if(error->timeCnt > 150)
+		{
+			error->flag = 0;
+			error->timeCnt = 0;
+			pid->Mode = Arc;
+		}
+	}
+	
+//	/*µÚ4È¦·½ĞÎ±ÜÕÏ*/
+//	else if(pid->Mode == Line && pid->lineCnt > 3)
+//	{
+//		error->timeCnt ++ ;
+//		
+//		/*ÄæÊ±Õë×óºó±ÜÕÏ*/
+//		if(dir == ACW)
+//		{
+//			pid->V = -1200;
+//			pid->vel = -300;
+//			pid->Arc_Num = 7;
+//		}
+//		
+//		/*Ë³Ê±ÕëÓÒºó±ÜÕÏ*/
+//		else
+//		{
+//			pid->V = -1200;
+//			pid->vel = 300;
+//			pid->Arc_Num = 3;
+//		}
+//		
+//		/*Ò»Ãë°ëºó»Ø¹é*/
+//		if(error->timeCnt > 150)
+//		{
+//			error->flag = 0;
+//			error->timeCnt = 0;
+//			pid->Mode = Arc;
+//		}
+//	}
+	
+	/*Ô²ĞÎ±ÜÕÏ*/
+	/*¿¼ÂÇ±ÜÕÏºóµÄ×ßĞÎÎÊÌâ*/
+	else if(pid->Mode == Arc)
+	{
+		error->timeCnt ++ ;
+		
+		/*ÄÚÈıÈ¦ÏòÍâ±ÜÕÏ*/
+		if(pid->Arc_Num % 4 < 3)
+		{
+			
+			/*ÄæÊ±ÕëÏòÓÒºó±ÜÕÏ*/
+			if(pid->Arc_Num < 4)
+			{
+				pid->V = -1200;
+				pid->vel = 300;
+			}
+			
+			/*Ë³Ê±ÕëÏò×óºó±ÜÕÏ*/
+			else
+			{
+				pid->V = -1200;
+				pid->vel = -300;
+			}
+			
+			/*Ò»Ãë°ëºó»»Ïß*/
+			if(error->timeCnt > 150)
+			{
+				error->flag = 0;
+				error->timeCnt = 0;
+				if(pid->Arc_Num < 4) pid->Arc_Num += 5;
+				else pid->Arc_Num -= 3;
+			}
+		}
+		
+		/*×îÍâÒ»È¦*/
+		else
+		{
+			
+			/*ÄæÊ±Õë×óºó±ÜÕÏ*/
+			if(pid->Arc_Num < 4)
+			{
+				pid->V = -1200;
+				pid->vel = -300;
+			}
+			
+			/*Ë³Ê±ÕëÓÒºó±ÜÕÏ*/
+			else
+			{
+				pid->V = -1200;
+				pid->vel = 300;
+			}
+			
+			/*Ò»Ãë°ëºó»»Ïß*/
+			if(error->timeCnt > 150)
+			{
+				error->flag = 0;
+				error->timeCnt = 0;
+				if(pid->Arc_Num == 3) pid->Arc_Num = 6;
+				else pid->Arc_Num = 2;
+			}
+		}
+	}
+}
+
+void WatchDog(PID_Value *Dog)
+{
+	
+	/*¿´ÃÅ¹·*/
+	Dog->food -- ;
+	if(Dog->food < 0)
+	{
+		Dog->stop = 0;
+		Dog->stop1 = 0;
+		Dog->stop2 = 0;
+	}
 }
 
 /*ĞÂË¼Â·£ºÇò²Ö¹ÜÀí£¬ÇòÊı´óÓÚ10¸öºóÖ±½ÓÈ¥×îÄÚÈ¦Í¶Çò*/
-void PriorityControl(PID_Value *PID,Err *err,int targetn[])
+void PriorityControl(PID_Value *PID,Err *err,int targetn[],int ballCnt[])
 {
+	
+	static int Flag = 0;
+	/*±ÈÈü¼ÆÊ±*/
+	PID->timeCnt ++ ;
+	
+	/*×ßÍêÄÚÈ¦ºó×ßÔ²£¬Èç¹ûÊÕÇòÊıÁ¿´óÓÚ10¸ö¾ÍÍ£ÏÂÍ¶Çò*/
+	if(PID->lineCnt > 2 && Flag == 0)
+	{
+		PID->Mode = Arc;
+		if(PID->direction == CW) PID->Arc_Num = 4;
+		else PID->Arc_Num = 0;
+		PID->lineCnt = 2;
+		PID->stop = 1;
+		PID->stop1 = 1;
+		Flag = 1;
+	}
+	
+	/*×ßÍêÄÚÈ¦ºóÍ£ÏÂÉäÇò*/
 	
 }

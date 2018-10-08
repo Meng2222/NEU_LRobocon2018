@@ -137,7 +137,8 @@ void GetValueFromFort(uint8_t data)
 			for(int i = 0; i < 4; i++)
 					fort.usartReceiveData.data8[i] = buffer[i + 2];
 				fort.laserBValueReceive = fort.usartReceiveData.dataFloat;
-				Scan_Operation(&Scan, PID_x, target);
+				//Scan_Operation(&Scan, PID_x, target);
+			
 		}
 		bufferInit();
 	}

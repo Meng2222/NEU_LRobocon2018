@@ -109,9 +109,12 @@ typedef struct PID
 	u8 stop;
 	u8 stop1;
 	u8 stop2;
+	u8 Arc_dir;
+	u8 Arc_flag;
 	Line_Value *l;
 	Arc_Value *r;
 	Coordinate_Value *c;
+	int lineCnt;
 	int timeCnt;
 	int food;
 	int Mode;
@@ -120,6 +123,8 @@ typedef struct PID
 	int Line_Num_Next;
 	int Line_Num_Last;
 	int Arc_Num;
+	int Arc_last_X;
+	int Arc_last_Y;
 	int Coordinate_Num;
 	int target_Num;
 	int target_Next;
@@ -149,7 +154,8 @@ typedef struct errorDisposal
 {
 	float Err_X;
 	float Err_Y;
-	float timeCnt;
+	int timeCnt;
+	int timeCnt1;
 	float distance;
 	float err_distance;
 	int errCnt;
@@ -190,7 +196,9 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[]);
 void ErrorDisposal(PID_Value *pid,Err *error);
 void GetData(PID_Value *p);
 void shoot(PID_Value *p_gun, int target[], int Debug);
-void PriorityControl(PID_Value *PID,Err *err,int targetn[]);
+void PriorityControl(PID_Value *PID,Err *err,int targetn[],int ballCnt[]);
 void WatchDog(PID_Value *Dog);
 void PID_Error(PID_Value *pid, u8 dir, Err *error, int targetp[]);
+void PID_Round(PID_Value *pid, u8 dir, Err *error, int targetp[]);
+void PID_Stop(PID_Value *pid,Err *error);
 #endif

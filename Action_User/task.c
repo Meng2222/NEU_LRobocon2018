@@ -46,8 +46,8 @@ void App_Task(void)
 ===============================================================
 */
 int shootDebug = 0;
-int pidDebug = 0;
-int fortDebug = 1;
+int pidDebug = 1;
+int fortDebug = 0;
 int radarDebug = 0; /*雷达*/
 int rollerDebug = 0;/*辊子*/
 int ballcommand = 0;
@@ -208,19 +208,16 @@ void WalkTask(void)
 		ReadActualVel(CAN2,6);																//读取收球辊子转速
 		
 		GetData(PID_x);																		//读取定位系统信息
-		
-		ErrorDisposal(PID_x,Error_x);														//避障检测
-		
-		PriorityControl(PID_x,Error_x,target);												//走形优先级管理
-		
-		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数
-		
+		WatchDog(PID_x);
+		ErrorDisposal(PID_x,Error_x);														//走形避障检测
+		PriorityControl(PID_x,Error_x,target,Entrepot);										//走形优先级管理
+		PID_Priority(PID_x,direction,Error_x,target);										//走形计算函数，方形
+		PID_Round(PID_x,direction,Error_x,target);											//走形计算函数，圆形
+		PID_Error(PID_x,direction,Error_x,target);											//走形计算函数，避障
+		PID_Stop(PID_x,Error_x);															//走形计算函数，停车
 		GO(PID_x);																			//电机控制
 		
 		GetData(PID_x);																		//读取定位系统信息
-		Error_x->errCnt = 1;
-		
-		
 		if(PID_x->V != 0 && Error_x->errCnt == 0)
 		{																					/*未避障模式*/
 			Gundata.BucketNum = PID_A.target_Num;												//设置目标桶号
