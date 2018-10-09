@@ -18,7 +18,7 @@
 #define LASER_RIGHT (1)											//右侧激光编号					1
 #define CLOCKWISE (1)											//顺时针						1
 #define ANTI_CLOCKWISE (0)										//逆时针						0
-#define SCAN_POS_ERROR (1000.0f)
+#define SCAN_POS_ERROR (600.0f)
 #define SCAN_DIST_ERROR (100.0f)
 #define SCAN_ANGLE_ERROR (20.0f)
 #define BORDER_LENGTH (454.0f)

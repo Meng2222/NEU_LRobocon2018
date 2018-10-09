@@ -197,7 +197,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[12].line_C = 0;
 	Line_N[12].line_Angle = 0;
 	Line_N[12].line_Error = 0;
-	Line_N[12].line_Priority = 3;
+	Line_N[12].line_Priority = 1000;
 		
 	Line_N[13].x1 = 1800;
 	Line_N[13].y1 = 4200;
@@ -209,7 +209,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[13].line_C = 0;
 	Line_N[13].line_Angle = 0;
 	Line_N[13].line_Error = 0;
-	Line_N[13].line_Priority = 3;
+	Line_N[13].line_Priority = 1000;
 	
 	Line_N[14].x1 = -1800;
 	Line_N[14].y1 = 4200;
@@ -405,7 +405,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[31].line_C = 0;
 	Line_N[31].line_Angle = 0;
 	Line_N[31].line_Error = 0;
-	Line_N[31].line_Priority = 3;
+	Line_N[31].line_Priority = 1000;
 	
 	Line_N[30].x1 = -1800;
 	Line_N[30].y1 = 4200;
@@ -417,7 +417,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[30].line_C = 0;
 	Line_N[30].line_Angle = 0;
 	Line_N[30].line_Error = 0;
-	Line_N[30].line_Priority = 3;
+	Line_N[30].line_Priority = 1000;
 	
 	Line_N[29].x1 = 1800;
 	Line_N[29].y1 = 4200;
@@ -429,7 +429,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[29].line_C = 0;
 	Line_N[29].line_Angle = 0;
 	Line_N[29].line_Error = 0;
-	Line_N[29].line_Priority = 3;
+	Line_N[29].line_Priority = 1000;
 	
 	Line_N[32].x1 = 1800;
 	Line_N[32].y1 = 600;
@@ -441,7 +441,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[32].line_C = 0;
 	Line_N[32].line_Angle = 0;
 	Line_N[32].line_Error = 0;
-	Line_N[32].line_Priority = 3;
+	Line_N[32].line_Priority = 1000;
 	
 	Line_N[33].x1 = -1800;
 	Line_N[33].y1 = 600;
@@ -765,16 +765,6 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 {
 
 	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0;
-	if((12000 < (pos % 32768)) && (pos % 32768) < 22000)
-	{
-		Scan.PosRight = 1;
-		Scan.PosLeft = 0;
-	}
-	else
-	{
-		Scan.PosRight = 0;
-		Scan.PosLeft = 1;			
-	}
 	if (p_gun->fire_request)
 	{
 		p_gun->food = 1300;
@@ -1509,7 +1499,7 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 				}
 				else
 				{
-					for(i = 0 ; i < 4 ; i ++ )
+					for(i = 0 ; i < 4 ; i ++ )  
 					{
 						Line_N[i + 17].line_Priority = 0;
 						Line_N[i + 21].line_Priority = 1;
