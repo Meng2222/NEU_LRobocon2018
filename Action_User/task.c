@@ -73,7 +73,6 @@ void ConfigTask(void)
 	TIM_Init(TIM2,999,83,0,0);										//时钟2初始化，1ms周期
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);				//can1初始化
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);				//can2初始化
-	TIM_Delayms(TIM4,2000);											//延时2s，给定位系统准备时间
 	ElmoInit(CAN2);													//驱动器初始化
 	ElmoInit(CAN1);													//驱动器初始化
 	VelLoopCfg(CAN1, 2, 16384000, 32768000);						//左电机速度环初始化
@@ -83,9 +82,9 @@ void ConfigTask(void)
 	PosLoopCfg(CAN2, 7, 16384000, 16384000, 20000000);
 	MotorOn(CAN1,1);												//右电机使能
 	MotorOn(CAN1,2);												//左电机使能
-	MotorOn(CAN2,5); 
-	MotorOn(CAN2,6);
-	MotorOn(CAN2,7);
+//	MotorOn(CAN2,5); 
+//	MotorOn(CAN2,6);
+//	MotorOn(CAN2,7);
 	USART3_Init(115200);											//串口3初始化，定位系统用
 	UART4_Init(921600);												//串口4初始化，与上位机通信用
 	UART5_Init(921600);
@@ -93,6 +92,7 @@ void ConfigTask(void)
 	if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_0) == 1) ballcommand = BLACK_BALL;
 	if(GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_4) == 0)
 	{
+		TIM_Delayms(TIM4,2000);										//延时2s，给定位系统准备时间
 		WaitOpsPrepare();											//等待定位系统准备完成
 		PID_Init(PID_x);											//PID参数初始化
 		CmdRecData.TarBucketNum_cmd = 0;

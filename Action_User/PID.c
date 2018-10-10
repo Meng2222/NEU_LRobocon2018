@@ -197,7 +197,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[12].line_C = 0;
 	Line_N[12].line_Angle = 0;
 	Line_N[12].line_Error = 0;
-	Line_N[12].line_Priority = 3;
+	Line_N[12].line_Priority = 1000;
 		
 	Line_N[13].x1 = 1800;
 	Line_N[13].y1 = 4200;
@@ -209,7 +209,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[13].line_C = 0;
 	Line_N[13].line_Angle = 0;
 	Line_N[13].line_Error = 0;
-	Line_N[13].line_Priority = 3;
+	Line_N[13].line_Priority = 1000;
 	
 	Line_N[14].x1 = -1800;
 	Line_N[14].y1 = 4200;
@@ -221,7 +221,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[14].line_C = 0;
 	Line_N[14].line_Angle = 0;
 	Line_N[14].line_Error = 0;
-	Line_N[14].line_Priority = 3;
+	Line_N[14].line_Priority = 1000;
 	
 	Line_N[15].x1 = -1800;
 	Line_N[15].y1 = 600;
@@ -233,7 +233,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[15].line_C = 0;
 	Line_N[15].line_Angle = 0;
 	Line_N[15].line_Error = 0;
-	Line_N[15].line_Priority = 3;
+	Line_N[15].line_Priority = 1000;
 	
 	Line_N[16].x1 = 1800;
 	Line_N[16].y1 = 600;
@@ -405,7 +405,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[31].line_C = 0;
 	Line_N[31].line_Angle = 0;
 	Line_N[31].line_Error = 0;
-	Line_N[31].line_Priority = 3;
+	Line_N[31].line_Priority = 1000;
 	
 	Line_N[30].x1 = -1800;
 	Line_N[30].y1 = 4200;
@@ -417,7 +417,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[30].line_C = 0;
 	Line_N[30].line_Angle = 0;
 	Line_N[30].line_Error = 0;
-	Line_N[30].line_Priority = 3;
+	Line_N[30].line_Priority = 1000;
 	
 	Line_N[29].x1 = 1800;
 	Line_N[29].y1 = 4200;
@@ -429,7 +429,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[29].line_C = 0;
 	Line_N[29].line_Angle = 0;
 	Line_N[29].line_Error = 0;
-	Line_N[29].line_Priority = 3;
+	Line_N[29].line_Priority = 1000;
 	
 	Line_N[32].x1 = 1800;
 	Line_N[32].y1 = 600;
@@ -441,7 +441,7 @@ void PID_Line_Init(void)                                                     //Ö
 	Line_N[32].line_C = 0;
 	Line_N[32].line_Angle = 0;
 	Line_N[32].line_Error = 0;
-	Line_N[32].line_Priority = 3;
+	Line_N[32].line_Priority = 1000;
 	
 	Line_N[33].x1 = -1800;
 	Line_N[33].y1 = 600;
@@ -1027,7 +1027,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 15;
+				pid->kp = 10;
 				pid->kd = 100;
 				pid->direction = ACW;
 				pid->Mode = Line;
@@ -1059,7 +1059,10 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				{
 					pid->fire_turn = 0;
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 3) pid->V += 15;
+//					if(pid->Error < 3)
+//					{
+						pid->V += 15;
+//					}
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error<=1300)
@@ -1086,7 +1089,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt1 = 0;
 				timeCnt1++;
-				if(timeCnt1 < 150)
+				if(timeCnt1 < 250)
 				{
 					pid->Angle += 180;
 					pid->kp = 2.5;
@@ -1120,7 +1123,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 15;
+				pid->kp = 10;
 				pid->Line_Num = pid->Line_Num_Next;
 				pid->target_Num = pid->Line_Num % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
@@ -1151,7 +1154,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt2 = 0;
 				timeCnt2++;
-				if(timeCnt2 <150)
+				if(timeCnt2 <250)
 				{
 					pid->Angle += 180;
 					pid->kp = 2.5;
@@ -1164,7 +1167,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					timeCnt2 = 0;
 					error->flag = 0;
 					pid->V = 1200;
-					pid->kp = 20;
+					pid->kp = 10;
 					pid->Line_Num += 17;
 					pid->l = &Line_N[pid->Line_Num];
 					for(i=0;i<17;i++)
@@ -1193,7 +1196,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 15;
+				pid->kp = 10;
 				pid->kd = 100;
 				pid->direction = CW;
 				pid->Mode = Line;
@@ -1288,7 +1291,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt3 = 0;
 				timeCnt3++;
-				if(timeCnt3 < 150)
+				if(timeCnt3 < 250)
 				{
 					pid->Angle += 180;
 					pid->kp = 2.5;
@@ -1300,7 +1303,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					timeCnt3 = 0;
 					error->flag = 0;
 					pid->V = 1200;
-					pid->kp = 15;
+					pid->kp = 10;
 					pid->Line_Num -= 17;
 					pid->l = &Line_N[pid->Line_Num];
 					for(i=0;i<17;i++)
@@ -1326,7 +1329,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				pid->target_Num = pid->Line_Num % 4 - 1;
 				if(pid->target_Num == -1) pid->target_Num = 3;
 				PID_Pre(pid);
-				pid->kp = 15;
+				pid->kp = 10;
 				if(pid->l->line_Error < -800)
 				{
 					pid->fire_turn = 0;
@@ -1353,7 +1356,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt4 = 0;
 				timeCnt4++;
-				if(timeCnt4 < 150)
+				if(timeCnt4 < 250)
 				{
 					pid->Angle += 180;
 					pid->kp = 2.5;
@@ -1473,7 +1476,7 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 		}
 	}
 	if(PID->Line_Num < 12 || (PID->Line_Num > 16 && PID->Line_Num <29)) Line_N[PID->Line_Num].line_Priority = 1000;
-	if((prioritySum >= 23500 && ((PID->Line_Num > 11 && PID->Line_Num < 17) || PID->Line_Num > 28)) || PID->stop == 1)/*×îÍâÈ¦×ßÐÎ×´Ì¬*/
+	if((prioritySum >= 15500 && ((PID->Line_Num > 11 && PID->Line_Num < 17) || PID->Line_Num > 28)) || PID->stop == 1)/*×îÍâÈ¦×ßÐÎ×´Ì¬*/
 	{
 		if(err->errCnt == 0 && PID->timeCnt < 3000)/*Î´±ÜÕÏ×´Ì¬*/
 		{
@@ -1501,20 +1504,20 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 				{
 					for(i = 0 ; i < 4 ; i ++ )
 					{
-						Line_N[i].line_Priority = 0;
-						Line_N[i + 4].line_Priority = 1;
-						Line_N[i + 8].line_Priority = 2;
-						Line_N[i + 12].line_Priority = 3;
+						Line_N[i].line_Priority = 1000;
+						Line_N[i + 4].line_Priority = 1000;
+						Line_N[i + 8].line_Priority = 0;
+						Line_N[i + 12].line_Priority = 1;
 					}
 				}
 				else
 				{
 					for(i = 0 ; i < 4 ; i ++ )
 					{
-						Line_N[i + 17].line_Priority = 0;
-						Line_N[i + 21].line_Priority = 1;
-						Line_N[i + 25].line_Priority = 2;
-						Line_N[i + 29].line_Priority = 3;
+						Line_N[i + 17].line_Priority = 1000;
+						Line_N[i + 21].line_Priority = 1000;
+						Line_N[i + 25].line_Priority = 0;
+						Line_N[i + 29].line_Priority = 1;
 					}
 				}
 			}
