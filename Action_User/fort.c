@@ -478,7 +478,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 
 		
 		//到达航向角和射球电机转速设定值时允许开火
-		if((fabs(Scan->YawAngle_Rec - Scan->YawAngle_Set) < 1.0f) && (fabs(Scan->ShooterVel_Rec - Scan->ShooterVel_Set) < 1.0f) && Scan->SetFireFlag == 1)  
+		if((fabs(Scan->YawAngle_Rec - Scan->YawAngle_Set) < 1.0f) && (fabs(Scan->ShooterVel_Rec - Scan->ShooterVel_Set) < 2.0f) && Scan->SetFireFlag == 1)  
 		{
 			Scan->FirePermitFlag = 1;
 			Scan->SetFireFlag = 0;
