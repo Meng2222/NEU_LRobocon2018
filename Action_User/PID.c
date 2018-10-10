@@ -1147,7 +1147,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle + 1.f;
+						float angle = pid->Angle + 0.2f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1349,7 +1349,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 20)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle - 1.f;
+						float angle = pid->Angle - 0.2f;
 						CorrectAngle(angle);
 					}
 					return;
