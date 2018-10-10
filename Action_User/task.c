@@ -148,8 +148,8 @@ void ConfigTask(void)
 		Scan.SetFireFlag = 1;
 		
 		Scan.YawAngle_Zero_Offset = 0.0f;
-		Scan.YawAngle_Offset = -2.3f;
-		Scan.ShooterVel_Offset = -1.0f;
+		Scan.YawAngle_Offset = -2.0f;
+		Scan.ShooterVel_Offset = 0.0f;
 		Scan.ScanVel = 0.05f;			
 		
 		//设定各挡板边缘坐标值
