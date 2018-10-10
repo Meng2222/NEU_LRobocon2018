@@ -1011,6 +1011,20 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			if(Line_N[4*i+3].line_Priority == -1) Line_N[4*i+3].line_Priority = 3;
 		}
 	}
+	if(flag == 0 && dir == Right1)
+	{
+		pid->Line_Num = 4;
+		flag = 1;
+		Line_N[0].line_Priority = 0;
+		Line_N[4].line_Priority = 3;
+	}
+	if(flag == 0 && dir == Left1)
+	{
+		pid->Line_Num = 23;
+		flag = 1;
+		Line_N[19].line_Priority = 0;
+		Line_N[23].line_Priority = 3;
+	}
 	if(pid->Line_Num < 17)
 	{
 		if(pid->corner == 0)

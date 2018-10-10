@@ -192,7 +192,7 @@ void ConfigTask(void)
 			if(10 < Laser_Left && Laser_Left < 100)
 			{
 				cntLeftTrigger++;
-			}		
+			}
 			else if(10 < Laser_Right && Laser_Right < 100)
 			{
 				cntRightTrigger++;
@@ -206,7 +206,7 @@ void ConfigTask(void)
 			if(cntLeftTrigger > 20)
 			{
 				OSMboxPost(adc_msg,(void *)Left);
-				USART_OUT(UART4, (uint8_t*)"Go Clockwise\r\n");					
+				USART_OUT(UART4, (uint8_t*)"Go Clockwise\r\n");
 				OSTaskSuspend(OS_PRIO_SELF);
 			}
 			else if(cntRightTrigger > 20)

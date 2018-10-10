@@ -61,6 +61,8 @@ extern void CorrectAngle(float value);
 #define CW (6)
 #define Left (7)
 #define Right (8)
+#define Left1 (9)
+#define Right1 (10)
 
 typedef struct line
 {
