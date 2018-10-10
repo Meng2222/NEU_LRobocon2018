@@ -1463,66 +1463,35 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 			prioritySum += Line_N[i].line_Priority;/*内三圈优先级求和*/
 		}
 	}
-	if(targetn[0] + targetn[1] + targetn[2] + targetn[3] > 2)
+	if(PID->Line_Num < 12 || (PID->Line_Num > 16 && PID->Line_Num <29)) Line_N[PID->Line_Num].line_Priority = 1000;
+	if(prioritySum >= 15500 || PID->stop == 1)/*走完两圈*/
 	{
-		err->errCnt += 1;
-		if(PID->fire_request == 1)
+
+		if(PID->dogHungry == 0)/*有球*/
 		{
-			PID->stop = 1;
-			for( i = 0 ; i < 29 ; i ++ )/*锁住内三圈优先级*/
+			PID->stop = 1;/*去场中央投球*/
+		}
+		else/*无球*/
+		{
+			PID->stop = 0;
+			if(PID->Line_Num < 17)
 			{
-				if(i < 12 || (i > 16 && i <29))
+				for(i = 0 ; i < 4 ; i ++ )
 				{
 					Line_N[i].line_Priority = 1000;
-					prioritySum += Line_N[i].line_Priority;/*内三圈优先级求和*/
+					Line_N[i + 4].line_Priority = 1000;
+					Line_N[i + 8].line_Priority = 0;
+					Line_N[i + 12].line_Priority = 1;
 				}
 			}
-		}
-	}
-	if(PID->Line_Num < 12 || (PID->Line_Num > 16 && PID->Line_Num <29)) Line_N[PID->Line_Num].line_Priority = 1000;
-	if((prioritySum >= 15500 && ((PID->Line_Num > 11 && PID->Line_Num < 17) || PID->Line_Num > 28)) || PID->stop == 1)/*最外圈走形状态*/
-	{
-		if(err->errCnt == 0 && PID->timeCnt < 3000)/*未避障状态*/
-		{
-			if(PID->dogHungry == 0)/*有球*/
+			else
 			{
-				if(targetn[0] + targetn[1] + targetn[2] + targetn[3] >= 2) err->errCnt += 1;
-				return;
-			}
-			else/*无球*/
-			{
-				if(PID->timeCnt > 2400) err->errCnt += 1;
-				return;
-			}
-		}
-		else/*扫描走形*/
-		{
-			if(PID->dogHungry == 0)/*有球*/
-			{
-				PID->stop = 1;/*去场中央投球*/
-			}
-			else/*无球*/
-			{
-				PID->stop = 0;
-				if(PID->Line_Num < 17)
+				for(i = 0 ; i < 4 ; i ++ )  
 				{
-					for(i = 0 ; i < 4 ; i ++ )
-					{
-						Line_N[i].line_Priority = 1000;
-						Line_N[i + 4].line_Priority = 1000;
-						Line_N[i + 8].line_Priority = 0;
-						Line_N[i + 12].line_Priority = 1;
-					}
-				}
-				else
-				{
-					for(i = 0 ; i < 4 ; i ++ )  
-					{
-						Line_N[i + 17].line_Priority = 1000;
-						Line_N[i + 21].line_Priority = 1000;
-						Line_N[i + 25].line_Priority = 0;
-						Line_N[i + 29].line_Priority = 1;
-					}
+					Line_N[i + 17].line_Priority = 1000;
+					Line_N[i + 21].line_Priority = 1000;
+					Line_N[i + 25].line_Priority = 0;
+					Line_N[i + 29].line_Priority = 1;
 				}
 			}
 		}
