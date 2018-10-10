@@ -381,7 +381,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 			Scan->Pos_Laser_Left_Y  = Scan->Pos_Fort_Y + (FORT_TO_LASER_X) * cos((Scan->Pos_Fort_Angle + 90.0f) * Pi / 180.0f) + (FORT_TO_LASER_Y) * cos(Scan->Pos_Fort_Angle * Pi / 180.0f);					
 			Scan->Pro_Left_X  = Scan->Pos_Laser_Left_X  - Scan->Pro_Left_Dist  * sin(Scan->Pos_Fort_Angle * Pi / 180.0f);
 			Scan->Pro_Left_Y  = Scan->Pos_Laser_Left_Y  + Scan->Pro_Left_Dist  * cos(Scan->Pos_Fort_Angle * Pi / 180.0f);	
-			
+			 
 			Scan->Pro_Right_Dist = 2.4645f * fort.laserBValueReceive + 31.166f;
 			Scan->Pos_Laser_Right_X = Scan->Pos_Fort_X - (FORT_TO_LASER_X) * sin((Scan->Pos_Fort_Angle - 90.0f) * Pi / 180.0f) - (FORT_TO_LASER_Y) * sin(Scan->Pos_Fort_Angle * Pi / 180.0f);
 			Scan->Pos_Laser_Right_Y = Scan->Pos_Fort_Y + (FORT_TO_LASER_X) * cos((Scan->Pos_Fort_Angle - 90.0f) * Pi / 180.0f) + (FORT_TO_LASER_Y) * cos(Scan->Pos_Fort_Angle * Pi / 180.0f);	
@@ -471,6 +471,10 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 		//根据射球电机转速与静止炮台到桶距离经验公式计算射球电机转速
 		Scan->Pro_Bucket_Dist = sqrt(Scan->Pro_Bucket_Dist_X * Scan->Pro_Bucket_Dist_X + Scan->Pro_Bucket_Dist_Y * Scan->Pro_Bucket_Dist_Y);			
 		Scan->ShooterVel_Set = 0.0122f * Scan->Pro_Bucket_Dist + 39.478f + Scan->ShooterVel_Offset;
+		if(Scan->Pro_Bucket_Dist > 3600.0f)
+		{
+			Scan->ShooterVel_Set = Scan->ShooterVel_Set + 1.0f;
+		}
 			
 		//计算炮塔航向角目标值和设定值
 		Scan->YawAngle_Tar_Pro = Tar_Angle_Operation(Scan->Pro_Bucket_Dist_X, Scan->Pro_Bucket_Dist_Y);
@@ -478,10 +482,21 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 
 		
 		//到达航向角和射球电机转速设定值时允许开火
-		if((fabs(Scan->YawAngle_Rec - Scan->YawAngle_Set) < 1.0f) && (fabs(Scan->ShooterVel_Rec - Scan->ShooterVel_Set) < 1.0f) && Scan->SetFireFlag == 1)  
+		if((fabs(Scan->YawAngle_Rec - Scan->YawAngle_Set) < 1.0f) && Scan->SetFireFlag == 1)  
 		{
-			Scan->FirePermitFlag = 1;
-			Scan->SetFireFlag = 0;
+			if(Scan->Pro_Bucket_Dist > 3600.0f)
+			{
+				if(fabs(Scan->ShooterVel_Rec - Scan->ShooterVel_Set) < 2.0f)
+				{		
+					Scan->FirePermitFlag = 1;
+					Scan->SetFireFlag = 0;
+				}
+			}
+			else if(fabs(Scan->ShooterVel_Rec - Scan->ShooterVel_Set) < 1.0f)
+			{		
+				Scan->FirePermitFlag = 1;
+				Scan->SetFireFlag = 0;
+			}
 		}
 	}
 }

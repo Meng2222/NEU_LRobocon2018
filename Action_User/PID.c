@@ -802,7 +802,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		{
 			if(flag == 1) return;
 			timeDelay ++;
-			if(timeDelay < 60) return;
+			if(timeDelay < 80) return;
 			if(ballcolor == 0) noneCnt += 1;
 			else if(ballcolor == 1) whiteCnt += 1;
 			else if(ballcolor == 2) blackCnt += 1;
@@ -955,7 +955,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 {
 	if(pid->stop == 1 && error->flag == 0)
 	{
-		if(pid->Y > 1400 && pid->Y < 3400 && pid->X > 0-1000 && pid->X < 1000)
+		if(pid->Y > 1500 && pid->Y < 3300 && pid->X > 0-900 && pid->X < 900)
 		{
 			pid->vel = 0;
 			pid->V = 0;
@@ -1093,7 +1093,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt1 = 0;
 				timeCnt1++;
-				if(timeCnt1 < 200)
+				if(timeCnt1 < 250)
 				{
 					pid->Angle += 180;
 					pid->kp = 2.5;
@@ -1158,7 +1158,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt2 = 0;
 				timeCnt2++;
-				if(timeCnt2 <200)
+				if(timeCnt2 <250)
 				{
 					pid->Angle += 180;
 					pid->kp = 2.5;
@@ -1295,7 +1295,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt3 = 0;
 				timeCnt3++;
-				if(timeCnt3 < 200)
+				if(timeCnt3 < 250)
 				{
 					pid->Angle += 180;
 					pid->kp = 2.5;
@@ -1360,7 +1360,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt4 = 0;
 				timeCnt4++;
-				if(timeCnt4 < 200)
+				if(timeCnt4 < 250)
 				{
 					pid->Angle += 180;
 					pid->kp = 2.5;
