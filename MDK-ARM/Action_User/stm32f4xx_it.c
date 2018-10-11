@@ -417,6 +417,7 @@ void HardFault_Handler(void)
 	/* Go to infinite loop when Hard Fault exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t *)"HardFault\t");
 	}
 }
 

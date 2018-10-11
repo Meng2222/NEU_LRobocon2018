@@ -40,7 +40,7 @@
   * @retval None
   */
 
-float Kp=90,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Vk=0,errl,lastErr1;
+float Kp=85,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Vk=0,errl,lastErr1;
 extern int R;
 
 void Straight(float v)
@@ -50,8 +50,8 @@ void Straight(float v)
 }	
 void Spin(float R,float v)
 {
-	VelCrl(CAN2,1,v*4096/(pi*WHEEL_DIAMETER));
-	VelCrl(CAN2,2,-v*4096*(R+(WHEEL_TREAD-WHEEL_WIDTH)/2)/((R-(WHEEL_TREAD-WHEEL_WIDTH)/2)*pi*WHEEL_DIAMETER));
+	VelCrl(CAN1,1,-v*CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO/(pi*WHEEL_DIAMETER));
+	VelCrl(CAN1,2,v*(TURN_AROUND_WHEEL_TO_BACK_WHEEL/R)*CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO/(pi*TURN_AROUND_WHEEL_DIAMETER));
 }
 void TurnRight(float angle,float v)
 {
@@ -67,10 +67,10 @@ void AnglePID(float setAngle,float feedbackAngle)
 		err=360+err;
 	Sumi+=Ki*err;
 	Vk=Kp*err+Sumi+Kd*(err-lastErr);
-	if(Vk>1300)
-		Vk=1300;
-	if(Vk<-1300)
-		Vk=-1300;
+	if(Vk>1200)
+		Vk=1200;
+	if(Vk<-1200)
+		Vk=-1200;
 	lastErr=err;																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																									
 }	
 float k,b,lAngle,setAngle,d;
@@ -203,11 +203,14 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
 extern float Distance,shootX,shootY,angle,antiRad,location[4][2],speed;
-extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,shakeShootFlag,banFirstShoot;
+extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,shakeShootFlag,banFirstShoot,FindBallModel,StdId;
 void GetYawangle(uint8_t StdId)
 {
-	if(shakeShootFlag)
-		antiRad=0;
+	if(shakeShootFlag||FindBallModel)
+	{	antiRad=0;
+		shootX=x;
+		shootY=y;
+	}	
 	if(status==0)
 	{	
 		GetFunction(shootX,shootY,location[StdId][0],location[StdId][1]);
@@ -237,12 +240,12 @@ void BingoJudge(uint8_t StdId)
 {
 	if(haveShootedFlag==1&&bingoFlag[StdId][0]==0)
 	{	
-		bingoFlag[StdId][0]=5-errTime;
+		bingoFlag[StdId][0]=3-errTime;
 		haveShootedFlag=0;
 	}	
 	else if(haveShootedFlag==1&&bingoFlag[StdId][1]==0)
 	{	
-		bingoFlag[StdId][1]=5-errTime;
+		bingoFlag[StdId][1]=3-errTime;
 		haveShootedFlag=0;
 	}					
 	if(bingoFlag[StdId][1]!=0)
@@ -258,17 +261,19 @@ void BingoJudge(uint8_t StdId)
 			}	
 		}
 	}
-	
-	if(speed<1300||speed>1700||errTime>2)
-	{	
-		throwFlag=0;
-		banFirstShoot=120;
-	}	
-	GetFunction(x,y,0,2400);
-	if((status==0&&fabs(GetAngle()-lAngle+90)>10)||(status==0&&fabs(GetAngle()-lAngle+90)>10))
+	if(FindBallModel==0)
 	{
-		throwFlag=0;
-		banFirstShoot=120;
+		if(speed<1300||speed>1800||(!FindBallModel&&errTime>1))
+		{	
+			throwFlag=0;
+			banFirstShoot=100;
+		}	
+		GetFunction(x,y,0,2400);
+		if(((status==0&&fabs(GetAngle()-lAngle+90)>12)||(status==0&&fabs(GetAngle()-lAngle+90)>12)))
+		{
+			throwFlag=0;
+			banFirstShoot=100;
+		}	
 	}	
 }
 
@@ -292,15 +297,15 @@ int FirstshootJudge(void)
 	}	
 	return StdId;
 }	
-int RchangeTime=125; 
+int RchangeTime=250; 
 void Rchange(int Rchange)
 {
 	if(--RchangeTime>=0)
-		R+=Rchange/125;
+		R+=Rchange/250;
 	else
 	{
 		RchangeFlag=0;
-		RchangeTime=125;
+		RchangeTime=250;
 	}
 }
 void IncreaseR(int Radium)
@@ -309,11 +314,21 @@ void IncreaseR(int Radium)
 	{
 		if(x<-100&&lastX>-100&&y>2400&&R<Radium)
 			RchangeFlag=1;
+		if(R>=Radium)
+		{
+			RchangeFlag=0;
+			RchangeTime=250;
+		}	
 	}	
 	else
 	{
 		if(x>100&&lastX<100&&y>2400&&R<Radium)
 			RchangeFlag=1;
+		if(R>=Radium)
+		{
+			RchangeFlag=0;
+			RchangeTime=250;
+		}	
 	}		
 	if(RchangeFlag)
 		Rchange(500);	
@@ -324,17 +339,27 @@ void DecreaseR(int Radium)
 	{
 		if(x<-100&&lastX>-100&&y>2400&&R>Radium)
 			RchangeFlag=1;
+		if(R<=Radium)
+		{
+			RchangeFlag=0;
+			RchangeTime=250;
+		}			
 	}	
 	else
 	{
 		if(x>100&&lastX<100&&y>2400&&R>Radium)
 			RchangeFlag=1;
+		if(R<=Radium)
+		{
+			RchangeFlag=0;
+			RchangeTime=250;
+		}	
 	}		
 	if(RchangeFlag)
 		Rchange(-500);	
 }	
-extern int errFlag,count,FindBallModel,shootCnt,shakeShootCnt,ballColor;
-extern float angle,speed,speedY,speedX,T0,T1,rps,realR;
+extern int errFlag,count,shootCnt,shakeShootCnt,ballColor,rDecreaseFlag,circleCnt,semiPushCount,pushBallFlag;
+extern float angle,speed,speedY,speedX,T0,T1,rps,realR,v;
 int errSituation1,errSituation2,shakeShootOff=200,shutOffCnt=0;
 void Avoidance()
 {
@@ -347,10 +372,20 @@ void Avoidance()
 			{
 				Kp=10;
 				AnglePID(changeAngle,GetAngle());
-				if(R<1600)
-					R+=500;
-				Straight(-1400);
-				if(errTime%3==0&&statusFlag)
+				switch(circleCnt)
+				{
+					case 1: 
+						R=1100;
+						break;
+					case 2: 
+						R=1600;
+						break;
+					case 3:
+						R=1800;
+					break;
+				}	
+				Straight(-1100);
+				if(errTime%2==0&&statusFlag)
 				{
 					status=1-status;
 					statusFlag=0;
@@ -359,13 +394,14 @@ void Avoidance()
 			if(errSituation2)
 			{
 				AnglePID(changeAngle,GetAngle());
-				Straight(1800);
+				Straight(1200);
 			}	
-			if(backwardCount>=120)	
-			{	errFlag=0;
+			if(backwardCount>=100)	
+			{
+				errFlag=0;
 				backwardCount=0;
 				if(R>=1600)
-					banFirstShoot=150;
+					banFirstShoot=50;
 			}	
 			time=0;
 			lastTime=0;
@@ -377,28 +413,20 @@ void Avoidance()
 			GetFunction(lastX,lastY,x,y);
 			speedAngle=lAngle;
 			//与对手相持
-			if(fabs(speedAngle-GetAngle())<20&&speed>1200)
+			if(fabs(speedAngle-GetAngle())<40&&speed>1200)
 				lastTime=time;
 			else				
 			{
 				//情况2：被对方侧面推着跑，此时有一定速度，车身角度与速度角度不一致
-				if(fabs(speedAngle-GetAngle())>40&&speed>600)
+				if(fabs(speedAngle-GetAngle())>40&&speed>500)
 				{
 					errSituation2=1;
 					errSituation1=0;
 					changeAngle=speedAngle;
 				}	
 				//情况1：与对方正面相撞
-				else if(speed<1100)
-				{
-					if(realR>800&&realR<1900)
-					{
-						errSituation2=1;
-						errSituation1=0;
-						changeAngle=GetAngle();
-					}	
-					else
-					{	
+				else if(speed<1000)
+				{	
 					errSituation1=1;
 					errSituation2=0;
 					GetFunction(x,y,0,2400);
@@ -406,20 +434,19 @@ void Avoidance()
 						changeAngle=lAngle;
 					else
 						changeAngle=lAngle+180;
-					}
 				}
 				if(FindBallModel)
 				{
 					errSituation1=1;
 					errSituation2=0;
+//					rDecreaseFlag=1;
 				}	
 			}				
-			if(time-lastTime>=80)
+			if(time-lastTime>=150)
 			{	
 				errFlag=1;
 				statusFlag=1;
 				errTime++;
-				backwardCount=0;
 			}		
 		}	
 }	
@@ -428,7 +455,6 @@ void ShakeShoot(void)
 {
 	VelCrl(CAN1,1,0);				
 	VelCrl(CAN1,2,0);
-	errFlag=1;
 	if(status==0)
 	{
 		if(x>-400&&x<400&&y<2400)
@@ -466,6 +492,53 @@ void ShakeShoot(void)
 		throwFlag=1;
 	else
 		throwFlag=0;
+}	
+void BorderSweeping(void)
+{
+	if(status==0)
+	{
+		if(x>1100&&y<3500)
+		{	linePID(2100,0,2100,100,v);
+			StdId=1;
+		}	
+		if(y>3500&&x>-1100)
+		{	linePID(2200,4500,0,4500,v);
+			StdId=2;
+		}	
+		if(x<-1100&&y>3500)
+		{	linePID(-2100,100,-2100,0,v);
+			StdId=3;
+		}	
+		if(y<1300&&x<1100)
+		{	linePID(-2200,300,0,300,v);
+			StdId=0;
+		}	
+	}	
+	else
+	{
+		if(x>1100&&y>1300)
+		{	linePID(2100,100,2100,0,v);
+			StdId=0;
+		}	
+		if(y<1300&&x>-1100)
+		{	linePID(2200,300,0,300,v);
+			StdId=3;
+		}
+		if(x<-1100&&y<3500)
+		{	linePID(-2100,-100,-2100,0,v);
+			StdId=2;
+		}	
+		if(y>3500&&x<1100)
+		{	linePID(-2200,4500,0,4500,v);
+			StdId=1;
+		}	
+		if((x>1000&&x<-1000)||(y>3400&&y<1400))
+			throwFlag=1;
+		GetShootSituation(StdId);
+		YawPosCtrl(yawAngle);
+		rps=((Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*speed*speed)-sqrt(3)*speed)-speed)-166.59)/39.574+(Distance-3500)*0.0045;
+		ShooterVelCtrl(rps);
+	}	
 }	
 /*激光模式*/
 float getLingtAngle(float xi,float yi,int tragetCnt)

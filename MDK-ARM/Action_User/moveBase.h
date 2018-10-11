@@ -84,6 +84,7 @@ void IncreaseR(int Radium);
 void DecreaseR(int Radium);
 void Avoidance();
 void ShakeShoot(void);
+void BorderSweeping(void);
 float getLingtAngle(float xi,float yi,int tragetCnt);
 int findMostGroup();
 #define pi 3.141592f
