@@ -150,8 +150,8 @@ void ConfigTask(void)
 		
 		Scan.YawAngle_Zero_Offset = 0.0f;
 		Scan.YawAngle_Offset = -2.6f;
-		Scan.ShooterVel_Offset = -1.3f;
-		Scan.ScanVel = 0.06f;			
+		Scan.ShooterVel_Offset = -1.2f;
+		Scan.ScanVel = 0.06f;
 		Scan.Pro_Max_Dist = 0.0f;
 		
 		//设定各挡板边缘坐标值
