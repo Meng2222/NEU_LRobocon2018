@@ -133,6 +133,7 @@ void ConfigTask(void)
 		//初始化扫描参数
 		Scan.BucketNum = 0;
 		Scan.Bubble_Mode = 0;
+		Scan.Scan_Mode = LOCAL;
 		Scan.DelayFlag = 0;
 		Scan.CntDelayTime = 0;
 	
@@ -150,7 +151,8 @@ void ConfigTask(void)
 		Scan.YawAngle_Zero_Offset = 0.0f;
 		Scan.YawAngle_Offset = -2.6f;
 		Scan.ShooterVel_Offset = -1.3f;
-		Scan.ScanVel = 0.05f;			
+		Scan.ScanVel = 0.06f;			
+		Scan.Pro_Max_Dist = 0.0f;
 		
 		//设定各挡板边缘坐标值
 		Scan.Pos_Border_X[0] =  2000.0;       Scan.Pos_Border_Y[0] =   -54.0;
@@ -166,18 +168,17 @@ void ConfigTask(void)
 		Scan.DistChange_R = 0;
 		Scan.PosOK_L = 0;
 		Scan.PosOK_R = 0;
-		Scan.DistOK_L = 0;
-		Scan.DistOK_R = 0;
-		Scan.AngleOK = 0;
 		
-		Scan.ScanMaxFlag = 1;
+		Scan.DepthOK = 0;
+		Scan.Max_Dist_OK = 0;
+		Scan.L_Max_R_Angle_OK = 0;
 
 		int startFlag = 1;
 		int cntSendTime = 0, cntClearTime = 0, cntLeftTrigger = 0, cntRightTrigger = 0;
 		int Laser_Left, Laser_Right;
 		while(startFlag)
 		{
-			delay_ms(10);
+			delay_ms(5);
 			Laser_Left = fort.laserAValueReceive;
 			Laser_Right = fort.laserBValueReceive;
 			
@@ -284,27 +285,26 @@ void WalkTask(void)
 				{
 					Scan.DelayFlag = 0;
 					Scan.CntDelayTime = 0;
-					Scan.CntFireDelayTime = 0;
-					
-					Scan.GetLeftFlag = 0;
-					Scan.GetRightFlag = 0;
-	
+						
 					Scan.ScanPermitFlag = 0;
 					Scan.FirePermitFlag = 0;					
 					Scan.ScanStatus = 0;
 					Scan.SetTimeFlag = 1;
 					Scan.SetFireFlag = 1;
-					Scan.ScanVel = 0.05f;
+					Scan.ScanVel = 0.06f;
 					
 					Scan.DistChange_L = 0;
 					Scan.DistChange_R = 0;
+					Scan.GetLeftFlag = 0;
+					Scan.GetRightFlag = 0;
 					Scan.PosOK_L = 0;
 					Scan.PosOK_R = 0;
-					Scan.DistOK_L = 0;
-					Scan.DistOK_R = 0;
-					Scan.AngleOK = 0;
 					
-					Scan.ScanMaxFlag = 1;
+					Scan.DepthOK = 0;					
+					Scan.Max_Dist_OK = 0;
+					Scan.L_Max_R_Angle_OK = 0;
+					
+					Scan.Pro_Max_Dist = 0;
 				}
 			}
 			YawPosCtrl(Scan.YawAngle_Set);

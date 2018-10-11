@@ -23,6 +23,8 @@
 #define SCAN_ANGLE_ERROR (20.0f)
 #define BORDER_LENGTH (454.0f)
 #define BORDER_ANGLE (90.0f)
+#define GLOBAL (1)
+#define LOCAL (0)
 
 typedef union
 {
@@ -110,10 +112,10 @@ typedef struct							//										2  _   _  1
 typedef struct{
 	int BucketNum;						//目标桶号
 	int Bubble_Mode;
+	int Scan_Mode;
 	
 	int DelayFlag;		
 	int CntDelayTime;					//延时计数
-	int CntFireDelayTime;	
 	int CntFireTimes;
 	
 	int FirePermitFlag;					//允许射球标志位
@@ -121,7 +123,7 @@ typedef struct{
 	
 	int GetLeftFlag;					//扫描到左侧挡板边缘标志位
 	int GetRightFlag;					//扫描到右侧挡板边缘标志位
-	int GetBucketFlag;			
+	int GetBucketFlag;
 	
 	int ScanStatus;						//扫描状态                              0走行	1扫描	2射球
 	int ScanShootFlag;
@@ -129,20 +131,13 @@ typedef struct{
 	int SetFireFlag;					//允许设定射球标志位
 	int SetTimeFlag;
 		
-	int ScanMaxFlag;
-		
 	int DistChange_L;
 	int DistChange_R;
 	int PosOK_L;
 	int PosOK_R;
-	int DistOK_L;
-	int DistOK_R;
-	int AngleOK;
-	
-	int PosLeft;
-	int PosRight;
-	int LaserAValue;
-	int LaserBValue;
+	int DepthOK;
+	int Max_Dist_OK;
+	int L_Max_R_Angle_OK;
 
 	float ScanVel;						//扫描速度								单位°/10ms
 
@@ -177,25 +172,31 @@ typedef struct{
 	float Pro_Right_Dist;				//右侧激光探测点距离值					单位mm	
 	float Pro_Right_X;					//右侧激光探测点横坐标					单位mm
 	float Pro_Right_Y;					//右侧激光探测点纵坐标					单位mm
-	
+
+	float Pro_Left_Dist_Last;
+	float Pro_Right_Dist_Last;
 	float Pro_Max_Dist;	
 	float Pro_Max_X;
 	float Pro_Max_Y;
 	
-	float Max_To_Left_Dist;
-	float Max_To_Left_Angle;
-	float Max_To_Right_Dist;
-	float Max_To_Right_Angle;
-	float Left_To_Right_Angle;
+	float Max_Left_Dist;
+	float Max_Right_Dist;	
+	float Max_Left_Angle;
+	float Max_Right_Angle;
+	float Left_Max_Right_Angle;
+
 	
 	float Pro_Border_Left_X;			//探测的左侧挡板边缘横坐标				单位mm
 	float Pro_Border_Left_Y;			//探测的左侧挡板边缘纵坐标				单位mm
 	float Pro_Border_Left_Angle;		//探测的左侧挡板边缘的定位系统角度		单位mm
-
+	float Pro_Border_Left_Dist;
+	float Pro_Border_Left_Depth;
+	
 	float Pro_Border_Right_X;			//探测的右侧挡板边缘横坐标				单位mm
 	float Pro_Border_Right_Y;			//探测的右侧挡板边缘纵坐标				单位mm
 	float Pro_Border_Right_Angle;		//探测的右侧挡板边缘的定位系统角度		单位mm
-
+	float Pro_Border_Right_Dist;
+	float Pro_Border_Right_Depth;
 	
 	float Pro_LToR_Dist_X;				//左侧挡板边缘到右侧挡板边缘横轴距离	单位mm
 	float Pro_LToR_Dist_Y;				//左侧挡板边缘到右侧挡板边缘纵轴距离	单位mm
@@ -212,8 +213,7 @@ typedef struct{
 	float ShooterVel_Offset;			//射球电机转速补偿值					单位rad/s
 	
 	float YawAngle_Rec;					//炮塔航向角实际值						单位°
-	float YawAngle_Tar_Pro;				//炮塔航向角探测目标值					单位°
-	float YawAngle_Tar_The;				//炮塔航向角理论目标值					单位°	
+	float YawAngle_Tar;					//炮塔航向角目标值						单位°	
 	float YawAngle_Set;					//炮塔航向角设定值						单位°
 	float YawAngle_Zero_Offset;			//炮塔航向角归零补偿值					单位°
 	float YawAngle_Offset;				//炮塔航向角补偿值						单位°
