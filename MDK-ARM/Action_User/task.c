@@ -81,10 +81,10 @@ void ConfigTask(void)
 	OSTaskSuspend(OS_PRIO_SELF);
 }
 float yawAngle=0,T1=0,T0=0,v=1500,angle,Distance,antiRad,realR=0,shootX,shootY,futureX,futureY,lastX=0,lastY=0,x,y,LastCount;
-int pushBallFlag=1,borderSweepFlag=0,count=0,shakeShootFlag=0,shakeShootCnt=0,errFlag=0,status=1,semiPushCount=0,throwFlag=0,R=500,bingoFlag[4][2]={0},haveShootedFlag=0,errTime=0,StdId,laserModel=0,changeLightTime=0,RchangeFlag,rDecreaseFlag=0,FindBallModel=0,banFirstShoot=0,shootCnt=0,circleCnt=1;
+int firstShoot=1,pushBallFlag=1,borderSweepFlag=0,count=0,shakeShootFlag=0,shakeShootCnt=0,errFlag=0,status=1,semiPushCount=0,throwFlag=0,R=500,bingoFlag[4][2]={0},haveShootedFlag=0,errTime=0,StdId,laserModel=0,changeLightTime=0,RchangeFlag,rDecreaseFlag=0,FindBallModel=0,banFirstShoot=0,shootCnt=0,circleCnt=1;
 float location[4][2]={{2200,200},{2200,4600},{-2200,4600},{-2200,200}},speedX,speedY,speed,rps=50;
 extern float Vk,Kp,lAngle,CollectRightVel,CollectLeftVel;
-int scanCnt[20]={0},touchLaserTime,lastTouchLaserTime,quickLaserModel=0;
+int scanCnt[20]={0},touchLaserTime,lastTouchLaserTime,quickLaserModel=0,Cnt=0;
 float scanAngle[20][300]={0};
 float scanDistance[20][300]={0};
 extern int ballColor,backwardCount,errSituation1,errSituation2;
@@ -100,7 +100,7 @@ void WalkTask(void)
 	static int LastStdId=0,squareNode=0,noBallPushCnt=0,findBallCnt=0;
 	static int waitCnt=0,goalCnt=0,scanFlag_1=0,scanFlag_2=0,myCnt=0,notCnt=0,goalFlag=0,mostGroup=0,OnlyFlag=1,scanErrCnt=0,scanErrFlag=0,scanFlag_Ok=0;
 	static float staticShootAngle_1=0,timeAngle=16,DistanceA=0,DistanceB=0,lightAngle=0,staticShootAngle_2=0;
-	static int pushBallCount=0,statusFlag=0,noBallCount=0,staticPushBallFlag=1,Cnt=0,laserModelCount=0,FindBallModelCount=0,realCount=0,lastSemiPushCount,lastCount,time=0;
+	static int pushBallCount=0,statusFlag=0,noBallCount=0,staticPushBallFlag=1,laserModelCount=0,FindBallModelCount=0,realCount=0,lastSemiPushCount,lastCount,time=0;
 	static float dLeft=0,dRight=0,Vx,Vy,V,shootAngle,realRps,lastRps;
 //	USART_OUT(UART4,(uint8_t *)"%d",1);
 	VelCrl(CAN2,COLLECT_BALL1_ID,80*32768); 
@@ -130,7 +130,7 @@ void WalkTask(void)
 		}	
 		else
 		{
-			T0=0.096;
+			T0=0.086;
 			T1=0.046;
 		}	
 		PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--semiPushCount)*PUSH_POSITION/2+count*PUSH_POSITION);
@@ -145,11 +145,11 @@ void WalkTask(void)
 		}	
 		else
 		{
-			T0=0.096;
+			T0=0.086;
 			T1=0.046;
 		}	
 	}
-	else if(dRight>300)
+	else if(dRight>300&&dRight<800)
 	{
 		status=0;
 		quickLaserModel=1;
@@ -185,7 +185,7 @@ void WalkTask(void)
 			Cnt++;
 			v = 1500;	
 			if(Cnt>1000&&realR>900)
-				Cnt=0;
+				Cnt=-100;
 			if(Cnt<250)
 			{	
 				if(errFlag==0)
@@ -468,15 +468,12 @@ void WalkTask(void)
 				rDecreaseFlag=0;
 				errTime=0;
 				laserModelCount=0;
-				R=700;
+				R=550;
+				noBallPushCnt=0;
 			}
-			USART_OUT(UART4,(uint8_t *)"FindBallModel\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetX(),(int)GetY(),(int)GetAngle(),(int)GetWZ(),(int)GetSpeedX(),(int)GetSpeedY(),R,rDecreaseFlag,pushBallMotorPos,squareNode);
+			USART_OUT(UART4,(uint8_t *)"FindBallModel\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetX(),(int)GetY(),(int)GetAngle(),(int)GetWZ(),R,rDecreaseFlag,throwFlag,pushBallMotorPos,squareNode);
 		}	
 		else{
-//		if(R<=1100)
-//			v=1800;
-//		else 
-//			v=1500;	
 		v=1500;	
 		if(status==0)	
 			antiRad=T0*speed/realR;
@@ -610,18 +607,20 @@ void WalkTask(void)
 		V=-Vx+Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*Vx*Vx)-sqrt(3)*Vx);
 		shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		YawPosCtrl(shootAngle);
-		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3000)*0.0048;
-		if(R==1100&&StdId==2&&PE0==1)
-			rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3300)*0.003+4;
-		if(StdId==3&&R<1600&&PE0==1)
-			rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3300)*0.003-3;
+		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3100)*0.0049;
+		if(status==0&&PE0==0)
+			rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3000)*0.0043;
+		if(firstShoot>0&&PE0==1&&circleCnt<3)
+			rps+=4;
 		ShooterVelCtrl(rps);
 		Avoidance();
 		if(R>=1100&&circleCnt<=4)
 		{	
 			if(throwFlag&&ballColor==MY_BALL_COLOR&&pushBallFlag)
 			{
-				//当刚切换到1600半径稳定1s
+				if(firstShoot)
+					firstShoot=0;
+				//稳定1s
 				if(--banFirstShoot>0)
 					goto label;	
 				PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,semiPushCount*PUSH_POSITION/2+(++count)*PUSH_POSITION);				

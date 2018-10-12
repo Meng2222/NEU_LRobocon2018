@@ -261,7 +261,7 @@ void BingoJudge(uint8_t StdId)
 			}	
 		}
 	}
-	if(FindBallModel==0)
+	if(!FindBallModel)
 	{
 		if(speed<1300||speed>1800||(!FindBallModel&&errTime>1))
 		{	
@@ -269,7 +269,7 @@ void BingoJudge(uint8_t StdId)
 			banFirstShoot=100;
 		}	
 		GetFunction(x,y,0,2400);
-		if(((status==0&&fabs(GetAngle()-lAngle+90)>12)||(status==0&&fabs(GetAngle()-lAngle+90)>12)))
+		if(((status==1&&fabs(GetAngle()-lAngle-90)>12&&fabs(GetAngle()-lAngle-90)<180)||(status==0&&fabs(GetAngle()-lAngle+90)>12&&fabs(GetAngle()-lAngle+90)<180)))
 		{
 			throwFlag=0;
 			banFirstShoot=100;
@@ -358,7 +358,7 @@ void DecreaseR(int Radium)
 	if(RchangeFlag)
 		Rchange(-600);	
 }	
-extern int errFlag,count,shootCnt,shakeShootCnt,ballColor,rDecreaseFlag,circleCnt,semiPushCount,pushBallFlag,borderSweepFlag;
+extern int errFlag,count,shootCnt,shakeShootCnt,ballColor,rDecreaseFlag,circleCnt,semiPushCount,pushBallFlag,borderSweepFlag,Cnt;
 extern float angle,speed,speedY,speedX,T0,T1,rps,realR,v;
 int errSituation1,errSituation2,shakeShootOff=200,shutOffCnt=0;
 void Avoidance()
@@ -402,6 +402,7 @@ void Avoidance()
 				backwardCount=0;
 				if(R>=1600)
 					banFirstShoot=50;
+				Cnt=0;
 			}	
 			time=0;
 			lastTime=0;
