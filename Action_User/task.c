@@ -70,6 +70,7 @@ void ConfigTask(void)
 	KeyInit2();
 	KeyInit0();
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);					//系统中断优先级分组2
+	TIM_Delayms(TIM4,2000);										//延时2s，给定位系统准备时间
 	TIM_Init(TIM2,999,83,0,0);										//时钟2初始化，1ms周期
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);				//can1初始化
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);				//can2初始化
@@ -94,7 +95,6 @@ void ConfigTask(void)
 	{
 		YawPosCtrl(90);
 		ShooterVelCtrl(80);
-		TIM_Delayms(TIM4,2000);										//延时2s，给定位系统准备时间
 		WaitOpsPrepare();											//等待定位系统准备完成
 		PID_Init(PID_x);											//PID参数初始化
 		CmdRecData.TarBucketNum_cmd = 0;
@@ -329,15 +329,21 @@ void WalkTask(void)
 			if(cntSendTime == 0)
 			{
 				//比赛收数
-				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	SpeX=%d	SpeY=%d	WZ=%d	LaserA=%d	LaserB=%d	food=%d	hungry=%d	stop=%d	FireCmd=%d	FireReq=%d	ScanSta=%d	BucNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	DisCL=%d	DisCR=%d	PosL=%d	PosR=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	Tar0=%d	Tar1=%d	Tar2=%d	Tar3=%d\r\n",\
-				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,			(int)PID_A.X_Speed,			(int)PID_A.Y_Speed,			(int)GetWZ(),
+//				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	SpeX=%d	SpeY=%d	WZ=%d	LaserA=%d	LaserB=%d	food=%d	hungry=%d	stop=%d	FireCmd=%d	FireReq=%d	ScanSta=%d	BucNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	DisCL=%d	DisCR=%d	PosL=%d	PosR=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	Tar0=%d	Tar1=%d	Tar2=%d	Tar3=%d\r\n",\
+//				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,			(int)PID_A.X_Speed,			(int)PID_A.Y_Speed,			(int)GetWZ(),
+//				(int)fort.laserAValueReceive,						(int)fort.laserBValueReceive,\
+//				(int)PID_A.food,		(int)PID_A.dogHungry,		(int)PID_A.stop,			(int)PID_A.fire_command,	(int)PID_A.fire_request,\
+//				(int)Scan.ScanStatus,	(int)Scan.BucketNum,		(int)Scan.ScanPermitFlag, 	(int)Scan.SetTimeFlag,		(int)Scan.SetFireFlag,\
+//				(int)Scan.DistChange_L,	(int)Scan.DistChange_R,		(int)Scan.PosOK_L,			(int)Scan.PosOK_R,\
+//				(int)Scan.GetLeftFlag,	(int)Scan.GetRightFlag,		(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,\
+//				(int)Scan.DelayFlag,	(int)Scan.CntDelayTime,\
+//				(int)target[0],			(int)target[1],				(int)target[2], 			(int)target[3]);
+				
+				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	SpeX=%d	SpeY=%d	WZ=%d	V=%d	vel=%d	Motor1Spe=%d	Motor2Spe=%d	LaserA=%d	LaserB=%d	food=%d	hungry=%d	stop=%d	FireCmd=%d	FireReq=%d	pidErr=%d\r\n",\
+				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,			(int)PID_A.X_Speed,			(int)PID_A.Y_Speed,			(int)GetWZ(),\
+				(int)PID_A.V,			(int)PID_A.vel,				(int)GetMotor1Speed(),		(int)GetMotor2Speed(),\
 				(int)fort.laserAValueReceive,						(int)fort.laserBValueReceive,\
-				(int)PID_A.food,		(int)PID_A.dogHungry,		(int)PID_A.stop,			(int)PID_A.fire_command,	(int)PID_A.fire_request,\
-				(int)Scan.ScanStatus,	(int)Scan.BucketNum,		(int)Scan.ScanPermitFlag, 	(int)Scan.SetTimeFlag,		(int)Scan.SetFireFlag,\
-				(int)Scan.DistChange_L,	(int)Scan.DistChange_R,		(int)Scan.PosOK_L,			(int)Scan.PosOK_R,\
-				(int)Scan.GetLeftFlag,	(int)Scan.GetRightFlag,		(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,\
-				(int)Scan.DelayFlag,	(int)Scan.CntDelayTime,\
-				(int)target[0],			(int)target[1],				(int)target[2], 			(int)target[3]);
+				(int)PID_A.food,		(int)PID_A.dogHungry,		(int)PID_A.stop,			(int)PID_A.fire_command,	(int)PID_A.fire_request,	(int)PID_A.Error);
 
 				//Scan参数
 //				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	ScanSta=%d	BucNum=%d	ScanPer=%d	FirePer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	Del=%d	cntDel=%d	ProBLX=%d	ProBLY=%d	ProBRX=%d	ProBRY=%d DisSho=%d	ShoSet=%d	ShoRec=%d\r\n",\
@@ -376,7 +382,7 @@ void WalkTask(void)
 		else
 		{
 			PID_A.fire_command = 0;
-			Scan.FirePermitFlag = 0;		
+			Scan.FirePermitFlag = 0;
 		}
 		if(pidDebug) UART4_OUT(PID_x,Error_x);
 		shoot(PID_x,target,shootDebug);

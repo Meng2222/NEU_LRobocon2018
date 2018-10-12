@@ -393,7 +393,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 			{
 				Scan->GetBucketFlag = 0;
 				Scan->ScanPermitFlag = 0;
-				Scan->YawAngle_Set = Scan->YawAngle_Set + 45.0f;
+				Scan->YawAngle_Set = Scan->YawAngle_Set + 50.0f;
 			}
 			Scan->ScanStatus = 1;
 			Scan->ShooterVel_Set = 80.0f;
@@ -478,7 +478,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 						Scan->L_Max_R_Angle_OK = 0;
 						
 						Scan->Scan_Mode = GLOBAL;
-						Scan->ScanVel = 0.04f;
+						Scan->ScanVel = 0.06f;
 						if(Scan->GetLeftFlag == 0 && Scan->GetRightFlag == 1)
 						{
 							Scan->YawAngle_Set = Scan->ScanAngle_Start - 20.0f;

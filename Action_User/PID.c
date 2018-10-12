@@ -700,10 +700,10 @@ void PID_Control(PID_Value *p)                                               //P
 //	}
 //	if(p->V_Set < 100 && p->V_Set > -100) p->kp = 5;
 	p->ITerm += p->ki * p->Error;
-	p->ITerm = constrain(p->ITerm,2000.0f,-2000.0f);
+	p->ITerm = constrain(p->ITerm,1000.0f,-1000.0f);
 	p->DTerm = p->Angle_Last - p->Angle;
 	p->vel = p->kp * p->Error + p->ki * p->ITerm + p->kd * p->DTerm;
-	p->vel = constrain(p->vel,2000.0f,-2000.0f);
+	p->vel = constrain(p->vel,800.0f,-800.0f);
 	p->Angle_Last = p->Angle;
 	p->Mode_Last = p->Mode;
 }
@@ -1002,7 +1002,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 12;
+				pid->kp = 10;
 				pid->kd = 100;
 				pid->direction = ACW;
 				pid->Mode = Line;
@@ -1067,9 +1067,9 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				if(timeCnt1 < 200)
 				{
 					pid->Angle += 180;
-					pid->kp = 3;
+					pid->kp = 5;
 					PID_Control(pid);
-					pid->V = -800;
+					pid->V = -1200;
 				}
 				else
 				{
@@ -1098,7 +1098,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 12;
+				pid->kp = 10;
 				pid->Line_Num = pid->Line_Num_Next;
 				pid->target_Num = pid->Line_Num % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
@@ -1132,9 +1132,9 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				if(timeCnt2 <200)
 				{
 					pid->Angle += 180;
-					pid->kp = 3;
+					pid->kp = 5;
 					PID_Control(pid);
-					pid->V = -800;
+					pid->V = -1200;
 				}
 				else
 				{
@@ -1171,7 +1171,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 12;
+				pid->kp = 10;
 				pid->kd = 100;
 				pid->direction = CW;
 				pid->Mode = Line;
@@ -1269,9 +1269,9 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				if(timeCnt3 < 200)
 				{
 					pid->Angle += 180;
-					pid->kp = 3;
+					pid->kp = 5;
 					PID_Control(pid);
-					pid->V = -800;
+					pid->V = -1200;
 				}
 				else
 				{
@@ -1304,7 +1304,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				pid->target_Num = pid->Line_Num % 4 - 1;
 				if(pid->target_Num == -1) pid->target_Num = 3;
 				PID_Pre(pid);
-				pid->kp = 12;
+				pid->kp = 10;
 				if(pid->l->line_Error < -800)
 				{
 					pid->fire_turn = 0;
@@ -1334,7 +1334,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				if(timeCnt4 < 200)
 				{
 					pid->Angle += 180;
-					pid->kp = 3;
+					pid->kp = 5;
 					PID_Control(pid);
 					pid->V = -1200;
 				}
@@ -1461,21 +1461,25 @@ void PriorityControl(PID_Value *PID,Err *err,int targetn[])
 	int i = 0;
 	int prioritySum = 0;
 	static int flag = 0;
+	static int flag2 = 0;
 	PID->timeCnt ++;
 	if(err->flag == 1) return;
-	for( i = 0 ; i < 29 ; i ++ )/*锁住内三圈优先级*/
+	if(flag2 == 0)
 	{
-		if(i < 12 || (i > 16 && i <29))
+		for( i = 0 ; i < 29 ; i ++ )/*锁住内三圈优先级*/
 		{
-			if(Line_N[i].line_Priority >= 3) Line_N[i].line_Priority = 1000;
-			prioritySum += Line_N[i].line_Priority;/*内三圈优先级求和*/
+			if(i < 12 || (i > 16 && i <29))
+			{
+				if(Line_N[i].line_Priority >= 3) Line_N[i].line_Priority = 1000;
+				prioritySum += Line_N[i].line_Priority;/*内三圈优先级求和*/
+			}
 		}
+		if(PID->Line_Num < 12 || (PID->Line_Num > 16 && PID->Line_Num <29)) Line_N[PID->Line_Num].line_Priority = 1000;
 	}
 	err->stop = 0;
-	if(PID->Line_Num < 12 || (PID->Line_Num > 16 && PID->Line_Num <29)) Line_N[PID->Line_Num].line_Priority = 1000;
-	if(prioritySum >= 15500 || PID->stop == 1)/*走完两圈*/
+	if(prioritySum >= 15500 || PID->stop == 1 || flag2 == 1)/*走完两圈*/
 	{
-
+		flag2 = 1;
 		if(PID->dogHungry == 0)/*有球*/
 		{
 			PID->stop = 1;/*去场中央投球*/
