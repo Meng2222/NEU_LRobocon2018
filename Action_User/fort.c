@@ -142,10 +142,6 @@ void GetValueFromFort(uint8_t data)
 			for(int i = 0; i < 4; i++)
 					fort.usartReceiveData.data8[i] = buffer[i + 2];
 				fort.laserBValueReceive = fort.usartReceiveData.dataFloat;
-			if(PID_x->V == 0)
-			{
-				Scan_Operation(&Scan, &Gundata, PID_x, target);
-			}
 		}
 		bufferInit();
 	}
@@ -418,7 +414,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 						
 			if(Scan->Scan_Mode == LOCAL)
 			{
-				if((Scan->Pro_Left_Dist - Scan->Pro_Right_Dist) > 1000.0f)
+				if((Scan->Pro_Left_Dist - Scan->Pro_Right_Dist) > 800.0f)
 				{
 					Scan->DistChange_L = 1;
 					if(((Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] - SCAN_POS_ERROR) < Scan->Pro_Right_X) && (Scan->Pro_Right_X < (Scan->Pos_Border_X[Scan->BucketNum * 2 + 1] + SCAN_POS_ERROR)))
@@ -435,7 +431,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 						}
 					}
 				}		
-				if((Scan->Pro_Right_Dist - Scan->Pro_Left_Dist) > 1000.0f)
+				if((Scan->Pro_Right_Dist - Scan->Pro_Left_Dist) > 800.0f)
 				{
 					Scan->DistChange_R = 1;
 					if(((Scan->Pos_Border_X[Scan->BucketNum * 2] - SCAN_POS_ERROR) < Scan->Pro_Left_X) && (Scan->Pro_Left_X < (Scan->Pos_Border_X[Scan->BucketNum * 2] + SCAN_POS_ERROR)))
@@ -478,7 +474,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 						Scan->L_Max_R_Angle_OK = 0;
 						
 						Scan->Scan_Mode = GLOBAL;
-						Scan->ScanVel = 0.04f;
+						Scan->ScanVel = 0.15f;
 						if(Scan->GetLeftFlag == 0 && Scan->GetRightFlag == 1)
 						{
 							Scan->YawAngle_Set = Scan->ScanAngle_Start - 20.0f;
@@ -500,7 +496,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 			
 			if(Scan->Scan_Mode == GLOBAL)
 			{
-				if((Scan->Pro_Left_Dist - Scan->Pro_Right_Dist) > 1000.0f && Scan->Pro_Right_Dist < 6000.0f)
+				if((Scan->Pro_Left_Dist - Scan->Pro_Right_Dist) > 800.0f && Scan->Pro_Right_Dist < 7000.0f)
 				{
 					Scan->DistChange_L = 1;					
 					Scan->Pro_Border_Left_X = Scan->Pro_Right_X;
@@ -512,7 +508,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 					Scan->Pro_Max_X = 0;
 					Scan->Pro_Max_Y = 0;
 				}		
-				if((Scan->Pro_Right_Dist - Scan->Pro_Left_Dist) > 1000.0f && Scan->Pro_Left_Dist < 6000.0f)
+				if((Scan->Pro_Right_Dist - Scan->Pro_Left_Dist) > 1800.0f && Scan->Pro_Left_Dist < 7000.0f)
 				{
 					Scan->DistChange_R = 1;						
 					Scan->Pro_Border_Right_X = Scan->Pro_Left_X;
@@ -610,7 +606,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 		Scan->ShooterVel_Set = 0.0122f * Scan->Pro_Bucket_Dist + 39.478f + Scan->ShooterVel_Offset;
 		if(Scan->Pro_Bucket_Dist > 3200.0f)
 		{
-			Scan->ShooterVel_Set = Scan->ShooterVel_Set + 2.5f;
+			Scan->ShooterVel_Set = Scan->ShooterVel_Set + 3.5f;
 		}
 			
 		//计算炮塔航向角目标值和设定值
@@ -623,7 +619,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 		{
 			if(Scan->Pro_Bucket_Dist > 3200.0f)
 			{
-				if(fabs(Scan->ShooterVel_Rec - Scan->ShooterVel_Set) < 2.0f)
+				if(fabs(Scan->ShooterVel_Rec - Scan->ShooterVel_Set) < 3.0f)
 				{		
 					Scan->FirePermitFlag = 1;
 					Scan->SetFireFlag = 0;

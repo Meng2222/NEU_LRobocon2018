@@ -152,7 +152,7 @@ void ConfigTask(void)
 		Scan.YawAngle_Zero_Offset = 0.0f;
 		Scan.YawAngle_Offset = -2.6f;
 		Scan.ShooterVel_Offset = -1.2f;
-		Scan.ScanVel = 0.06f;
+		Scan.ScanVel = 0.2f;
 		Scan.Pro_Max_Dist = 0.0f;
 		
 		//设定各挡板边缘坐标值
@@ -272,12 +272,33 @@ void WalkTask(void)
 			GunneryData_Operation(&Gundata, PID_x);			//计算射击诸元
 			YawPosCtrl(Gundata.YawAngle_SetAct);			//设置航向角
 			ShooterVelCtrl(Gundata.ShooterVel_SetAct);		//设置射球转速
+			
+			Scan.DelayFlag = 0;
+			Scan.CntDelayTime = 0;
+				
+			Scan.ScanPermitFlag = 0;
+			Scan.FirePermitFlag = 0;					
+			Scan.ScanStatus = 0;
+			Scan.SetTimeFlag = 1;
+			Scan.SetFireFlag = 1;
+			
+			Scan.DistChange_L = 0;
+			Scan.DistChange_R = 0;
+			Scan.GetLeftFlag = 0;
+			Scan.GetRightFlag = 0;
+			Scan.PosOK_L = 0;
+			Scan.PosOK_R = 0;
+			
+			Scan.DepthOK = 0;					
+			Scan.Max_Dist_OK = 0;
+			Scan.L_Max_R_Angle_OK = 0;
+			
+			Scan.Pro_Max_Dist = 0;	
 		}
 		else if(PID_x->V == 0)
 		{
 			Gundata.MovingShootFlag = 0;
 			Scan.ScanShootFlag = 1;
-
 			//扫描时间计时，6s时强制将ScanStatus置为0
 			if(Scan.DelayFlag)
 			{
@@ -307,6 +328,7 @@ void WalkTask(void)
 					Scan.Pro_Max_Dist = 0;
 				}
 			}
+			Scan_Operation(&Scan, &Gundata, PID_x, target);
 			YawPosCtrl(Scan.YawAngle_Set);
 			ShooterVelCtrl(Scan.ShooterVel_Set);
 			
@@ -318,8 +340,29 @@ void WalkTask(void)
 		}
 		else
 		{
-			ShooterVelCtrl(60);
+			ShooterVelCtrl(80);
 			PID_A.fire_command = 0;
+			Scan.DelayFlag = 0;
+			Scan.CntDelayTime = 0;
+				
+			Scan.ScanPermitFlag = 0;
+			Scan.FirePermitFlag = 0;					
+			Scan.ScanStatus = 0;
+			Scan.SetTimeFlag = 1;
+			Scan.SetFireFlag = 1;
+			
+			Scan.DistChange_L = 0;
+			Scan.DistChange_R = 0;
+			Scan.GetLeftFlag = 0;
+			Scan.GetRightFlag = 0;
+			Scan.PosOK_L = 0;
+			Scan.PosOK_R = 0;
+			
+			Scan.DepthOK = 0;					
+			Scan.Max_Dist_OK = 0;
+			Scan.L_Max_R_Angle_OK = 0;
+			
+			Scan.Pro_Max_Dist = 0;	
 		}
 
 		if(fortDebug == 1)
