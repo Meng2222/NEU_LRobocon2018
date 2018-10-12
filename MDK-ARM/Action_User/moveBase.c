@@ -88,7 +88,7 @@ extern int scanCnt[10];
 int findMostGroup()
 {
 	int a=0;
-	for(int i=0;i<=9;i++)
+	for(int i=0;i<=19;i++)
 	{
 		if(scanCnt[a]<scanCnt[i])
 			a=i;
@@ -297,15 +297,15 @@ int FirstshootJudge(void)
 	}	
 	return StdId;
 }	
-int RchangeTime=250; 
+int RchangeTime=200; 
 void Rchange(int Rchange)
 {
 	if(--RchangeTime>=0)
-		R+=Rchange/250;
+		R+=Rchange/200;
 	else
 	{
 		RchangeFlag=0;
-		RchangeTime=250;
+		RchangeTime=200;
 	}
 }
 void IncreaseR(int Radium)
@@ -317,7 +317,7 @@ void IncreaseR(int Radium)
 		if(R>=Radium)
 		{
 			RchangeFlag=0;
-			RchangeTime=250;
+			RchangeTime=200;
 		}	
 	}	
 	else
@@ -327,11 +327,11 @@ void IncreaseR(int Radium)
 		if(R>=Radium)
 		{
 			RchangeFlag=0;
-			RchangeTime=250;
+			RchangeTime=3200;
 		}	
 	}		
 	if(RchangeFlag)
-		Rchange(500);	
+		Rchange(600);	
 }	
 void DecreaseR(int Radium)
 {	
@@ -342,7 +342,7 @@ void DecreaseR(int Radium)
 		if(R<=Radium)
 		{
 			RchangeFlag=0;
-			RchangeTime=250;
+			RchangeTime=200;
 		}			
 	}	
 	else
@@ -352,18 +352,18 @@ void DecreaseR(int Radium)
 		if(R<=Radium)
 		{
 			RchangeFlag=0;
-			RchangeTime=250;
+			RchangeTime=200;
 		}	
 	}		
 	if(RchangeFlag)
-		Rchange(-500);	
+		Rchange(-600);	
 }	
-extern int errFlag,count,shootCnt,shakeShootCnt,ballColor,rDecreaseFlag,circleCnt,semiPushCount,pushBallFlag;
+extern int errFlag,count,shootCnt,shakeShootCnt,ballColor,rDecreaseFlag,circleCnt,semiPushCount,pushBallFlag,borderSweepFlag;
 extern float angle,speed,speedY,speedX,T0,T1,rps,realR,v;
 int errSituation1,errSituation2,shakeShootOff=200,shutOffCnt=0;
 void Avoidance()
 {
-		static int errSituation3,statusFlag,lastTime=0,time=0,backwardCount;
+		static int errSituation3,statusFlag,lastTime=0,time=0,backwardCount,checkTime=150,correctTime;
 		static float changeAngle,speedAngle;
 		if(errFlag==1)
 		{	
@@ -380,11 +380,11 @@ void Avoidance()
 					case 2: 
 						R=1600;
 						break;
-					case 3:
-						R=1800;
-					break;
 				}	
-				Straight(-1100);
+				if(borderSweepFlag)
+					Straight(-300);
+				else
+					Straight(-1100);
 				if(errTime%2==0&&statusFlag)
 				{
 					status=1-status;
@@ -396,7 +396,7 @@ void Avoidance()
 				AnglePID(changeAngle,GetAngle());
 				Straight(1200);
 			}	
-			if(backwardCount>=100)	
+			if(backwardCount>=correctTime)	
 			{
 				errFlag=0;
 				backwardCount=0;
@@ -418,32 +418,44 @@ void Avoidance()
 			else				
 			{
 				//情况2：被对方侧面推着跑，此时有一定速度，车身角度与速度角度不一致
-				if(fabs(speedAngle-GetAngle())>40&&speed>500)
+				if(fabs(speedAngle-GetAngle())>40&&speed>500&&errSituation1==0)
 				{
 					errSituation2=1;
 					errSituation1=0;
-					changeAngle=speedAngle;
+					correctTime=50;
 				}	
 				//情况1：与对方正面相撞
 				else if(speed<1000)
 				{	
 					errSituation1=1;
 					errSituation2=0;
-					GetFunction(x,y,0,2400);
-					if(R<=1100)
-						changeAngle=lAngle;
-					else
-						changeAngle=lAngle+180;
+					correctTime=100;
 				}
-				if(FindBallModel)
+				if(borderSweepFlag)
 				{
 					errSituation1=1;
 					errSituation2=0;
-//					rDecreaseFlag=1;
+					correctTime=80;
 				}	
 			}				
-			if(time-lastTime>=150)
+			if(time-lastTime>=checkTime)
 			{	
+				if(borderSweepFlag)
+				{
+					if(status==0)
+						changeAngle=GetAngle()-90;
+					else
+						changeAngle=GetAngle()+90;
+				}	
+				if(errSituation1)
+					changeAngle=-speedAngle;
+				if(errSituation2)
+				{
+					if(status==0)
+						changeAngle=GetAngle()+90;
+					else
+						changeAngle=GetAngle()-90;
+				}	
 				errFlag=1;
 				statusFlag=1;
 				errTime++;
