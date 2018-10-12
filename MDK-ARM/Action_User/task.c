@@ -96,7 +96,7 @@ void WalkTask(void)
 {
 	static int PE1=0,cycleCnt=0,staticShootFlag_1=0,staticShootFlag_2=0,staticShootFlag_3=0,E=1,push_Ball_Count=0,noPushCnt=0,noPushFlag=1,notFoundcnt=0,stuckTime=0;
 	static int foundRange=15,collectBallSpeed1=0,collectBallSpeed2=0,lastCollectBallSpeed1=0,lastCollectBallSpeed2=0,pushBallMotorPos=0;
-	static float D1=0,D2=0,distance,lastDistanceA=0,lastDistanceB=0,realAngle=0,realDistance=0,deflectAngle=0;
+	static float D1=0,D2=0,distance,lastDistanceA=0,lastDistanceB=0,realAngle=0,realDistance=0,deflectAngle=0,errDistance=0;
 	static int LastStdId=0,squareNode=0,noBallPushCnt=0,findBallCnt=0;
 	static int waitCnt=0,goalCnt=0,scanFlag_1=0,scanFlag_2=0,myCnt=0,notCnt=0,goalFlag=0,mostGroup=0,OnlyFlag=1,scanErrCnt=0,scanErrFlag=0,scanFlag_Ok=0;
 	static float staticShootAngle_1=0,timeAngle=16,DistanceA=0,DistanceB=0,lightAngle=0,staticShootAngle_2=0;
@@ -213,7 +213,7 @@ void WalkTask(void)
 					LastStdId=StdId;
 					YawPosCtrl (lightAngle-timeAngle);
 					if(timeAngle > -foundRange && fabs(ReadyawPos()-(lightAngle-timeAngle)) < 20)
-						timeAngle -= 0.32;
+						timeAngle -= 0.22;
 					if(timeAngle <= -foundRange)
 					{
 						scanFlag_Ok=1;
@@ -256,9 +256,14 @@ void WalkTask(void)
 //						else
 //							angleBack=1.6;
 						if(rps>88)
-							realAngle = (scanAngle[mostGroup][t2]+scanAngle[mostGroup][0])/2+1.6;
+							realAngle = (scanAngle[mostGroup][t2-1]+scanAngle[mostGroup][1])/2+2;
 						else
-							realAngle = (scanAngle[mostGroup][t2]+scanAngle[mostGroup][0])/2+1.6+0.6;
+							realAngle = (scanAngle[mostGroup][t2-1]+scanAngle[mostGroup][1])/2+2;
+//						if(scanAngle[mostGroup][t1] > realAngle)
+//						{
+//							realAngle=scanAngle[mostGroup][t1];
+//						}
+						USART_OUT(UART4,(uint8_t *)"laserModel\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",StdId,(int)DistanceA,(int)DistanceB,(int)(scanAngle[mostGroup][t2]*100),(int)(scanAngle[mostGroup][0]*100),(int)(realAngle*100),(int)scanAngle[mostGroup][t2]*100,(int)realDistance);
 						realDistance = scanDistance[mostGroup][t1];
 						if(realDistance != 0)
 						{
@@ -270,7 +275,17 @@ void WalkTask(void)
 						{
 							scanFlag_Ok = 0;
 							if(foundRange<25)
-								foundRange+=5;			
+								foundRange+=5;
+							if(foundRange>=25)
+								errDistance+=500;
+							if(errDistance==1500)
+							{
+//								errFlg=1;
+//								if(errFlg==1)
+								bingoFlag[StdId][0] += 5;
+								errDistance=0;
+								StdId=FirstshootJudge();
+							}
 							timeAngle=foundRange;
 						}
 //						USART_OUT(UART4,(uint8_t *)"Angle=%d\tGroupCnt=%d\tCnt=%d\r\n",(int)realAngle,(int)mostGroup,(int)t);
@@ -327,7 +342,7 @@ void WalkTask(void)
 							foundRange=15;
 							push_Ball_Count++;
 //							rps = -0.00000154*(DistanceA+DistanceB)*(DistanceA+DistanceB)/4+0.02197*(DistanceA+DistanceB)/2+22.97;
-							rps=-0.000001104*(DistanceA+DistanceB)*(DistanceA+DistanceB)/4+0.01965*(DistanceA+DistanceB)/2+26.71;
+							rps=-0.000001104*realDistance*realDistance+0.01965*realDistance+26.71-0.3;
 							if(rps > 100)
 								rps = 100;
 							ShooterVelCtrl (rps);
