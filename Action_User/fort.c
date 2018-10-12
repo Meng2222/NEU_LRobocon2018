@@ -393,7 +393,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 			{
 				Scan->GetBucketFlag = 0;
 				Scan->ScanPermitFlag = 0;
-				Scan->YawAngle_Set = Scan->YawAngle_Set + 50.0f;
+				Scan->YawAngle_Set = Scan->YawAngle_Set + 55.0f;
 			}
 			Scan->ScanStatus = 1;
 			Scan->ShooterVel_Set = 80.0f;
@@ -478,7 +478,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 						Scan->L_Max_R_Angle_OK = 0;
 						
 						Scan->Scan_Mode = GLOBAL;
-						Scan->ScanVel = 0.06f;
+						Scan->ScanVel = 0.04f;
 						if(Scan->GetLeftFlag == 0 && Scan->GetRightFlag == 1)
 						{
 							Scan->YawAngle_Set = Scan->ScanAngle_Start - 20.0f;
@@ -560,7 +560,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 					
 					Scan->Max_Left_Dist = Dist_Operation(Scan->Pro_Max_X, Scan->Pro_Max_Y, Scan->Pro_Border_Left_X, Scan->Pro_Border_Left_Y);
 					Scan->Max_Right_Dist = Dist_Operation(Scan->Pro_Max_X, Scan->Pro_Max_Y, Scan->Pro_Border_Right_X, Scan->Pro_Border_Right_Y);					
-					if(100 < Scan->Max_Left_Dist && Scan->Max_Left_Dist < 500 && 100 < Scan->Max_Right_Dist && Scan->Max_Right_Dist < 500)
+					if(50 < Scan->Max_Left_Dist && Scan->Max_Left_Dist < 500 && 50 < Scan->Max_Right_Dist && Scan->Max_Right_Dist < 500)
 					{
 						Scan->Max_Dist_OK = 1;
 					}
@@ -568,7 +568,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 					Scan->Max_Left_Angle  = Tar_Angle_Operation((Scan->Pro_Border_Left_X  - Scan->Pro_Max_X), (Scan->Pro_Border_Left_Y  - Scan->Pro_Max_Y));
 					Scan->Max_Right_Angle = Tar_Angle_Operation((Scan->Pro_Border_Right_X - Scan->Pro_Max_X), (Scan->Pro_Border_Right_Y - Scan->Pro_Max_Y));				
 					Scan->Left_Max_Right_Angle = Constrain_float_Angle(Scan->Max_Left_Angle - Scan->Max_Right_Angle);
-					if(-110 < Scan->Left_Max_Right_Angle && Scan->Left_Max_Right_Angle < -70)
+					if(-120 < Scan->Left_Max_Right_Angle && Scan->Left_Max_Right_Angle < -60)
 					{
 						Scan->L_Max_R_Angle_OK = 1;
 					}
