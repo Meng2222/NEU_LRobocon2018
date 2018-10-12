@@ -797,7 +797,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 	{
 		posGap = GetMotor7Pos() - pos;
 		timeCnt++;
-		if(posGap > (0.f-700.f) && posGap < 100)
+		if(posGap > (0.f-700.f) && posGap < 300)
 		{
 			if(flag == 1) return;
 			timeDelay ++;
