@@ -18,7 +18,7 @@
 #define LASER_RIGHT (1)											//右侧激光编号					1
 #define CLOCKWISE (1)											//顺时针						1
 #define ANTI_CLOCKWISE (0)										//逆时针						0
-#define SCAN_POS_ERROR (600.0f)
+#define SCAN_POS_ERROR (800.0f)
 #define SCAN_DIST_ERROR (100.0f)
 #define SCAN_ANGLE_ERROR (20.0f)
 #define BORDER_LENGTH (454.0f)
@@ -117,6 +117,7 @@ typedef struct{
 	int DelayFlag;		
 	int CntDelayTime;					//延时计数
 	int CntFireTimes;
+	int CntWrong;
 	
 	int FirePermitFlag;					//允许射球标志位
 	int ScanPermitFlag;					//允许开始扫描标志位

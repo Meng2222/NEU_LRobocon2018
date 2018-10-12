@@ -93,7 +93,7 @@ void ConfigTask(void)
 	if(GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_4) == 0)
 	{
 		YawPosCtrl(90);
-		ShooterVelCtrl(60);
+		ShooterVelCtrl(80);
 		TIM_Delayms(TIM4,2000);										//延时2s，给定位系统准备时间
 		WaitOpsPrepare();											//等待定位系统准备完成
 		PID_Init(PID_x);											//PID参数初始化
@@ -136,6 +136,7 @@ void ConfigTask(void)
 		Scan.Scan_Mode = LOCAL;
 		Scan.DelayFlag = 0;
 		Scan.CntDelayTime = 0;
+		Scan.CntWrong = 0;
 	
 		Scan.FirePermitFlag = 0;
 		Scan.ScanPermitFlag = 0;
@@ -281,7 +282,7 @@ void WalkTask(void)
 			if(Scan.DelayFlag)
 			{
 				Scan.CntDelayTime++;
-				if(Scan.CntDelayTime > 600)
+				if(Scan.CntDelayTime > 700)
 				{
 					Scan.DelayFlag = 0;
 					Scan.CntDelayTime = 0;
@@ -291,7 +292,6 @@ void WalkTask(void)
 					Scan.ScanStatus = 0;
 					Scan.SetTimeFlag = 1;
 					Scan.SetFireFlag = 1;
-					Scan.ScanVel = 0.06f;
 					
 					Scan.DistChange_L = 0;
 					Scan.DistChange_R = 0;
@@ -310,11 +310,11 @@ void WalkTask(void)
 			YawPosCtrl(Scan.YawAngle_Set);
 			ShooterVelCtrl(Scan.ShooterVel_Set);
 			
-			if(Scan.GetBucketFlag == 1)
-			{
-				Scan.GetBucketFlag = 0;
-				Calibration_Operation(&Cal, &Scan, &Gundata, PID_x);
-			}
+//			if(Scan.GetBucketFlag == 1)
+//			{
+//				Scan.GetBucketFlag = 0;
+//				Calibration_Operation(&Cal, &Scan, &Gundata, PID_x);
+//			}
 		}
 		else
 		{
@@ -329,11 +329,12 @@ void WalkTask(void)
 			if(cntSendTime == 0)
 			{
 				//比赛收数
-				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	SpeX=%d	SpeY=%d	WZ=%d	LaserA=%d	LaserB=%d	food=%d	hungry=%d	stop=%d	FireCmd=%d	FireReq=%d	ScanSta=%d	BucNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	Tar0=%d	Tar1=%d	Tar2=%d	Tar3=%d\r\n",\
+				USART_OUT(UART4, (uint8_t*)"X=%d	Y=%d	Ang=%d	SpeX=%d	SpeY=%d	WZ=%d	LaserA=%d	LaserB=%d	food=%d	hungry=%d	stop=%d	FireCmd=%d	FireReq=%d	ScanSta=%d	BucNum=%d	ScanPer=%d	SetTime=%d	SetFire=%d	DisCL=%d	DisCR=%d	PosL=%d	PosR=%d	GetLeft=%d	GetRight=%d	StartAng=%d	EndAng=%d	YawSet=%d	delay=%d	cntdelay=%d	Tar0=%d	Tar1=%d	Tar2=%d	Tar3=%d\r\n",\
 				(int)PID_A.X,			(int)PID_A.Y,				(int)PID_A.Angle,			(int)PID_A.X_Speed,			(int)PID_A.Y_Speed,			(int)GetWZ(),
 				(int)fort.laserAValueReceive,						(int)fort.laserBValueReceive,\
 				(int)PID_A.food,		(int)PID_A.dogHungry,		(int)PID_A.stop,			(int)PID_A.fire_command,	(int)PID_A.fire_request,\
 				(int)Scan.ScanStatus,	(int)Scan.BucketNum,		(int)Scan.ScanPermitFlag, 	(int)Scan.SetTimeFlag,		(int)Scan.SetFireFlag,\
+				(int)Scan.DistChange_L,	(int)Scan.DistChange_R,		(int)Scan.PosOK_L,			(int)Scan.PosOK_R,\
 				(int)Scan.GetLeftFlag,	(int)Scan.GetRightFlag,		(int)Scan.ScanAngle_Start,	(int)Scan.ScanAngle_End,	(int)Scan.YawAngle_Set,\
 				(int)Scan.DelayFlag,	(int)Scan.CntDelayTime,\
 				(int)target[0],			(int)target[1],				(int)target[2], 			(int)target[3]);
@@ -365,11 +366,17 @@ void WalkTask(void)
 			if(fabs(Gundata.YawAngle_Rec - Gundata.YawAngle_Set) < 3.0f && fabs(Gundata.ShooterVel_Rec - Gundata.ShooterVel_Set) < 4.0f &&\
 				    Gundata.ShooterVel_Set < 85.0f && target[PID_x->target_Num] < 2 && GetWZ() < 100.0f)PID_A.fire_command = 0;
 			else PID_A.fire_command = 0;
+			Scan.FirePermitFlag = 0;
 		}
 		else if(PID_x->V == 0)
 		{
 			if(CmdRecData.FireFlag_cmd == 1 && Scan.FirePermitFlag == 1) PID_A.fire_command = 1;
 			else PID_A.fire_command = 0;
+		} 
+		else
+		{
+			PID_A.fire_command = 0;
+			Scan.FirePermitFlag = 0;		
 		}
 		if(pidDebug) UART4_OUT(PID_x,Error_x);
 		shoot(PID_x,target,shootDebug);

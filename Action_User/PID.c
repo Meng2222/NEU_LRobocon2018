@@ -780,11 +780,10 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 		if(Scan.SetTimeFlag == 1)
 		{
 			Scan.SetTimeFlag = 0;
-			Scan.CntDelayTime = 550;	
+			Scan.CntDelayTime = 650;	
 		}
 		
-		if(Gundata.MovingShootFlag && !Scan.ScanShootFlag)	{targets[p_gun->target_Num] += 1;}
-		else	{targets[p_gun->target_Num] += 2;}
+		targets[p_gun->target_Num] += 1;
 		
 		Scan.CntFireTimes++;
 		if(Scan.CntFireTimes > 3)
@@ -1119,7 +1118,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 30)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle + 0.2f;
+						float angle = pid->Angle + 1.0f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1321,7 +1320,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					if(ABS(pid->Error) < 30)
 					{
 						pid->corner = 0;
-						float angle = pid->Angle - 0.2f;
+						float angle = pid->Angle - 1.0f;
 						CorrectAngle(angle);
 					}
 					return;
@@ -1376,6 +1375,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			pid->V = 0;
 			error->stop = 1;
 			error->timeCnt = 0;
+			pid->target_Num = Scan.BucketNum;
 		}
 		else
 		{
