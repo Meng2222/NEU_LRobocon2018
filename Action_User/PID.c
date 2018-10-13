@@ -767,7 +767,7 @@ void shoot(PID_Value *p_gun, int targets[], int Debug)                          
 	static int pos = 0, posLast = 0, posGap = 0, timeCnt = 0, timeDelay = 0, whiteCnt = 0, blackCnt = 0, noneCnt = 0, flag = 0;
 	if (p_gun->fire_request)
 	{
-		p_gun->food = 1300;
+		p_gun->food = 800;
 		if(!p_gun->fire_command) return;
 		posLast = pos;
 		pos += p_gun->push_pos_up;
@@ -1036,7 +1036,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 					pid->Line_Num = pid->Line_Num_Last;
 //					if(pid->Error < 3)
 //					{
-						pid->V += 15;
+						pid->V += 12;
 //					}
 					pid->V = constrain(pid->V,1800,1200);
 				}
@@ -1064,7 +1064,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt1 = 0;
 				timeCnt1++;
-				if(timeCnt1 < 200)
+				if(timeCnt1 < 170)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1129,7 +1129,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt2 = 0;
 				timeCnt2++;
-				if(timeCnt2 <200)
+				if(timeCnt2 <170)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1224,7 +1224,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				{
 					pid->fire_turn = 0;
 					pid->Line_Num = pid->Line_Num_Last;
-					if(pid->Error < 3) pid->V += 15;
+					pid->V += 12;
 					pid->V = constrain(pid->V,1800,1200);
 				}
 				else if(pid->l->line_Error>=-1300)
@@ -1266,7 +1266,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt3 = 0;
 				timeCnt3++;
-				if(timeCnt3 < 200)
+				if(timeCnt3 < 170)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1331,7 +1331,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 			{
 				static int timeCnt4 = 0;
 				timeCnt4++;
-				if(timeCnt4 < 200)
+				if(timeCnt4 < 170)
 				{
 					pid->Angle += 180;
 					pid->kp = 5;
@@ -1428,7 +1428,7 @@ void ErrorDisposal(PID_Value *pid,Err *error)                                //´
 		error->Err_Y = pid->Y;
 	}
 	error->timeCnt++;
-	if(error->timeCnt > 200)
+	if(error->timeCnt > 170)
 	{
 		error->timeCnt = 0;
 		error->distance = sqrt((error->Err_X - pid->X)*(error->Err_X - pid->X)+(error->Err_Y - pid->Y)*(error->Err_Y - pid->Y));
