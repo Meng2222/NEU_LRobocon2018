@@ -662,7 +662,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 		Scan->Pro_Bucket_Dist = sqrt(Scan->Pro_Bucket_Dist_X * Scan->Pro_Bucket_Dist_X + Scan->Pro_Bucket_Dist_Y * Scan->Pro_Bucket_Dist_Y) - 76.37f;			
 		if(Scan->Pro_Bucket_Dist < 2900.0f)
 		{
-			Scan->ShooterVel_Set = 0.0136f * Scan->Pro_Bucket_Dist + 36.689f + Scan->ShooterVel_Offset - 1.2f;
+			Scan->ShooterVel_Set = 0.0136f * Scan->Pro_Bucket_Dist + 36.689f + Scan->ShooterVel_Offset - 1.0f;
 		}
 		else if(Scan->Pro_Bucket_Dist < 3800.0f)
 		{
@@ -670,7 +670,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 		}
 		else
 		{
-			Scan->ShooterVel_Set = 0.0118f * Scan->Pro_Bucket_Dist + 39.697f + Scan->ShooterVel_Offset + 0.7f;
+			Scan->ShooterVel_Set = 0.0118f * Scan->Pro_Bucket_Dist + 39.697f + Scan->ShooterVel_Offset + 0.3f;
 		}
 			
 		//计算炮塔航向角目标值和设定值
