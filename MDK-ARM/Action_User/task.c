@@ -122,31 +122,35 @@ void WalkTask(void)
 	if(dRight<=300)
 	{
 		status=0;
+		//逆中
 		if(PE0==1)
 		{
-			T0=0.093;
+			T0=0.078;
 			T1=0.056;
 			circleCnt+=1;
 		}	
+		//逆内
 		else
 		{
-			T0=0.086;
-			T1=0.046;
+			T0=0.078;
+			T1=0.048;
 		}	
 		PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--semiPushCount)*PUSH_POSITION/2+count*PUSH_POSITION);
 	}	
 	else if(dLeft<=300)
 	{
 		status=1;
+		//顺中
 		if(PE0==1)
 		{	T0=0.086;
 			T1=0.056;
 			circleCnt+=1;
 		}	
+		//顺内
 		else
 		{
 			T0=0.086;
-			T1=0.053;
+			T1=0.043;
 		}	
 	}
 	else if(dRight>300&&dRight<800)
@@ -154,7 +158,7 @@ void WalkTask(void)
 		status=0;
 		quickLaserModel=1;
 	}	
-	else
+	else if(dLeft>300&&dLeft<800)
 	{
 		status=1;
 		quickLaserModel=1;
@@ -345,6 +349,8 @@ void WalkTask(void)
 							push_Ball_Count++;
 //							rps = -0.00000154*(DistanceA+DistanceB)*(DistanceA+DistanceB)/4+0.02197*(DistanceA+DistanceB)/2+22.97;
 							rps=-0.000001104*(DistanceA+DistanceB)*(DistanceA+DistanceB)/4+0.01964*(DistanceA+DistanceB)/2+26.71+((DistanceA+DistanceB)/2-3700)/1300;
+							if(2200<DistanceA/2+DistanceB/2&&DistanceA/2+DistanceB/2<3800)
+								rps+=(DistanceA/2+DistanceB/2-3700)*0.0035;
 							if(rps > 100)
 								rps = 100;
 							ShooterVelCtrl (rps);
@@ -509,8 +515,8 @@ void WalkTask(void)
 						T0+=0.007;
 					}	
 					else
-					{	T1-=0.007;
-						T0+=0.007;
+					{	T1-=0.0065;
+						T0+=0.0065;
 					}	
 				}	
 			}	
@@ -624,7 +630,7 @@ void WalkTask(void)
 		V=-Vx+Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*Vx*Vx)-sqrt(3)*Vx);
 		shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		YawPosCtrl(shootAngle);
-		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3100)*0.0052;
+		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3200)*0.0051;
 		if(status==0&&PE0==0)
 			rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3000)*0.0043;
 		if(firstShoot>0&&PE0==1&&circleCnt<3)
@@ -675,9 +681,12 @@ void WalkTask(void)
 			errTime=0;
 			laserModel=1;
 			noBallPushCnt=0;
+			throwFlag=0;
 		}	
 		if(noBallPushCnt>3)
-			FindBallModel=1;
+		{	FindBallModel=1;
+			throwFlag=0;
+		}	
 //		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetX(),(int)GetY(),(int)GetAngle(),(int)GetWZ(),ballColor,pushBallFlag,pushBallMotorPos,count,semiPushCount,errSituation1,errSituation2);//(int)(frontwheelspeedBuffer.data32[1]/(CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO)*(pi*TURN_AROUND_WHEEL_DIAMETER)));
 		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetX(),(int)GetY(),(int)GetAngle(),(int)GetWZ(),semiPushCount,count,R,squareNode,ballColor,pushBallFlag,circleCnt,pushBallMotorPos);
 		}

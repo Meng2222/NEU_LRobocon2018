@@ -109,7 +109,7 @@ float ReadLaserBValue1(void);
 //电机与轮子减速比
 #define WHEEL_REDUCTION_RATIO										  (1.004f)
 //己方的球(1是白球,2是黑球)
-#define MY_BALL_COLOR													(1)
+#define MY_BALL_COLOR													(2)
 #define SWAP(x,y)\
 x=x+y;\
 y=x-y;\
