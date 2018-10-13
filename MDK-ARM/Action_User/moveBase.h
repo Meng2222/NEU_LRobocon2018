@@ -87,6 +87,8 @@ void ShakeShoot(void);
 void BorderSweeping(void);
 float getLingtAngle(float xi,float yi,int tragetCnt);
 int findMostGroup();
+float ReadLaserAValue1(void);
+float ReadLaserBValue1(void);
 #define pi 3.141592f
 //后轮电机的CAN ID号
 #define BACK_WHEEL_ID             1
@@ -107,7 +109,7 @@ int findMostGroup();
 //电机与轮子减速比
 #define WHEEL_REDUCTION_RATIO										  (1.004f)
 //己方的球(1是白球,2是黑球)
-#define MY_BALL_COLOR													(2)
+#define MY_BALL_COLOR													(1)
 #define SWAP(x,y)\
 x=x+y;\
 y=x-y;\

@@ -89,6 +89,8 @@ void bufferInit()
 * @attention 该函数请插入到对应的串口中断中
 							注意清除标志位
 */
+float averageA=0,averageB=0;
+int CountA=0,CountB=0;
 void GetValueFromFort(uint8_t data)
 {
 	buffer[bufferI] = data;
@@ -116,21 +118,40 @@ void GetValueFromFort(uint8_t data)
 			for(int i = 0; i < 4; i++)
 					fort.usartReceiveData.data8[i] = buffer[i + 2];
 				fort.laserAValueReceive = fort.usartReceiveData.dataFloat;
+			averageA+=fort.laserAValueReceive;
+			CountA++;
 		}
 		else if(bufferI > 2 && strncmp(buffer,"LB",2) == 0)//接收B激光的ADC值
 		{
 			for(int i = 0; i < 4; i++)
 					fort.usartReceiveData.data8[i] = buffer[i + 2];
 				fort.laserBValueReceive = fort.usartReceiveData.dataFloat;
+			averageB+=fort.laserBValueReceive;
+			CountB++;
 		}
 		bufferInit();
 	}
 }
+float a=0;
 float ReadLaserAValue(void)
+{
+	a=(averageA/CountA);
+	CountA=0;
+	averageA=0;
+	return a;
+}	
+float ReadLaserBValue(void)
+{
+	a=(averageB/CountB);
+	CountB=0;
+	averageB=0;
+	return a;
+}	
+float ReadLaserAValue1(void)
 {
 	return fort.laserAValueReceive;
 }	
-float ReadLaserBValue(void)
+float ReadLaserBValue1(void)
 {
 	return fort.laserBValueReceive;
 }	

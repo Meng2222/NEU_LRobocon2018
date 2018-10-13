@@ -206,11 +206,6 @@ extern float Distance,shootX,shootY,angle,antiRad,location[4][2],speed;
 extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,shakeShootFlag,banFirstShoot,FindBallModel,StdId;
 void GetYawangle(uint8_t StdId)
 {
-	if(shakeShootFlag||FindBallModel)
-	{	antiRad=0;
-		shootX=x;
-		shootY=y;
-	}	
 	if(status==0)
 	{	
 		GetFunction(shootX,shootY,location[StdId][0],location[StdId][1]);
@@ -495,7 +490,6 @@ void ShakeShoot(void)
 		shakeShootOff--;
 	if(shakeShootOff==0||(ballColor!=MY_BALL_COLOR&&shakeShootCnt==0))
 	{
-		banFirstShoot=200;
 		errFlag=0;
 		shakeShootCnt=0;
 		shakeShootFlag=0;
@@ -508,6 +502,9 @@ void ShakeShoot(void)
 }	
 void BorderSweeping(void)
 {
+	shootX=x;
+	shootY=y;
+	antiRad=0;
 	if(status==0)
 	{
 		if(x>1100&&y<3500)
@@ -518,7 +515,7 @@ void BorderSweeping(void)
 		{	linePID(2200,4500,0,4500,v);
 			StdId=2;
 		}	
-		if(x<-1100&&y>3500)
+		if(x<-1100&&y>1300)
 		{	linePID(-2100,100,-2100,0,v);
 			StdId=3;
 		}	
@@ -545,13 +542,13 @@ void BorderSweeping(void)
 		{	linePID(-2200,4500,0,4500,v);
 			StdId=1;
 		}	
-		if((x>1000&&x<-1000)||(y>3400&&y<1400))
-			throwFlag=1;
-		GetShootSituation(StdId);
-		YawPosCtrl(yawAngle);
-		rps=((Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*speed*speed)-sqrt(3)*speed)-speed)-166.59)/39.574+(Distance-3500)*0.0045;
-		ShooterVelCtrl(rps);
-	}	
+	}
+	if(((x<1000&&x>-1000)||(y<3400&&y>1400))&&StdId==FirstshootJudge())
+		throwFlag=1;
+	GetShootSituation(StdId);
+	YawPosCtrl(yawAngle);
+	rps=((Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*speed*speed)-sqrt(3)*speed)-speed)-166.59)/39.574+(Distance-4200)*0.0035;
+	ShooterVelCtrl(rps);		
 }	
 /*激光模式*/
 float getLingtAngle(float xi,float yi,int tragetCnt)
