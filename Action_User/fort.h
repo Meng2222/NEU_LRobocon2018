@@ -114,7 +114,8 @@ typedef struct{
 	int Bubble_Mode;
 	int Scan_Mode;
 	
-	int DelayFlag;		
+	int DelayFlag;
+	int CntTime;
 	int CntDelayTime;					//延时计数
 	int CntFireTimes;
 	int CntWrong;
@@ -210,8 +211,11 @@ typedef struct{
 	float Pro_Bucket_Dist_Y;	
 
 	float ShooterVel_Rec;				//射球电机转速实际值					单位rad/s
+	float ShooterVel_RecAvg;
+	float ShooterVel_RecSum;
 	float ShooterVel_Set;				//射球电机转速设定值					单位rad/s
 	float ShooterVel_Offset;			//射球电机转速补偿值					单位rad/s
+	
 	
 	float YawAngle_Rec;					//炮塔航向角实际值						单位°
 	float YawAngle_Tar;					//炮塔航向角目标值						单位°	
