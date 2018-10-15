@@ -670,7 +670,7 @@ void Scan_Operation(ScanData *Scan, GunneryData *Gun, PID_Value *Pos, int cntSho
 		}
 		else
 		{
-			Scan->ShooterVel_Set = 0.0118f * Scan->Pro_Bucket_Dist + 39.697f + Scan->ShooterVel_Offset + 0.3f;
+			Scan->ShooterVel_Set = 0.0118f * Scan->Pro_Bucket_Dist + 39.697f + Scan->ShooterVel_Offset + 0.8f;
 		}
 			
 		//计算炮塔航向角目标值和设定值
