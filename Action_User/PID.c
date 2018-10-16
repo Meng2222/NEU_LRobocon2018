@@ -703,7 +703,7 @@ void PID_Control(PID_Value *p)                                               //P
 	p->ITerm = constrain(p->ITerm,1000.0f,-1000.0f);
 	p->DTerm = p->Angle_Last - p->Angle;
 	p->vel = p->kp * p->Error + p->ki * p->ITerm + p->kd * p->DTerm;
-	p->vel = constrain(p->vel,1000.0f,-1000.0f);
+	p->vel = constrain(p->vel,800.0f,-800.0f);
 	p->Angle_Last = p->Angle;
 	p->Mode_Last = p->Mode;
 }
@@ -1002,7 +1002,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 12;
+				pid->kp = 10;
 				pid->kd = 100;
 				pid->direction = ACW;
 				pid->Mode = Line;
@@ -1098,7 +1098,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 12;
+				pid->kp = 10;
 				pid->Line_Num = pid->Line_Num_Next;
 				pid->target_Num = pid->Line_Num % 4 + 1;
 				if(pid->target_Num == 4) pid->target_Num = 0;
@@ -1171,7 +1171,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 		{
 			if(error->flag == 0)
 			{
-				pid->kp = 12;
+				pid->kp = 10;
 				pid->kd = 100;
 				pid->direction = CW;
 				pid->Mode = Line;
@@ -1304,7 +1304,7 @@ void PID_Priority(PID_Value *pid, u8 dir, Err *error, int targetp[])            
 				pid->target_Num = pid->Line_Num % 4 - 1;
 				if(pid->target_Num == -1) pid->target_Num = 3;
 				PID_Pre(pid);
-				pid->kp = 12;
+				pid->kp = 10;
 				if(pid->l->line_Error < -800)
 				{
 					pid->fire_turn = 0;
