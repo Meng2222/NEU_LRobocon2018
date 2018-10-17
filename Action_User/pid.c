@@ -1,7 +1,7 @@
 #include "pid.h"
 
-static float outMax=2000;
-static float outMin=-2000;
+static float outMax=1500;
+static float outMin=-1500;
 float outMax2=90;
 float outMin2=-90;
 
@@ -22,7 +22,14 @@ static struct PIDPara_{
 }pid_Para;
 
 
-//角度pid
+/**
+* @brief 角度PID
+* @param valueSet：角度设定值
+* @param valueNow：当前角度值
+* @retval none
+* @attention 
+*/
+
 float AnglePid(float valueSet,float valueNow)
 {
 	
@@ -52,7 +59,13 @@ float AnglePid(float valueSet,float valueNow)
 	return valueOut;
 }
 
-//距离pid
+/**
+* @brief 距离PID
+* @param valueSet：距离设定值
+* @param valueNow：当前距离值
+* @retval none
+* @attention 
+*/
 float DistancePid(float valueSet,float valueNow)
 {
 	
@@ -77,54 +90,14 @@ float DistancePid(float valueSet,float valueNow)
 	return valueOut;
 }
 
-//角速度pid
-float GyroPid(float valueSet,float valueNow)
-{
-	
-	float err=0;
-	float valueOut=0;
-	static float errLast=0;
-	static float iTerm=0;
-
-	err=valueSet-valueNow;
-	iTerm+=(pid_Para.sKi*err);
-
-	if(iTerm > outMax3) iTerm=outMax3;
-	if(iTerm < outMin3) iTerm=outMin3;
-	
-	valueOut=(pid_Para.sKp*err)+iTerm+(pid_Para.sKd*(err-errLast));
-	
-	if(valueOut > outMax3) valueOut=outMax3;
-	else if(valueOut < outMin3) valueOut=outMin3;
-	
-	errLast=err;
-	return valueOut;
-}
-
-uint8_t PidSwitch(uint8_t sw)
-{
-	static uint8_t swLast;
-	if(!sw) 
-	{
-		swLast=sw; 
-		return 0; 
-	}
-	if((sw == 1) && (sw != swLast)) 
-	{
-		swLast=sw; 
-		return 2;
-	}
-	else if ((sw == 1) && (swLast == sw))
-	{
-		swLast=sw; 
-		return 1;
-	}
-	
-}
-
-
-
-
+/**
+* @brief 角度PID系数设置
+* @param fKp：比例项系数
+* @param fKi：积分项系数
+* @param fKd：微分项系数
+* @retval none
+* @attention 
+*/
 void Angle_PidPara(float fKp,float fKi,float fKd)
 {
 	pid_Para.aKp=fKp;
@@ -132,6 +105,14 @@ void Angle_PidPara(float fKp,float fKi,float fKd)
 	pid_Para.aKd=fKd;
 }
 
+/**
+* @brief 距离PID系数设置
+* @param fKp：比例项系数
+* @param fKi：积分项系数
+* @param fKd：微分项系数
+* @retval none
+* @attention 
+*/
 void Distance_PidPara(float fKp,float fKi,float fKd)
 {
 	pid_Para.dKp=fKp;
@@ -139,11 +120,5 @@ void Distance_PidPara(float fKp,float fKi,float fKd)
 	pid_Para.dKd=fKd;
 }
 
-void Gyro_PidPara(float fKp,float fKi,float fKd)
-{
-	pid_Para.sKp=fKp;
-	pid_Para.sKi=fKi;
-	pid_Para.sKd=fKd;
-}
 
 

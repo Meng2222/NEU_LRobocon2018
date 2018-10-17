@@ -25,6 +25,7 @@
 #include "elmo.h"
 #include "trans.h"
 #include "fort.h"
+#include "app_cfg.h"
 /* Includes ------------------------------------------------------------------*/
 
 
@@ -50,12 +51,18 @@
 
 
 #define PI (3.141593)
+
+//角度PID的参数
 #define KP_A  (266.55/14000)
 #define KD_A  (140)
+
+//直线距离PID的参数
 #define KP_D  (0.30)
-#define KD_D  (28)
-#define KP_D2 (0.19)
-#define KD_D2 (22)
+#define KD_D  (25)
+
+//转弯距离PID的参数
+#define KP_D2 (0.175)
+#define KD_D2 (21)
 
 //后轮电机的CAN ID号
 #define BACK_WHEEL_ID                                                 (1)
@@ -87,16 +94,26 @@
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions --------------------------------------------------------*/
+void Round(void);
+void Round2(void);
 void Turn(float angle,float gospeed);
 void BackTurn(float angle,float gospeed);
 void N_SET_closeRound(float x,float y,float R,float clock,float backspeed);
+void shootjudge(void);
 uint8_t straightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed);
 uint8_t BackstraightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed);
 void BiggerSquareOne(void);
+void StopShootOne(void);
 void BiggerSquareTwo(void);
 void BiggerSquareThr(void);
+void StopShootTwo(void);
 void BiggerSquareFor(void);
-void Walk(uint8_t getAdcFlag);
+void StopShootThr(void);
+void BiggerSquareFiv(void);
+void BiggerSquareSix(void);
+void StopShootFor(void);
+uint8_t Troubleshoot(uint8_t *getAdcFlag);
+void Walk(uint8_t *getAdcFlag);
 #endif /* ___H */
 
 

@@ -31,25 +31,11 @@
 
 FortType fort;
 
-
+//给推球电机的脉冲
 int32_t pushPulse=0;
 int bufferI = 0;
 char buffer[20] = {0};
 
-
-
-extern struct usartValue_{
-	uint32_t cnt;//用于检测是否数据丢失
-	float xValue;//串口输出x坐标
-	float yValue;//串口输出y坐标
-	float angleValue;//串口输出角度值
-	float pidValueOut;//PID输出
-	float d;
-	float turnAngleValue;//
-	uint8_t flagValue;
-	float shootangle;
-	float shootSp;
-}usartValue;
 
 
 /**
@@ -112,7 +98,7 @@ void bufferInit()
 							注意清除标志位
 */
 void GetValueFromFort(uint8_t data)
-{
+{	
 	buffer[bufferI] = data;
 	bufferI++;
 	if(bufferI >= 20)
@@ -138,6 +124,7 @@ void GetValueFromFort(uint8_t data)
 			for(int i = 0; i < 4; i++)
 					fort.usartReceiveData.data8[i] = buffer[i + 2];
 				fort.laserAValueReceive = fort.usartReceiveData.dataFloat;
+			
 		}
 		else if(bufferI > 2 && strncmp(buffer,"LB",2) == 0)//接收B激光的ADC值
 		{
@@ -152,6 +139,12 @@ void GetValueFromFort(uint8_t data)
 char BUFF[8]={0};
 
 struct comend Cmd;
+/**
+* @brief 电脑串口发命令给主控
+* @param  data:串口数据
+* @retval none
+* @attention none
+*/
 void UARTCmd(uint8_t data)
 {
 	static uint8_t buffI=0;
@@ -161,34 +154,49 @@ void UARTCmd(uint8_t data)
 	{ 
 		if(buffI > 2 &&  strncmp(BUFF,"PO",2) == 0)//接收航向位置
 		{
-				for(int i = 0; i < 4; i++)
-					Cmd.turn=(BUFF[2]-0x30)*100+(BUFF[3]-0x30)*10+(BUFF[4]-0x30)*1+(BUFF[5]-0x30)*0.1;
+			for(int i = 0; i < 4; i++)
+				Cmd.uv4Data.data8[i] = BUFF[i + 2];
+			Cmd.turn=(float)((Cmd.uv4Data.data8[0]-0x30)*100+(Cmd.uv4Data.data8[1]-0x30)*10+(Cmd.uv4Data.data8[2]-0x30)+(Cmd.uv4Data.data8[3]-0x30)*0.1);
 		}
 		else if(buffI > 2 &&  strncmp(BUFF,"VE",2) == 0)//接收发射电机转速
 		{
-				for(int i = 0; i < 4; i++)
-					Cmd.shoot=(BUFF[2]-0x30)*10+(BUFF[3]-0x30)*1+(BUFF[4]-0x30)*0.1+(BUFF[5]-0x30)*0.01;
+			for(int i = 0; i < 4; i++)
+				Cmd.uv4Data.data8[i] = BUFF[i + 2];
+			Cmd.shoot=(float)((Cmd.uv4Data.data8[0]-0x30)*100+(Cmd.uv4Data.data8[1]-0x30)*10+(Cmd.uv4Data.data8[2]-0x30)+(Cmd.uv4Data.data8[3]-0x30)*0.1);
 		}
 		for(int i = 0; i < 8; i++)
 		{
 			BUFF[i] = 0;
 		}
-			bufferI = 0;
+			buffI = 0;
 	}
 }
 
-//发射的桶
+//记录四个框推出球情况，为1 该框推出球，为0 该框未推出球，为2该框激光未扫描到
 uint8_t shootReady[4]={0,0,0,0};
-uint8_t shootReadyflg=0;
-uint8_t backshoot=0;
-uint8_t shootFlag=0;	
-static uint8_t isBallRight=0;	
-//车走形所在轨道
+//控制航向电机转的角度
+static float shootTurnAngle=0;
+//外圈停下投球标志位
+uint8_t stopFlg=0;
+//该投桶的标志位
+uint8_t shootFlag=0;
+//摄像头识别是否为所要颜色的球
+uint8_t isBallRight=0;	
+//没有所要球标志位，用于定点投球长时间没有正确的球，为1表示没有正确的球，机器人出去收球
+uint8_t noRightBall=0;
+//四个桶有一个未扫描到，计算得出距离，为1，使用计算距离发射
+uint8_t noScanFlg=0;
+//车走形所在轨道投球的桶
 uint8_t shootFlagOne;
-
-//故障判断标志位 主要用于车卡在某一位置，即errFlg=4;
+//定点投球四个桶的距离，四个桶都投过后，先投距离最远的桶
+float laserDistance[4]={0};
+extern uint8_t step;
+//故障判断标志位 主要用于车卡在某一位置，即errFlg=3;
 extern uint8_t errFlg;
 
+extern float judgeSpeed;
+extern uint8_t flagOne;
+extern usartValue uv4;
 /**
 * @brief 炮台发射
 * @param flg：车走行的标志位
@@ -196,33 +204,31 @@ extern uint8_t errFlg;
 * @retval none
 * @attention 
 */
-static float bucketPosX[4]={BUCKET_ONE_X,BUCKET_TWO_X,BUCKET_THR_X,BUCKET_FOR_X};
-static float bucketPosY[4]={BUCKET_ONE_Y,BUCKET_TWO_Y,BUCKET_THR_Y,BUCKET_FOR_Y};	
 
+//四个桶坐标
+static float bucketPosX[4]={BUCKET_ONE_X,BUCKET_TWO_X,BUCKET_THR_X,BUCKET_FOR_X};
+static float bucketPosY[4]={BUCKET_ONE_Y,BUCKET_TWO_Y,BUCKET_THR_Y,BUCKET_FOR_Y};
+
+//摩擦轮转速
+static float shootSpeed=0;
 void Shoot(uint8_t flg)
 {
-	
-	static uint8_t shootFlagLast=0;
-	static float shootAngleLast=0;
-	static float getAngleLast=0;
-	static float shootTurnAngle=0;
-	static uint8_t i=0;
-	static float shootSpeed=0;
-	static uint8_t judgeFlg=1;
-	
-	float errOne=0;
-	float errTwo=0;
+	static float shootAngleLast=0,getAngleLast=0;
+	float errOne=0,errTwo=0;
 	float shootX=GetPosX();
 	float shootY=GetPosY();
 	float getAngle=GetAngle();
+	
+	//射击距离
 	float shootDistance=0;
 	float shootAngle=0;
-	float laserdistance=0; 
 	
-	isBallRight=BallColorRecognition();
+	//激光测得距离和定位系统算得的参考距离
+	float laserdistance=0,judgeDistance=0; 
 	
-	//判断车所在区域
-	if(flg == 0)
+	BallColorRecognition();
+	
+	if(flg == 0 || flg == 1 || flg == 2)
 	{
 		//完全卡住
 		if(errFlg >= 3)
@@ -234,10 +240,12 @@ void Shoot(uint8_t flg)
 		else
 		{
 			NormalShootOne();
-		}		
+
+				
+		}
 	}
 
-	if(flg == 1)
+	if(flg == 3 || flg == 4 || flg == 5)
 	{
 		//完全卡住
 		if(errFlg >= 3)
@@ -248,11 +256,10 @@ void Shoot(uint8_t flg)
 		//正常发射
 		else
 		{
-			NormalShootTwo();
+			NormalShootOne();
 		}			
 	}
 	
-
 	//枪定位桶角度
 	if(shootFlag == 2 || shootFlag == 3)
 	{
@@ -262,7 +269,6 @@ void Shoot(uint8_t flg)
 	else if(shootFlag == 0 || shootFlag == 1)
 	{
 		shootAngle=-(atan((shootY-bucketPosY[shootFlag])/(shootX-bucketPosX[shootFlag]))*180/PI)-90;
-
 	}
 	errOne=shootAngle-shootAngleLast;
 	errTwo=getAngle-getAngleLast;
@@ -284,389 +290,1013 @@ void Shoot(uint8_t flg)
 		getAngleLast=getAngle;
 		shootAngleLast=shootAngle;
 	
-	
-	
-	//区域改变，计数清0
-	if(shootFlagLast != shootFlagOne)
-	{	
-		shootFlagLast=shootFlagOne;
-		judgeFlg=1;
-		if(i< 3)
-		{
-			i++;
-		}
-		else
-			i=0;
-	}
-	
 	//完全卡住发射
-	if(errFlg >= 3)
+	if(errFlg >= 3 || stopFlg == 1)
 	{
-		YawPosCtrl(shootTurnAngle);
+		if(noScanFlg == 0)
+		{
+			if((fort.laserAValueReceive*LASER_SCALE_A+LASER_INTERCEPT_A) > (fort.laserBValueReceive*LASER_SCALE_B+LASER_INTERCEPT_B))
+				laserdistance=(fort.laserAValueReceive*LASER_SCALE_A+LASER_INTERCEPT_A)-254;
+			else
+				laserdistance=(fort.laserBValueReceive*LASER_SCALE_B+LASER_INTERCEPT_B)-254;
+			
+			judgeDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])))-65;
+			if(fabs(judgeDistance-laserdistance) < 800)
+			{
+				shootDistance=laserdistance;
+				if(shootDistance < 3333)
+					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT;
+				else if(shootDistance >= 3333)
+					shootSpeed=(0.01*shootDistance)+50.5;
+				
+			}
+			else 
+			{
+				shootDistance=judgeDistance;
+				shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT;
+			}
+			if(stopFlg == 1)
+				ShooterVelCtrl(shootSpeed);
+			else
+				ShooterVelCtrl(shootSpeed);
 		
-		laserdistance=(((fort.laserAValueReceive+fort.laserBValueReceive)/2)*LASER_SCALE)-200;
-	
-		shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
-		if((shootDistance+100) > laserdistance && (shootDistance-100) < laserdistance)
-			shootDistance=laserdistance;
+			laserDistance[shootFlag]=shootDistance;
+		}
 		else;
-		shootSpeed=(SHOOOT_KP*shootDistance)+36.5;
-		ShooterVelCtrl(shootSpeed);
-		
 	}
-	
-	
 	//正常发射
 	else
 	{
+		shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])))-65;
+		
+		
+		if(flg == 0 || flg == 1 || flg == 2)
+		{
+			if(stopFlg == 0)
+			{
+				if(flagOne < 6 && flagOne > 1)
+					YawPosCtrl(shootTurnAngle-(4*0.000001*shootDistance*shootDistance-0.0386*shootDistance+100));
+				else
+					YawPosCtrl(shootTurnAngle-judgeSpeed*0.006);
+			}
+			else
+				YawPosCtrl(shootTurnAngle);
+			
+		}
+		else if(flg == 3 || flg == 4 || flg == 5)
+		{
+			if(stopFlg == 0)
+			{
+				if(flagOne < 6 && flagOne > 1)
+					YawPosCtrl(shootTurnAngle+(4*0.000001*shootDistance*shootDistance-0.0386*shootDistance+100));
+				else
+					YawPosCtrl(shootTurnAngle+judgeSpeed*0.004);
+			}
+			else
+				YawPosCtrl(shootTurnAngle);
+			
+		}
+		
 		
 		if(flg == 0)
 		{
-			if(shootFlagOne < 8)
-				YawPosCtrl(shootTurnAngle-33);
-			else
-				YawPosCtrl(shootTurnAngle-14);
+			if(stopFlg == 0)
+			{
+				if(flagOne < 6)
+				{
+					shootSpeed=(0.0137*shootDistance)+22;
+					if(shootSpeed > 85)
+						shootSpeed=85;
+				}
+				else if(flagOne <= 10)
+				{
+					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.0105;
+					if(shootSpeed > 85)
+						shootSpeed=85;
+				}
+
+			}
 		}
-		else
+		else if(flg == 1)
+		{   
+			if(stopFlg == 0)
+			{
+				if(flagOne < 6)
+				{
+					shootSpeed=(0.0137*shootDistance)+22;
+					if(shootSpeed > 85)
+						shootSpeed=85;
+				}
+				else if(flagOne <= 10)
+				{
+					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.0105;
+					if(shootSpeed > 85)
+						shootSpeed=85;
+				}
+
+			}
+
+		}
+		else if(flg == 3)
 		{
-			if(shootFlagOne < 8)
-				YawPosCtrl(shootTurnAngle+2);
-			else
-				YawPosCtrl(shootTurnAngle+2);
+			if(stopFlg == 0)
+			{
+				if(flagOne < 6)
+				{
+					shootSpeed=(0.0137*shootDistance)+21;
+					if(shootSpeed > 85)
+						shootSpeed=85;
+					
+				}
+				else if(flagOne <= 10)
+				{
+					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011;
+					if(shootSpeed > 85)
+						shootSpeed=85;
+				}
+
+
+			}
+		}
+		else if(flg == 4)
+		{
+			if(stopFlg == 0)
+			{   
+				if(flagOne < 6)
+				{
+					shootSpeed=(0.0137*shootDistance)+21;
+					if(shootSpeed > 85)
+						shootSpeed=85;
+				}
+				else if(flagOne <= 10)
+				{
+					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011;
+					if(shootSpeed > 85)
+						shootSpeed=85;
+				}
+
+			}
 		}
 		
-		shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])));
-		
-		float speed=sqrt(GetSpeeedX()*GetSpeeedX()+GetSpeeedY()*GetSpeeedY());
-		if(backshoot == 0)
-		{
-			if(shootFlagOne < 8)
-				shootSpeed=(SHOOOT_KP*shootDistance)+32-speed*0.009;
-			else
-				shootSpeed=(SHOOOT_KP*shootDistance)+28-speed*0.0095;
-		}
-		else if(backshoot == 1)
-		{
-			shootSpeed=(SHOOOT_KP*shootDistance)+28+speed*0.0095;
-		}
 		
 		ShooterVelCtrl(shootSpeed);
 	}
 	
 	
+	//串口发数赋值
+
+	uv4.shootFlg=shootFlag;
+	uv4.distance=shootDistance;
+	uv4.shootSp=shootSpeed;
+	uv4.shootangle=shootTurnAngle;
+	uv4.ball=isBallRight;
+	uv4.ready[0]=shootReady[0];
+	uv4.ready[1]=shootReady[1];
+	uv4.ready[2]=shootReady[2];
+	uv4.ready[3]=shootReady[3];
 	
 	
-	//检测是否打出球
-//	if(judgeFlg == 1)
-//	{
-//		if(fort.shooterVelReceive < (shootSpeed-5))
-//		{
-//			shootReady[i]=1;
-//			judgeFlg=0;
-//		}
-//		else
-//		{
-//			shootReady[i]=0;
-//		}
-//	}
-//	USART_OUT(UART4, " %d\t", (int)shootSpeed);
-//	USART_OUT(UART4, " %d\t", (int)fort.shooterVelReceive);
-//	
-	USART_OUT(UART4, " %d\t", (int)shootReady[0]);
-	USART_OUT(UART4, " %d\t", (int)shootReady[1]);
-	USART_OUT(UART4, " %d\t", (int)shootReady[2]);
-	USART_OUT(UART4, " %d\t", (int)shootReady[3]);
 }
 
 /**
-* @brief 车卡住处理
+* @brief 车卡住投球和定点投球
 * @param none
 * @retval none
 * @attention 
 */
+
+float X[4]={-2454,-2454,2454,2454},Y[4]={-119,4789,4789,-119};
+float laserShootAngle[4]={0},laserShootDistance[4]={0};
+
+//扫描到桶的标志位
+uint8_t laserShootFlg=0;
+
+//发射桶改变标志位
+static uint8_t changeFlg=0;
 void CarStuck(void)
 {
-	static uint8_t shootFlag2=0;
-	static uint16_t shootCnt=0;
+	float cosAngle=0,d2=0;;
+	static uint16_t carStuckCnt=0;
 	
-	if(isBallRight == 1)
+	//被撞动处理
+	if(GetSpeeedX() > 100 || GetSpeeedY() > 100)
 	{
-		shootCnt++;
-		if(shootCnt == 100)
-		{
+		for(int i=0;i<4;i++)
+			laserShootAngle[i]=0;
+		for(int i=0;i<4;i++)
+			laserShootDistance[i]=0;
+		laserShootFlg=0;
+		changeFlg=1;
+		noScanFlg=0;
+	}
+	
+	//条件满足，推球发射
+	if(isBallRight == 1 && laserShootFlg == 1 && changeFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 1.3)
+	{
 			// 推球	
 			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);			
-		}
-		else if(shootCnt > 200)
+			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
+			shootReady[shootFlag] = 1;
+			laserShootFlg=0;
+			noScanFlg=0;
+			changeFlg=0;
+			USART_OUT(UART4, "shoot\r\n");		
+
+	}
+	
+	//发射方位改变
+	else if(changeFlg == 0)
+	{
+		
+		if(carStuckCnt > 100)		
 		{
-			shootCnt=0;
-				
-			if(shootReady[0] == 0 && shootReady[1] == 0 && shootReady[2] == 0 && shootReady[3] == 0)
-			{
-				if(shootFlag2 < 3)
-				{
-					shootFlag=shootFlag2+1;
-					shootFlag2++;
-				}
-				else if(shootFlag2 < 5)
-				{
-					shootFlag=5-shootFlag2;
-					shootFlag2++;
-				}
-				else
-				{
-					shootFlag2=0;
-					shootFlag=0;
-				}
-			}
-			else if(shootReady[0] == 0)
-			{
+			if(shootReady[0] == 0)
+			{ 
 				shootFlag=0;
-				shootFlag2=shootFlag;
-				shootReady[0] = 1;
+				carStuckCnt=0;
+				changeFlg=1;
 			}
 			else if(shootReady[1] == 0)
 			{
 				shootFlag=1;
-				shootFlag2=shootFlag;
-				shootReady[1] = 1;
+				carStuckCnt=0;
+				changeFlg=1;
 			}
 			else if(shootReady[2] == 0)
 			{
 				shootFlag=2;
-				shootFlag2=shootFlag;
-				shootReady[2] = 1;
+				carStuckCnt=0;
+				changeFlg=1;
 			}
 			else if(shootReady[3] == 0)
 			{
 				shootFlag=3;
-				shootFlag2=shootFlag;
-				shootReady[3] = 1;
+				carStuckCnt=0;
+				changeFlg=1;
 			}
+			
+			//未扫描到计算出该桶的位置和距离
+			else if(shootReady[0]== 2 && laserShootDistance[1] != 0 && laserShootDistance[2] != 0)
+			{
+				shootFlag=0;
+				cosAngle=fabs(laserShootDistance[2]*sin(fabs(laserShootAngle[2]-laserShootAngle[1])*PI/180)/4800);
+				d2=laserShootDistance[1]*laserShootDistance[1]+4800*4800-2*4800*laserShootDistance[1]*cosAngle;
+				laserShootDistance[0]=sqrt(d2);
+				shootSpeed=(SHOOT_KP*laserShootDistance[0])+SHOOT_INTERCEPT+1;
+				laserShootAngle[0]=laserShootAngle[1]-acos((laserShootDistance[1]*laserShootDistance[1]+d2-4800*4800)/(2*laserShootDistance[1]*laserShootDistance[0]))*180/PI;
+				ShooterVelCtrl(shootSpeed);
+				YawPosCtrl(laserShootAngle[0]);
+				noScanFlg=1;
+				if(fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-laserShootAngle[0]) < 2.1)
+				{
+					laserShootFlg=1;
+					carStuckCnt=0;
+					changeFlg=1;
+				}						
+				
+			}
+			else if(shootReady[1]== 2 && laserShootDistance[2] != 0 && laserShootDistance[3] != 0)//2,3
+			{
+				shootFlag=1;
+				cosAngle=fabs(laserShootDistance[3]*sin(fabs(laserShootAngle[3]-laserShootAngle[2])*PI/180)/4800);
+				d2=laserShootDistance[2]*laserShootDistance[2]+4800*4800-2*4800*laserShootDistance[2]*cosAngle;
+				laserShootDistance[1]=sqrt(d2);
+				shootSpeed=(SHOOT_KP*laserShootDistance[1])+SHOOT_INTERCEPT+1;
+				laserShootAngle[1]=laserShootAngle[2]-acos((laserShootDistance[2]*laserShootDistance[2]+d2-4800*4800)/(2*laserShootDistance[2]*laserShootDistance[1]))*180/PI;
+				ShooterVelCtrl(shootSpeed);
+				YawPosCtrl(laserShootAngle[1]);
+				noScanFlg=1;
+				if(fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-laserShootAngle[1]) < 2.1)
+				{
+					laserShootFlg=1;
+					carStuckCnt=0;
+					changeFlg=1;
+				}
+			}
+			else if(shootReady[2]== 2 && laserShootDistance[3] != 0 && laserShootDistance[0] != 0)//3,0
+			{
+				shootFlag=2;
+				cosAngle=fabs(laserShootDistance[0]*sin(fabs(laserShootAngle[3]-laserShootAngle[0])*PI/180)/4800);
+				d2=laserShootDistance[3]*laserShootDistance[3]+4800*4800-2*4800*laserShootDistance[3]*cosAngle;
+				laserShootDistance[2]=sqrt(d2);
+				shootSpeed=(SHOOT_KP*laserShootDistance[2])+SHOOT_INTERCEPT+1;
+				laserShootAngle[2]=laserShootAngle[3]-acos((laserShootDistance[3]*laserShootDistance[3]+d2-4800*4800)/(2*laserShootDistance[3]*laserShootDistance[2]))*180/PI;
+				ShooterVelCtrl(shootSpeed);
+				YawPosCtrl(laserShootAngle[2]);
+				noScanFlg=1;
+				if(fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-laserShootAngle[2]) < 2.1)
+				{
+					laserShootFlg=1;
+					carStuckCnt=0;
+					changeFlg=1;
+				}
+			}
+			else if(shootReady[3]== 2 && laserShootDistance[0] != 0 && laserShootDistance[1] != 0)//0,1
+			{
+				shootFlag=3;
+				cosAngle=fabs(laserShootDistance[1]*sin(fabs(laserShootAngle[0]-laserShootAngle[1])*PI/180)/4800);
+				d2=laserShootDistance[0]*laserShootDistance[0]+4800*4800-2*4800*laserShootDistance[0]*cosAngle;
+				laserShootDistance[3]=sqrt(d2);
+				shootSpeed=(SHOOT_KP*laserShootDistance[3])+SHOOT_INTERCEPT+1;
+				laserShootAngle[3]=laserShootAngle[0]-acos((laserShootDistance[0]*laserShootDistance[0]+d2-4800*4800)/(2*laserShootDistance[0]*laserShootDistance[3]))*180/PI;
+				ShooterVelCtrl(shootSpeed);
+				YawPosCtrl(laserShootAngle[3]);
+				noScanFlg=1;
+				if(fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-laserShootAngle[3]) < 2.1)
+				{
+					laserShootFlg=1;
+					carStuckCnt=0;
+					changeFlg=1;
+				}
+				
+			}
+			
+			//没有计算数据，在打一次，得到计算数据
+			else if(shootReady[shootFlag] == 2)
+			{
+				shootReady[0]=0;
+				shootReady[1]=0;
+				shootReady[2]=0;
+				shootReady[3]=0;
+				noScanFlg=0;				
+				flagOne=16;
+				carStuckCnt=0;
+				changeFlg=1;
+			}
+			
+			//都打完后，刷新一次，先打最远点
 			else
 			{
-				shootReady[0] = 0;
-				shootReady[1] = 0;
-				shootReady[2] = 0;
-				shootReady[3] = 0;
+				if(laserDistance[shootFlag] <= laserDistance[0])
+					shootFlag=0;
+				if(laserDistance[shootFlag] <= laserDistance[1])
+					shootFlag=0;
+				if(laserDistance[shootFlag] <= laserDistance[2])
+					shootFlag=2;
+				if(laserDistance[shootFlag] <= laserDistance[3])
+					shootFlag=3;
+				shootReady[0]=0;
+				shootReady[1]=0;
+				shootReady[2]=0;
+				shootReady[3]=0; 
+				noScanFlg=0;
+				carStuckCnt=0;
+				changeFlg=1;
 			}
 		}
-		
+		else 
+			carStuckCnt++;
+			
+	}
+	
+	
+	else if(laserShootFlg == 0 && changeFlg == 1)
+	{
+		//没找到桶，在中间扫描，没在中间跑到中间
+		if(GetPosX() > -1500 && GetPosX() < 1500 && GetPosY() > 900 && GetPosY() < 3900)
+			Laser_Aim();
+		else
+			noRightBall=1;
 	}
 }
 
 /**
-* @brief //正常发射1，车顺时针转时的正常发射
+* @brief 正常发射
 * @param getPushTime：推球时间
 * @retval none
 * @attention 
 */
-extern uint8_t step;
+static uint16_t shootCnt1=0;
+
+uint8_t laserStopShootFlg=0;
 void NormalShootOne(void)
 {
 	float D=0;
-	if((shootFlagOne == 7 || shootFlagOne == 11) && shootReady[0] == 0)
+	static uint16_t shootCnt2=0;
+
+	float speed=sqrt(GetSpeeedX()*GetSpeeedX()+GetSpeeedY()*GetSpeeedY());
+	static uint8_t flgLast=0;
+	if(flgLast != shootFlagOne)
+	{	
+		shootCnt2=0;
+		shootCnt1=0;
+		flgLast=shootFlagOne;
+		laserStopShootFlg=0;
+	}
+	
+	//外圈
+	if(flagOne >= 6 && flagOne <= 10)
 	{
-		shootFlag=0;
-		backshoot=0;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(/*fabs(GetSpeeedX())>= 1600 && */isBallRight == 1 && D > 2000 && D < 3500)
+		//打0号桶
+		if(shootFlagOne == 0)
 		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[0]=1;
+			shootFlag=0;
+			if(shootReady[0] == 0 && step == 1)
+			{
+				shootCnt1++;
+				
+				//被撞处理
+				if(GetSpeeedX() > 100 || GetSpeeedY() > 100)
+				{
+					laserStopShootFlg=0;
+				}
+				
+				//有球后外圈定点打，没球不停下
+				if(isBallRight == 1 && shootCnt1 < 800)
+				{
+					stopFlg=1;
+				}
+				else
+				{
+					stopFlg=0;
+				}
+				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				if(speed <= SPEED_TWO && isBallRight == 1)
+				{
+						if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+						{
+							// 推球	
+							pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+							PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
+							shootReady[0] = 1;
+							laserStopShootFlg=0;
+							USART_OUT(UART4, "shoot\r\n");		
+
+						}
+						else if(laserStopShootFlg == 0)
+						{
+							Laser_Aim_Two();
+						}
+							
+				}
+		
+			}
+			
+			//外圈定点打完球后stopFlg置0
+			else if(shootReady[0] == 1)
+			{
+				shootCnt2++;
+				if(shootCnt2 > DELAY_TIME)
+				{
+					stopFlg=0;
+					shootCnt2=0;
+				}
+			}
+
+			else if(shootReady[0] == 0 && step != 1 && step != 2)
+			{
+				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				if(D > SHOOT_D_ONE &&  D < SHOOT_D_TWO && isBallRight == 1 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+				{
+					// 推球	
+					pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+					shootReady[0]=1;
+					USART_OUT(UART4, "shoot\r\n");
+				}
+			}
+		}
+		
+		//打1号桶
+		else if(shootFlagOne == 1)
+		{
+			shootFlag=1;
+			if(shootReady[1] == 0 && step == 1)
+			{
+				shootCnt1++;
+				if(GetSpeeedX() > 100 || GetSpeeedY() > 100)
+				{
+					laserStopShootFlg=0;
+				}
+				if(isBallRight == 1 && shootCnt1 < 800)
+				{
+					stopFlg=1;
+				}
+				else
+				{
+					stopFlg=0;
+				}
+				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				if(speed <= SPEED_TWO && isBallRight == 1)
+				{
+						if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+						{
+							// 推球	
+							pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+							PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
+							shootReady[1] = 1;
+							laserStopShootFlg=0;
+							USART_OUT(UART4, "shoot\r\n");		
+
+						}
+						else if(laserStopShootFlg == 0)
+						{
+							Laser_Aim_Two();
+						}
+							
+				}
+			}
+			else if(shootReady[1] == 1)
+			{
+				shootCnt2++;
+				if(shootCnt2 > DELAY_TIME)
+				{
+					stopFlg=0;
+					shootCnt2=0;
+				}
+			}	
+			else if(shootReady[1] == 0 && step != 1 && step != 2)
+			{
+				
+				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				if(D > SHOOT_D_ONE &&  D < SHOOT_D_TWO && isBallRight == 1 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+				{
+					// 推球	
+					pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+					shootReady[1]=1;
+					USART_OUT(UART4, "shoot\r\n");
+
+				}
+			}
+			
+		}
+		
+		//打2号桶
+		else if(shootFlagOne == 2)
+		{
+			shootFlag=2;
+			if(shootReady[2] == 0 && step == 1)
+			{
+				shootCnt1++;
+				if(GetSpeeedX() > 100 || GetSpeeedY() > 100)
+				{
+					laserStopShootFlg=0;
+				}
+				if(isBallRight == 1 && shootCnt1 < 800)
+				{
+					stopFlg=1;
+				}
+				else
+				{
+					stopFlg=0;
+				}
+				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				if(speed <= SPEED_TWO && isBallRight == 1)
+				{
+						if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+						{
+							// 推球	
+							pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+							PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
+							shootReady[2] = 1;
+							laserStopShootFlg=0;
+							USART_OUT(UART4, "shoot\r\n");		
+
+						}
+						else if(laserStopShootFlg == 0)
+						{
+							Laser_Aim_Two();
+						}
+							
+				}
+			}
+			else if(shootReady[2] == 1)
+			{
+				shootCnt2++;
+				if(shootCnt2 > DELAY_TIME)
+				{
+					stopFlg=0;
+					shootCnt2=0;
+				}
+			}
+			else if(shootReady[2] == 0 && step != 1 && step != 2)
+			{
+				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				if(D > SHOOT_D_ONE &&  D < SHOOT_D_TWO && isBallRight == 1 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+				{
+					// 推球	
+					pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+					shootReady[2]=1;
+					USART_OUT(UART4, "shoot\r\n");
+				}
+			}
+			
+			
+		}
+		
+		//打3号桶
+		else if(shootFlagOne == 3)
+		{
+			shootFlag=3;
+			if(shootReady[3] == 0 && step == 1)
+			{
+				shootCnt1++;
+				if(GetSpeeedX() > 100 || GetSpeeedY() > 100)
+				{
+					laserStopShootFlg=0;
+				}
+				if(isBallRight == 1 && shootCnt1 < 800)
+				{
+					stopFlg=1;
+				}
+				else
+				{
+					stopFlg=0;
+				}
+				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				if(speed <= SPEED_TWO && isBallRight == 1)
+				{
+						
+						if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+						{
+							// 推球	
+							pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+							PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
+							shootReady[3] = 1;
+							laserStopShootFlg=0;
+							USART_OUT(UART4, "shoot\r\n");		
+
+						}
+						else if(laserStopShootFlg == 0)
+						{
+							Laser_Aim_Two();
+						}
+							
+				}
+			}
+			else if(shootReady[3] == 1)
+			{
+				shootCnt2++;
+				if(shootCnt2 > DELAY_TIME)
+				{
+					stopFlg=0;
+					shootCnt2=0;
+				}
+			}	
+			else if(shootReady[3] == 0 && step != 1 && step != 2)
+			{
+				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				if(D > SHOOT_D_ONE &&  D < SHOOT_D_TWO && isBallRight == 1 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+				{
+					// 推球	
+					pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+					shootReady[3]=1;
+					USART_OUT(UART4, "shoot\r\n");
+				}
+				
+			}
+		}
+		else;
+	}
+	
+	//里圈
+	else if(flagOne < 6)
+	{
+		if(shootFlagOne == 2)
+		{
+			shootFlag=2;
+			D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+		
+			if(judgeSpeed > SPEED_ONE && isBallRight == 1 && shootReady[2] == 0 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+			{
+				// 推球	
+				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+				shootReady[2]=1;
+				USART_OUT(UART4, "shoot\r\n");
+			}
+		}
+		else if(shootFlagOne == 3)
+		{
+			shootFlag=3;
+			if(judgeSpeed > SPEED_ONE && isBallRight == 1 && shootReady[3] == 0 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+			{
+				// 推球	
+				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+				shootReady[3]=1;
+				USART_OUT(UART4, "shoot\r\n");
+			}
+		}
+		else if(shootFlagOne == 0)
+		{
+			shootFlag=0;
+			D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+			if(judgeSpeed > SPEED_ONE && isBallRight == 1 && shootReady[0] == 0 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+			{
+				// 推球	
+				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+				shootReady[0]=1;
+				USART_OUT(UART4, "shoot\r\n");
+			}
+		}
+		else if(shootFlagOne == 1)
+		{
+			shootFlag=1;
+			D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+			
+			if(judgeSpeed > SPEED_ONE && isBallRight == 1 && shootReady[1] == 0 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+			{
+				// 推球	
+				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+				shootReady[1]=1;
+				USART_OUT(UART4, "shoot\r\n");
+			}
+				
+	
 		}
 		
 	}
-	else if((shootFlagOne == 8 || shootFlagOne == 12) && shootReady[1] == 0)
-	{
-		shootFlag=1;
-		backshoot=0;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(/*fabs(GetSpeeedY()) >= 1600 &&*/ (shootFlagOne == 12|| shootFlagOne == 8) &&isBallRight == 1 && D > 2000 && D < 3500)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[1]=1;
-		}
-		
-	}
-	else if((shootFlagOne == 5 || shootFlagOne == 9) && shootReady[2] == 0)
-	{
-		shootFlag=2;
-		backshoot=0;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(/*fabs(GetSpeeedX())>= 1600 && */shootFlagOne == 9 && isBallRight == 1 && D > 2000 && D < 3500)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[2]=1;
-		}
-		else if(shootFlagOne == 5 &&  fabs(GetSpeeedX()) >= 1500 && isBallRight == 1 && D > 2000)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[2]=1;
-		}
-	}
-	else if((shootFlagOne == 6 || shootFlagOne == 10) && shootReady[3] == 0 )
-	{
-		shootFlag=3;
-		backshoot=0;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(/*fabs(GetSpeeedY()) >= 1600 &&*/ shootFlagOne == 10 && isBallRight == 1 && D > 2000 && D < 3500)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[3]=1;
-		}
-		else if(shootFlagOne == 6 && fabs(GetSpeeedY()) >= 1500 && isBallRight == 1 && D > 2000)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[3]=1;
-		}
-	}
 	
-	
-	
-	else if((shootFlagOne == 8 || shootFlagOne == 12) && shootReady[0] == 0 && shootReady[1] == 1)
-	{
-		shootFlag=0;
-		backshoot=1;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(/*fabs(GetSpeeedX())>= 1600 && */isBallRight == 1 && D > 2000 && D < 3500)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[0]=1;
-		}
-	}
-	else if(shootFlagOne == 9 && shootReady[1] == 0 && shootReady[2] == 1)
-	{
-		shootFlag=1;
-		backshoot=1;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(/*fabs(GetSpeeedY()) >= 1600 &&*/isBallRight == 1 && D > 2000 && D < 3500)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[1]=1;
-		}
-	}
-	else if(shootFlagOne == 10 && shootReady[2] == 0 && shootReady[3] == 1)
-	{
-		shootFlag=2;
-		backshoot=1;
-		if(/*fabs(GetSpeeedY()) >= 1600 &&*/isBallRight == 1 && D > 2000 && D < 3500)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[2]=1;
-		}
-	}
-	else if(shootFlagOne == 11 && shootReady[3] == 0 && shootReady[0] == 1)
-	{
-		shootFlag=3;
-		backshoot=1;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(/*fabs(GetSpeeedX())>= 1600 && */isBallRight == 1 && D > 2000 && D < 3500)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			shootReady[3]=1;
-		}
-	}
 }
 
+
 /**
-* @brief //正常发射2，车逆时针转时的正常发射
-* @param getPushTime：推球时间
+* @brief 定点激光扫描
+* @param none
 * @retval none
 * @attention 
 */
 
-void NormalShootTwo(void)
+typedef enum{
+	reachAngle,scan,scanSomething,judge
+}laserScan;
+void Laser_Aim(void)
 {
-	float D=0;
+	static int stage=0,stableflag=0,sureFlag=0,laserCnt=0;
+	float yawangle=0,Width=0;
+	static float addangle=-30,lastpulseA=0,lastpulseB=0,laser_A=0,laser_B=0,Agl_A=0,Agl_B=0,MaxLaservalue=0,add=0.2; 
+	float laserAvalue=0,laserBvalue=0,bucketdistance=0;
+	static uint8_t flg=0;
+	bucketdistance=sqrt(pow((GetPosX()-X[shootFlag]),2)+pow((GetPosY()-Y[shootFlag]),2));
+
 	
-	if(shootFlagOne == 6 || shootFlagOne == 10)
-	{ 
-		shootFlag=0;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(shootFlagOne == 10 && fabs(GetSpeeedY()) >= 1400 && isBallRight == 1 && D > 2400 )
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-		}
-		else if(shootFlagOne == 6 && fabs(GetSpeeedY()) >= 1100 && isBallRight == 1 && D > 2000)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-		}
-		
-	}
-	else if(shootFlagOne == 5 || shootFlagOne == 9)
-	{ 
-		shootFlag=1;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(shootFlagOne == 9 && fabs(GetSpeeedX()) >= 1400 && isBallRight == 1 && D > 2400)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-		}
-		else if(shootFlagOne == 5 && fabs(GetSpeeedX()) >= 1100 && isBallRight == 1 && D > 2000)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-		}
-	}
-	else if(shootFlagOne == 2 || shootFlagOne == 8 || shootFlagOne == 12)
+	laserAvalue=fort.laserAValueReceive*LASER_SCALE_A+LASER_INTERCEPT_A;
+	laserBvalue=fort.laserBValueReceive*LASER_SCALE_B+LASER_INTERCEPT_B;
+
+	
+	switch(stage)
 	{
+		case reachAngle:
+			laserCnt++;
+			YawPosCtrl(shootTurnAngle+addangle);
+			if(laserCnt>100)
+			{
+				laserCnt=0;
+				stage++;
+			}
+			break;
+			
+		//扫描到突变后，算得物体宽度
+		case scan:
+			addangle=addangle+add;
+			yawangle=shootTurnAngle+addangle;
+			YawPosCtrl(yawangle);
 		
-		shootFlag=2;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if((shootFlagOne == 12|| shootFlagOne == 8) && fabs(GetSpeeedY()) >= 1500 && isBallRight == 1 && D > 2400)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-		}
-		else if(shootFlagOne == 4 && fabs(GetSpeeedY()) >= 1100 && isBallRight == 1 && D > 2400)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-		}
-	}
-	else if(shootFlagOne == 7 || shootFlagOne == 11)
-	{
-		shootFlag=3;
-		D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		if(fabs(GetSpeeedX()) >= 1400 && isBallRight == 1 && D > 2400)
-		{
-			// 推球	
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-		}
+			if((lastpulseB-fort.laserBValueReceive)>200&&laserAvalue>bucketdistance-500&&laserAvalue<bucketdistance+500)
+			{
+				stableflag=1;
+				laser_A=laserAvalue;
+				Agl_A=fort.yawPosReceive;
+			}
+			if(stableflag)
+			{
+				if(fabs(lastpulseA-fort.laserAValueReceive)<50)
+				{
+					flg=1;
+					laser_A=laserAvalue;
+					stableflag=0;
+				}
+			}
+			if((lastpulseA-fort.laserAValueReceive)<-200&&laserBvalue>bucketdistance-500&&laserBvalue<bucketdistance+500&&flg==1)
+			{
+				flg=0;
+				laser_B=laserBvalue;
+				Agl_B=fort.yawPosReceive;
+			}
+			lastpulseA=fort.laserAValueReceive;
+			lastpulseB=fort.laserBValueReceive;
+			
+			if(addangle>39.5)
+			{
+				stage=3;
+			}
+			
+			if((!stableflag)&&laser_A&&laser_B)
+				Width=sqrt(laser_A*laser_A+laser_B*laser_B-2*laser_A*laser_B*cos((Agl_B-Agl_A)*PI/180));
+			if(Width>350&&Width<800)
+				stage=2;
+			break;
+		
+		//物体宽度满足后，激光打在中间，中间比两边远则是挡板，否则回退6度继续扫描
+		case scanSomething:
+			laserCnt++;
+			YawPosCtrl((Agl_A+Agl_B)/2-1);
+			if(laserCnt==40)
+			{
+				laserCnt=0;
+				if(laserAvalue>laserBvalue)
+					MaxLaservalue=laserAvalue;
+				else
+					MaxLaservalue=laserBvalue;
+				if(MaxLaservalue>laser_A&&MaxLaservalue>laser_B && fabs(MaxLaservalue-bucketdistance) < 400)
+				{
+					stage++;
+					sureFlag=1;
+				}
+				else
+				{
+					addangle-=6;
+					stage=1;
+					Width=0;
+					laser_A=0;
+					laser_B=0;
+				}
+			}
+			break;
+		//判断是否扫描到挡板，是则打球，否则扫描角度增大，速度减慢
+		case judge:
+			laserCnt++;
+			addangle=-30;
+			laser_A=0;
+			laser_B=0;
+			lastpulseA=0;
+			lastpulseB=0;
+			flg=0;
+			//没扫到
+			if(!sureFlag)
+			{
+				laserCnt=0;
+				stage=0;
+				changeFlg=0;
+				shootReady[shootFlag]=2;
+				Agl_A=0;
+				Agl_B=0;
+				MaxLaservalue=0;
+				add=0.1;
+				addangle=-50;
+			}
+			//扫到
+			else
+			{
+
+				stage=0;
+				sureFlag=0;
+				laserShootAngle[shootFlag]=(Agl_A+Agl_B)/2-1;
+				laserShootDistance[shootFlag]=MaxLaservalue;
+				laserShootFlg=1;
+				Agl_A=0;
+				Agl_B=0;
+				MaxLaservalue=0;
+			}
+		
+			break;
+		default: stage=3; break;
 	}
 }
 
+
+
+
+
+
+/**
+* @brief 走投激光扫描
+* @param none
+* @retval none
+* @attention 
+*/
+void Laser_Aim_Two(void)
+{
+	static int stage2=0,stableflag2=0,sureFlag2=0,laserCnt2=0;
+	float yawangle2=0,Width2=0;
+	static float addangle2=-15,lastpulseA2=0,lastpulseB2=0,laser_A2=0,laser_B2=0,Agl_A2=0,Agl_B2=0; 
+	float laserAvalue2=0,laserBvalue2=0,bucketdistance2=0;
+	static uint8_t flg2=0;
+	bucketdistance2=sqrt(pow((GetPosX()-X[shootFlag]),2)+pow((GetPosY()-Y[shootFlag]),2));
+	
+	laserAvalue2=fort.laserAValueReceive*2.48+24.8;
+	laserBvalue2=fort.laserBValueReceive*2.48+24.8;
+	
+	switch(stage2)
+	{
+		case 0:
+			laserCnt2++;
+			YawPosCtrl(shootTurnAngle+addangle2);
+			if(laserCnt2>100)
+			{
+				laserCnt2=0;
+				stage2=1;
+			}
+			break;
+		case 1:
+			laserCnt2=0;
+			addangle2=addangle2+0.2;
+			yawangle2=shootTurnAngle+addangle2;
+			YawPosCtrl(yawangle2);
+		
+			if((lastpulseB2-fort.laserBValueReceive)>200&&laserAvalue2>bucketdistance2-400&&laserAvalue2<bucketdistance2+400)
+			{
+				stableflag2=1;
+				laser_A2=laserAvalue2;
+				Agl_A2=fort.yawPosReceive;
+			}
+			if(stableflag2)
+			{
+				if(fabs(lastpulseA2-fort.laserAValueReceive)<50)
+				{
+					flg2=1;
+					laser_A2=laserAvalue2;
+					stableflag2=0;
+				}
+			}
+			if((lastpulseA2-fort.laserAValueReceive)<-200&&laserBvalue2>bucketdistance2-500&&laserBvalue2<bucketdistance2+500&&flg2==1)
+			{
+				flg2=0;
+				laser_B2=laserBvalue2;
+				Agl_B2=fort.yawPosReceive;
+			}
+			lastpulseA2=fort.laserAValueReceive;
+			lastpulseB2=fort.laserBValueReceive;
+			
+			if(addangle2>17)
+			{
+				stage2=2;
+			}
+			
+			if((!stableflag2)&&laser_A2&&laser_B2)
+			{
+				Width2=sqrt(laser_A2*laser_A2+laser_B2*laser_B2-2*laser_A2*laser_B2*cos((Agl_B2-Agl_A2)*PI/180));
+				if(Width2>300&&Width2<700)
+					sureFlag2=1;
+				else
+					sureFlag2=0;
+				stage2=2;
+			}
+			break;
+		case 2:
+			laserCnt2++;
+			addangle2=-15;
+			laser_A2=0;
+			laser_B2=0;
+			lastpulseA2=0;
+			lastpulseB2=0;
+			//没扫到
+			if(!sureFlag2)
+			{
+				shootCnt1=805;
+				Agl_A2=0;
+				Agl_B2=0;
+				laserCnt2=0;
+				stage2=0;
+				sureFlag2=0;
+				stopFlg=0;
+			}
+			//扫到
+			else
+			{
+				YawPosCtrl((Agl_A2+Agl_B2)/2-1);
+				if(laserCnt2 > 40)
+				{
+					laserCnt2=0;
+					stage2=0;
+					sureFlag2=0;
+					Agl_A2=0;
+					Agl_B2=0;
+					laserStopShootFlg=1;
+				}
+			}
+			break;
+		default: stage2=2;break;
+	}
+}
+
+
+
+extern uint8_t rightBall;
+extern uint8_t wrongBall;
+extern int32_t pushPos;
+extern uint8_t ballColor;
+
+/**
+* @brief 车卡球处理
+* @param none
+* @retval none
+* @attention 
+*/
+void BallStuck(void)
+{
+	static uint16_t ballStuckCnt=0;
+	ballStuckCnt++;
+	pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+	PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+	
+}
 
 /**
 * @brief 球颜色识别
@@ -674,82 +1304,72 @@ void NormalShootTwo(void)
 * @retval none
 * @attention 
 */
-extern int32_t pushPos;
-extern uint8_t ballColor;
-uint8_t BallColorRecognition(void)
+void BallColorRecognition(void)
 {
 	static uint16_t ballCnt1=0;
 	static uint16_t ballCnt2=0;
-	ReadActualPos(CAN2, PUSH_BALL_ID);
-	if(pushPos > pushPulse-600 && pushPos < pushPulse+300)
+	static uint16_t ballCnt3=0;
+	static uint32_t ballCnt4=0;
+
+	if(ballCnt3 > 100)
 	{
-		ballCnt2++;
-		if(ballColor == RIGHT_BALL)
+		ReadActualPos(CAN2, PUSH_BALL_ID);
+		if(pushPos > pushPulse-600 && pushPos < pushPulse+800)
 		{
-			ballCnt2=0;
-			return 1;
-		}
-		else if(ballColor == WRONG_BALL && ballCnt2 > 70)
-		{
-			pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			ballCnt2=0;
-			return 0;
-			
+			ballCnt1=0;
+			if(ballColor == rightBall)
+			{
+				ballCnt2=0;
+				ballCnt3=0;
+				ballCnt4=0;
+				isBallRight= 1;
+			}
+			else
+			{
+				ballCnt4++;
+				ballCnt2++;
+				if(ballCnt2 > 150)
+				{
+					if(ballColor == NO_BALL || ballColor == wrongBall)
+						pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
+					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
+					ballCnt2=0;
+					ballCnt3=0;
+				}
+				isBallRight= 0;
+			}
 		}
 		else
 		{
-			if(ballCnt2 == 200)
-			{
-				pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
-				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-				
-				
-			}
-			else if(ballCnt2 > 400)
-			{
-				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-				ballCnt2=0;
-			}
-			return 0;
+			ballCnt4++;
+			ballCnt2=0;
+				if(ballCnt1 > 250)
+				{
+					BallStuck();
+					ballCnt1=0;
+					ballCnt3=0;
+					
+				}
+			ballCnt1++;
+			isBallRight= 0;
 		}
 	}
 	else
 	{
-		
 		ballCnt2=0;
-		if(ballCnt1 > 200 && ballColor == WRONG_BALL)
-		{
-			pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			ballCnt1=0;
-			
-		}
-		else if(ballCnt1 > 200 && ballColor == RIGHT_BALL)
-		{
-			pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-			PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			ballCnt1=0;
-		}
-		else
-		{
-			if(ballCnt1 == 200)
-			{
-				pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-			}
-			else if(ballCnt1 > 400)
-			{
-				pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
-				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-				ballCnt1=0;
-			}
-		}
-		ballCnt1++;
-		return 0;
+		ballCnt3++;
 	}
-		
+	if(ballCnt4 > 1000)	
+	{
+		ballCnt4=0;
+		noRightBall=1;
+		laserShootFlg=0;
+	}
+	
 		
 }
+
+
+
+
 

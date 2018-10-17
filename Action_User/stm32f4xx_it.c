@@ -47,6 +47,7 @@
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
 
+//转换CAN接收的数据
 union Translate
 {
 	int32_t data32[2];
@@ -87,7 +88,11 @@ void CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
+
+//球的颜色 为0 没球，为1 白球，为2 黑球
 uint8_t ballColor=0;
+
+//推球电机返回的脉冲
 int32_t pushPos=0;
 void CAN2_RX0_IRQHandler(void)
 {
@@ -107,6 +112,7 @@ void CAN2_RX0_IRQHandler(void)
 	
     CAN_RxMsg(CAN2, &StdId, CAN2Buffer2, &receiveLength);
 	
+	//读取球的颜色
 	if(StdId == 0x01)
 	{
 		for(int i=0;i<5;i++)
@@ -118,6 +124,8 @@ void CAN2_RX0_IRQHandler(void)
 			ballColor=receiveBuffer[2];
 		else;
 	}
+	
+	//读取推球电机的脉冲
 	else if(StdId == 0x287)
 	{
 		for(int i=0;i<8;i++)
@@ -389,7 +397,6 @@ static float angle=0,posX=0,posY=0,speed_X=0,speed_Y=0,gyro=0;
 extern uint8_t isOKFlag;
 
 uint8_t sendFlag=0;
-Pos_t pos;
 void USART3_IRQHandler(void) //更新频率 200Hz 
 { 
 	 static uint8_t ch; 
@@ -492,12 +499,13 @@ void USART3_IRQHandler(void) //更新频率 200Hz
  
 } 
 
+
+//得到角度值
 float GetAngle(void)
 {
 	return angle;
 }
-
-extern float axis_Xerr;
+//得到x轴位置
 float GetPosX(void)
 {
 	float newPosX;
@@ -505,25 +513,31 @@ float GetPosX(void)
 	return newPosX;
 
 }
+//得到y轴位置
 float GetPosY(void)
 {
 	float newPosY;
 	newPosY=posY+OPS_TO_BACK_WHEEL-(OPS_TO_BACK_WHEEL*cos(angle*PI/180));
 	return newPosY;
+	
 }
+//得到x轴速度
 float GetSpeeedX(void)
 {
 	return speed_X;
 	
 }
+//得到y轴速度
 float GetSpeeedY(void)
 {
 	return speed_Y;
 }
+//得到角速度值
 float GetGyro(void)
 {
 	return gyro;
 }
+//炮台控制
 void UART5_IRQHandler(void)
 {
 	uint8_t data;
@@ -556,29 +570,6 @@ void UART5_IRQHandler(void)
 	}
 	OSIntExit();
 }
-
-uint8_t keyFlag=0;
-void EXTI1_IRQHandler(void)
-{
-	if(EXTI_GetITStatus(EXTI_Line1)!=RESET)//判断某个线上的中断是否发生   
-   { 
-		keyFlag=!keyFlag;
-		EXTI_ClearITPendingBit(EXTI_Line1);  //清除LINE上的中断标志位
-		
-   }           
-}
-
-uint8_t modeFlag=0;
-void EXTI0_IRQHandler(void)
-{
-	if(EXTI_GetITStatus(EXTI_Line0)!=RESET)//判断某个线上的中断是否发生   
-   { 
-		modeFlag=!modeFlag;
-		EXTI_ClearITPendingBit(EXTI_Line0);  //清除LINE上的中断标志位
-		
-   }           
-}
-
 
 /**
   * @brief   This function handles NMI exception.

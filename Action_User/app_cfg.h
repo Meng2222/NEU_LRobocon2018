@@ -49,6 +49,24 @@
 *                                              TASKS NAMES
 *********************************************************************************************************
 */
+
+//用于串口发数
+typedef struct {
+	float distance;
+	float turnAngleValue;//
+	uint8_t flagValue;
+	float shootangle;
+	float shootSp;
+	uint8_t shootFlg;
+	uint8_t flgOne;
+	uint8_t errflg;
+	float judgeSp;
+	uint8_t ready[4];
+	uint8_t ball;
+	
+}usartValue;
+
+
 extern  void  App_Task(void);
 
 static  void  App_TaskStart(void);

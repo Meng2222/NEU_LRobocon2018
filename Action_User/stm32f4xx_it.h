@@ -47,25 +47,14 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
-void SetAngle(void);
-void SetX(void);
-void SetY(void);
 float GetAngle(void);
 float GetPosX(void);
 float GetPosY(void);
 float GetSpeeedX(void);
 float GetSpeeedY(void);
-void EXTI1_IRQHandler(void);
-void EXTI0_IRQHandler(void);
+float GetGyro(void);
 
-//存储接收定位系统x, y, angle数据结构体
-typedef struct
-{ 
-	float x;
-	float y;
-	float angle;
-	
-}Pos_t;
+
 #ifdef __cplusplus
 }
 #endif

@@ -28,23 +28,6 @@
 #define PUSH_BALL_ID (7)
 
 
-
-
-uint8_t adcFlag=0;
-struct usartValue_{
-	uint32_t cnt;//用于检测是否数据丢失
-	float xValue;//串口输出x坐标
-	float yValue;//串口输出y坐标
-	float angleValue;//串口输出角度值
-	float pidValueOut;//PID输出
-	float d;
-	float turnAngleValue;//
-	uint8_t flagValue;
-	float shootangle;
-	float shootSp;
-}usartValue;
-
-
 /*
 ===============================================================
 						信号量定义
@@ -101,77 +84,97 @@ void ConfigTask(void)
 
 
 //炮台发回的值
+uint8_t adcFlag=0;
+
+//用于串口返回值
+usartValue uv4;
 extern FortType fort;
-extern uint8_t notShoot[2];
-extern float posXAdd;
-extern float posYAdd;
-extern uint8_t ballColor;
 extern int32_t pushPos;
 extern int32_t pushPulse;
-extern uint8_t shootFlag;
 extern uint8_t keyFlag;
 extern struct comend Cmd;
+
+//要的球的颜色 ，为1 白色，为2 黑色
+uint8_t rightBall=0;
+
+//不要的球的颜色 ，为1 白色，为2 黑色
+uint8_t wrongBall=0;
+
+//倒球开关的值，为0 正常运行，为1 倒球
+uint8_t keyFlag=0;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-	uint16_t Cnt=0;
 	//PID参数
 	Angle_PidPara((800*KP_A),0,KD_A);
 	Distance_PidPara(KP_D,0,25); 
-	
+	//开关控制要的球的颜色
+	if(KEY_STATUS_ONE)
+	{
+		rightBall=2;
+		wrongBall=1;
+	}
+	else
+	{
+		rightBall=1;
+		wrongBall=2;
+	}
 
-	
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+		
+		//正常运行
 		if(!keyFlag)
-		{
-//			BallColorRecognition();
-//			ShooterVelCtrl(25);
-//			Turn(90,600);
-//			straightLine(1,0,0,0,800);
-//			BiggerSquareOne();
-//			Test();
-//			ShooterVelCtrl(Cmd.shoot);
-//			YawPosCtrl(Cmd.turn);
-			//收球电机1
-			VelCrl(CAN2,COLLECT_BALL_1_ID,60*OTHER_COUNTS_PER_ROUND); 
-
-			//收球电机2
-			VelCrl(CAN2,COLLECT_BALL_2_ID,-60*OTHER_COUNTS_PER_ROUND); 
-			//走位1
-			Walk(adcFlag);
+		{ 
+			//走形
+			Walk(&adcFlag);
 			
 			//发球
 			Shoot(adcFlag); 
 			
-			USART_OUT(UART4, " %d\t", (int)ballColor);
+			USART_OUT(UART4, " %d\t", (int)adcFlag);
+			USART_OUT(UART4, " %d\t", (int)uv4.flgOne);
+			USART_OUT(UART4, " %d\t", (int)uv4.ball);
+			USART_OUT(UART4, " %d\t", (int)uv4.errflg);
+			USART_OUT(UART4, " %d\t", (int)uv4.judgeSp);
+			USART_OUT(UART4, " %d\t", (int)uv4.shootFlg);
+			USART_OUT(UART4, " %d\t", (int)uv4.shootangle);
+			USART_OUT(UART4, " %d\t", (int)fort.yawPosReceive);
+			USART_OUT(UART4, " %d\t", (int)uv4.distance);
+			USART_OUT(UART4, " %d\t", (int)uv4.shootSp);
+			USART_OUT(UART4, " %d\t", (int)fort.shooterVelReceive);
+			USART_OUT(UART4, " %d\t", (int)fort.laserAValueReceive);
+			USART_OUT(UART4, " %d\t", (int)fort.laserBValueReceive);
+			USART_OUT(UART4, " %d\t", (int)uv4.ready[0]);
+			USART_OUT(UART4, " %d\t", (int)uv4.ready[1]);
+			USART_OUT(UART4, " %d\t", (int)uv4.ready[2]);
+			USART_OUT(UART4, " %d\t", (int)uv4.ready[3]);
 			USART_OUT(UART4, " %d\t", (int)pushPos);
 			USART_OUT(UART4, " %d\t", (int)pushPulse);
+			USART_OUT(UART4, " %d\t", (int)GetGyro());
+			USART_OUT(UART4, " %d\t", (int)GetAngle());
 			USART_OUT(UART4, " %d\t", (int)GetSpeeedX());
 			USART_OUT(UART4, " %d\t", (int)GetSpeeedY());
-			USART_OUT(UART4, " %d\t", (int)GetAngle());
 			USART_OUT(UART4, " %d\t", (int)GetPosX());
 			USART_OUT(UART4, " %d\r\n", (int)GetPosY());
 		}
+		
+		//倒球
 		else
 		{
 			MotorOff(CAN1, BACK_WHEEL_ID);
 			MotorOff(CAN1, TURN_AROUND_WHEEL_ID);
-			MotorOff(CAN2, COLLECT_BALL_1_ID);
-			MotorOff(CAN2, COLLECT_BALL_2_ID);
+			MotorOff(CAN2, PUSH_BALL_ID);
 			
 			ShooterVelCtrl(0);
-			Cnt++;
-			if(Cnt >= 150)
-			{
-				// 推球	
-				pushPulse-=(OTHER_COUNTS_PER_ROUND/2);
-				PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-				Cnt=0;
-			}
+			
+			VelCrl(CAN2,COLLECT_BALL_1_ID,-80*OTHER_COUNTS_PER_ROUND); 
+
+			//收球电机2
+			VelCrl(CAN2,COLLECT_BALL_2_ID,80*OTHER_COUNTS_PER_ROUND); 
 		}			
 	}
 }
@@ -179,7 +182,7 @@ void WalkTask(void)
 //初始化函数
 void Init(void)
 {
-
+	delay_ms(5000);
 	TIM_Init(TIM2, 999, 84, 0x01, 0x03);
 	USART3_Init(115200);
 	UART4_Init(921600);
@@ -204,24 +207,44 @@ void Init(void)
 	VelLoopCfg(CAN2, COLLECT_BALL_2_ID, 500000, 500000);
 
 	//推球电机初始化
-	PosLoopCfg(CAN2, PUSH_BALL_ID, 20000000,20000000,10000000);
+	PosLoopCfg(CAN2, PUSH_BALL_ID, 10000000,10000000,5000000);
 	
 	MotorOn(CAN1, BACK_WHEEL_ID);
 	MotorOn(CAN1, TURN_AROUND_WHEEL_ID);
 	MotorOn(CAN2, COLLECT_BALL_1_ID);
 	MotorOn(CAN2, COLLECT_BALL_2_ID);
-//	MotorOn(CAN2, PUSH_BALL_ID);
-	delay_ms(5000);
-	PosConfig();
 
-	GetDirection(&adcFlag);
-	
+	if(KEY_STATUS_TWO)	
+		keyFlag=1;
+	else
+		keyFlag=0;
+	if(keyFlag == 0)
+	{
+		
+		delay_ms(5000);
+		
+		//初始化定位系统
+		PosConfig();
+		
+		//开启收球电机1,2
+		VelCrl(CAN2,COLLECT_BALL_1_ID,60*OTHER_COUNTS_PER_ROUND); 	
+		VelCrl(CAN2,COLLECT_BALL_2_ID,-60*OTHER_COUNTS_PER_ROUND); 
+		
+		//等待激光触发
+		GetDirection(&adcFlag);
+	}
+	else;
 
 	
 }
 
-
-//车1定位系统初始化
+/**
+* @brief 定位系统初始化
+* @param none
+* @retval none
+* @attention 
+*/
+//
 extern uint8_t sendFlag;
 uint8_t isOKFlag;
 
@@ -241,29 +264,90 @@ void PosConfig(void)
 	sendFlag=0;
 }
 
+/**
+* @brief 激光触发
+* @param getFlag：触发模式标志位
+* @retval none
+* @attention 
+*/
+
 
 void GetDirection(uint8_t *getFlag)
 {
-	static uint8_t count=0;
+	static uint8_t cnt=0;
 	uint16_t Laser_A=0;
 	uint16_t Laser_B=0;
-	
-	USART_OUT(UART4, "Laser Ready\r\n");
+	static float MinLaser_A=1500,MinLaser_B=1500;
+	static int reduceflag=0,overflag=0;
 	while(1)
 	{
-		Laser_A=fort.laserAValueReceive;
-		Laser_B=fort.laserBValueReceive;
-		if(Laser_A < 50)
+		delay_ms(2);
+		YawPosCtrl(90);
+		
+		USART_OUT(UART4, "A	 %d\t", (int)fort.laserAValueReceive);
+		USART_OUT(UART4, "B	 %d\r\n", (int)fort.laserBValueReceive);
+		
+		Laser_A=fort.laserAValueReceive*2.48+24.8;
+		Laser_B=fort.laserBValueReceive*2.48+24.8;
+		if((Laser_A<1500||Laser_B<1500)  && Laser_A > 50 && Laser_B > 50)
 		{
-			(*getFlag)=1;
-			break;
+			cnt++;
+			if(cnt > 40)
+				reduceflag=1;
 		}
-		else if(Laser_B < 50)
+		else
 		{
-			(*getFlag)=0;
-			break;
+			cnt=0;
 		}
-		else;
+		if(reduceflag&&(!overflag))
+		{
+			if(Laser_A<MinLaser_A)
+				MinLaser_A=Laser_A;
+			if(Laser_B<MinLaser_B)
+				MinLaser_B=Laser_B;
+			if(Laser_A>1500&&Laser_B>1500)
+				overflag=1;
+		}
+		if(overflag)
+		{
+			if(MinLaser_B < 80)
+				{
+				  (*getFlag)=0;
+				break;
+				}
+			else if(MinLaser_A < 80)
+				{
+				  (*getFlag)=3;
+				  break;
+				}
+			else if(MinLaser_B > 100 && MinLaser_B < 200)
+				{
+				  (*getFlag)=1;
+				  break;
+				}
+			else if(MinLaser_A > 100 && MinLaser_A < 200)
+				{
+				  (*getFlag)=4;
+				  break;
+				}
+				 else if(MinLaser_B > 250 && MinLaser_B < 500)
+				{
+				  (*getFlag)=2;
+				  break;
+				}
+			else if(MinLaser_A > 250 && MinLaser_A < 500)
+				{
+				  (*getFlag)=5;
+				  break;
+				}
+			else
+				{
+					overflag=0;
+					MinLaser_A=1500;
+					MinLaser_B=1500;
+				}
+		}
 	}
+	cnt=0;
 }
 
