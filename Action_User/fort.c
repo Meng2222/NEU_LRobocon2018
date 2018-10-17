@@ -1306,62 +1306,62 @@ void BallStuck(void)
 */
 void BallColorRecognition(void)
 {
-	static uint16_t ballCnt1=0;
-	static uint16_t ballCnt2=0;
-	static uint16_t ballCnt3=0;
-	static uint32_t ballCnt4=0;
+	static uint16_t stuckCnt=0;
+	static uint16_t noRightBallCnt=0;
+	static uint16_t pushStableCnt=0;
+	static uint32_t longTimeNoRightBallCnt=0;
 
-	if(ballCnt3 > 100)
+	if(pushStableCnt > 100)
 	{
 		ReadActualPos(CAN2, PUSH_BALL_ID);
 		if(pushPos > pushPulse-600 && pushPos < pushPulse+800)
 		{
-			ballCnt1=0;
+			stuckCnt=0;
 			if(ballColor == rightBall)
 			{
-				ballCnt2=0;
-				ballCnt3=0;
-				ballCnt4=0;
+				noRightBallCnt=0;
+				pushStableCnt=0;
+				longTimeNoRightBallCnt=0;
 				isBallRight= 1;
 			}
 			else
 			{
-				ballCnt4++;
-				ballCnt2++;
-				if(ballCnt2 > 150)
+				longTimeNoRightBallCnt++;
+				noRightBallCnt++;
+				if(noRightBallCnt > 150)
 				{
 					if(ballColor == NO_BALL || ballColor == wrongBall)
 						pushPulse+=(-OTHER_COUNTS_PER_ROUND/2);
 					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-					ballCnt2=0;
-					ballCnt3=0;
+					noRightBallCnt=0;
+					pushStableCnt=0;
 				}
 				isBallRight= 0;
 			}
 		}
 		else
 		{
-			ballCnt4++;
-			ballCnt2=0;
-				if(ballCnt1 > 250)
+			longTimeNoRightBallCnt++;
+			noRightBallCnt=0;
+				if(stuckCnt > 250)
 				{
 					BallStuck();
-					ballCnt1=0;
-					ballCnt3=0;
+					stuckCnt=0;
+					pushStableCnt=0;
 					
 				}
-			ballCnt1++;
+			stuckCnt++;
 			isBallRight= 0;
 		}
 	}
 	else
 	{
-		ballCnt2=0;
-		ballCnt3++;
+		noRightBallCnt=0;
+		pushStableCnt++;
 	}
-	if(ballCnt4 > 1000)	
+	if(longTimeNoRightBallCnt > 1000)	
 	{
-		ballCnt4=0;
+		longTimeNoRightBallCnt=0;
 		noRightBall=1;
 		laserShootFlg=0;
 	}
