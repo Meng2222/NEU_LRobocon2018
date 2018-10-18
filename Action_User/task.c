@@ -12,7 +12,7 @@
 #include "stm32f4xx_usart.h"
 #include "fort.h"
 #include "math.h"
-#include "moveBase.h"
+#include "key.h"
 
 #define One_Meter_Per_Second (10865.0)            //车轮一米每秒的设定值   4096*(1000/120π)
 #define BaseVelocity (0.5 * One_Meter_Per_Second) //基础速度               0.5m/s                         //四号车编号             4
@@ -26,25 +26,6 @@
 #define COLLECT_BALL_2_ID (6)
 // 宏定义推球电机ID
 #define PUSH_BALL_ID (7)
-
-
-
-uint8_t adcFlag=0;
-struct usartValue_{
-	uint32_t cnt;//用于检测是否数据丢失
-	float xValue;//串口输出x坐标
-	float yValue;//串口输出y坐标
-	float angleValue;//串口输出角度值
-	float pidValueOut;//PID输出
-	float d;
-	float turnAngleValue;//
-	uint8_t flagValue;
-	float shootangle;
-	float shootSp;
-	float X;
-	float Y;
-	float V;
-}usartValue;
 
 
 /*
@@ -103,77 +84,118 @@ void ConfigTask(void)
 
 
 //炮台发回的值
+uint8_t adcFlag=0;
+usartValue uv4;
 extern FortType fort;
-extern uint8_t notShoot[2];
-extern float posXAdd;
-extern float posYAdd;
-
-extern Msg_t frontspeedBuffer;
-extern Msg_t backspeedBuffer;
-
-extern uint8_t ballColor;
 extern int32_t pushPos;
 extern int32_t pushPulse;
-
+extern uint8_t keyFlag;
+extern struct comend Cmd;
+uint8_t modeFlag=0;
+uint8_t rightBall=0;
+uint8_t wrongBall=0;
+uint8_t keyFlag=0;
 void WalkTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
-	uint16_t Cnt=0;
-
-
 	//PID参数
+	Angle_PidPara((800*KP_A),0,KD_A);
+	Distance_PidPara(KP_D,0,25); 
 	
+	
+	
+	//开关控制要的球的颜色
+	if(KEY_STATUS)
+	{
+		rightBall=2;
+		wrongBall=1;
+	}
+	else
+	{
+		rightBall=1;
+		wrongBall=2;
+	}
 
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-		ReadActualVel(CAN1,BACK_WHEEL_ID);
-		ReadActualVel(CAN1,TURN_AROUND_WHEEL_ID);	
-	  ReadActualPos(CAN2, PUSH_BALL_ID);		
 		
-		//VelCrl(CAN1,2,1200*REDUCTION_RATIO*NEW_CAR_COUNTS_PER_ROUND/(PI*TURN_AROUND_WHEEL_DIAMETER));//前轮
-		//Tangencystraightline();
-		//N_Back_Strght_Walk(1,0,-700,2,800);
-		//The_Collect_Round();
-		USART_OUT(UART4, " %d\t%d\t%d\t%d\r\n", (int)(GetPosX()),(int)(GetPosY()),(int)(((frontspeedBuffer.data32[1]/8192.0f)/REDUCTION_RATIO)*PI*TURN_AROUND_WHEEL_DIAMETER),(int)(((backspeedBuffer.data32[1]/8192.0f)/REDUCTION_RATIO)*PI*WHEEL_DIAMETER));		
+		//正常运行
+		if(!keyFlag)
+		{ 
 			
-		//BallColorRecognition();
+			ShooterVelCtrl(60);
+			YawPosCtrl(0);
+			BallColorRecognition();
+			//走形
+//			Walk(&adcFlag);
+//			
+//			//发球
+//			Shoot(adcFlag); 
+			
+			USART_OUT(UART4, " %d\t", (int)adcFlag);
+			USART_OUT(UART4, " %d\t", (int)uv4.flgOne);
+			USART_OUT(UART4, " %d\t", (int)uv4.ball);
+			USART_OUT(UART4, " %d\t", (int)uv4.errflg);
+			USART_OUT(UART4, " %d\t", (int)uv4.judgeSp);
+			USART_OUT(UART4, " %d\t", (int)uv4.shootFlg);
+			USART_OUT(UART4, " %d\t", (int)uv4.shootangle);
+			USART_OUT(UART4, " %d\t", (int)fort.yawPosReceive);
+			USART_OUT(UART4, " %d\t", (int)uv4.distance);
+			USART_OUT(UART4, " %d\t", (int)uv4.shootSp);
+			USART_OUT(UART4, " %d\t", (int)uv4.shootSp2);
+			USART_OUT(UART4, " %d\t", (int)Cmd.shoot);
+			USART_OUT(UART4, " %d\t", (int)fort.shooterVelReceive);
+			USART_OUT(UART4, " %d\t", (int)fort.laserAValueReceive);
+			USART_OUT(UART4, " %d\t", (int)fort.laserBValueReceive);
+			USART_OUT(UART4, " %d\t", (int)uv4.ready[0]);
+			USART_OUT(UART4, " %d\t", (int)uv4.ready[1]);
+			USART_OUT(UART4, " %d\t", (int)uv4.ready[2]);
+			USART_OUT(UART4, " %d\t", (int)uv4.ready[3]);
+			USART_OUT(UART4, " %d\t", (int)pushPos);
+			USART_OUT(UART4, " %d\t", (int)pushPulse);
+			USART_OUT(UART4, " %d\t", (int)GetGyro());
+			USART_OUT(UART4, " %d\t", (int)GetAngle());
+			USART_OUT(UART4, " %d\t", (int)GetSpeeedX());
+			USART_OUT(UART4, " %d\t", (int)GetSpeeedY());
+			USART_OUT(UART4, " %d\t", (int)GetPosX());
+			USART_OUT(UART4, " %d\r\n", (int)GetPosY());
+		}
+		
+		//倒球
+		else
+		{
+			MotorOff(CAN1, BACK_WHEEL_ID);
+			MotorOff(CAN1, TURN_AROUND_WHEEL_ID);
+			MotorOff(CAN2, PUSH_BALL_ID);
+			
+			ShooterVelCtrl(0);
+			
+			VelCrl(CAN2,COLLECT_BALL_1_ID,-80*OTHER_COUNTS_PER_ROUND); 
 
-    //收球电机1
-   VelCrl(CAN2,COLLECT_BALL_1_ID,60*OTHER_COUNTS_PER_ROUND); 
-	
-		//收球电机1
-   VelCrl(CAN2,COLLECT_BALL_2_ID,-60*OTHER_COUNTS_PER_ROUND); 
-		//走位
-    //Walk(adcFlag);
-		//发球
-		//Shoot(adcFlag,200);
-
-
-//		USART_OUT(UART4, " %d\t", pushPos);
-//		USART_OUT(UART4, " %d\t", pushPulse);
-//		
-//		USART_OUT(UART4, " %d\r\n", (int)ballColor);
+			//收球电机2
+			VelCrl(CAN2,COLLECT_BALL_2_ID,80*OTHER_COUNTS_PER_ROUND); 
+		}			
 	}
 }
  
 //初始化函数
 void Init(void)
 {
-
+	delay_ms(5000);
 	TIM_Init(TIM2, 999, 84, 0x01, 0x03);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	UART5_Init(921600);
 	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	KeyOne();
+	KeyTwo();
 	ElmoInit(CAN1);
 	ElmoInit(CAN2);
-	delay_s(2);
 	
-
 	//后轮电机初始化
 	VelLoopCfg(CAN1, BACK_WHEEL_ID, 40000000, 40000000);
 	
@@ -187,24 +209,44 @@ void Init(void)
 	VelLoopCfg(CAN2, COLLECT_BALL_2_ID, 500000, 500000);
 
 	//推球电机初始化
-	PosLoopCfg(CAN2, PUSH_BALL_ID, 5000000,5000000,200000);
+	PosLoopCfg(CAN2, PUSH_BALL_ID, 10000000,10000000,5000000);
 	
 	MotorOn(CAN1, BACK_WHEEL_ID);
 	MotorOn(CAN1, TURN_AROUND_WHEEL_ID);
 	MotorOn(CAN2, COLLECT_BALL_1_ID);
 	MotorOn(CAN2, COLLECT_BALL_2_ID);
-//	MotorOn(CAN2, PUSH_BALL_ID);
-	delay_ms(5000);
-	PosConfig();
 
-	GetDirection(&adcFlag);
-	
+	if(GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_1) == 1)	
+		keyFlag=1;
+	else
+		keyFlag=0;
+	if(keyFlag == 0)
+	{
+		
+		delay_ms(5000);
+		
+		//初始化定位系统
+		PosConfig();
+		
+		//开启收球电机1,2
+		VelCrl(CAN2,COLLECT_BALL_1_ID,60*OTHER_COUNTS_PER_ROUND); 	
+		VelCrl(CAN2,COLLECT_BALL_2_ID,-60*OTHER_COUNTS_PER_ROUND); 
+		
+		//等待激光触发
+		GetDirection(&adcFlag);
+	}
+	else;
 
 	
 }
 
-
-//车1定位系统初始化
+/**
+* @brief 定位系统初始化
+* @param none
+* @retval none
+* @attention 
+*/
+//
 extern uint8_t sendFlag;
 uint8_t isOKFlag;
 
@@ -224,28 +266,90 @@ void PosConfig(void)
 	sendFlag=0;
 }
 
+/**
+* @brief 激光触发
+* @param getFlag：触发模式标志位
+* @retval none
+* @attention 
+*/
 
-void GetDirection(uint8_t *getFlag)
+
+void GetDirection(uint8_t *getAdcFlag)
 {
-	uint16_t Laser_A=0;
-	uint16_t Laser_B=0;
-	
+	static uint8_t cnt=0;
+	uint16_t laserA=0;
+	uint16_t laserB=0;
+	static float minLaserA=1500,minLaserB=1500;
+	static int reduceFlag=0,overFlag=0;
 	while(1)
 	{
-		Laser_A=fort.laserAValueReceive;
-		Laser_B=fort.laserBValueReceive;
-		if(Laser_A < 70)
+		delay_ms(2);
+		YawPosCtrl(90);
+		
+		USART_OUT(UART4, "A	 %d\t", (int)fort.laserAValueReceive);
+		USART_OUT(UART4, "B	 %d\r\n", (int)fort.laserBValueReceive);
+		
+		laserA=fort.laserAValueReceive*2.48+24.8;
+		laserB=fort.laserBValueReceive*2.48+24.8;
+		if((laserA<1500||laserB<1500)  && laserA > 50 && laserB > 50)
 		{
-			(*getFlag)=0;
-			break;
+			cnt++;
+			if(cnt > 40)
+				reduceFlag=1;
 		}
-		else if(Laser_B < 70)
+		else
 		{
-			(*getFlag)=1;
-			break;
+			cnt=0;
 		}
-		else;
-		USART_OUT(UART4, "Laser Ready\r\n");
+		if(reduceFlag&&(!overFlag))
+		{
+			if(laserA<minLaserA)
+				minLaserA=laserA;
+			if(laserB<minLaserB)
+				minLaserB=laserB;
+			if(laserA>1500&&laserB>1500)
+				overFlag=1;
+		}
+		if(overFlag)
+		{
+			if(minLaserB < 80)
+				{
+				  (*getAdcFlag)=0;
+				break;
+				}
+			else if(minLaserA < 80)
+				{
+				  (*getAdcFlag)=3;
+				  break;
+				}
+			else if(minLaserB > 100 && minLaserB < 200)
+				{
+				  (*getAdcFlag)=1;
+				  break;
+				}
+			else if(minLaserA > 100 && minLaserA < 200)
+				{
+				  (*getAdcFlag)=4;
+				  break;
+				}
+				 else if(minLaserB > 250 && minLaserB < 500)
+				{
+				  (*getAdcFlag)=2;
+				  break;
+				}
+			else if(minLaserA > 250 && minLaserA < 500)
+				{
+				  (*getAdcFlag)=5;
+				  break;
+				}
+			else
+				{
+					overFlag=0;
+					minLaserA=1500;
+					minLaserB=1500;
+				}
+		}
 	}
+	cnt=0;
 }
 
