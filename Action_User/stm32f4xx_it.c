@@ -67,7 +67,7 @@ void CAN1_RX0_IRQHandler(void)
 	uint32_t StdId = 0x00;
 	uint8_t CAN1Buffer[8] = {0};
 	uint8_t receiveLength = 8;
-	CanRxMsg RxMessage;
+//	CanRxMsg RxMessage;
     CAN_RxMsg(CAN1, &StdId, CAN1Buffer, &receiveLength);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
@@ -108,7 +108,7 @@ void CAN2_RX0_IRQHandler(void)
 	uint8_t CAN2Buffer2[8] = {0};
 	uint8_t receiveLength = 8;
 	uint8_t receiveBuffer[5]={0};
-	CanRxMsg RxMessage;
+//	CanRxMsg RxMessage;
 	
     CAN_RxMsg(CAN2, &StdId, CAN2Buffer2, &receiveLength);
 	
@@ -468,11 +468,11 @@ void USART3_IRQHandler(void) //更新频率 200Hz
 
 					 sendFlag=1;
 					 angle = posture.ActVal[0] ;//角度 
-					 speed_X = posture.ActVal[1]; 
-					 speed_Y = posture.ActVal[2]; 
+					 speed_X = posture.ActVal[1];//x速度
+					 speed_Y = posture.ActVal[2];//y速度 
 					 posX = posture.ActVal[3];//x 
 					 posY = posture.ActVal[4];//y 
-					 gyro = posture.ActVal[5];
+					 gyro = posture.ActVal[5];//角速度
 				 } 
 				 count = 0; 
 				 break; 
@@ -509,7 +509,7 @@ float GetAngle(void)
 float GetPosX(void)
 {
 	float newPosX;
-	newPosX=posX+(OPS_TO_BACK_WHEEL*sin(angle*PI/180));
+	newPosX=posX+(OPS_TO_BACK_WHEEL*sin(angle*PI/180.0f));
 	return newPosX;
 
 }
@@ -517,7 +517,7 @@ float GetPosX(void)
 float GetPosY(void)
 {
 	float newPosY;
-	newPosY=posY+OPS_TO_BACK_WHEEL-(OPS_TO_BACK_WHEEL*cos(angle*PI/180));
+	newPosY=posY+OPS_TO_BACK_WHEEL-(OPS_TO_BACK_WHEEL*cos(angle*PI/180.0f));
 	return newPosY;
 	
 }

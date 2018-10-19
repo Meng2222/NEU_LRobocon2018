@@ -135,31 +135,31 @@ void WalkTask(void)
 			//发球
 			Shoot(adcFlag); 
 			
-			USART_OUT(UART4, " %d\t", (int)adcFlag);
-			USART_OUT(UART4, " %d\t", (int)uv4.flgOne);
-			USART_OUT(UART4, " %d\t", (int)uv4.ball);
-			USART_OUT(UART4, " %d\t", (int)uv4.errflg);
-			USART_OUT(UART4, " %d\t", (int)uv4.judgeSp);
-			USART_OUT(UART4, " %d\t", (int)uv4.shootFlg);
-			USART_OUT(UART4, " %d\t", (int)uv4.shootangle);
-			USART_OUT(UART4, " %d\t", (int)fort.yawPosReceive);
-			USART_OUT(UART4, " %d\t", (int)uv4.distance);
-			USART_OUT(UART4, " %d\t", (int)uv4.shootSp);
-			USART_OUT(UART4, " %d\t", (int)fort.shooterVelReceive);
-			USART_OUT(UART4, " %d\t", (int)fort.laserAValueReceive);
-			USART_OUT(UART4, " %d\t", (int)fort.laserBValueReceive);
-			USART_OUT(UART4, " %d\t", (int)uv4.ready[0]);
-			USART_OUT(UART4, " %d\t", (int)uv4.ready[1]);
-			USART_OUT(UART4, " %d\t", (int)uv4.ready[2]);
-			USART_OUT(UART4, " %d\t", (int)uv4.ready[3]);
-			USART_OUT(UART4, " %d\t", (int)pushPos);
-			USART_OUT(UART4, " %d\t", (int)pushPulse);
-			USART_OUT(UART4, " %d\t", (int)GetGyro());
-			USART_OUT(UART4, " %d\t", (int)GetAngle());
-			USART_OUT(UART4, " %d\t", (int)GetSpeeedX());
-			USART_OUT(UART4, " %d\t", (int)GetSpeeedY());
-			USART_OUT(UART4, " %d\t", (int)GetPosX());
-			USART_OUT(UART4, " %d\r\n", (int)GetPosY());
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)adcFlag);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.flgOne);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.ball);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.errflg);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.judgeSp);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.shootFlg);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.shootangle);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)fort.yawPosReceive);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.distance);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.shootSp);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)fort.shooterVelReceive);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)fort.laserAValueReceive);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)fort.laserBValueReceive);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.ready[0]);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.ready[1]);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.ready[2]);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)uv4.ready[3]);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)pushPos);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)pushPulse);
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)GetGyro());
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)GetAngle());
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)GetSpeeedX());
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)GetSpeeedY());
+			USART_OUT(UART4, (uint8_t *)" %d\t", (int)GetPosX());
+			USART_OUT(UART4, (uint8_t *)" %d\r\n", (int)GetPosY());
 		}
 		
 		//倒球
@@ -265,7 +265,7 @@ void PosConfig(void)
 }
 
 /**
-* @brief 激光触发
+* @brief 激光触发，手挡住放开之后触发
 * @param getFlag：触发模式标志位
 * @retval none
 * @attention 
@@ -274,21 +274,20 @@ void PosConfig(void)
 
 void GetDirection(uint8_t *getFlag)
 {
-	static uint8_t cnt=0;
+	uint8_t cnt=0;
 	uint16_t Laser_A=0;
 	uint16_t Laser_B=0;
-	static float MinLaser_A=1500,MinLaser_B=1500;
+	float MinLaser_A=1500,MinLaser_B=1500;
 	static int reduceflag=0,overflag=0;
 	while(1)
 	{
 		delay_ms(2);
 		YawPosCtrl(90);
 		
-		USART_OUT(UART4, "A	 %d\t", (int)fort.laserAValueReceive);
-		USART_OUT(UART4, "B	 %d\r\n", (int)fort.laserBValueReceive);
+		Laser_A=fort.laserAValueReceive*2.48f+24.8f;
+		Laser_B=fort.laserBValueReceive*2.48f+24.8f;
 		
-		Laser_A=fort.laserAValueReceive*2.48+24.8;
-		Laser_B=fort.laserBValueReceive*2.48+24.8;
+		//激光A或者激光B测得距离小于1500大于50，并且大于40次
 		if((Laser_A<1500||Laser_B<1500)  && Laser_A > 50 && Laser_B > 50)
 		{
 			cnt++;
@@ -301,20 +300,25 @@ void GetDirection(uint8_t *getFlag)
 		}
 		if(reduceflag&&(!overflag))
 		{
+			//记录激光最小值
 			if(Laser_A<MinLaser_A)
 				MinLaser_A=Laser_A;
 			if(Laser_B<MinLaser_B)
 				MinLaser_B=Laser_B;
+			
+			//手放开之后启动
 			if(Laser_A>1500&&Laser_B>1500)
 				overflag=1;
 		}
 		if(overflag)
 		{
+			//记录激光B小于80
 			if(MinLaser_B < 80)
 				{
 				  (*getFlag)=0;
 				break;
 				}
+			//记录激光A小于80
 			else if(MinLaser_A < 80)
 				{
 				  (*getFlag)=3;

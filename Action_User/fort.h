@@ -17,31 +17,31 @@
 #define BUCKET_FOR_Y 135.0
 
 //由距离算射球电机转速的比例项
-#define SHOOT_KP    0.013
+#define SHOOT_KP    0.013f
 
 //由距离算射球电机转速的截距
-#define SHOOT_INTERCEPT  39.859
+#define SHOOT_INTERCEPT  39.859f
 
 //激光A的参数
-#define LASER_SCALE_A  2.4694 //一脉冲值代表2.4817毫米
-#define LASER_INTERCEPT_A  30.992
+#define LASER_SCALE_A  2.4694f //一脉冲值代表2.4817毫米
+#define LASER_INTERCEPT_A  30.992f
 
 //激光B的参数
-#define LASER_SCALE_B  2.4811 //一脉冲值代表2.4777毫米
-#define LASER_INTERCEPT_B  18.299
+#define LASER_SCALE_B  2.4811f //一脉冲值代表2.4777毫米
+#define LASER_INTERCEPT_B  18.299f
 
 //射球距离的限定，外圈在该距离内才打球
-#define SHOOT_D_ONE 2000
-#define SHOOT_D_TWO 3800
+#define SHOOT_D_ONE 2000.0f
+#define SHOOT_D_TWO 3800.0f
 
 //车速的限定，中圈达到该速度才打球
-#define SPEED_ONE 1300
+#define SPEED_ONE 1300.0f
 
 //延时时间
 #define DELAY_TIME 200
 
 //车速的限定，定点小于该速度才打球
-#define SPEED_TWO 30
+#define SPEED_TWO 30.0f
 
 //转速误差范围
 #define SHOOT_ERR_1 2

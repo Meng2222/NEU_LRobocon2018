@@ -214,6 +214,8 @@ static float shootSpeed=0;
 void Shoot(uint8_t flg)
 {
 	static float shootAngleLast=0,getAngleLast=0;
+	
+	//errOne上一次炮台相对车角度与这次炮台相对车角度的差，errTwo上一次定位系统角度与这次定位系统角度的差，用于计算炮台角度
 	float errOne=0,errTwo=0;
 	float shootX=GetPosX();
 	float shootY=GetPosY();
@@ -307,7 +309,7 @@ void Shoot(uint8_t flg)
 				if(shootDistance < 3333)
 					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT;
 				else if(shootDistance >= 3333)
-					shootSpeed=(0.01*shootDistance)+50.5;
+					shootSpeed=(0.01f*shootDistance)+50.5f;
 				
 			}
 			else 
@@ -335,9 +337,9 @@ void Shoot(uint8_t flg)
 			if(stopFlg == 0)
 			{
 				if(flagOne < 6 && flagOne > 1)
-					YawPosCtrl(shootTurnAngle-(4*0.000001*shootDistance*shootDistance-0.0386*shootDistance+100));
-				else
-					YawPosCtrl(shootTurnAngle-judgeSpeed*0.006);
+					YawPosCtrl(shootTurnAngle-(4*0.000001f*shootDistance*shootDistance-0.0386f*shootDistance+96));
+				else if(flagOne >= 6 && flagOne < 11)
+					YawPosCtrl(shootTurnAngle-judgeSpeed*0.007f);
 			}
 			else
 				YawPosCtrl(shootTurnAngle);
@@ -348,9 +350,9 @@ void Shoot(uint8_t flg)
 			if(stopFlg == 0)
 			{
 				if(flagOne < 6 && flagOne > 1)
-					YawPosCtrl(shootTurnAngle+(4*0.000001*shootDistance*shootDistance-0.0386*shootDistance+100));
-				else
-					YawPosCtrl(shootTurnAngle+judgeSpeed*0.004);
+					YawPosCtrl(shootTurnAngle+(4*0.000001f*shootDistance*shootDistance-0.0386f*shootDistance+100));
+				else if(flagOne >= 6 && flagOne < 11)
+					YawPosCtrl(shootTurnAngle+judgeSpeed*0.004f);
 			}
 			else
 				YawPosCtrl(shootTurnAngle);
@@ -364,13 +366,13 @@ void Shoot(uint8_t flg)
 			{
 				if(flagOne < 6)
 				{
-					shootSpeed=(0.0137*shootDistance)+22;
+					shootSpeed=(0.0137f*shootDistance)+22;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
 				else if(flagOne <= 10)
 				{
-					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.0105;
+					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011f;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
@@ -383,13 +385,13 @@ void Shoot(uint8_t flg)
 			{
 				if(flagOne < 6)
 				{
-					shootSpeed=(0.0137*shootDistance)+22;
+					shootSpeed=(0.0137f*shootDistance)+22;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
 				else if(flagOne <= 10)
 				{
-					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.0105;
+					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011f;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
@@ -403,14 +405,14 @@ void Shoot(uint8_t flg)
 			{
 				if(flagOne < 6)
 				{
-					shootSpeed=(0.0137*shootDistance)+21;
+					shootSpeed=(0.0137f*shootDistance)+21;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 					
 				}
 				else if(flagOne <= 10)
 				{
-					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011;
+					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011f;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
@@ -424,13 +426,13 @@ void Shoot(uint8_t flg)
 			{   
 				if(flagOne < 6)
 				{
-					shootSpeed=(0.0137*shootDistance)+21;
+					shootSpeed=(0.0137f*shootDistance)+21.0f;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
 				else if(flagOne <= 10)
 				{
-					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011;
+					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011f;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
@@ -611,7 +613,7 @@ void CarStuck(void)
 				
 			}
 			
-			//没有计算数据，在打一次，得到计算数据
+			//没有计算数据，先跑个半圆扫描，如果还没有，就其他3个桶再打一次，得到计算数据
 			else if(shootReady[shootFlag] == 2)
 			{
 				shootReady[0]=0;
@@ -742,7 +744,7 @@ void NormalShootOne(void)
 					shootCnt2=0;
 				}
 			}
-
+			
 			else if(shootReady[0] == 0 && step != 1 && step != 2)
 			{
 				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
@@ -953,7 +955,7 @@ void NormalShootOne(void)
 	}
 	
 	//里圈
-	else if(flagOne < 6)
+	else if(flagOne < 6 && flagOne > 2)
 	{
 		if(shootFlagOne == 2)
 		{
@@ -1057,7 +1059,8 @@ void Laser_Aim(void)
 			addangle=addangle+add;
 			yawangle=shootTurnAngle+addangle;
 			YawPosCtrl(yawangle);
-		
+			
+			//右激光先突变减小，扫到挡板左侧
 			if((lastpulseB-fort.laserBValueReceive)>200&&laserAvalue>bucketdistance-500&&laserAvalue<bucketdistance+500)
 			{
 				stableflag=1;
@@ -1073,6 +1076,8 @@ void Laser_Aim(void)
 					stableflag=0;
 				}
 			}
+			
+			//扫到左侧后，右激光先突变增大，扫到右侧
 			if((lastpulseA-fort.laserAValueReceive)<-200&&laserBvalue>bucketdistance-500&&laserBvalue<bucketdistance+500&&flg==1)
 			{
 				flg=0;
@@ -1082,18 +1087,18 @@ void Laser_Aim(void)
 			lastpulseA=fort.laserAValueReceive;
 			lastpulseB=fort.laserBValueReceive;
 			
-			if(addangle>39.5)
+			if(addangle>39.5f)
 			{
 				stage=3;
 			}
 			
 			if((!stableflag)&&laser_A&&laser_B)
-				Width=sqrt(laser_A*laser_A+laser_B*laser_B-2*laser_A*laser_B*cos((Agl_B-Agl_A)*PI/180));
-			if(Width>350&&Width<800)
+				Width=sqrt(laser_A*laser_A+laser_B*laser_B-2*laser_A*laser_B*cos((Agl_B-Agl_A)*PI/180.0f));
+			if(Width>350.0f&&Width<800.0f)
 				stage=2;
 			break;
 		
-		//物体宽度满足后，激光打在中间，中间比两边远则是挡板，否则回退6度继续扫描
+		//物体宽度满足后，激光打在中间
 		case scanSomething:
 			laserCnt++;
 			YawPosCtrl((Agl_A+Agl_B)/2-1);
@@ -1104,14 +1109,16 @@ void Laser_Aim(void)
 					MaxLaservalue=laserAvalue;
 				else
 					MaxLaservalue=laserBvalue;
-				if(MaxLaservalue>laser_A&&MaxLaservalue>laser_B && fabs(MaxLaservalue-bucketdistance) < 400)
+				
+				//中间比两边远则是挡板，否则回退6度继续扫描
+				if(MaxLaservalue>laser_A&&MaxLaservalue>laser_B && fabs(MaxLaservalue-bucketdistance) < 400.0f)
 				{
 					stage++;
 					sureFlag=1;
 				}
 				else
 				{
-					addangle-=6;
+					addangle-=6.0f;
 					stage=1;
 					Width=0;
 					laser_A=0;
@@ -1122,7 +1129,7 @@ void Laser_Aim(void)
 		//判断是否扫描到挡板，是则打球，否则扫描角度增大，速度减慢
 		case judge:
 			laserCnt++;
-			addangle=-30;
+			addangle=-30.0f;
 			laser_A=0;
 			laser_B=0;
 			lastpulseA=0;
@@ -1138,7 +1145,7 @@ void Laser_Aim(void)
 				Agl_A=0;
 				Agl_B=0;
 				MaxLaservalue=0;
-				add=0.1;
+				add=0.1f;
 				addangle=-50;
 			}
 			//扫到
@@ -1175,13 +1182,13 @@ void Laser_Aim_Two(void)
 {
 	static int stage2=0,stableflag2=0,sureFlag2=0,laserCnt2=0;
 	float yawangle2=0,Width2=0;
-	static float addangle2=-15,lastpulseA2=0,lastpulseB2=0,laser_A2=0,laser_B2=0,Agl_A2=0,Agl_B2=0; 
+	static float addangle2=-15.0f,lastpulseA2=0,lastpulseB2=0,laser_A2=0,laser_B2=0,Agl_A2=0,Agl_B2=0; 
 	float laserAvalue2=0,laserBvalue2=0,bucketdistance2=0;
 	static uint8_t flg2=0;
 	bucketdistance2=sqrt(pow((GetPosX()-X[shootFlag]),2)+pow((GetPosY()-Y[shootFlag]),2));
 	
-	laserAvalue2=fort.laserAValueReceive*2.48+24.8;
-	laserBvalue2=fort.laserBValueReceive*2.48+24.8;
+	laserAvalue2=fort.laserAValueReceive*2.48f+24.8f;
+	laserBvalue2=fort.laserBValueReceive*2.48f+24.8f;
 	
 	switch(stage2)
 	{
@@ -1194,12 +1201,15 @@ void Laser_Aim_Two(void)
 				stage2=1;
 			}
 			break;
+			
+		//扫到东西之后，判断物体宽度，宽度在范围内则扫到挡板，在30度范围内没扫到则继续走
 		case 1:
 			laserCnt2=0;
-			addangle2=addangle2+0.2;
+			addangle2=addangle2+0.2f;
 			yawangle2=shootTurnAngle+addangle2;
 			YawPosCtrl(yawangle2);
-		
+			
+			//右激光先突变减小，扫到挡板左侧
 			if((lastpulseB2-fort.laserBValueReceive)>200&&laserAvalue2>bucketdistance2-400&&laserAvalue2<bucketdistance2+400)
 			{
 				stableflag2=1;
@@ -1215,7 +1225,9 @@ void Laser_Aim_Two(void)
 					stableflag2=0;
 				}
 			}
-			if((lastpulseA2-fort.laserAValueReceive)<-200&&laserBvalue2>bucketdistance2-500&&laserBvalue2<bucketdistance2+500&&flg2==1)
+			
+			//扫到左侧后，右激光先突变增大，扫到右侧
+			if((lastpulseA2-fort.laserAValueReceive)<-200.0f&&laserBvalue2>bucketdistance2-500.0f&&laserBvalue2<bucketdistance2+500.0f&&flg2==1)
 			{
 				flg2=0;
 				laser_B2=laserBvalue2;
@@ -1229,10 +1241,11 @@ void Laser_Aim_Two(void)
 				stage2=2;
 			}
 			
+			//物体宽度满足后，表示为挡板
 			if((!stableflag2)&&laser_A2&&laser_B2)
 			{
-				Width2=sqrt(laser_A2*laser_A2+laser_B2*laser_B2-2*laser_A2*laser_B2*cos((Agl_B2-Agl_A2)*PI/180));
-				if(Width2>300&&Width2<700)
+				Width2=sqrt(laser_A2*laser_A2+laser_B2*laser_B2-2*laser_A2*laser_B2*cos((Agl_B2-Agl_A2)*PI/180.0f));
+				if(Width2>300.0f&&Width2<700.0f)
 					sureFlag2=1;
 				else
 					sureFlag2=0;
@@ -1310,13 +1323,18 @@ void BallColorRecognition(void)
 	static uint16_t noRightBallCnt=0;
 	static uint16_t pushStableCnt=0;
 	static uint32_t longTimeNoRightBallCnt=0;
-
+	
+	//等待推球电机稳定
 	if(pushStableCnt > 100)
 	{
 		ReadActualPos(CAN2, PUSH_BALL_ID);
+		
+		//推球在进球位置
 		if(pushPos > pushPulse-600 && pushPos < pushPulse+800)
 		{
 			stuckCnt=0;
+			
+			//要的球等待发射
 			if(ballColor == rightBall)
 			{
 				noRightBallCnt=0;
@@ -1324,6 +1342,8 @@ void BallColorRecognition(void)
 				longTimeNoRightBallCnt=0;
 				isBallRight= 1;
 			}
+			
+			//不要的球和没有球0.75s推一次
 			else
 			{
 				longTimeNoRightBallCnt++;
@@ -1339,6 +1359,8 @@ void BallColorRecognition(void)
 				isBallRight= 0;
 			}
 		}
+		
+		//卡球处理
 		else
 		{
 			longTimeNoRightBallCnt++;
@@ -1359,6 +1381,8 @@ void BallColorRecognition(void)
 		noRightBallCnt=0;
 		pushStableCnt++;
 	}
+	
+	//长时间没有要的球
 	if(longTimeNoRightBallCnt > 1000)	
 	{
 		longTimeNoRightBallCnt=0;

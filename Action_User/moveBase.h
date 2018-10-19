@@ -50,7 +50,7 @@
 
 
 
-#define PI (3.141593)
+#define PI (3.141593f)
 
 //角度PID的参数
 #define KP_A  (266.55/14000)
@@ -101,7 +101,6 @@ void BackTurn(float angle,float gospeed);
 void N_SET_closeRound(float x,float y,float R,float clock,float backspeed);
 void shootjudge(void);
 uint8_t straightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed);
-uint8_t BackstraightLine(float A1,float B1,float C1,uint8_t dir,float setSpeed);
 void BiggerSquareOne(void);
 void StopShootOne(void);
 void BiggerSquareTwo(void);
