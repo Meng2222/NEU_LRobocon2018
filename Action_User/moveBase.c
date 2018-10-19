@@ -25,9 +25,13 @@
 /*****************定义的一些全局变量用于串口返回值****************************/
 
 
-
+//用于大的步骤的连接
 uint8_t step=0;
+
+//用于小的步骤的连接
 uint8_t flagOne=0;
+
+//用于定点打球，errFlg=3时定点打球
 uint8_t errFlg=0;
 extern usartValue uv4;
 extern uint8_t shootReady[4];

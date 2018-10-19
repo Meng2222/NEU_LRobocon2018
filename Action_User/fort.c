@@ -274,6 +274,8 @@ void Shoot(uint8_t flg)
 	}
 	errOne=shootAngle-shootAngleLast;
 	errTwo=getAngle-getAngleLast;
+	
+	//优弧劣弧处理，转角始终小于180
 	if(errOne > 180 && errTwo > 180)
 		shootTurnAngle+=(errOne+errTwo-720);
 	
@@ -303,6 +305,8 @@ void Shoot(uint8_t flg)
 				laserdistance=(fort.laserBValueReceive*LASER_SCALE_B+LASER_INTERCEPT_B)-254;
 			
 			judgeDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])))-65;
+			
+			//激光计算距离和定位系统算出的距离差在800以内用激光测得距离
 			if(fabs(judgeDistance-laserdistance) < 800)
 			{
 				shootDistance=laserdistance;
@@ -317,11 +321,14 @@ void Shoot(uint8_t flg)
 				shootDistance=judgeDistance;
 				shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT;
 			}
+			
+			//边上停下打球
 			if(stopFlg == 1)
 				ShooterVelCtrl(shootSpeed);
 			else
 				ShooterVelCtrl(shootSpeed);
-		
+			
+			//记录每个桶定点打的距离
 			laserDistance[shootFlag]=shootDistance;
 		}
 		else;
@@ -331,9 +338,11 @@ void Shoot(uint8_t flg)
 	{
 		shootDistance=sqrt(((shootY-bucketPosY[shootFlag])*(shootY-bucketPosY[shootFlag]))+((shootX-bucketPosX[shootFlag])*(shootX-bucketPosX[shootFlag])))-65;
 		
-		
+		//顺时针控制航向角
 		if(flg == 0 || flg == 1 || flg == 2)
 		{
+			
+			//正常中圈打球
 			if(stopFlg == 0)
 			{
 				if(flagOne < 6 && flagOne > 1)
@@ -345,8 +354,11 @@ void Shoot(uint8_t flg)
 				YawPosCtrl(shootTurnAngle);
 			
 		}
+		
+		//逆时针控制航向角
 		else if(flg == 3 || flg == 4 || flg == 5)
 		{
+			//正常中圈打球
 			if(stopFlg == 0)
 			{
 				if(flagOne < 6 && flagOne > 1)
@@ -359,17 +371,20 @@ void Shoot(uint8_t flg)
 			
 		}
 		
-		
+		//顺时针走内圈，中圈，外圈
 		if(flg == 0)
 		{
 			if(stopFlg == 0)
 			{
+				//内圈打球
 				if(flagOne < 6)
 				{
 					shootSpeed=(0.0137f*shootDistance)+22;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
+				
+				//外圈打球
 				else if(flagOne <= 10)
 				{
 					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011f;
@@ -379,16 +394,21 @@ void Shoot(uint8_t flg)
 
 			}
 		}
+		
+		//顺时针走中圈，外圈
 		else if(flg == 1)
 		{   
 			if(stopFlg == 0)
 			{
+				//内圈打球
 				if(flagOne < 6)
 				{
 					shootSpeed=(0.0137f*shootDistance)+22;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
+				
+				//外圈打球
 				else if(flagOne <= 10)
 				{
 					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011f;
@@ -399,10 +419,13 @@ void Shoot(uint8_t flg)
 			}
 
 		}
+		
+		//逆时针走内圈，中圈，外圈
 		else if(flg == 3)
 		{
 			if(stopFlg == 0)
 			{
+				//内圈打球
 				if(flagOne < 6)
 				{
 					shootSpeed=(0.0137f*shootDistance)+21;
@@ -410,6 +433,8 @@ void Shoot(uint8_t flg)
 						shootSpeed=85;
 					
 				}
+				
+				//外圈打球
 				else if(flagOne <= 10)
 				{
 					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011f;
@@ -420,16 +445,21 @@ void Shoot(uint8_t flg)
 
 			}
 		}
+		
+		//逆时针走中圈，外圈
 		else if(flg == 4)
 		{
 			if(stopFlg == 0)
 			{   
+				//内圈打球
 				if(flagOne < 6)
 				{
 					shootSpeed=(0.0137f*shootDistance)+21.0f;
 					if(shootSpeed > 85)
 						shootSpeed=85;
 				}
+				
+				//外圈打球
 				else if(flagOne <= 10)
 				{
 					shootSpeed=(SHOOT_KP*shootDistance)+SHOOT_INTERCEPT-judgeSpeed*0.011f;
@@ -512,24 +542,31 @@ void CarStuck(void)
 		
 		if(carStuckCnt > 100)		
 		{
+			//左下桶没打过
 			if(shootReady[0] == 0)
 			{ 
 				shootFlag=0;
 				carStuckCnt=0;
 				changeFlg=1;
 			}
+			
+			//左上桶没打过
 			else if(shootReady[1] == 0)
 			{
 				shootFlag=1;
 				carStuckCnt=0;
 				changeFlg=1;
 			}
+			
+			//右上桶没打过
 			else if(shootReady[2] == 0)
 			{
 				shootFlag=2;
 				carStuckCnt=0;
 				changeFlg=1;
 			}
+			
+			//右下桶没打过
 			else if(shootReady[3] == 0)
 			{
 				shootFlag=3;
@@ -537,7 +574,7 @@ void CarStuck(void)
 				changeFlg=1;
 			}
 			
-			//未扫描到计算出该桶的位置和距离
+			//未扫描到计算出该桶的位置和距离，用后两个连续的桶算出该桶
 			else if(shootReady[0]== 2 && laserShootDistance[1] != 0 && laserShootDistance[2] != 0)
 			{
 				shootFlag=0;
@@ -693,6 +730,8 @@ void NormalShootOne(void)
 		if(shootFlagOne == 0)
 		{
 			shootFlag=0;
+			
+			//没打过球
 			if(shootReady[0] == 0 && step == 1)
 			{
 				shootCnt1++;
@@ -715,20 +754,21 @@ void NormalShootOne(void)
 				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
 				if(speed <= SPEED_TWO && isBallRight == 1)
 				{
-						if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
-						{
-							// 推球	
-							pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-							PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
-							shootReady[0] = 1;
-							laserStopShootFlg=0;
-							USART_OUT(UART4, "shoot\r\n");		
+					//扫描到桶且转速和枪的角度达到所给值
+					if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+					{
+						// 推球	
+						pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+						PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
+						shootReady[0] = 1;
+						laserStopShootFlg=0;
+						USART_OUT(UART4, "shoot\r\n");		
 
-						}
-						else if(laserStopShootFlg == 0)
-						{
-							Laser_Aim_Two();
-						}
+					}
+					else if(laserStopShootFlg == 0)
+					{
+						Laser_Aim_Two();
+					}
 							
 				}
 		
@@ -744,25 +784,14 @@ void NormalShootOne(void)
 					shootCnt2=0;
 				}
 			}
-			
-			else if(shootReady[0] == 0 && step != 1 && step != 2)
-			{
-				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-				if(D > SHOOT_D_ONE &&  D < SHOOT_D_TWO && isBallRight == 1 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
-				{
-					// 推球	
-					pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-					shootReady[0]=1;
-					USART_OUT(UART4, "shoot\r\n");
-				}
-			}
 		}
 		
 		//打1号桶
 		else if(shootFlagOne == 1)
 		{
 			shootFlag=1;
+			
+			//没打过球
 			if(shootReady[1] == 0 && step == 1)
 			{
 				shootCnt1++;
@@ -779,25 +808,30 @@ void NormalShootOne(void)
 					stopFlg=0;
 				}
 				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				
+				//有要打的球且静止
 				if(speed <= SPEED_TWO && isBallRight == 1)
 				{
-						if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
-						{
-							// 推球	
-							pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-							PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
-							shootReady[1] = 1;
-							laserStopShootFlg=0;
-							USART_OUT(UART4, "shoot\r\n");		
+					//扫描到桶且转速和枪的角度达到所给值
+					if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+					{
+						// 推球	
+						pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+						PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
+						shootReady[1] = 1;
+						laserStopShootFlg=0;
+						USART_OUT(UART4, "shoot\r\n");		
 
-						}
-						else if(laserStopShootFlg == 0)
-						{
-							Laser_Aim_Two();
-						}
+					}
+					else if(laserStopShootFlg == 0)
+					{
+						Laser_Aim_Two();
+					}
 							
 				}
 			}
+			
+			//打完球
 			else if(shootReady[1] == 1)
 			{
 				shootCnt2++;
@@ -807,27 +841,14 @@ void NormalShootOne(void)
 					shootCnt2=0;
 				}
 			}	
-			else if(shootReady[1] == 0 && step != 1 && step != 2)
-			{
-				
-				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-				if(D > SHOOT_D_ONE &&  D < SHOOT_D_TWO && isBallRight == 1 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
-				{
-					// 推球	
-					pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-					shootReady[1]=1;
-					USART_OUT(UART4, "shoot\r\n");
-
-				}
-			}
-			
 		}
 		
 		//打2号桶
 		else if(shootFlagOne == 2)
 		{
 			shootFlag=2;
+			
+			//没打过球
 			if(shootReady[2] == 0 && step == 1)
 			{
 				shootCnt1++;
@@ -844,25 +865,30 @@ void NormalShootOne(void)
 					stopFlg=0;
 				}
 				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				
+				//有要打的球且静止
 				if(speed <= SPEED_TWO && isBallRight == 1)
 				{
-						if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
-						{
-							// 推球	
-							pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-							PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
-							shootReady[2] = 1;
-							laserStopShootFlg=0;
-							USART_OUT(UART4, "shoot\r\n");		
+					//扫描到桶且转速和枪的角度达到所给值
+					if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+					{
+						// 推球	
+						pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+						PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
+						shootReady[2] = 1;
+						laserStopShootFlg=0;
+						USART_OUT(UART4, "shoot\r\n");		
 
-						}
-						else if(laserStopShootFlg == 0)
-						{
-							Laser_Aim_Two();
-						}
+					}
+					else if(laserStopShootFlg == 0)
+					{
+						Laser_Aim_Two();
+					}
 							
 				}
 			}
+			
+			//打完球
 			else if(shootReady[2] == 1)
 			{
 				shootCnt2++;
@@ -872,26 +898,14 @@ void NormalShootOne(void)
 					shootCnt2=0;
 				}
 			}
-			else if(shootReady[2] == 0 && step != 1 && step != 2)
-			{
-				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-				if(D > SHOOT_D_ONE &&  D < SHOOT_D_TWO && isBallRight == 1 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
-				{
-					// 推球	
-					pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-					shootReady[2]=1;
-					USART_OUT(UART4, "shoot\r\n");
-				}
-			}
-			
-			
 		}
 		
 		//打3号桶
 		else if(shootFlagOne == 3)
 		{
 			shootFlag=3;
+			
+			//没打过球
 			if(shootReady[3] == 0 && step == 1)
 			{
 				shootCnt1++;
@@ -908,26 +922,30 @@ void NormalShootOne(void)
 					stopFlg=0;
 				}
 				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+				
+				//有要打的球且静止
 				if(speed <= SPEED_TWO && isBallRight == 1)
 				{
-						
-						if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
-						{
-							// 推球	
-							pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-							PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
-							shootReady[3] = 1;
-							laserStopShootFlg=0;
-							USART_OUT(UART4, "shoot\r\n");		
+					//扫描到桶且转速和枪的角度达到所给值
+					if(laserStopShootFlg == 1 && fabs(fort.shooterVelReceive-shootSpeed) < 2.1 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
+					{
+						// 推球	
+						pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
+						PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);	
+						shootReady[3] = 1;
+						laserStopShootFlg=0;
+						USART_OUT(UART4, "shoot\r\n");		
 
-						}
-						else if(laserStopShootFlg == 0)
-						{
-							Laser_Aim_Two();
-						}
+					}
+					else if(laserStopShootFlg == 0)
+					{
+						Laser_Aim_Two();
+					}
 							
 				}
 			}
+			
+			//打完球
 			else if(shootReady[3] == 1)
 			{
 				shootCnt2++;
@@ -937,19 +955,6 @@ void NormalShootOne(void)
 					shootCnt2=0;
 				}
 			}	
-			else if(shootReady[3] == 0 && step != 1 && step != 2)
-			{
-				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-				if(D > SHOOT_D_ONE &&  D < SHOOT_D_TWO && isBallRight == 1 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
-				{
-					// 推球	
-					pushPulse+=(OTHER_COUNTS_PER_ROUND/2);
-					PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushPulse);
-					shootReady[3]=1;
-					USART_OUT(UART4, "shoot\r\n");
-				}
-				
-			}
 		}
 		else;
 	}
@@ -957,11 +962,12 @@ void NormalShootOne(void)
 	//里圈
 	else if(flagOne < 6 && flagOne > 2)
 	{
+		//打右上桶
 		if(shootFlagOne == 2)
 		{
 			shootFlag=2;
-			D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-		
+			
+			//速度达到1300以上，有要打的球，转速和枪的角度达到所给值
 			if(judgeSpeed > SPEED_ONE && isBallRight == 1 && shootReady[2] == 0 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
 			{
 				// 推球	
@@ -971,9 +977,13 @@ void NormalShootOne(void)
 				USART_OUT(UART4, "shoot\r\n");
 			}
 		}
+		
+		//打右下桶
 		else if(shootFlagOne == 3)
 		{
 			shootFlag=3;
+			
+			//速度达到1300以上，有要打的球，转速和枪的角度达到所给值
 			if(judgeSpeed > SPEED_ONE && isBallRight == 1 && shootReady[3] == 0 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2 && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
 			{
 				// 推球	
@@ -983,10 +993,13 @@ void NormalShootOne(void)
 				USART_OUT(UART4, "shoot\r\n");
 			}
 		}
+		
+		//打左下桶
 		else if(shootFlagOne == 0)
 		{
 			shootFlag=0;
-			D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
+			
+			//速度达到1300以上，有要打的球，转速和枪的角度达到所给值
 			if(judgeSpeed > SPEED_ONE && isBallRight == 1 && shootReady[0] == 0 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
 			{
 				// 推球	
@@ -996,11 +1009,13 @@ void NormalShootOne(void)
 				USART_OUT(UART4, "shoot\r\n");
 			}
 		}
+		
+		//打左上桶
 		else if(shootFlagOne == 1)
 		{
 			shootFlag=1;
-			D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
-			
+
+			//速度达到1300以上，有要打的球，转速和枪的角度达到所给值
 			if(judgeSpeed > SPEED_ONE && isBallRight == 1 && shootReady[1] == 0 && fabs(fort.shooterVelReceive-shootSpeed) < SHOOT_ERR_2  && fabs(fort.yawPosReceive-shootTurnAngle) < 3)
 			{
 				// 推球	
