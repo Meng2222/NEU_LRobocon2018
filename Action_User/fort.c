@@ -710,7 +710,6 @@ static uint16_t shootCnt1=0;
 uint8_t laserStopShootFlg=0;
 void NormalShootOne(void)
 {
-	float D=0;
 	static uint16_t shootCnt2=0;
 
 	float speed=sqrt(GetSpeeedX()*GetSpeeedX()+GetSpeeedY()*GetSpeeedY());
@@ -751,7 +750,6 @@ void NormalShootOne(void)
 				{
 					stopFlg=0;
 				}
-				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
 				if(speed <= SPEED_TWO && isBallRight == 1)
 				{
 					//扫描到桶且转速和枪的角度达到所给值
@@ -807,7 +805,6 @@ void NormalShootOne(void)
 				{
 					stopFlg=0;
 				}
-				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
 				
 				//有要打的球且静止
 				if(speed <= SPEED_TWO && isBallRight == 1)
@@ -864,7 +861,6 @@ void NormalShootOne(void)
 				{
 					stopFlg=0;
 				}
-				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
 				
 				//有要打的球且静止
 				if(speed <= SPEED_TWO && isBallRight == 1)
@@ -921,7 +917,6 @@ void NormalShootOne(void)
 				{
 					stopFlg=0;
 				}
-				D=sqrt(((GetPosY()-bucketPosY[shootFlag])*(GetPosY()-bucketPosY[shootFlag]))+((GetPosX()-bucketPosX[shootFlag])*(GetPosX()-bucketPosX[shootFlag])));
 				
 				//有要打的球且静止
 				if(speed <= SPEED_TWO && isBallRight == 1)

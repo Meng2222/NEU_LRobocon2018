@@ -43,6 +43,7 @@ float judgeSpeed=0;
 extern uint8_t isBallRight;
 extern uint8_t noRightBall;
 
+//用于走形的各个阶段
 typedef enum {
 	innerLine,innerRound,middleLineOne,middleLineTwo,middleLineThr,middleLineFor,middleOutLine,
 	stopShootLineOne,stopShootLineTwo,stopShootLineThr,stopShootLineFor,
