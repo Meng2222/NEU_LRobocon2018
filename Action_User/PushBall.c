@@ -13,628 +13,509 @@
 #include "fort.h"
 #include "string.h" 
 #include "PushBall.h" 
-
-
 #define push_mode (2)
-extern int last_round_cnt;
-extern int BeforePushposition;
-extern int LastpushBallposition;
-extern int if_white_shoot;
+
+//上一个圈的圈数
+extern int lastRoundcnt;
+
+//前一个发出去的分球电机的位置
+extern int beforePushpos;
+
+//上一个发出去的分球电机的位置
+extern int lastPushpos;
+
+//是否推出需要的球 0为未推出 1为推出
+extern int ifNeedshoot;
+
 extern int stable_flag;
+
+//分球电机的位置接受数组
+int pushBallpos;
+
 extern union push_p push_position;
+
 extern int trouble_flag;
-float add_or_reduce_angle;
-float get_angle2(float a,float b,int n,int round);
-float add_angle;
-extern uint8_t Ballcolor[5];//摄像机的接受数组//
-float s;
-int diagonal;
-int change_compere_angle;
-float body_angle_to_point;
-static int push_balltime;
-float fake_last_angle=0;
-float get_fake_angle;
-float ShootBili;
-int PushballFlag=0;
+
+//减少或增加补偿角 -1为减少 1为增加
+float addReduceangle;
+
+//计算出一条直线的角度 右手坐标系 ax+by+c=0； 
+float CountAngle(float a,float b);
+
+//计算出的补偿角
+float adAngle;
+
+//摄像机的接受数组
+extern uint8_t Ballcolor[5];
+
+//车到目标点的距离
+float carToDointD;
+
+//车与场地中心的连线的夹角 方向为中心指向车
+int carToCenterAng;
+
+//上一个计算得到的炮台假角度 以y轴正方向为0度 顺时针到180度 逆时针到-180度
+float fakeLastAng=0;
+
+//炮台新假角度与旧假角度的差值
+float fakeNewAng;
+
+//是否进入射球区域 1为进入 0为未进入
+int pushBallFlag=0;
+
+//顺逆时针方向 1为逆时针 -1为顺时针 
 extern int Sn;
-extern int roundCnt;
-//得到炮台转轮速度//
-float get_roll_v(void)
-{   
-	//四号车的炮台速度比较小需要加大//
-	//一号车在顺时针 -1 4   1 3.5//	四号炮台+0.2
-	
-	if(s<=4000)
+
+//车的走行圈数
+extern int round_cnt;
+
+//逆时针的位置数组
+int nPoint[4][2];
+
+//顺时针的位置数组
+int sPoint[4][2];
+
+//炮台编号 从左下开始 逆时针 依次为1 2 3 4
+int pointNum;
+
+//记录该桶是否射过 1为未射过 0为射过
+int ifShoot[4]={1,1,1,1};
+
+//运动时炮台应该转到的真实的角度
+float goRealAng=0;
+
+/**
+* @brief  得到炮台转轮速度
+* @param  none
+* @author ACTION
+*/
+float GetRollV(void)
+{   	
+	if(carToDointD<=4000)
 	{
-	if(Sn==1)	//逆时针
-	{
-		if( diagonal==1)
-			return((sqrt(19600*pow(s,2)/((sqrt(3))*s-800)))/377*3.55);//左下右上\\3.45
-		else
-			return((sqrt(19600*pow(s,2)/((sqrt(3))*s-800)))/377*3.55);//左上右下
-	}else//
-	{   if( diagonal==-1)
-			return((sqrt(19600*pow(s,2)/((sqrt(3))*s-800)))/377*3.55);
-		else
-			return((sqrt(19600*pow(s,2)/((sqrt(3))*s-800)))/377*3.55);
-	}
+		return((sqrt(19600*pow(carToDointD,2)/((sqrt(3))*carToDointD-800)))/377*3.55);//左下右上\\3.45
     }
-	else return(50);
-	
-	
+	else return(50);	
 }
-int N_point_data[4][2];
-int S_point_data[4][2];
-int point_number;
-//炮台的角度——射球主控制//
-int now_shooter_v;
-static int last_shooter_v=0;
-static int a=0;
-int if_shoot[4]={1,1,1,1};
-int real_number=0;
-static float last_get_shooter_v;
-void get_sendangle(void)
+
+/**
+* @brief  将场地分成射球区域与非射球区域并且让炮台指向目标点
+* @param  none
+* @author ACTION
+*/
+void GetSendAngle(void)
 {  
-	
-	float point_x;
-	float point_y;
-    float sendsend_angle;
-	float getget_angle;
-	float now_get_rool_v;
-    real_number=0;
+   
+	//将位置数组赋值
 	//逆时针//
 	//1号//
-	N_point_data[0][0]=-2200;
-	N_point_data[0][1]=100;
+	nPoint[0][0]=-2200;
+	nPoint[0][1]=100;
 	//2号//
-	N_point_data[1][0]=-2200;
-	N_point_data[1][1]=4500;
+	nPoint[1][0]=-2200;
+	nPoint[1][1]=4500;
 	//3号//
-	N_point_data[2][0]=2200;
-	N_point_data[2][1]=4500;
+	nPoint[2][0]=2200;
+	nPoint[2][1]=4500;
 	//4号//
-	N_point_data[3][0]=2200;
-	N_point_data[3][1]=250;
+	nPoint[3][0]=2200;
+	nPoint[3][1]=250;
 	//顺时针//
 	//1号//
-	S_point_data[0][0]=-2200;
-	S_point_data[0][1]=100;
+	sPoint[0][0]=-2200;
+	sPoint[0][1]=100;
 	//2号//
-	S_point_data[1][0]=-2200;
-	S_point_data[1][1]=4500;
+	sPoint[1][0]=-2200;
+	sPoint[1][1]=4500;
 	//3号//
-	S_point_data[2][0]=2200;
-	S_point_data[2][1]=4500;
+	sPoint[2][0]=2200;
+	sPoint[2][1]=4500;
 	//4号//
-	S_point_data[3][0]=2200;
-	S_point_data[3][1]=100;
+	sPoint[3][0]=2200;
+	sPoint[3][1]=100;
 	
-	change_compere_angle=get_angle2(GetY()-2300,-GetX(),(GetY()-2300)/fabs(GetY()-2300),Sn);
-	if(change_compere_angle>180)
-	  change_compere_angle-=360;
-	if(Sn==-1)	///顺时针
-	{	if(change_compere_angle<=-35&&change_compere_angle>=-125)
-		{
-		
-			diagonal=1;
-		    point_number=1;
-			if(change_compere_angle<=-55&&change_compere_angle>=-120)
-				PushballFlag=1;
-			else PushballFlag=0;
+	//计算出中心点指向车的角度
+	carToCenterAng=CountAngle(GetY()-2300,-GetX());
+	//规划射球区域与非射球区域
+	//顺时针
+	if(Sn==-1)	//顺时针
+	{	
+		//一号桶区域为 -125~-35
+		if(carToCenterAng<=-35&&carToCenterAng>=-125) 
+		{		
+			//左下
+		    pointNum=1;
+			
+			//射球区域为-120~-55
+			if(carToCenterAng<=-55&&carToCenterAng>=-120)
+				pushBallFlag=1;
+			else pushBallFlag=0;
 	
-		}else if((change_compere_angle<=180&&change_compere_angle>=145)||(change_compere_angle>=-180&&change_compere_angle<=-125))
-		{
-		
-		    diagonal=-1;
-			point_number=2;
-			if((change_compere_angle<=-145)||(change_compere_angle<=180&&change_compere_angle>=150))
-			PushballFlag=1;
-			else PushballFlag=0;
-		
-		}else if(change_compere_angle<=145&&change_compere_angle>=55)
-		{
+		}else if((carToCenterAng<=180&&carToCenterAng>=145)||(carToCenterAng>=-180&&carToCenterAng<=-125))
+		{	
+			//左上
+			pointNum=2;
 			
-           	diagonal=1;
-			point_number=3;
-		    if(change_compere_angle<=125&&change_compere_angle>=60)
-			PushballFlag=1;
-			else PushballFlag=0;
-			
-		}else if(change_compere_angle<=55&&change_compere_angle>=-35)
-		{
+			//射球区域为-145~-180 150~180
+			if((carToCenterAng<=-145)||(carToCenterAng<=180&&carToCenterAng>=150))
+			pushBallFlag=1;
+			else pushBallFlag=0;
 		
-			diagonal=-1 ;
-		    point_number=4;
+		}else if(carToCenterAng<=145&&carToCenterAng>=55)
+		{   
+			//右上
+			pointNum=3;
 			
-            if(change_compere_angle<=35&&change_compere_angle>=-30)
-			 PushballFlag=1;
-			else PushballFlag=0;
+			//射球区域为60~125
+		    if(carToCenterAng<=125&&carToCenterAng>=60)
+			pushBallFlag=1;
+			else pushBallFlag=0;
+			
+		}else if(carToCenterAng<=55&&carToCenterAng>=-35)
+		{	
+			//右下
+		    pointNum=4;
+			
+			//射球区域为-30~30
+            if(carToCenterAng<=35&&carToCenterAng>=-30)
+			 pushBallFlag=1;
+			else pushBallFlag=0;
 		}
 
-	}else 		///逆时针
+	}else 		//逆时针
 	{
-		if((change_compere_angle<=-145&&change_compere_angle>=-180)||(change_compere_angle>125&&change_compere_angle<=180))
+		if((carToCenterAng<=-145&&carToCenterAng>=-180)||(carToCenterAng>125&&carToCenterAng<=180))
 		{
-			diagonal=1;
-			point_number=1;
-	   
-			if((change_compere_angle>=145)||(change_compere_angle>=-180&&change_compere_angle<=-150))
-				PushballFlag=1;
-			else PushballFlag=0;
+			//左下
+			pointNum=1;	
 			
-		}else if(change_compere_angle<=125&&change_compere_angle>35)
-		{ 
-			diagonal=-1;
-			point_number=2;
-	
-	        if(change_compere_angle>=55&&change_compere_angle<=120)
-				PushballFlag=1;
-			else PushballFlag=0;
-		}else if(change_compere_angle<=35&&change_compere_angle>-55)
-		{ 
-			diagonal=1;
-			point_number=3;
+			//射球区域为-150~-180 145~180
+			if((carToCenterAng>=145)||(carToCenterAng>=-180&&carToCenterAng<=-150))
+				pushBallFlag=1;
+			else pushBallFlag=0;
 			
-			 if(change_compere_angle>=-35&&change_compere_angle<=30)
-			PushballFlag=1;		
-			 else PushballFlag=0;
-		}else if(change_compere_angle<=-55&&change_compere_angle>-145)
+		}else if(carToCenterAng<=125&&carToCenterAng>35)
+		{ 
+			//左上
+			pointNum=2;
+			
+			//射球区域为55~-120
+	        if(carToCenterAng>=55&&carToCenterAng<=120)
+				pushBallFlag=1;
+			else pushBallFlag=0;
+		}else if(carToCenterAng<=35&&carToCenterAng>-55)
+		{ 
+			//右上
+			pointNum=3;	
+			
+			//射球区域为-35~-30
+			if(carToCenterAng>=-35&&carToCenterAng<=30)
+				pushBallFlag=1;		
+			else pushBallFlag=0;
+		}else if(carToCenterAng<=-55&&carToCenterAng>-145)
 		{
-			diagonal=-1;
-			point_number=4;
-
-            if(change_compere_angle>=-125&&change_compere_angle<=-60)
-		     PushballFlag=1;
-			else PushballFlag=0;
+			//右下
+			pointNum=4;
+			
+			//射球区域为-125~-60
+            if(carToCenterAng>=-125&&carToCenterAng<=-60)
+				pushBallFlag=1;
+			else pushBallFlag=0;
 		}
 		
 	}
- //   point_number=3;
+
 	if(Sn==1)
 	{
-		s=get_d(N_point_data[point_number-1][0],N_point_data[point_number-1][1]);
-		ShooterVelCtrl(get_roll_v());  
-		move_gun(N_point_data[point_number-1][0],N_point_data[point_number-1][1]);
+		//逆时针
+		//计算出车与桶的距离
+		carToDointD=GetDis(nPoint[pointNum-1][0],nPoint[pointNum-1][1]);
+		
+		//计算出炮台包胶轮的转速
+		ShooterVelCtrl(GetRollV());
+		
+		//让炮台转向目标桶
+		move_gun(nPoint[pointNum-1][0],nPoint[pointNum-1][1]);
 	}else 
 	{
-		s=get_d(S_point_data[point_number-1][0],S_point_data[point_number-1][1]);
-		ShooterVelCtrl(get_roll_v());  
-		move_gun(S_point_data[point_number-1][0],S_point_data[point_number-1][1]);
+		//顺时针
+		//计算出车与桶的距离
+		carToDointD=GetDis(sPoint[pointNum-1][0],sPoint[pointNum-1][1]);
+		
+		//计算出炮台包胶轮的转速
+		ShooterVelCtrl(GetRollV());  
+		
+		//让炮台转向目标桶
+		move_gun(sPoint[pointNum-1][0],sPoint[pointNum-1][1]);
 	}
-    now_shooter_v=fort.shooterVelReceive;
-	now_get_rool_v=get_roll_v();
+ 
+
 	if(Sn==1)
 	{
-	if(roundCnt==2&&point_number==4&&last_round_cnt==1)
-		PushballFlag=0;
+		//逆时针时 从第一圈切换到第二个圈时 四号桶不射
+		if(round_cnt==2&&pointNum==4&&lastRoundcnt==1)
+			pushBallFlag=0;
     }else
 	{
-		if(roundCnt==2&&point_number==1&&last_round_cnt==1)
-		PushballFlag=0;
+		//顺时针时 从第一圈切换到第二个圈时 一号桶不射
+		if(round_cnt==2&&pointNum==1&&lastRoundcnt==1)
+			pushBallFlag=0;
 	}
-//	if(last_shooter_v-now_get_rool_v<-8)
-//	   now_shooter_v=now_get_rool_v;
-//	else if(last_shooter_v-now_get_rool_v>5)
-//	   now_get_rool_v=last_shooter_v;
-	
-	if(now_shooter_v-last_get_shooter_v>5&&now_shooter_v-now_get_rool_v>5)
-		now_shooter_v=last_get_shooter_v;
-		
-	
+
+	//如果可以边走边投
 	if(stable_flag)
 	{
-		if(PushballFlag) 
-		{
-			if(if_white_shoot/*last_get_shooter_v-now_shooter_v<=-3&&last_get_shooter_v-now_shooter_v>=-7&&if_shoot[point_number-1]&&now_get_rool_v-now_shooter_v<15*/)
-			{				
-				if_shoot[point_number-1]=0;
-				if_white_shoot=0;
+		//如果在射球区域
+		if(pushBallFlag) 
+		{	
+			//如果有需要的球被推出
+			if(ifNeedshoot)
+			{	
+				//将ifShoot中该桶的数置0
+				ifShoot[pointNum-1]=0;
+				//将ififNeedshoot置0
+				ifNeedshoot=0;
 			}
-
-
-
-            PushballFlag=if_shoot[point_number-1];			
+			//将pushBallFlag赋值 判断所在区域的桶是否射过球
+            pushBallFlag=ifShoot[pointNum-1];			
 		}
-		
-//		USART_OUT(UART4,(uint8_t*)"%d\t",(int)last_get_shooter_v);
-		last_get_shooter_v=now_shooter_v;
-				
+					
     }
 	
-	if(if_shoot[0]==0&&if_shoot[1]==0&&if_shoot[2]==0&&if_shoot[3]==0&&roundCnt!=5)
+	//如果四个桶全部射过球 则将数组全部置为1 重新开始
+	if(ifShoot[0]==0&&ifShoot[1]==0&&ifShoot[2]==0&&ifShoot[3]==0&&round_cnt!=5)
 	{
 		for( int i=0;i<4;i++)
-		 if_shoot[i]=1;
+			ifShoot[i]=1;
 	}
 	
-	
-//	USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t\r\n",(int)now_get_rool_v,if_shoot[0],if_shoot[1],if_shoot[2],if_shoot[3]);
-
 }
 
-//得到车与任意点的角度//
 
-//推球//
-//向推球电机发出的位置//起始为0//
-int PushBallPosition=0;
-//黑白球模式 白1 黑2 无3 //
-static int color_mode=0;
-//白球的时间//
-static int White_ball_time;
-//黑球与没球的时间//
-static int Black_and_no_time;
-//增加或减少/
-static int add_or_reduce=-1;
-//推球电机在范围内的时间//
-static int position_in_wide=0;
-//白球的发射时间//
-static int fire_wait_time=50;//1m/s 为90s 
-//推球轮子翻转后需要等待的时间//
-static int wheel_need_wait_time=65;
-//推球电机故障时间//
-static int wheel_error_time=0;
-int if_add_position=1;
-int add_mode;
-int abs(int);
-void push_ball(void)
-{
-	if(color_mode==0)
-	{ 
-		if(Ballcolor[2]==Need_ball_collor)
-		{	
-			color_mode=1;
-			
-		}else if(Ballcolor[2]==No_need_ball_collor)
-		{
-			color_mode=2;
-			
-		}else if(Ballcolor[2]==0)
-		{
-			color_mode=3;
-		}
-	}
-	
-	
-	switch(color_mode)
-	{
-		case 0:break;
-		case 1://白球//
-		if(stable_flag)
-		{  
-			if(PushballFlag)
-			{   
-				White_ball_time++;
-			}
-			
-						
-		    if(White_ball_time==fire_wait_time)//设定的白球投掷时间//
-			{				
-				PushBallPosition+=32768;
-				White_ball_time+=1;
-								
-			}else if(White_ball_time>fire_wait_time)//缓冲时间//
-			{
-				if( abs(push_position.push_pos[1]-PushBallPosition)<=500)
-                   position_in_wide++;
-				else wheel_error_time++;
-				//当位置范围在误差范围之内时//
-				if(position_in_wide>=wheel_need_wait_time)
-				{
-					White_ball_time=0;
-				    position_in_wide=0;
-					color_mode=0;
-					wheel_error_time=0;
-					if_add_position=1;
-				}
-				//故障处理//
-				if(wheel_error_time>=200)
-				{
-					PushBallPosition-=32768;
-					White_ball_time=0;
-				    position_in_wide=0;
-					wheel_error_time=0;
-					color_mode=0;
-					
-				}
-			}
-			
-			if(PushballFlag==0)
-			{
-				White_ball_time=0;
-				position_in_wide=0;
 
-			}
-		}
-			break;
-		case 2://黑球//
-            Black_and_no_time++;
-            if(Black_and_no_time==1)	
-			{
-				PushBallPosition-=32768;
-			
-			}else if(Black_and_no_time>=2)
-            {
-				if( abs(push_position.push_pos[1]-PushBallPosition)<=500)
-                   position_in_wide++;
-				else wheel_error_time++;
-				//当位置范围在误差范围之内时//
-				if(position_in_wide>=wheel_need_wait_time)
-				{
-					Black_and_no_time=0;
-				    position_in_wide=0;
-					color_mode=0;
-					wheel_error_time=0;
-				}
-				//故障处理//
-				if(wheel_error_time>=200)
-				{
-					PushBallPosition+=32768;
-					Black_and_no_time=0;
-				    position_in_wide=0;
-					color_mode=0;
-					wheel_error_time=0;				
-				}
-            }
-			
-			
-			break;
-        case 3://没球//
-            Black_and_no_time++; 
-            #if push_mode == 1//左右舱室互换//每次旋转180°
-				if(Black_and_no_time==1)
-				{
-					PushBallPosition=PushBallPosition+add_or_reduce*32768/2;
-					add_or_reduce=-add_or_reduce;
-				}else if(Black_and_no_time>=2)
-				{
-					if( abs(push_position.push_pos[1]-PushBallPosition)<=500)
-                      position_in_wide++;
-		            else wheel_error_time++;
-						if(position_in_wide>=wheel_need_wait_time)
-					{
-						if(Ballcolor[2])
-						{
-							color_mode=0;						
-						}
-						position_in_wide=0;
-						Black_and_no_time=0;
-						wheel_error_time=0;
-			             
-					}	
-					
-					//故障处理//
-					if(wheel_error_time>=200)
-				    {
-					add_or_reduce=-add_or_reduce;
-					PushBallPosition=PushBallPosition+add_or_reduce*32768/2;
-					Black_and_no_time=0;
-				    position_in_wide=0;
-					color_mode=0;
-					wheel_error_time=0;
-				    }
-				}
-		#elif push_mode == 2//先用一个舱室，再用另一个//每次旋转360°//
-		        if(Black_and_no_time<200)
-				{
-				   if(Ballcolor[2])
-					{
-						color_mode=0;						
-					}
-				}else
-				{
-					if(Black_and_no_time==200)
-					{PushBallPosition=PushBallPosition+add_or_reduce*32768/2;
-				     add_or_reduce=-add_or_reduce;
-					}
-					if( abs(push_position.push_pos[1]-PushBallPosition)<=500)
-                      position_in_wide++;
-					else wheel_error_time++;
-						if(position_in_wide>=wheel_need_wait_time)
-					{
-						if(Ballcolor[2])
-						{
-							color_mode=0;						
-						}
-						position_in_wide=0;
-						Black_and_no_time=0;
-						wheel_error_time=0;
-					}	
-					
-					//故障处理//
-					if(wheel_error_time>=200)
-				    {
-					add_or_reduce=-add_or_reduce;
-					PushBallPosition=PushBallPosition+add_or_reduce*32768/2;
-					Black_and_no_time=0;
-				    position_in_wide=0;
-					color_mode=0;
-					wheel_error_time=0;
-					
-			    	}
-				 
-				}
-				
-		#endif
-			break;	
-					
-	}
-		
-	if(PushballFlag==0)
-	{
-		White_ball_time=0;
-	}
-	PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,PushBallPosition);
-//	USART_OUT( UART4, (uint8_t*)"%d\t%d\t",push_position.push_pos[1],(int)PushBallPosition);
-//	USART_OUT(UART4,(uint8_t*)" color_mode=%d\r\n",color_mode);
-	
 
-}
-
-//得到车与四个点的距离//
-float get_d(float x,float y)
+/**
+* @brief  得到车与四个点的距离
+* @param  x：目标点的x坐标
+* @param  y：目标点的y坐标
+* @author ACTION
+*/
+float GetDis(float x,float y)
 {
 	return(sqrt(pow (GetX()-x,2)+pow(GetY()-y,2)));
 }
-//得到车与四个点的角度与 车的速度角度的插值//
-float get_differ_angle(float angle)
+ 
+/**
+* @brief  得到车与四个点的角度与车的速度角度的插值
+* @param  angle：车指向桶的角度
+* @author ACTION
+*/
+float GetDifferAngle(float angle)
 {
-	
+	//车指向桶的角度与车行进方向角度的差值
 	float nowdiffer_angle=0;
+	
+	//计算出车车行进方向的角度
 	float car_run_v=make_angle_in_wide(90-atan2(GetSpeedX(),GetSpeedY())/pi*180,-180);
+	
+	//得到两个角度的差值
 	nowdiffer_angle=make_angle_in_wide(angle-car_run_v,-180);
+	
+	//如果差值>0 则减去补偿角 差值<0 则加上补偿角
 	if(nowdiffer_angle>0)
-		add_or_reduce_angle=-1 ;
+		addReduceangle=-1 ;
 	else if(nowdiffer_angle<0)
-		add_or_reduce_angle=1;
+		addReduceangle=1;
+	
 	return(nowdiffer_angle);
 }
-//得到炮台相对于算出的角度应该加或者减的角//
-float get_addorreduce_angle(float differ_angle,float x)
-{   float Add_V=sqrt(pow(GetSpeedX(),2)+pow(GetSpeedX(),2));
+/**
+* @brief  计算出车的速度与跟桶的距离得到的补偿角
+* @param  differ_angle：车指向桶的角度与车行进方向角度的差值
+* @param  x：车与桶之间的距离
+* @author ACTION
+*/
+float GetCompensateAng(float differ_angle,float x)
+{
+	//计算出车的行进速度
+	float Add_V=sqrt(pow(GetSpeedX(),2)+pow(GetSpeedX(),2));
+	
 	float Pi=3.1415926;
+	//计算出小球从距离为x的点射到桶内所需要的时间 运用自由落体公式
 	float t=sqrt(2*(sqrt(3)*x-800)/9800);
+	
+	//计算出小球射入桶内的水平速度
 	float x_v=x/t;
+	
+	//用余弦公式计算出运动时小球射出时需要的的水平速度
 	float need_v=sqrt(pow(Add_V,2)+pow(x_v,2)-2*x_v*Add_V*cos(fabs(differ_angle)/180*Pi));
+	
+	//用余弦公式计算出运动时炮台应该转到的角度与车指向桶的角度的夹角的cos值
 	float cos_x=(pow(need_v,2)+pow(x_v,2)-pow(Add_V,2))/(2*x_v*need_v);
+	
+	//转化为角度后输出
 	return(acos(cos_x)/Pi*180);
 }
-//将角度限制在0~360度 point_angle=0//  //将角度限制在-180~180度 point_angle=-180//
+/**
+* @brief  将输入角度限幅
+* @param  angle：需要限幅的角度
+* @author ACTION
+* @note   如果需要将角度限制在0~360度 输入point_angle=0  如果需要将角度限制在-180~180度 输入point_angle=-180
+*/
 float make_angle_in_wide(float angle,float point_angle)
 {
-	
 	if(angle>360+point_angle)
 		angle-=360.0f;
 	else if(angle<=0+point_angle)
 		angle+=360.0f;
-//	USART_OUT( UART4, (uint8_t*)"hanshunei %d ", (int)angle);
 	return(angle);
 }
-//计算并得到炮台需要运动到的角//
-float last_body_angle=0;
-int i=0;
-float go_real_send_angle=0;
-extern int roundCnt;
+/**
+* @brief  计算并得到炮台需要运动到的角
+* @param  point_x：目标点x坐标
+* @param  point_y：目标点y坐标
+* @author ACTION
+*/
 void move_gun(float point_x,float point_y)
 {
-	float car_angle_to_point=0;
-	float x=0;
-	float cartopoint_angle=0;//车指向固定点的角度//
-	float getget_angle=0;//从bodyangle与y轴正方向的角度//	
-	float begain_angle=0;//炮台的起始角度//       	
-	float fake_new_angle=0;//假的新角度//
-	float bili=0;
-	float addadd=0;
-	x=get_d(point_x,point_y);
-	car_angle_to_point=get_angle2(GetY()-point_y,-GetX()+point_x,(GetY()-point_y)/fabs((GetY()-point_y)),Sn);//得到固定点指向车的角度//
-//	if(fabs(make_angle_in_wide(last_body_angle-car_angle_to_point,-180))>178)
-//	car_angle_to_point=last_body_angle;	
-//	else last_body_angle=car_angle_to_point;
-	USART_OUT( UART4, (uint8_t*)"angle ");
-	cartopoint_angle=make_angle_in_wide(car_angle_to_point+180,-180);//将角度限制在-180~180//
-
-	add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle),x);	
+	//目标点指向车的角度 
+	float pointCarAng=CountAngle(GetY()-point_y,-GetX()+point_x);
 	
-//	if(Sn==1)	//逆时针
-//	{   if( diagonal==1)//左下右上
-//		bili=1.2;
-//		else bili=0.7;
-//	}else
-//    {
-//		if( diagonal==1)//左下右上
-//		bili=1.2;
-//		else bili=2.6;
-//	}
+	//车与目标点的距离
+	float carPointDistance=GetDis(point_x,point_y);
 	
+	//车指向固定点的角度//
+	float carPointAng=make_angle_in_wide(pointCarAng+180,-180);
+	
+	//将目标点指向车的角度转化为以y轴正方向为0度的角度	
+	float yPointCarAng=0;
+    
+    //计算出的假角度 以y轴正方向为0度 真假角度只为处理优劣弧 让炮台每次都已最短的路径转到需要的角度 需要在goRealAng的基础上加上	fakeNewAng-fakeLastAng的值
+	float fakeNewAng=0;
+	
+	//补偿需要乘上的比例系数
+	float compensateBili=0;		
+	
+	float fakeDifferAng;
+	//计算出需要补偿的角度
+	adAngle=GetCompensateAng(GetDifferAngle(carPointAng),carPointDistance);	
+	
+	//在不同的圈上对比例系数进行赋值
 	if(Sn==1)
 	{
-		if(roundCnt==2)
-			bili=0.1;
-		else if(roundCnt==3||roundCnt==4)
-			bili=0.05;
-		else bili=0.05;
+		if(round_cnt==2)
+			compensateBili=0.1;
+		else if(round_cnt==3||round_cnt==4)
+			compensateBili=0.05;
+		else compensateBili=0.05;
     }else if(Sn==-1)
 	{
-		if(roundCnt==2)
-			bili=0.1;
-		else if(roundCnt==3||roundCnt==4)
-			bili=0.05;
-		else bili=0.05;
+		if(round_cnt==2)
+			compensateBili=0.1;
+		else if(round_cnt==3||round_cnt==4)
+			compensateBili=0.05;
+		else compensateBili=0.05;
 	}
+	//在目标指向车的角度上加上补偿角 再将角度限幅
+	pointCarAng=make_angle_in_wide(pointCarAng+addReduceangle*compensateBili*adAngle,-180);
 	
- //   USART_OUT( UART4, (uint8_t*)"%d ", (int)go_real_send_angle);
-	addadd=add_or_reduce_angle*bili*add_angle;
-//	USART_OUT( UART4, (uint8_t*)"%d ", (int)addadd);
-	car_angle_to_point=make_angle_in_wide(car_angle_to_point+add_or_reduce_angle*bili*add_angle,-180);	//1m/s 为0.6//	
-	getget_angle=make_angle_in_wide(90+car_angle_to_point,-180);//将角度限制在-180~180//
-	fake_new_angle=make_angle_in_wide(begain_angle-getget_angle+GetAngle(),-180);
-	get_fake_angle=make_angle_in_wide(fake_new_angle-fake_last_angle,-180);
-//	USART_OUT( UART4, (uint8_t*)"%d ", (int)go_real_send_angle);
-//	USART_OUT( UART4, (uint8_t*)"%d ", (int)get_fake_angle);
-	go_real_send_angle=go_real_send_angle+get_fake_angle;//弥补误差//
-//	USART_OUT( UART4, (uint8_t*)"%d ", (int)go_real_send_angle);
-//	USART_OUT( UART4, (uint8_t*)"angle ");
-//   	USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t",(int)car_angle_to_point,(int)fake_new_angle,(int)fake_last_angle,(int)get_fake_angle,(int)real_send_angle);
-	fake_last_angle=fake_new_angle;
-	//发送角度
+	//将目标点指向车的角度转化为以y轴正方向为0度的角度
+	yPointCarAng=make_angle_in_wide(90+pointCarAng,-180);
 	
-	YawPosCtrl(go_real_send_angle);
-//	    USART_OUT(UART4,(uint8_t*)"gun_v=%d\t\r\n",(int)fort.shooterVelReceive);
-//		USART_OUT(UART4,(uint8_t*)"add_angle=%d\t\r\n",(int)add_angle);
+	//计算出新的假角度 并且赋值 以y轴正方向为0度 逆时针到180 顺势针到-180 因为炮台顺时针为增加 逆时针为减小 所以要取负
+	fakeNewAng=make_angle_in_wide(-yPointCarAng+GetAngle(),-180);
+	
+	//计算出新假角度与旧角度之间的差值 再限幅
+	fakeDifferAng=make_angle_in_wide(fakeNewAng-fakeLastAng,-180);
+	
+	//在goRealAng的基础上加上差值来解决优劣弧问题
+	goRealAng=goRealAng+fakeDifferAng;//弥补误差//
+	
+	//对旧假角度进行赋值
+	fakeLastAng=fakeNewAng;
+	
+	//发送角度	
+	YawPosCtrl(goRealAng);
 }
 
-int if_add_time=0;
-int out_position_time=0;
-int normal_push=1;
-int ShaveTime=0;
-int deal_measure=0;
-int measure_time=0;
-int last_normal_push;
+//是否检测分球电机在目标位置的500范围内
+int ifAddPushTime=0;
+
+//分球电机在目标区域外的时间
+int outPositionTime=0;
+
+//是否正常推球 1则执行正常推球程序 0则执行分球电机故障处理程序
+int normalPush=1;
+
+//分球电机上下摇摆时间
+int shaveTime=0;
+
 extern int No_StableTime;
+
 extern int Out_AreaTime;
+
+//故障处理的模式 0 1 2 3 决定判断时间
 int shave_mode=0;
+
+//卡球的故障处理
+/**
+* @brief  卡球的故障处理
+* @param  none
+		  
+* @author ACTION
+*/
 void PushBallErrorDeal(void)
 {
-	if(!if_add_time)
+	//如果未进入故障处理
+	if(!ifAddPushTime)
 	{
-		if(abs(PushBallPosition-push_position.push_pos[1])>500)
-			out_position_time++;
-		else if(abs(PushBallPosition-push_position.push_pos[1])<500)
+		//比较电机返回的实时位置与电机需要转到的目标值是否在500范围内
+		if(abs(pushBallpos-push_position.push_pos[1])>500)
+			outPositionTime++;
+		else if(abs(pushBallpos-push_position.push_pos[1])<500)
 		{
-			out_position_time=0;
-			normal_push=1;
+			outPositionTime=0;
+			normalPush=1;
 			shave_mode=0;
 		}		
     }
-	if(out_position_time==(int)200/(shave_mode+1))
+	//当区域外的时间超过设定值
+	if(outPositionTime==(int)200/(shave_mode+1))
 	{
+		
 		shave_mode++;
-		if_add_time=1;
-		PushBallPosition=(push_position.push_pos[1]/16384)*16384;
-		LastpushBallposition=PushBallPosition;
-		normal_push=0;
+		//不去判断是否在区域内
+		ifAddPushTime=1;
+		//将设定值变为距离电机当前位置最近的适合位置
+		pushBallpos=(push_position.push_pos[1]/16384)*16384;
+		//将上一个值赋值
+		lastPushpos=pushBallpos;
+		normalPush=0;
 	}
-	if(if_add_time)
+	//如果进入故障处理
+	if(ifAddPushTime)
 	{
-		ShaveTime++;
+		shaveTime++;
 	}
-	if(ShaveTime==50)
-		PushBallPosition+=5461;
-	else if(ShaveTime==100)
+	if(shaveTime==50)
+		pushBallpos+=5461;
+	else if(shaveTime==100)
 	{
-		PushBallPosition-=5461;
-	}else if(ShaveTime==150)
+		pushBallpos-=5461;
+	}else if(shaveTime==150)
 	{
-		PushBallPosition+=5461;
-	}else if(ShaveTime==200)
+		pushBallpos+=5461;
+	}else if(shaveTime==200)
 	{
-		PushBallPosition-=5461;
+		pushBallpos-=5461;
 	}
-	else if(ShaveTime==250)
+	else if(shaveTime==250)
 	{
-		if_add_time=0;
-		out_position_time=0;
-		ShaveTime=0;
+		ifAddPushTime=0;
+		outPositionTime=0;
+		shaveTime=0;
 	}
+	//识别模式切换
     if(shave_mode>=3)
 		shave_mode=3;
 }
