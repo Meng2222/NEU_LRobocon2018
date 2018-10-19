@@ -1,9 +1,9 @@
-
-void Aim_Point(float point_x,float point_y);
+#define LARGEST_ANGLE 15
+void AimPoint(float point_x,float point_y);
 void LightPoint(int Distance);
 float ShootBall_v(float Distance);
-void MovePoint(void);
+void FixedPoint(void);
 void BarrelChange(void);
-int Let_BallOut(void);
+int LetBallOut(void);
 void AimBarrel(void);
 int RecognizeBall(void);
