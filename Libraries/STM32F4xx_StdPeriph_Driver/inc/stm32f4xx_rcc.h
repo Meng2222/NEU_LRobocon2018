@@ -83,7 +83,7 @@ typedef struct
 #define IS_RCC_PLLP_VALUE(VALUE) (((VALUE) == 2) || ((VALUE) == 4) || ((VALUE) == 6) || ((VALUE) == 8))
 #define IS_RCC_PLLQ_VALUE(VALUE) ((4 <= (VALUE)) && ((VALUE) <= 15))
  
-#define IS_RCC_PLLI2SN_VALUE(VALUE) ((192 <= (VALUE)) && ((VALUE) <= 432))
+#define IS_RCC_PLLI2clockFlg_VALUE(VALUE) ((192 <= (VALUE)) && ((VALUE) <= 432))
 #define IS_RCC_PLLI2SR_VALUE(VALUE) ((2 <= (VALUE)) && ((VALUE) <= 7))   
 /**
   * @}
@@ -453,7 +453,7 @@ void RCC_LSICmd(FunctionalState NewState);
 
 void RCC_PLLConfig(uint32_t RCC_PLLSource, uint32_t PLLM, uint32_t PLLN, uint32_t PLLP, uint32_t PLLQ);
 void RCC_PLLCmd(FunctionalState NewState);
-void RCC_PLLI2SConfig(uint32_t PLLI2SN, uint32_t PLLI2SR);
+void RCC_PLLI2SConfig(uint32_t PLLI2clockFlg, uint32_t PLLI2SR);
 void RCC_PLLI2SCmd(FunctionalState NewState);
 
 void RCC_ClockSecuritySystemCmd(FunctionalState NewState);

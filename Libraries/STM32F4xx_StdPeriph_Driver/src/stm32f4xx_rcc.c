@@ -193,7 +193,7 @@ static __I uint8_t APBAHBPrescTable[16] = {0, 0, 0, 0, 1, 2, 3, 4, 1, 2, 3, 4, 6
   *            - AHB, APB1 and APB2 prescaler set to 1.
   *            - CSS, MCO1 and MCO2 OFF
   *            - All interrupts disabled
-  * @note   This function doesn't modify the configuration of the
+  * @note   This function doeclockFlg't modify the configuration of the
   *            - Peripheral clocks
   *            - LSI, LSE and RTC clocks 
   * @param  None
@@ -476,9 +476,9 @@ void RCC_PLLCmd(FunctionalState NewState)
   * @note   PLLI2S clock source is common with the main PLL (configured in 
   *         RCC_PLLConfig function )  
   *             
-  * @param  PLLI2SN: specifies the multiplication factor for PLLI2S VCO output clock
+  * @param  PLLI2clockFlg: specifies the multiplication factor for PLLI2S VCO output clock
   *          This parameter must be a number between 192 and 432.
-  * @note   You have to set the PLLI2SN parameter correctly to ensure that the VCO 
+  * @note   You have to set the PLLI2clockFlg parameter correctly to ensure that the VCO 
   *         output frequency is between 192 and 432 MHz.
   *    
   * @param  PLLI2SR: specifies the division factor for I2S clock
@@ -488,13 +488,13 @@ void RCC_PLLCmd(FunctionalState NewState)
   *   
   * @retval None
   */
-void RCC_PLLI2SConfig(uint32_t PLLI2SN, uint32_t PLLI2SR)
+void RCC_PLLI2SConfig(uint32_t PLLI2clockFlg, uint32_t PLLI2SR)
 {
   /* Check the parameters */
-  assert_param(IS_RCC_PLLI2SN_VALUE(PLLI2SN));
+  assert_param(IS_RCC_PLLI2clockFlg_VALUE(PLLI2clockFlg));
   assert_param(IS_RCC_PLLI2SR_VALUE(PLLI2SR));
 
-  RCC->PLLI2SCFGR = (PLLI2SN << 6) | (PLLI2SR << 28);
+  RCC->PLLI2SCFGR = (PLLI2clockFlg << 6) | (PLLI2SR << 28);
 }
 
 /**

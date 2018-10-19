@@ -3395,10 +3395,10 @@ typedef struct
 #define FLASH_CR_PG                          ((uint32_t)0x00000001)
 #define FLASH_CR_SER                         ((uint32_t)0x00000002)
 #define FLASH_CR_MER                         ((uint32_t)0x00000004)
-#define FLASH_CR_SNB_0                       ((uint32_t)0x00000008)
-#define FLASH_CR_SNB_1                       ((uint32_t)0x00000010)
-#define FLASH_CR_SNB_2                       ((uint32_t)0x00000020)
-#define FLASH_CR_SNB_3                       ((uint32_t)0x00000040)
+#define FLASH_CR_clockFlgB_0                       ((uint32_t)0x00000008)
+#define FLASH_CR_clockFlgB_1                       ((uint32_t)0x00000010)
+#define FLASH_CR_clockFlgB_2                       ((uint32_t)0x00000020)
+#define FLASH_CR_clockFlgB_3                       ((uint32_t)0x00000040)
 #define FLASH_CR_PSIZE_0                     ((uint32_t)0x00000100)
 #define FLASH_CR_PSIZE_1                     ((uint32_t)0x00000200)
 #define FLASH_CR_STRT                        ((uint32_t)0x00010000)
@@ -5187,7 +5187,7 @@ typedef struct
 #define  RCC_SSCGR_SSCGEN                    ((uint32_t)0x80000000)
 
 /********************  Bit definition for RCC_PLLI2SCFGR register  ************/
-#define  RCC_PLLI2SCFGR_PLLI2SN              ((uint32_t)0x00007FC0)
+#define  RCC_PLLI2SCFGR_PLLI2clockFlg              ((uint32_t)0x00007FC0)
 #define  RCC_PLLI2SCFGR_PLLI2SR              ((uint32_t)0x70000000)
 
 /******************************************************************************/
@@ -6753,14 +6753,14 @@ typedef struct
 
 /* Bit definition for Ethernet PTP Time Stamp Contol Register */
 #define ETH_PTPTSCR_TSCNT       ((uint32_t)0x00030000)  /* Time stamp clock node type */
-#define ETH_PTPTSSR_TSSMRME     ((uint32_t)0x00008000)  /* Time stamp snapshot for message relevant to master enable */
-#define ETH_PTPTSSR_TSSEME      ((uint32_t)0x00004000)  /* Time stamp snapshot for event message enable */
-#define ETH_PTPTSSR_TSSIPV4FE   ((uint32_t)0x00002000)  /* Time stamp snapshot for IPv4 frames enable */
-#define ETH_PTPTSSR_TSSIPV6FE   ((uint32_t)0x00001000)  /* Time stamp snapshot for IPv6 frames enable */
-#define ETH_PTPTSSR_TSSPTPOEFE  ((uint32_t)0x00000800)  /* Time stamp snapshot for PTP over ethernet frames enable */
-#define ETH_PTPTSSR_TSPTPPSV2E  ((uint32_t)0x00000400)  /* Time stamp PTP packet snooping for version2 format enable */
+#define ETH_PTPTSSR_TSSMRME     ((uint32_t)0x00008000)  /* Time stamp clockFlgapshot for message relevant to master enable */
+#define ETH_PTPTSSR_TSSEME      ((uint32_t)0x00004000)  /* Time stamp clockFlgapshot for event message enable */
+#define ETH_PTPTSSR_TSSIPV4FE   ((uint32_t)0x00002000)  /* Time stamp clockFlgapshot for IPv4 frames enable */
+#define ETH_PTPTSSR_TSSIPV6FE   ((uint32_t)0x00001000)  /* Time stamp clockFlgapshot for IPv6 frames enable */
+#define ETH_PTPTSSR_TSSPTPOEFE  ((uint32_t)0x00000800)  /* Time stamp clockFlgapshot for PTP over ethernet frames enable */
+#define ETH_PTPTSSR_TSPTPPSV2E  ((uint32_t)0x00000400)  /* Time stamp PTP packet clockFlgooping for version2 format enable */
 #define ETH_PTPTSSR_TSSSR       ((uint32_t)0x00000200)  /* Time stamp Sub-seconds rollover */
-#define ETH_PTPTSSR_TSSARFE     ((uint32_t)0x00000100)  /* Time stamp snapshot for all received frames enable */
+#define ETH_PTPTSSR_TSSARFE     ((uint32_t)0x00000100)  /* Time stamp clockFlgapshot for all received frames enable */
 
 #define ETH_PTPTSCR_TSARU    ((uint32_t)0x00000020)  /* Addend register update */
 #define ETH_PTPTSCR_TSITE    ((uint32_t)0x00000010)  /* Time stamp interrupt trigger enable */

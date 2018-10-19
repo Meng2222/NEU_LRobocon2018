@@ -24,35 +24,35 @@
 extern   pos_t action;
 extern int roundCnt;
 extern int err_kind;
-extern float go_real_send_angle;
+extern float goRealAng;
 extern union push_p push_position;
-extern int PushBallPosition;
-extern int Barrel,errorTime,errorLockTime,aimErrorFlag,aimErrorTime,errorLockFlag;
-extern int if_shoot[],if_shootFlag[];
-extern int normal_push;
-extern int stable_flag;
+extern int pushBallpos;
+extern int barrel,errorTime,errorLockTime,aimErrorFlag,aimErrorTime,errorLockFlag;
+extern int ifShoot[],ifShootFlag[];
+extern int normalPush;
+extern int stableFlg;
 extern float AimAngle;
-extern float AdcAngle;
+extern float adcAngle;
 extern int Ballcolor[5];
 void debugdata(void)
 {
 	USART_OUT( UART4, (uint8_t*)"%d\t", roundCnt);
-	USART_OUT( UART4, (uint8_t*)"%d\t", stable_flag);
+	USART_OUT( UART4, (uint8_t*)"%d\t", stableFlg);
 	USART_OUT( UART4, (uint8_t*)"%d\t%d\t%d\t", (int)action.x,(int)action.y,(int)action.angle);
 	USART_OUT( UART4, (uint8_t*)"%d\t", err_kind);
-	USART_OUT( UART4, (uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t",Barrel,errorTime,aimErrorTime,aimErrorFlag,errorLockTime,errorLockFlag);	
-	USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t",if_shoot[ 0],if_shoot[1],if_shoot[2],if_shoot[3]);
-	USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t",if_shootFlag[0],if_shootFlag[1],if_shootFlag[2],if_shootFlag[3],(int)AdcAngle);
+	USART_OUT( UART4, (uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t",barrel,errorTime,aimErrorTime,aimErrorFlag,errorLockTime,errorLockFlag);	
+	USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t",ifShoot[ 0],ifShoot[1],ifShoot[2],ifShoot[3]);
+	USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t",ifShootFlag[0],ifShootFlag[1],ifShootFlag[2],ifShootFlag[3],(int)adcAngle);
 	USART_OUT( UART4, (uint8_t*)"%d  %d\t",(int)ReadLaserAValue(),(int)ReadLaserBValue());	
 	USART_OUT( UART4, (uint8_t*)"%d ", (int)GetWZ());
-	USART_OUT( UART4, (uint8_t*)"%d ", (int)PushBallPosition);
+	USART_OUT( UART4, (uint8_t*)"%d ", (int)pushBallpos);
 	USART_OUT( UART4, (uint8_t*)"%d ", (int)push_position.push_pos[1]);
-	USART_OUT( UART4, (uint8_t*)"%d ", (int)go_real_send_angle);
+	USART_OUT( UART4, (uint8_t*)"%d ", (int)goRealAng);
 	USART_OUT( UART4, (uint8_t*)"%d ", (int)fort.yawPosReceive);
-	USART_OUT( UART4, (uint8_t*)"%d ", (int)get_roll_v());
+	USART_OUT( UART4, (uint8_t*)"%d ", (int)GetRollV());
 	USART_OUT( UART4, (uint8_t*)"%d ", (int)fort.shooterVelReceive);
-	USART_OUT( UART4, (uint8_t*)"%d ", (int)normal_push);	
-	USART_OUT( UART4, (uint8_t*)"%d ", (int)go_real_send_angle);
+	USART_OUT( UART4, (uint8_t*)"%d ", (int)normalPush);	
+	USART_OUT( UART4, (uint8_t*)"%d ", (int)goRealAng);
 	USART_OUT( UART4, (uint8_t*)"%d ", (int)Ballcolor[2]);
 	
 }

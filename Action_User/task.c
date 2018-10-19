@@ -19,20 +19,19 @@
 #include "DebugData.h"
 void boomAccident();
 uint8_t Ballcolor[5];
-int BeforePushposition=0;
-int LastpushBallposition;
+int beforePushPos=0;
+int lastPushPos;
 
 //顺时针和逆时针
 int clockFlg=1;
-extern float go_real_send_angle;
+extern float goRealAng;
 extern union push_p push_position;
 extern FortType fort;
-extern int normal_push;
-extern int PushballFlag;
+extern int normalPush;
+extern int pushBallFlag;
 extern int AreaChange;
-extern int PushBallPosition;
+extern int pushBallpos;
 float point_s[3][4]={2082,2469,2270,2422,0,0,0,0,2367,2349,2398,2352};
-extern float s;
 extern int point_number;
 int get_cycle_num=0;
 float recover_buff=0;
@@ -41,8 +40,8 @@ float recover_buff=0;
 float run_R=0;
 float run_r=0;
 float run_V=0;
-int if_white_shoot=0;
-
+int ifNeedshoot=0;
+extern float carToDointD;
 extern int deadZone;
 extern int roundCnt;
 extern int pointErrDeal;
@@ -53,7 +52,7 @@ extern int runAgain;
 extern int nothingCanDo;
 uint8_t acceleration_ready=0;
 int no_BallTime=0,Out_AreaTime=0,Out_Area_noballTime=0,No_StableTime=0,No_Stable_noballTime=0;//推球的变量//
-float get_angle2(float a,float b,int n,int round);//n指向,round顺逆时针，ax+by+c=0；
+float CountAngle(float a,float b,int n,int round);//n指向,round顺逆时针，ax+by+c=0；
 /*
 ===============================================================
 						信号量定义
@@ -115,7 +114,7 @@ void ConfigTask(void)
 	// 配置位置环
 	while(PressFlag==1)
 	{
-		PressFlag=Let_BallOut();
+		PressFlag=LetBallOut();
 		//反转
 		VelCrl(CAN2,6,80*32768);//80
 		VelCrl(CAN2,5,-80*32768);//-80
@@ -143,7 +142,7 @@ void ConfigTask(void)
 
 void WalkTask(void)
 {
-	extern int stable_flag;
+	extern int stableFlg;
 	CPU_INT08U os_err;
 	os_err = os_err;
 	int T=0;
@@ -152,17 +151,15 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
-//		MotorOff(CAN2,7);
-   //   USART_OUT( UART4, (uint8_t*)"Ballcolor=%d ", Ballcolor[2]);
 		systerm_change();	
-	//	get_cycle_num=round_counter();
+
 		ReadActualPos(CAN2, 7);
 		run_r=Radius();
-//		normal_push=1;
-		if(stable_flag==0)
+
+		if(stableFlg==0)
 		{
 		     Walkline(0,2350,run_r,run_V,clockFlg);   ////圆心X坐标  圆心Y坐标 半径  方向  速
-			if(!pointErrDeal&&normal_push)//&&run_again
+			if(!pointErrDeal&&normalPush)//&&run_again
 			{
 				Out_AreaTime=0;		//射球圈  非射球区域的计时
 				T=0;				//射球圈  射球区域的计时
@@ -171,22 +168,22 @@ void WalkTask(void)
 				if(Ballcolor[2]==Need_ball_collor)		//在非射球圈识别到白球 把非射球圈的没有球的计时置0 并且准备着
 				{
 					No_Stable_noballTime=0;	//非射球圈 没有球的计时
-	//				USART_OUT( UART4, (uint8_t*)"PrepareOK%d\r\n ", Ballcolor[2]);
+
 				}
 				if(Ballcolor[2]==No_need_ball_collor&&No_StableTime==50)		//黑球 而且非射球圈的计时为50时
 				{
-					PushBallPosition-=32768;
+					pushBallpos-=32768;
 					No_Stable_noballTime=0;
-	//				USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);
+
 				}
 				else if(Ballcolor[2]==0)	//没有球 持续130ms 反推
 				{
 					No_Stable_noballTime++;
 					if(No_Stable_noballTime>=130)
 					{
-						PushBallPosition-=32768/2;
+						pushBallpos-=32768/2;
 						No_Stable_noballTime=0;
-	//					USART_OUT( UART4, (uint8_t*)"No_Stable_Change\r\n ");
+
 					}
 				}
 				if(No_StableTime>=112)	
@@ -196,28 +193,28 @@ void WalkTask(void)
 			}
 		}
 		
-		else if(stable_flag==1&&!runAgain)	
+		else if(stableFlg==1&&!runAgain)	
 		 {
 			 Walkline(0,2300,run_r,run_V,clockFlg);
-             if(!pointErrDeal&&normal_push)//&&run_again/*&&normal_push*/
+             if(!pointErrDeal&&normalPush)//&&run_again/*&&normalPush*/
 			 {		
 				No_StableTime=0;		//进入射球圈 把非射球圈的计时全部置0
 				No_Stable_noballTime=0;
-				if(PushballFlag==1)		//如果进入射球区域
+				if(pushBallFlag==1)		//如果进入射球区域
 				{
 					T++;				//射球圈计时开始
 					Out_AreaTime=0;	
-					if(Ballcolor[2]==Need_ball_collor&&fabs(s-3000)<20)		//白球 在t=90时射出
+					if(Ballcolor[2]==Need_ball_collor&&fabs(carToDointD-3000)<20)		//白球 在t=90时射出
 					{
-						if_white_shoot=1;
-						PushBallPosition+=32768;
+						ifNeedshoot=1;
+						pushBallpos+=32768;
 						no_BallTime=0;
 	//					USART_OUT( UART4, (uint8_t*)"tong__car s=%d\t ",(int) s);
 	//					USART_OUT(UART4,(uint8_t*)" tong_number %d\t\r\n",(int)point_number);
 					}
 					else if(Ballcolor[2]==No_need_ball_collor&&T==10)	//黑球 在t=10时反推
 					{
-						PushBallPosition-=32768;
+						pushBallpos-=32768;
 						no_BallTime
 						=0;
 	//					USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);
@@ -227,7 +224,7 @@ void WalkTask(void)
 						no_BallTime++;
 						if(no_BallTime>=150)
 						{
-							PushBallPosition-=32768/2;
+							pushBallpos-=32768/2;
 							no_BallTime=0;
 	//						USART_OUT( UART4, (uint8_t*)"Change\r\n ");	
 						}
@@ -238,7 +235,7 @@ void WalkTask(void)
 						T=0;
 					}
 				}
-				else if(PushballFlag==0)		//射球圈非射球区域
+				else if(pushBallFlag==0)		//射球圈非射球区域
 				{
 					Out_AreaTime++;				//射球圈非射球区域计时
 					T=0;
@@ -249,7 +246,7 @@ void WalkTask(void)
 					}				
 					if(Ballcolor[2]==No_need_ball_collor&&Out_AreaTime==50)
 					{
-						PushBallPosition-=32768;
+						pushBallpos-=32768;
 						Out_Area_noballTime=0;
 	//					USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);
 					}
@@ -258,7 +255,7 @@ void WalkTask(void)
 						Out_Area_noballTime++;
 						if(Out_Area_noballTime>=150)
 						{
-							PushBallPosition-=32768/2;
+							pushBallpos-=32768/2;
 							Out_Area_noballTime=0;
 	//						USART_OUT( UART4, (uint8_t*)"OutArea_Change\r\n ");	
 						}						
@@ -271,19 +268,19 @@ void WalkTask(void)
 			}			 
 		 }
 		 PushBallErrorDeal();
-	   PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,PushBallPosition);
+	   PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushBallpos);
 	
 		if(pointErrDeal==0&&!runAgain)//&&run_again
 	{		
-       get_sendangle();                                                 //谢尚锦
+       GetSendAngle();                                                 //谢尚锦
       // push_ball();                                                     //谢尚锦
          
 	}
 	
-	    if(abs(LastpushBallposition-PushBallPosition)>16380)
+	    if(abs(lastPushPos-pushBallpos)>16380)
 		{
-			BeforePushposition=LastpushBallposition;
-			LastpushBallposition=PushBallPosition;
+			beforePushPos=lastPushPos;
+			lastPushPos=pushBallpos;
 		}		 
 		if(shoot_over==1)
 		{
@@ -313,7 +310,7 @@ void WalkTask(void)
 //	USART_OUT( UART4, (uint8_t*)"%d ", (int)GetX());
 //	USART_OUT( UART4, (uint8_t*)"%d ", (int)GetY());
 //	USART_OUT( UART4, (uint8_t*)"%d ", (int)run_r);
-//USART_OUT( UART4, (uint8_t*)"%d ", (int)get_angle2(GetY()-2400,-GetX()+0,(GetY()-2400)/fabs((GetY()-2400)),Sn));
+//USART_OUT( UART4, (uint8_t*)"%d ", (int)CountAngle(GetY()-2400,-GetX()+0,(GetY()-2400)/fabs((GetY()-2400)),clockFlg));
 //  ShooterVelCtrl(80);
  // USART_OUT( UART4, (uint8_t*)"\r\n");
 

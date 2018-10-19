@@ -19,15 +19,15 @@
 extern int lastRoundcnt;
 
 //前一个发出去的分球电机的位置
-extern int beforePushpos;
+extern int beforePushPos;
 
 //上一个发出去的分球电机的位置
-extern int lastPushpos;
+extern int lastPushPos;
 
 //是否推出需要的球 0为未推出 1为推出
 extern int ifNeedshoot;
 
-extern int stable_flag;
+extern int stableFlg;
 
 //分球电机的位置接受数组
 int pushBallpos;
@@ -64,10 +64,10 @@ float fakeNewAng;
 int pushBallFlag=0;
 
 //顺逆时针方向 1为逆时针 -1为顺时针 
-extern int Sn;
+extern int clockFlg;
 
 //车的走行圈数
-extern int round_cnt;
+extern int roundCnt;
 
 //逆时针的位置数组
 int nPoint[4][2];
@@ -138,7 +138,7 @@ void GetSendAngle(void)
 	carToCenterAng=CountAngle(GetY()-2300,-GetX());
 	//规划射球区域与非射球区域
 	//顺时针
-	if(Sn==-1)	//顺时针
+	if(clockFlg==-1)	//顺时针
 	{	
 		//一号桶区域为 -125~-35
 		if(carToCenterAng<=-35&&carToCenterAng>=-125) 
@@ -225,7 +225,7 @@ void GetSendAngle(void)
 		
 	}
 
-	if(Sn==1)
+	if(clockFlg==1)
 	{
 		//逆时针
 		//计算出车与桶的距离
@@ -235,7 +235,7 @@ void GetSendAngle(void)
 		ShooterVelCtrl(GetRollV());
 		
 		//让炮台转向目标桶
-		move_gun(nPoint[pointNum-1][0],nPoint[pointNum-1][1]);
+		MoveGun(nPoint[pointNum-1][0],nPoint[pointNum-1][1]);
 	}else 
 	{
 		//顺时针
@@ -246,24 +246,24 @@ void GetSendAngle(void)
 		ShooterVelCtrl(GetRollV());  
 		
 		//让炮台转向目标桶
-		move_gun(sPoint[pointNum-1][0],sPoint[pointNum-1][1]);
+		MoveGun(sPoint[pointNum-1][0],sPoint[pointNum-1][1]);
 	}
  
 
-	if(Sn==1)
+	if(clockFlg==1)
 	{
 		//逆时针时 从第一圈切换到第二个圈时 四号桶不射
-		if(round_cnt==2&&pointNum==4&&lastRoundcnt==1)
+		if(roundCnt==2&&pointNum==4&&lastRoundcnt==1)
 			pushBallFlag=0;
     }else
 	{
 		//顺时针时 从第一圈切换到第二个圈时 一号桶不射
-		if(round_cnt==2&&pointNum==1&&lastRoundcnt==1)
+		if(roundCnt==2&&pointNum==1&&lastRoundcnt==1)
 			pushBallFlag=0;
 	}
 
 	//如果可以边走边投
-	if(stable_flag)
+	if(stableFlg)
 	{
 		//如果在射球区域
 		if(pushBallFlag) 
@@ -283,7 +283,7 @@ void GetSendAngle(void)
     }
 	
 	//如果四个桶全部射过球 则将数组全部置为1 重新开始
-	if(ifShoot[0]==0&&ifShoot[1]==0&&ifShoot[2]==0&&ifShoot[3]==0&&round_cnt!=5)
+	if(ifShoot[0]==0&&ifShoot[1]==0&&ifShoot[2]==0&&ifShoot[3]==0&&roundCnt!=5)
 	{
 		for( int i=0;i<4;i++)
 			ifShoot[i]=1;
@@ -376,7 +376,7 @@ float make_angle_in_wide(float angle,float point_angle)
 * @param  point_y：目标点y坐标
 * @author ACTION
 */
-void move_gun(float point_x,float point_y)
+void MoveGun(float point_x,float point_y)
 {
 	//目标点指向车的角度 
 	float pointCarAng=CountAngle(GetY()-point_y,-GetX()+point_x);
@@ -401,18 +401,18 @@ void move_gun(float point_x,float point_y)
 	adAngle=GetCompensateAng(GetDifferAngle(carPointAng),carPointDistance);	
 	
 	//在不同的圈上对比例系数进行赋值
-	if(Sn==1)
+	if(clockFlg==1)
 	{
-		if(round_cnt==2)
+		if(roundCnt==2)
 			compensateBili=0.1;
-		else if(round_cnt==3||round_cnt==4)
+		else if(roundCnt==3||roundCnt==4)
 			compensateBili=0.05;
 		else compensateBili=0.05;
-    }else if(Sn==-1)
+    }else if(clockFlg==-1)
 	{
-		if(round_cnt==2)
+		if(roundCnt==2)
 			compensateBili=0.1;
-		else if(round_cnt==3||round_cnt==4)
+		else if(roundCnt==3||roundCnt==4)
 			compensateBili=0.05;
 		else compensateBili=0.05;
 	}
@@ -489,7 +489,7 @@ void PushBallErrorDeal(void)
 		//将设定值变为距离电机当前位置最近的适合位置
 		pushBallpos=(push_position.push_pos[1]/16384)*16384;
 		//将上一个值赋值
-		lastPushpos=pushBallpos;
+		lastPushPos=pushBallpos;
 		normalPush=0;
 	}
 	//如果进入故障处理

@@ -34,7 +34,7 @@ float lastAng=0;
 float lastX1=0;
 float lastY1=0;
 float lastAng1=0;
-int last_round_cnt;
+int lastRoundcnt;
 int R_switch=0;
 int r_switch=0;
 //
@@ -76,7 +76,7 @@ pos_t action;
 float Rr=0;
 float Ll=0;
 		
-extern float go_real_send_angle;
+extern float goRealAng;
 extern float run_r;
 extern float run_R;
 extern float run_V;
@@ -106,7 +106,7 @@ int troubleCnt=0;
 
 //开始循环走形标志位
 int runAgain=0;
-extern int SureNo_BallFlag;
+extern int sureNoBallFlag;
 
 //扫边的时候到达特定区域的标志位
 int zoneArrive=0;
@@ -479,7 +479,7 @@ if(runAgain == 1 && deadZone == 1)
 */
 int BoundaryShoot(int whichline)
 {
-	extern int if_shoot[4];
+	extern int ifShoot[4];
 	extern uint8_t Ballcolor[5];
 	int8_t carStop=0;
 	int8_t point_shootflag=0;
@@ -493,7 +493,7 @@ switch (clockFlg)
 			case 1:
 				
 				//正常坐标系下（前 + y右 + x），如果y轴速度小于设定值并且面前这个桶需要打并且机器人行驶到规定区域内，一旦定点激光扫不到超过一定时间就取消定点扫描
-				if(fabs(GetSpeedY())<=BOTTOM_LIMIT&&if_shoot[3]==1&&action.y>-200&&action.y < 1000&&(aimErrorFlag == 0))//&&!(action.angle<-150||action.angle>150)
+				if(fabs(GetSpeedY())<=BOTTOM_LIMIT&&ifShoot[3]==1&&action.y>-200&&action.y < 1000&&(aimErrorFlag == 0))//&&!(action.angle<-150||action.angle>150)
 				{
 					if(Ballcolor[2]==Need_ball_collor)
 						point_shootflag=1;
@@ -503,21 +503,21 @@ switch (clockFlg)
 			case 2:
 				
 				//正常坐标系下（前 + y右 + x），如果x轴速度小于设定值并且面前这个桶需要打并且机器人行驶到规定区域内，一旦定点激光扫不到超过一定时间就取消定点扫描
-				if(fabs(GetSpeedX())<=BOTTOM_LIMIT&&if_shoot[2]==1&&action.x<-2000&&action.x>-3500&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0))//&&!carStop&&fabs(action.angle-90)<30)
+				if(fabs(GetSpeedX())<=BOTTOM_LIMIT&&ifShoot[2]==1&&action.x<-2000&&action.x>-3500&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0))//&&!carStop&&fabs(action.angle-90)<30)
 				point_shootflag=1;
 				break;
 			
 			case 3:
 				
 				//正常坐标系下（前 + y右 + x），如果y轴速度小于设定值并且面前这个桶需要打并且机器人行驶到规定区域内，一旦定点激光扫不到超过一定时间就取消定点扫描
-				if(fabs(GetSpeedY())<=BOTTOM_LIMIT&&if_shoot[1]==1&&action.y < 500&&action.y>-1200&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0))//&&!carStop&&fabs(action.angle)<30)
+				if(fabs(GetSpeedY())<=BOTTOM_LIMIT&&ifShoot[1]==1&&action.y < 500&&action.y>-1200&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0))//&&!carStop&&fabs(action.angle)<30)
 				point_shootflag=1;
 				break;
 			
 			case 4:
 				
 				//正常坐标系下（前 + y右 + x），如果x轴速度小于设定值并且面前这个桶需要打并且机器人行驶到规定区域内，一旦定点激光扫不到超过一定时间就取消定点扫描
-				if(fabs(GetSpeedX())<=BOTTOM_LIMIT&&if_shoot[0]==1&&action.x>-2800&&action.x<-1200&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0))//&&!carStop&&fabs(action.angle + 90)<30)
+				if(fabs(GetSpeedX())<=BOTTOM_LIMIT&&ifShoot[0]==1&&action.x>-2800&&action.x<-1200&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0))//&&!carStop&&fabs(action.angle + 90)<30)
 				point_shootflag=1;
 				break;
 		}
@@ -529,25 +529,25 @@ switch (clockFlg)
 			case 1:
 				
 				//正常坐标系下（前 + y右 + x），如果y轴速度小于设定值并且面前这个桶需要打并且机器人行驶到规定区域内，一旦定点激光扫不到超过一定时间就取消定点扫描
-				if(fabs(GetSpeedY())<BOTTOM_LIMIT&&if_shoot[0]==1&&action.y < 500&&action.y>-1500&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0)&&!carStop&&!(action.angle<-150||action.angle>150))
+				if(fabs(GetSpeedY())<BOTTOM_LIMIT&&ifShoot[0]==1&&action.y < 500&&action.y>-1500&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0)&&!carStop&&!(action.angle<-150||action.angle>150))
 					point_shootflag=1;
 				break;
 			case 2:
 				
 				//正常坐标系下（前 + y右 + x），如果x轴速度小于设定值并且面前这个桶需要打并且机器人行驶到规定区域内，一旦定点激光扫不到超过一定时间就取消定点扫描
-				if(fabs(GetSpeedX())<BOTTOM_LIMIT&&if_shoot[1]==1&&action.x<-1500&&action.x>-3500&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0)&&!carStop&&fabs(action.angle + 90)<30)
+				if(fabs(GetSpeedX())<BOTTOM_LIMIT&&ifShoot[1]==1&&action.x<-1500&&action.x>-3500&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0)&&!carStop&&fabs(action.angle + 90)<30)
 				point_shootflag=1;
 				break;
 			case 3:
 				
 				//正常坐标系下（前 + y右 + x），如果y轴速度小于设定值并且面前这个桶需要打并且机器人行驶到规定区域内，一旦定点激光扫不到超过一定时间就取消定点扫描
-				if(fabs(GetSpeedY())<BOTTOM_LIMIT&&if_shoot[2]==1&&action.y>-1000&&action.y < 1200&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0)&&!carStop&&fabs(action.angle)<30)
+				if(fabs(GetSpeedY())<BOTTOM_LIMIT&&ifShoot[2]==1&&action.y>-1000&&action.y < 1200&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0)&&!carStop&&fabs(action.angle)<30)
 				point_shootflag=1;
 				break;
 			case 4:
 				
 				//正常坐标系下（前 + y右 + x），如果x轴速度小于设定值并且面前这个桶需要打并且机器人行驶到规定区域内，一旦定点激光扫不到超过一定时间就取消定点扫描
-				if(fabs(GetSpeedX())<BOTTOM_LIMIT&&if_shoot[3]==1&&action.x>-1500&&action.x>1200&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0)&&!carStop&&fabs(action.angle-90)<30)
+				if(fabs(GetSpeedX())<BOTTOM_LIMIT&&ifShoot[3]==1&&action.x>-1500&&action.x>1200&&(Ballcolor[2]==Need_ball_collor)&&(aimErrorFlag == 0)&&!carStop&&fabs(action.angle-90)<30)
 				point_shootflag=1;
 				break;		
 		}
@@ -1051,7 +1051,7 @@ void runTo(float beta,float Vm)//由当前角度pao向beta
 	{
 		VelCrl(CAN1, 02,0);
 		VelCrl(CAN1, 01,0);
-		MovePoint();
+		FixedPoint();
 	}
 	if(roundCnt == 5)//&&(largest_cnt%3 == 2)
 	{
@@ -1464,11 +1464,11 @@ return run_r;
 float V_buff(float buffType,float buffDegree,float perVal,float standard_V)
 {
 		vbuffCnt += perVal;
-	       if(vbuffCnt >= buffDegree * 0.1)
+	       if(vbuffCnt >= buffDegree * 0.1f)
 	       {
-			   vbuffCnt = buffDegree * 0.1;
+			   vbuffCnt = buffDegree * 0.1f;
 		   }
-    run_V = standard_V - buffType * buffDegree * 0.1 + buffType * vbuffCnt;  
+    run_V = standard_V - buffType * buffDegree * 0.1f+ buffType * vbuffCnt;  
 return run_V;
 }
 
@@ -1528,7 +1528,7 @@ float roundSetting(int radiusNum)
 
 
 
-float get_angle2(float a,float b,int n,int round)//n指向,round顺逆时针，ax + by + c=0；
+float CountAngle(float a,float b,int n,int round)//n指向,round顺逆时针，ax + by + c=0；
 { 	
 	if(a == 0)
 	{
@@ -1627,7 +1627,7 @@ float get_angle2(float a,float b,int n,int round)//n指向,round顺逆时针，a
 float get_positive_angle(float a1,float b1,int n1)
 {
 	if(a_genforRadius(a1,b1,n1 )<0)
-		return (a_genforRadius( a1,b1,n1) + 360);
+		return (a_genforRadius( a1,b1,n1) + 360.f);
 	if(a_genforRadius( a1,b1,n1)>=0)
 		return a_genforRadius( a1,b1,n1);
 }
@@ -1686,7 +1686,7 @@ int Radius(void)
 		if(R_switch > r_switch || roundCnt == 0 || troubleFlg == 1)  
 {
 	      troubleFlg = 0;
-	last_round_cnt = roundCnt;
+	lastRoundcnt = roundCnt;
 		  roundCnt ++;
 		  rbuffCnt = 0;
 	      vbuffCnt = 0;
@@ -1706,9 +1706,9 @@ switch (roundCnt)
 		//第2轨道的相关参数设置
 		stableFlg=1;			  
 		if(clockFlg == 1)
-			go_real_send_angle +=6;
+			goRealAng +=6;
 		else if(clockFlg==-1)
-			go_real_send_angle-=10;	
+			goRealAng-=10;	
 		if(runAgain == 1)
 			stableFlg=0;
 		 else   
@@ -1722,10 +1722,10 @@ switch (roundCnt)
 		//第3轨道的相关参数设置
 		 if(clockFlg == 1)
 			  {
-				go_real_send_angle -= 10.f;
+				goRealAng -= 10.f;
 			  }
 			  else if(clockFlg == -1)
-					go_real_send_angle += 13.f;
+					goRealAng += 13.f;
 			  
 			 if(runAgain == 1)
 			 {
@@ -1743,7 +1743,7 @@ switch (roundCnt)
 				 
 	case 4:
 		//第4轨道的相关参数设置
-		go_real_send_angle -= clockFlg * 2.f;
+		goRealAng -= clockFlg * 2.f;
 		radiusA = 1500;
 		stableFlg = 1;
 	
@@ -1798,7 +1798,7 @@ switch (roundCnt)
 		
 		//第6轨道的相关参数设置
 		radiusA = roundSetting(600);
-		SureNo_BallFlag = 0;
+		sureNoBallFlag = 0;
 		break;
 	case 8:
 		//第8轨道的相关参数设置
@@ -2487,4 +2487,4 @@ void errdeal(void)
 				err_kind=0; 
 			}
 		dead_err=0;
-			}			
+			}	

@@ -20,7 +20,7 @@
 /***********************************************************************************
 **********************************定义变量区****************************************
 ************************************************************************************/
-extern int Sn;
+extern int clockFlg;
 float point2carAngle;
 float lastCalculateAngle=0;
 float controlAngle;
@@ -35,7 +35,7 @@ int findDirection=1;
 float shootVel;
 extern uint8_t Ballcolor[5];
 int findingCnt=0;
-extern int PushBallPosition;
+extern int pushBallpos;
 int needBallFlag=0;
 int changeBarrelFlag=0;
 int state=2,pmtCnt=0,changeFlag=0,lastState=0,lastKey_A=0;
@@ -43,14 +43,14 @@ int leftPosition=0,rightPosition=0,leftFlag=0,rightFlag=0;
 float rollVel;
 int prepareTime=0,prepareOkFlag=0,waitCnt=0,waitTime,sureNoBallFlag=0;
 int shoot_over=0;
-extern int if_shoot[];
-int if_shootFlag[4]={1,1,1,1};
-extern int round_cnt;
+extern int ifShoot[];
+int ifShootFlag[4]={1,1,1,1};
+extern int roundCnt;
 int turnAngle=0,findTime=0,findAngle=0,errorDistance=0;
 float perTurnAngle=0;
 int errorTime=0,errorLockTime=0;
 int errorLockFlag=0;
-extern int dead_zone;
+extern int deadZone;
 float aimAngle=0;
 float vDiff=0;
 int aimErrorFlag=0,aimErrorTime=0;
@@ -60,7 +60,7 @@ int pushFlag=0;
 float addAngle=0;
 int addAngleFlag=0;
 int errorFindFlag;
-extern int normal_push;
+extern int normalPush;
 float yPosAngle;    	
 float calculateAngle;
 
@@ -79,7 +79,7 @@ float calculateAngle;
 void AimPoint(float point_x,float point_y)
 {
 	//得到固定点与车的角度
-	point2carAngle=get_angle2(GetY()-point_y,-GetX()+point_x,(GetY()-point_y)/fabs((GetY()-point_y)),Sn);
+	point2carAngle=CountAngle(GetY()-point_y,-GetX()+point_x,(GetY()-point_y)/fabs((GetY()-point_y)),clockFlg);
 	
 	//该角度与y轴正方向的角度,将角度限制在-180~180
 	yPosAngle=make_angle_in_wide(90+point2carAngle,-180);
@@ -111,7 +111,7 @@ void AimPoint(float point_x,float point_y)
 void LightPoint(int Distance)
 {
 	//调参位置
-	if(round_cnt==5)
+	if(roundCnt==5)
 	{
 		turnAngle=3;
 		findTime=3;
@@ -119,7 +119,7 @@ void LightPoint(int Distance)
 		perTurnAngle=0.7f;
 		errorDistance=300;
 	}
-	else if(round_cnt!=5)
+	else if(roundCnt!=5)
 	{
 		turnAngle=5;
 		findTime=10;
@@ -254,14 +254,14 @@ void LightPoint(int Distance)
 /**
 * @brief  计算得到包胶轮应该的转速
 * @param  rollVel：计算得到的包胶轮的转速
-		  round_cnt：此时所在的圈数
+		  roundCnt：此时所在的圈数
 * @author ACTION
 */
 float ShootBallVel(float Distance)
 {   
 	//拟合得到的包胶轮转速与激光测得的桶的距离的关系
 	rollVel=2.0f*(1E-10f)*pow(Distance,3)-3.0f*(1E-6f)*pow(Distance,2)+0.0255f*Distance+19.304f;
-	if(round_cnt!=5)
+	if(roundCnt!=5)
 	{	
 		//发现该拟合公式存在一定误差的补偿
 		if(rollVel<80&&rollVel>=20)
@@ -305,10 +305,10 @@ float ShootBallVel(float Distance)
 void FixedPoint(void)
 {
 	//定位系统得到车与4个点的距离
-	distanceFirst=get_d(-2400,0);
-	distanceSecond=get_d(-2400,4800);
-	distanceThird=get_d(2400,4800);
-	distanceFourth=get_d(2400,0);
+	distanceFirst=GetDis(-2400,0);
+	distanceSecond=GetDis(-2400,4800);
+	distanceThird=GetDis(2400,4800);
+	distanceFourth=GetDis(2400,0);
 	//激光数值转距离（单位mm）
 	distanceA=2.4541f*ReadLaserAValue()+82.744f;
 	distanceB=2.3839f*ReadLaserBValue()+413.37f;
@@ -319,42 +319,42 @@ void FixedPoint(void)
 	pushFlag=RecognizeBall();
 	
 	//出现卡球的情况退出定点模式
-	if(normal_push==0)
+	if(normalPush==0)
 	{
 		shoot_over=1;
 	}
 	//定点模式的扫描
-	if(round_cnt!=5)
+	if(roundCnt!=5)
 	{
 		//如果四个桶都打过一遍，重置标志位
-		if(if_shoot[0]==0&&if_shoot[1]==0&&if_shoot[2]==0&&if_shoot[3]==0)
+		if(ifShoot[0]==0&&ifShoot[1]==0&&ifShoot[2]==0&&ifShoot[3]==0)
 		{
 			for(int i=0;i<4;i++)
 			{
-				if_shoot[i]=1;
+				ifShoot[i]=1;
 			}
 		}
 		//定点打过的桶标志位，如果定点打过四个桶，重置标志位
-		if(if_shootFlag[0]==0&&if_shootFlag[1]==0&&if_shootFlag[2]==0&&if_shootFlag[3]==0)
+		if(ifShootFlag[0]==0&&ifShootFlag[1]==0&&ifShootFlag[2]==0&&ifShootFlag[3]==0)
 		{
 			for(int i=0;i<4;i++)
 			{
-				if_shootFlag[i]=1;
+				ifShootFlag[i]=1;
 			}
 		}
 		//出现 打过的桶的标志位 与 定点打过的桶的标志位 矛盾的情况  标志位全部重置
-		if(if_shoot[0]!=1||if_shootFlag[0]!=1)
+		if(ifShoot[0]!=1||ifShootFlag[0]!=1)
 		{
-			if(if_shoot[1]!=1||if_shootFlag[1]!=1)
+			if(ifShoot[1]!=1||ifShootFlag[1]!=1)
 			{
-				if(if_shoot[2]!=1||if_shootFlag[2]!=1)
+				if(ifShoot[2]!=1||ifShootFlag[2]!=1)
 				{
-					if(if_shoot[3]!=1||if_shootFlag[3]!=1)
+					if(ifShoot[3]!=1||ifShootFlag[3]!=1)
 					{
 						for(int i=0;i<4;i++)
 						{
-							if_shoot[i]=1;
-							if_shootFlag[i]=1;
+							ifShoot[i]=1;
+							ifShootFlag[i]=1;
 						}				
 					}
 				}
@@ -365,19 +365,19 @@ void FixedPoint(void)
 		{
 			case 0:
 			{
-				if(if_shoot[0]==1)
+				if(ifShoot[0]==1)
 				{
 					barrel=1;
 				}
-				else if(if_shoot[1]==1)
+				else if(ifShoot[1]==1)
 				{
 					barrel=2;
 				}
-				else if(if_shoot[2]==1)
+				else if(ifShoot[2]==1)
 				{
 					barrel=3;
 				}
-				else if(if_shoot[3]==1)
+				else if(ifShoot[3]==1)
 				{
 					barrel=4;
 				}
@@ -433,7 +433,7 @@ void FixedPoint(void)
 		}
 	}
 	//第五圈的停下来扫描
-	else if(round_cnt==5)
+	else if(roundCnt==5)
 	{
 		//执行扫描操作
 		AimBarrel();
@@ -442,7 +442,7 @@ void FixedPoint(void)
 	}
 	//分球和换桶
 	BarrelChange();
-	PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,PushBallPosition);
+	PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushBallpos);
 }
 
 
@@ -450,9 +450,9 @@ void FixedPoint(void)
 * @brief  控制分球和变换目标空中储藏室
 * @param  vDiff：计算得到的包胶轮转速与实际包胶轮转速的差值的绝对值
           prepareOkFlag：激光在扫描时分球机构确认到球的标志位
-		  if_shoot[]：记录打过的桶的数组
-		  if_shootFlag[]：记录定点打过的桶的数组
-		  PushBallPosition：转盘的位置（脉冲）
+		  ifShoot[]：记录打过的桶的数组
+		  ifShootFlag[]：记录定点打过的桶的数组
+		  pushBallpos：转盘的位置（脉冲）
 		  Barrel：空中储藏室的编号
 * @author ACTION
 */
@@ -469,30 +469,30 @@ void BarrelChange(void)
 		if(pushFlag==1&&vDiff<1)
 		{
 			needBallFlag=1;
-			PushBallPosition+=32768/2;
+			pushBallpos+=32768/2;
 			//对打过的桶记标记位
-			if(round_cnt==5)
+			if(roundCnt==5)
 			 {
-				if(Sn==-1)
+				if(clockFlg==-1)
 				{
-					if_shoot[dead_zone-1]=0;
-					if_shootFlag[dead_zone-1]=0;
+					ifShoot[deadZone-1]=0;
+					ifShootFlag[deadZone-1]=0;
 				}
-				else if(Sn==1)
+				else if(clockFlg==1)
 				{
-					if_shoot[4-dead_zone]=0;
-					if_shootFlag[4-dead_zone]=0;
+					ifShoot[4-deadZone]=0;
+					ifShootFlag[4-deadZone]=0;
 				}
 			 }
-		     else if(round_cnt!=5)
+		     else if(roundCnt!=5)
 		     {
-				if_shoot[barrel-1]=0;
-				if_shootFlag[barrel-1]=0;
+				ifShoot[barrel-1]=0;
+				ifShootFlag[barrel-1]=0;
 		     }			
 		}
 		else if(pushFlag==2)
 		{
-			PushBallPosition-=32768/2;
+			pushBallpos-=32768/2;
 		}				
 	  }
 	  //分球机构：已经准备好了
@@ -502,25 +502,25 @@ void BarrelChange(void)
 		  //等待一小段时间而且确保包胶轮转速与计算转速偏差不超过2转/s
 		  if(waitTime>=50&&vDiff<2)
 		  {
-			PushBallPosition+=32768/2;
+			pushBallpos+=32768/2;
 			  //对打过的桶记标记位
-			  if(round_cnt==5)
+			  if(roundCnt==5)
 			  {
-				if(Sn==-1)
+				if(clockFlg==-1)
 				{
-					if_shoot[dead_zone-1]=0;
-					if_shootFlag[dead_zone-1]=0;
+					ifShoot[deadZone-1]=0;
+					ifShootFlag[deadZone-1]=0;
 				}
-				else if(Sn==1)
+				else if(clockFlg==1)
 				{
-					if_shoot[4-dead_zone]=0;
-					if_shootFlag[4-dead_zone]=0;
+					ifShoot[4-deadZone]=0;
+					ifShootFlag[4-deadZone]=0;
 				}
 			  }
-			  else if(round_cnt!=5)
+			  else if(roundCnt!=5)
 			  {
-				if_shoot[barrel-1]=0;
-				if_shootFlag[barrel-1]=0;	  
+				ifShoot[barrel-1]=0;
+				ifShootFlag[barrel-1]=0;	  
 			  }
 			needBallFlag=1;
 			prepareOkFlag=0;
@@ -540,7 +540,7 @@ void BarrelChange(void)
 		  }
 	  }
 	  //确定没有球，退出定点模式
-	  if((sureNoBallFlag>=5&&round_cnt!=3&&round_cnt!=4)||(sureNoBallFlag>=3&&(round_cnt==3||round_cnt==4)))
+	  if((sureNoBallFlag>=5&&roundCnt!=3&&roundCnt!=4)||(sureNoBallFlag>=3&&(roundCnt==3||roundCnt==4)))
 	  {
 		shoot_over=1;
 		certainFlag=0;
@@ -559,7 +559,7 @@ void BarrelChange(void)
 		else if(pushFlag==2)
 		{
 			sureNoBallFlag=0;
-			PushBallPosition-=32768/2;
+			pushBallpos-=32768/2;
 		}
 	}
 	//射完球改变射球的桶
@@ -573,46 +573,46 @@ void BarrelChange(void)
 		changeBarrelFlag=0;
 		errorLockTime=0;
 		//第五圈 投完走		
-		if(round_cnt==5)
+		if(roundCnt==5)
 		{
 			aimAngle=0;
 			shoot_over=1;
 		}
 			//定点时换桶
-		else if(round_cnt!=5)
+		else if(roundCnt!=5)
 		{
 			//两个标志位出现矛盾就全部重置
-			if(if_shoot[0]!=1||if_shootFlag[0]!=1)
+			if(ifShoot[0]!=1||ifShootFlag[0]!=1)
 			{
-				if(if_shoot[1]!=1||if_shootFlag[1]!=1)
+				if(ifShoot[1]!=1||ifShootFlag[1]!=1)
 				{
-					if(if_shoot[2]!=1||if_shootFlag[2]!=1)
+					if(ifShoot[2]!=1||ifShootFlag[2]!=1)
 					{
-						if(if_shoot[3]!=1||if_shootFlag[3]!=1)
+						if(ifShoot[3]!=1||ifShootFlag[3]!=1)
 						{
 							for(int i=0;i<4;i++)
 							{
-								if_shoot[i]=1;
-								if_shootFlag[i]=1;
+								ifShoot[i]=1;
+								ifShootFlag[i]=1;
 							}				
 						}
 					}
 				}
 			}
 			//切换扫描与射球的桶
-			if(if_shoot[0]==1&&if_shootFlag[0]==1)
+			if(ifShoot[0]==1&&ifShootFlag[0]==1)
 			{
 				barrel=1;
 			}
-			else if(if_shoot[1]==1&&if_shootFlag[1]==1)
+			else if(ifShoot[1]==1&&ifShootFlag[1]==1)
 			{
 				barrel=2;
 			}
-			else if(if_shoot[2]==1&&if_shootFlag[2]==1)
+			else if(ifShoot[2]==1&&ifShootFlag[2]==1)
 			{
 				barrel=3;
 			}
-			else if(if_shoot[3]==1&&if_shootFlag[3]==1)
+			else if(ifShoot[3]==1&&ifShootFlag[3]==1)
 			{
 				barrel=4;
 			}
@@ -774,7 +774,7 @@ int RecognizeBall(void)
 		noNeedBallTime=0;
 		noBallTime=0;
 		//定点时对没球反推进行计数 累计一定次数结束定点模式
-		if(round_cnt==8)
+		if(roundCnt==8)
 		{
 			sureNoBallFlag+=1;
 		}

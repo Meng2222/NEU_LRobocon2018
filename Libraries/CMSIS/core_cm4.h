@@ -351,8 +351,8 @@ typedef struct
 }  NVIC_Type;
 
 /* Software Triggered Interrupt Register Definitions */
-#define NVIC_STIR_INTID_Pos                 0                                          /*!< STIR: INTLINESNUM Position */
-#define NVIC_STIR_INTID_Msk                (0x1FFUL << NVIC_STIR_INTID_Pos)            /*!< STIR: INTLINESNUM Mask */
+#define NVIC_STIR_INTID_Pos                 0                                          /*!< STIR: INTLINEclockFlgUM Position */
+#define NVIC_STIR_INTID_Msk                (0x1FFUL << NVIC_STIR_INTID_Pos)            /*!< STIR: INTLINEclockFlgUM Mask */
 
 /*@} end of group CMSIS_NVIC */
 
@@ -590,8 +590,8 @@ typedef struct
 } SCnSCB_Type;
 
 /* Interrupt Controller Type Register Definitions */
-#define SCnSCB_ICTR_INTLINESNUM_Pos         0                                          /*!< ICTR: INTLINESNUM Position */
-#define SCnSCB_ICTR_INTLINESNUM_Msk        (0xFUL << SCnSCB_ICTR_INTLINESNUM_Pos)      /*!< ICTR: INTLINESNUM Mask */
+#define SCnSCB_ICTR_INTLINEclockFlgUM_Pos         0                                          /*!< ICTR: INTLINEclockFlgUM Position */
+#define SCnSCB_ICTR_INTLINEclockFlgUM_Msk        (0xFUL << SCnSCB_ICTR_INTLINEclockFlgUM_Pos)      /*!< ICTR: INTLINEclockFlgUM Mask */
 
 /* Auxiliary Control Register Definitions */
 #define SCnSCB_ACTLR_DISOOFP_Pos            9                                          /*!< ACTLR: DISOOFP Position */
@@ -1298,8 +1298,8 @@ typedef struct
 #define CoreDebug_DHCSR_S_REGRDY_Pos       16                                             /*!< CoreDebug DHCSR: S_REGRDY Position */
 #define CoreDebug_DHCSR_S_REGRDY_Msk       (1UL << CoreDebug_DHCSR_S_REGRDY_Pos)          /*!< CoreDebug DHCSR: S_REGRDY Mask */
 
-#define CoreDebug_DHCSR_C_SNAPSTALL_Pos     5                                             /*!< CoreDebug DHCSR: C_SNAPSTALL Position */
-#define CoreDebug_DHCSR_C_SNAPSTALL_Msk    (1UL << CoreDebug_DHCSR_C_SNAPSTALL_Pos)       /*!< CoreDebug DHCSR: C_SNAPSTALL Mask */
+#define CoreDebug_DHCSR_C_clockFlgAPSTALL_Pos     5                                             /*!< CoreDebug DHCSR: C_clockFlgAPSTALL Position */
+#define CoreDebug_DHCSR_C_clockFlgAPSTALL_Msk    (1UL << CoreDebug_DHCSR_C_clockFlgAPSTALL_Pos)       /*!< CoreDebug DHCSR: C_clockFlgAPSTALL Mask */
 
 #define CoreDebug_DHCSR_C_MASKINTS_Pos      3                                             /*!< CoreDebug DHCSR: C_MASKINTS Position */
 #define CoreDebug_DHCSR_C_MASKINTS_Msk     (1UL << CoreDebug_DHCSR_C_MASKINTS_Pos)        /*!< CoreDebug DHCSR: C_MASKINTS Mask */

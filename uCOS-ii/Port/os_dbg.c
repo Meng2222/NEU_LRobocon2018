@@ -215,7 +215,7 @@ INT16U  const  OSDataSize = sizeof(OSCtxSwCtr)
 *
 * Returns    : none
 *
-* Note(s)    : (1) This code doesn't do anything, it simply prevents the compiler from optimizing out
+* Note(s)    : (1) This code doeclockFlg't do anything, it simply prevents the compiler from optimizing out
 *                  the 'const' variables which are declared in this file.
 *              (2) You may decide to 'compile out' the code (by using #if 0/#endif) INSIDE the function 
 *                  if your compiler DOES NOT optimize out the 'const' variables above.
