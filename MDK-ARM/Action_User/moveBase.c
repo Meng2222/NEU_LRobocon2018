@@ -53,11 +53,6 @@ void Spin(float R,float v)
 	VelCrl(CAN1,1,-v*CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO/(pi*WHEEL_DIAMETER));
 	VelCrl(CAN1,2,v*(TURN_AROUND_WHEEL_TO_BACK_WHEEL/R)*CAR_WHEEL_COUNTS_PER_ROUND*REDUCTION_RATIO*WHEEL_REDUCTION_RATIO/(pi*TURN_AROUND_WHEEL_DIAMETER));
 }
-void TurnRight(float angle,float v)
-{
-	VelCrl(CAN2,1,0);
-	VelCrl(CAN2,2,-v*4096*WHEEL_TREAD*angle*2/((WHEEL_DIAMETER)*360));
-}	
 void AnglePID(float setAngle,float feedbackAngle)
 {
 	err=setAngle-feedbackAngle;
@@ -77,24 +72,6 @@ float k,b,lAngle,setAngle,d;
 int flag;
 extern float yawAngle,x,y,lastX,lastY;
 extern int status;
-float min(float d1,float d2)
-{
-	if(d1>d2)
-		return d2;
-	else
-		return d1;
-}
-extern int scanCnt[10];
-int findMostGroup()
-{
-	int a=0;
-	for(int i=0;i<=19;i++)
-	{
-		if(scanCnt[a]<scanCnt[i])
-			a=i;
-	}
-	return a;
-}
 void GetFunction(float x1,float y1,float x2,float y2)
 {
 		if(x1-0.1<x2&&x2<x1+0.1)
@@ -203,7 +180,7 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
 extern float Distance,shootX,shootY,angle,antiRad,location[4][2],speed;
-extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,shakeShootFlag,banFirstShoot,FindBallModel,StdId;
+extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,shakeShootFlag,banFirstShoot,findBallModel,StdId;
 void GetYawangle(uint8_t StdId)
 {
 	if(status==0)
@@ -235,6 +212,7 @@ void BingoJudge(uint8_t StdId)
 {
 	if(haveShootedFlag==1&&bingoFlag[StdId][0]==0)
 	{	
+		//优先级降低
 		bingoFlag[StdId][0]=3-errTime;
 		haveShootedFlag=0;
 	}	
@@ -256,9 +234,9 @@ void BingoJudge(uint8_t StdId)
 			}	
 		}
 	}
-	if(!FindBallModel)
+	if(!findBallModel)
 	{
-		if(speed<1300||speed>1800||(!FindBallModel&&errTime>1))
+		if(speed<1300||speed>1800||(!findBallModel&&errTime>1))
 		{	
 			throwFlag=0;
 			banFirstShoot=100;
@@ -278,6 +256,7 @@ void GetShootSituation(uint8_t StdId)
 	GetDistance(StdId);
 	BingoJudge(StdId);
 }	
+//投球优先级
 int FirstshootJudge(void)
 {
 	int StdId=0,maxPriority=0,i=0;
@@ -356,10 +335,11 @@ void DecreaseR(int Radium)
 extern int errFlag,count,shootCnt,shakeShootCnt,ballColor,rDecreaseFlag,circleCnt,semiPushCount,pushBallFlag,borderSweepFlag,Cnt;
 extern float angle,speed,speedY,speedX,T0,T1,rps,realR,v;
 int errSituation1,errSituation2,shakeShootOff=200,shutOffCnt=0;
+//避障
 void Avoidance()
 {
-		static int errSituation3,statusFlag,lastTime=0,time=0,backwardCount,checkTime=150,correctTime;
-		static float changeAngle,speedAngle;
+		int errSituation3,statusChangeFlag,lastTime=0,time=0,backwardCount,checkTime=150,correctTime;
+		float changeAngle,speedAngle;
 		if(errFlag==1)
 		{	
 			backwardCount++;
@@ -380,10 +360,10 @@ void Avoidance()
 					Straight(-300);
 				else
 					Straight(-1100);
-				if(errTime%2==0&&statusFlag)
+				if(errTime%2==0&&statusChangeFlag)
 				{
 					status=1-status;
-					statusFlag=0;
+					statusChangeFlag=0;
 				}	
 			}
 			if(errSituation2)
@@ -413,7 +393,7 @@ void Avoidance()
 				lastTime=time;
 			else				
 			{
-				//情况2：被对方侧面推着跑，此时有一定速度，车身角度与速度角度不一致
+				//情况2：被对方推着跑，此时有一定速度，车身角度与速度角度不一致
 				if(fabs(speedAngle-GetAngle())>40&&speed>500&&errSituation1==0)
 				{
 					errSituation2=1;
@@ -453,7 +433,7 @@ void Avoidance()
 						changeAngle=GetAngle()-90;
 				}	
 				errFlag=1;
-				statusFlag=1;
+				statusChangeFlag=1;
 				errTime++;
 			}		
 		}	
@@ -500,6 +480,7 @@ void ShakeShoot(void)
 	else
 		throwFlag=0;
 }	
+//扫边收球
 void BorderSweeping(void)
 {
 	shootX=x;
@@ -545,22 +526,42 @@ void BorderSweeping(void)
 	}
 	if(((x<1000&&x>-1000)||(y<3400&&y>1400))&&StdId==FirstshootJudge())
 		throwFlag=1;
+	else 
+		throwFlag=0;
 	GetShootSituation(StdId);
 	YawPosCtrl(yawAngle);
 	rps=((Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*speed*speed)-sqrt(3)*speed)-speed)-166.59)/39.574+(Distance-4200)*0.0035;
 	ShooterVelCtrl(rps);		
 }	
 /*激光模式*/
-float getLingtAngle(float xi,float yi,int tragetCnt)
+float getLingtAngle(float xi,float yi,int targetCnt)
 {
 	static float angii=0;	
-	if(tragetCnt==0)
+	if(targetCnt==0)
 		angii=GetAngle()+90-180/pi*atan((0-yi)/(2400-xi));
-	if(tragetCnt==1)
+	if(targetCnt==1)
 		angii=GetAngle()+90-180/pi*atan((4800-yi)/(2400-xi));
-	if(tragetCnt==2)
+	if(targetCnt==2)
 		angii=GetAngle()-90-180/pi*atan((4800-yi)/(-2400-xi));
-	if(tragetCnt==3)
+	if(targetCnt==3)
 		angii=GetAngle()-90-180/pi*atan((0-yi)/(-2400-xi));
 	return angii;
+}
+float min(float d1,float d2)
+{
+	if(d1>d2)
+		return d2;
+	else
+		return d1;
+}
+extern int scanCnt[10];
+int findMostGroup()
+{
+	int a=0;
+	for(int i=0;i<=19;i++)
+	{
+		if(scanCnt[a]<scanCnt[i])
+			a=i;
+	}
+	return a;
 }
