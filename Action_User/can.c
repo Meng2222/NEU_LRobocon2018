@@ -425,7 +425,6 @@ uint8_t CAN_TxMsg(CAN_TypeDef *CANx,
 
 	mbox = CAN_Transmit(CANx, &TxMessage);
 	i = 0;
-
 	while ((CAN_TransmitStatus(CANx, mbox) != CAN_TxStatus_Ok))
 	{
 	}

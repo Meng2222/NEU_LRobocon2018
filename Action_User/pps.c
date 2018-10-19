@@ -20,8 +20,9 @@
 #include  <ucos_ii.h>
 #include "timer.h"
 #include "pps.h"
-#include "moveBase.h"
-#include <math.h>
+#include "elmo.h"
+#include "math.h"
+#include "movebase.h"
 /*告诉定位系统准备开始积分*/
 static uint8_t ppsTalkOk = 0;
 /*定位系统准备完毕开始发数*/
@@ -30,7 +31,7 @@ static PosSend_t posture={0};
 /*定义定位系统返回值结构体*/
 static Pos_t ppsReturn={0.f};
 
-extern pos_t xya;
+
 void USART3_IRQHandler(void)
 {
 		static uint8_t ch;
@@ -100,20 +101,12 @@ void USART3_IRQHandler(void)
 						SetWZ(posture.value[5]);
 
 						/*定义的全局结构体变量可以在这里赋值*/
-						xya.compare_angle=posture.value[0];
-						xya.angle=posture.value[0]+90;
-						xya.x_v=posture.value[1];;
-						xya.y_v=posture.value[2];
-//						#if car!=1
-//						xya.x=-posture.value[3]+OPS_TO_BACK_WHEEL*sin(xya.compare_angle/180*Pi);
-//						xya.y=-posture.value[4]+OPS_TO_BACK_WHEEL*(1-cos(xya.compare_angle/180*Pi));
-//						#elif
-						xya.x=posture.value[3]+OPS_TO_BACK_WHEEL*sin(xya.compare_angle/180*Pi);
-						xya.y=posture.value[4]+OPS_TO_BACK_WHEEL*(1-cos(xya.compare_angle/180*Pi));
-						//#endif
-						xya.angle_v=posture.value[5];
-						if(xya.angle>180)
-							xya.angle-=360;
+						//						=posture.value[0];
+						//						=posture.value[1];
+						//						=posture.value[2];
+						//						=posture.value[3];
+						//						=posture.value[4];
+						//						=posture.value[5];
 					}
 					count=0;
 				break;
@@ -160,6 +153,49 @@ void TalkOpsToGetReady(void)
 		 USART_SendData(USART3,tdata[i]);	
 	}
 }
+
+/////////*控制发射枪电机转速*/////////
+typedef union
+{
+    //这个32位整型数是给电机发送的速度（脉冲/s）
+    int32_t Int32 ;
+    //通过串口发送数据每次只能发8位
+    uint8_t Uint8[4];
+
+}num_t;
+
+//定义联合体
+num_t u_Num;
+
+void SendUint8(void)
+{
+    u_Num.Int32 = 1000;
+
+    //起始位
+    USART_SendData(USART1, 'A');
+    //通过串口1发数
+    USART_SendData(USART1, u_Num.Uint8[0]);
+    USART_SendData(USART1, u_Num.Uint8[1]);
+    USART_SendData(USART1, u_Num.Uint8[2]);
+    USART_SendData(USART1, u_Num.Uint8[3]);
+    //终止位
+    USART_SendData(USART1, 'J');
+}
+
+/////////////////航向电机///////////////////
+// 将角度转换为脉冲
+float YawTransform(float yawAngle)
+{
+	return (yawAngle * YAW_REDUCTION_RATIO * COUNT_PER_DEGREE);
+}
+
+//发射航向角控制函数 单位：度（枪顺时针转为正，逆时针为负）
+void YawAngleCtr(float yawAngle)
+{
+	PosCrl(CAN1, GUN_YAW_ID, ABSOLUTE_MODE, YawTransform(yawAngle));    //////绝对模式//////
+}
+// 同样要配置位置环
+
 
 
 
@@ -221,12 +257,13 @@ float GetAngle(void)
 /*返回定位系统的X值*/
 float GetX(void)
 {
-	return ppsReturn.ppsX;
+	return ppsReturn.ppsX+OPS_TO_BACK_WHEEL*sin(GetAngle()*pi/180);
 }
 /*返回定位系统的Y值*/
 float GetY(void)
 {
-	return ppsReturn.ppsY;
+	return ppsReturn.ppsY+OPS_TO_BACK_WHEEL*(1-cos(GetAngle()*3.14/180));
+
 }
 /*返回定位系统的X轴的速度*/
 float GetSpeedX(void)

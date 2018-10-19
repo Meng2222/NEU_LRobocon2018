@@ -16,31 +16,19 @@ typedef struct
 	usartData_t usartReceiveData;
 	float yawPosReceive ;
 	float shooterVelReceive;
-	 float laserAValueReceive ;
+	float laserAValueReceive ;
 	float laserBValueReceive ; 
 }FortType;
 
 void YawPosCtrl(float ang);
 void ShooterVelCtrl(float rps);
-void ReadShooterVel(void);
-void ReadYawPos(void);
-void ReadLaserAValue(void);
-void ReadLaserBValue(void);
+float ReadShooterVel(void);
+float ReadYawPos(void);
+float ReadLaserAValue(void);
+float ReadLaserBValue(void);
 void GetValueFromFort(uint8_t data);
 
 extern FortType fort;
-struct member
-{  
-   uint32_t pos_v;
-   uint32_t get_number_vorpos;
-};
-union push_ball_ActualPos_v
-{
-	
-	uint8_t datas[2];
-	uint32_t member[2];
-	
-};
 
 #endif
 

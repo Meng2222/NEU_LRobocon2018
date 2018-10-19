@@ -81,7 +81,7 @@ void bufferInit()
 	}
 	bufferI = 0;
 }
-	
+
 /**
 * @brief 接收炮台返回的数据
 * @param data：串口每次中断接收到的一字节数据
@@ -125,6 +125,22 @@ void GetValueFromFort(uint8_t data)
 		}
 		bufferInit();
 	}
+}
+float ReadYawPos(void)
+{
+	return fort.yawPosReceive;
+}
+float ReadShooterVel(void)
+{
+	return fort.shooterVelReceive;
+}
+float ReadLaserAValue(void)
+{
+	return fort.laserAValueReceive;
+}
+float ReadLaserBValue(void)
+{
+	return fort.laserBValueReceive;
 }
 
 

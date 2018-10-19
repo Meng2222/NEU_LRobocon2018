@@ -10,10 +10,50 @@
 #include "elmo.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4xx_usart.h"
-#include "stm32f4xx_adc.h"
 #include "pps.h"
 #include "fort.h"
-#include "moveBase.h"
+#include "Walk.h" 
+#include "PushBall.h" 
+#include "Point.h" 
+#include "PushBall.h"
+#include "DebugData.h"
+void boomAccident();
+uint8_t Ballcolor[5];
+int BeforePushposition=0;
+int LastpushBallposition;
+
+//顺时针和逆时针
+int clockFlg=1;
+extern float go_real_send_angle;
+extern union push_p push_position;
+extern FortType fort;
+extern int normal_push;
+extern int PushballFlag;
+extern int AreaChange;
+extern int PushBallPosition;
+float point_s[3][4]={2082,2469,2270,2422,0,0,0,0,2367,2349,2398,2352};
+extern float s;
+extern int point_number;
+int get_cycle_num=0;
+float recover_buff=0;
+
+//走形设定的半径和速度
+float run_R=0;
+float run_r=0;
+float run_V=0;
+int if_white_shoot=0;
+
+extern int deadZone;
+extern int roundCnt;
+extern int pointErrDeal;
+extern int shoot_over;
+extern int go_and_shoot;
+int PressFlag=1;
+extern int runAgain;
+extern int nothingCanDo;
+uint8_t acceleration_ready=0;
+int no_BallTime=0,Out_AreaTime=0,Out_Area_noballTime=0,No_StableTime=0,No_Stable_noballTime=0;//推球的变量//
+float get_angle2(float a,float b,int n,int round);//n指向,round顺逆时针，ax+by+c=0；
 /*
 ===============================================================
 						信号量定义
@@ -21,81 +61,9 @@
 */
 OS_EXT INT8U OSCPUUsage;
 OS_EVENT *PeriodSem;
-// 宏定义棍子收球电机ID
-#define COLLECT_BALL_ID (8)
-#define NEW_RIGHT_COLLECT_BALL_ID (6)
-#define NEW_LEFT_COLLECT_BALL_ID (5)
-// 宏定义推球电机ID
-#define PUSH_BALL_ID (6)
-#define NEW_PUSH_BALL_ID (7)
-// 宏定义送弹机构送弹时电机应该到达位置：单位位脉冲
-#define PUSH_POSITION (4500)
-// 宏定义送弹机构收回时电机位置
-#define PUSH_RESET_POSITION (5)
-//需要的球的颜色//
-#define NEED_BALL_COLLOR (1)
-#define NO_NEED_BALL_COLLOR (2)
-uint8_t vc_message[5];
-extern union push_ball_ActualPos_v ActualPos_v;
-float need_v;
-int push_position=0;
-int if_push=1;
-int diagonal;
-float body_angle;
-float ADC_A;
-float ADC_B;
-int if_turnto90;
-float if_addorreduce_angle=1;
-float Back_maichong;
-float Head_maichong;
-float add_angle=0;
-int push_balltime=0;
-float last_error;
-float new_error;
-float s;
-pos_t xya;
+
 static OS_STK App_ConfigStk[Config_TASK_START_STK_SIZE];
 static OS_STK WalkTaskStk[Walk_TASK_STK_SIZE];
-static float set_angle=0;
-int iSOKFlag=0;
-static int if_go=1;//-1为顺时针//1为逆时针//
-int t=0;
-int last_angle=90;
-int new_angle;
-int kpa1=10000;
-int kpd1=400;//
-int kpa=200;//旧车1m/s圆弧闭环为150//新车/15000
-int kpd=6;//旧车1m/s圆弧闭环为6//新车400
-int kdd=2;
-int aord;
-int if_add=1;
-int if_compare=1;
-static float d;
-static float Aout=0;
-static float Dout=0;
-float Left_d;
-float Right_d;
-float Add_V=0;
-float tangent_angle;
-float add_or_dec=-1;
-float R=2000;//投球为1500//
-float right_cril;
-float left_cril;
-int time_number=0;
-float car_v=1700;
-int compare_number=80;
-int if_back=0;
-int last_back=0;
-int i=0;
-int q=0;
-float LIGHT_D;
-int up_down;
-float turn_cril;
-int change_compere_angle;
-float get_differ_angle(float angle,int round);
-float get_addorreduce_angle(float differ_angle,float x);
-void get_sendangle(void);
-void move_gun(float point_x,float point_y);
 void App_Task()
 {
 	CPU_INT08U os_err;
@@ -121,1093 +89,234 @@ void App_Task()
    初始化任务
    ===============================================================
    */
-
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	TIM_Init(TIM2,1000-1,84-1,0x00,0x00);
-	USART1_Init(921600);
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//can1初始化
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	UART5_Init(921600);
-	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
-	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
+	TIM_Init(TIM2,1000-1,83,0x01,0x03);  /////中断位*10  主周期10ms
+	Adc_Init();
+	ElmoInit(CAN2);//驱动初始化
+	ElmoInit(CAN1);//驱动初始化
+	MotorOn(CAN2,5);             //收球电机初始化
+	MotorOn(CAN2,6);             //收球电机初始化
+	GPIO_Init_Pins(GPIOB,4,GPIO_Mode_IN); //初始化按键
+	GPIO_Init_Pins(GPIOE,1,GPIO_Mode_IN); //初始化按键
+
 	
-	delay_ms(500);
-	#if car ==1
-	ElmoInit(CAN1);
-	ElmoInit(CAN2);
-	VelLoopCfg(CAN1,1,50000,50000);
-	VelLoopCfg(CAN1,2,50000,50000);
-	MotorOn(CAN1,1);
-	MotorOn(CAN1,2);
-	//Adc_Init();
-	//YawPosCtrl(170);
-	//棍子收球电机//
-	// 配置速度环
-    VelLoopCfg(CAN2,NEW_LEFT_COLLECT_BALL_ID, 500000, 500000);
-   	VelLoopCfg(CAN2,NEW_RIGHT_COLLECT_BALL_ID, 500000, 500000);
-	// 推球装置配置位置环
-    PosLoopCfg(CAN2, NEW_PUSH_BALL_ID, 10000000,10000000,10000000);
-   	
-    MotorOn(CAN2,NEW_LEFT_COLLECT_BALL_ID);	
-	MotorOn(CAN2,NEW_RIGHT_COLLECT_BALL_ID);
-	MotorOn(CAN2,NEW_PUSH_BALL_ID);	
 	
-	#else
-	VelLoopCfg(CAN2,5,10000000,10000000);
-	VelLoopCfg(CAN2,6,10000000,10000000);
-	MotorOn(CAN2,5);
-	MotorOn(CAN2,6);
-	#endif
-	
-    
-		
-	/*一直等待定位系统初始化完成*/
-	delay_ms(2000);
+	//TIM_Init(TIM2, 99, 839, 1, 0);
 	BEEP_ON;
-	WaitOpsPrepare();	
-    //控制电机的转速，脉冲//左正右反//	
-	VelCrl(CAN2,NEW_LEFT_COLLECT_BALL_ID,50*32768); 
-	VelCrl(CAN2,NEW_RIGHT_COLLECT_BALL_ID,-50*32768); 	
+	// 配置位置环
+	while(PressFlag==1)
+	{
+		PressFlag=Let_BallOut();
+		//反转
+		VelCrl(CAN2,6,80*32768);//80
+		VelCrl(CAN2,5,-80*32768);//-80
+	}
+		VelCrl(CAN2,6,0*32768);
+		VelCrl(CAN2,5,0*32768);
+
+	
+	/*一直等待定位系统初始化完成*/
+	delay_s(4);
+	WaitOpsPrepare();
+	VelLoopCfg(CAN1,1,32768*10,32768*100);//速度环初始化
+	VelLoopCfg(CAN1,2,32768*10,32768*100);
+	PosLoopCfg(CAN2, PUSH_BALL_ID, 20000000,20000000,20000000);
+	MotorOn(CAN1,1);             //两轮电机初始化
+	MotorOn(CAN1,2);             //两轮电机初始化
+//	MotorOn(CAN2,PUSH_BALL_ID);  //推球电机初始化
+	VelCrl(CAN2,6,-80*32768);//-60
+	VelCrl(CAN2,5,80*32768);//60
+	AdcFlag();
+	start_mode();
+	YawPosCtrl(0);
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-static int Right_cr1;
-static int Left_cr2;
-extern FortType fort;
-int  time=0;
+
 void WalkTask(void)
-{   void push_ball();
-	void Anglepid();
-	void SendUint8();
-    void go(float);
-	void YawAngleCtr(float);
-	float get_roll_v();
+{
+	extern int stable_flag;
 	CPU_INT08U os_err;
 	os_err = os_err;
-    int x;
-	int y;
-	int angle;
-	int RIGHT_ADC;
-	int LEFT_ADC;
-	int xv;
-	int yv;
-	int head_cril=-turn_cril;
+	int T=0;
+ 
 	OSSemSet(PeriodSem, 0, &os_err);
 	while (1)
+	{
+		OSSemPend(PeriodSem, 0, &os_err);
+//		MotorOff(CAN2,7);
+   //   USART_OUT( UART4, (uint8_t*)"Ballcolor=%d ", Ballcolor[2]);
+		systerm_change();	
+	//	get_cycle_num=round_counter();
+		ReadActualPos(CAN2, 7);
+		run_r=Radius();
+//		normal_push=1;
+		if(stable_flag==0)
+		{
+		     Walkline(0,2350,run_r,run_V,clockFlg);   ////圆心X坐标  圆心Y坐标 半径  方向  速
+			if(!pointErrDeal&&normal_push)//&&run_again
+			{
+				Out_AreaTime=0;		//射球圈  非射球区域的计时
+				T=0;				//射球圈  射球区域的计时
+				No_StableTime++;	//非射球圈的计时 周期为112
+				no_BallTime=0;		//射球圈  没有球的计时
+				if(Ballcolor[2]==Need_ball_collor)		//在非射球圈识别到白球 把非射球圈的没有球的计时置0 并且准备着
+				{
+					No_Stable_noballTime=0;	//非射球圈 没有球的计时
+	//				USART_OUT( UART4, (uint8_t*)"PrepareOK%d\r\n ", Ballcolor[2]);
+				}
+				if(Ballcolor[2]==No_need_ball_collor&&No_StableTime==50)		//黑球 而且非射球圈的计时为50时
+				{
+					PushBallPosition-=32768;
+					No_Stable_noballTime=0;
+	//				USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);
+				}
+				else if(Ballcolor[2]==0)	//没有球 持续130ms 反推
+				{
+					No_Stable_noballTime++;
+					if(No_Stable_noballTime>=130)
+					{
+						PushBallPosition-=32768/2;
+						No_Stable_noballTime=0;
+	//					USART_OUT( UART4, (uint8_t*)"No_Stable_Change\r\n ");
+					}
+				}
+				if(No_StableTime>=112)	
+				{
+					No_StableTime=0;
+				}
+			}
+		}
+		
+		else if(stable_flag==1&&!runAgain)	
+		 {
+			 Walkline(0,2300,run_r,run_V,clockFlg);
+             if(!pointErrDeal&&normal_push)//&&run_again/*&&normal_push*/
+			 {		
+				No_StableTime=0;		//进入射球圈 把非射球圈的计时全部置0
+				No_Stable_noballTime=0;
+				if(PushballFlag==1)		//如果进入射球区域
+				{
+					T++;				//射球圈计时开始
+					Out_AreaTime=0;	
+					if(Ballcolor[2]==Need_ball_collor&&fabs(s-3000)<20)		//白球 在t=90时射出
+					{
+						if_white_shoot=1;
+						PushBallPosition+=32768;
+						no_BallTime=0;
+	//					USART_OUT( UART4, (uint8_t*)"tong__car s=%d\t ",(int) s);
+	//					USART_OUT(UART4,(uint8_t*)" tong_number %d\t\r\n",(int)point_number);
+					}
+					else if(Ballcolor[2]==No_need_ball_collor&&T==10)	//黑球 在t=10时反推
+					{
+						PushBallPosition-=32768;
+						no_BallTime
+						=0;
+	//					USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);
+					}
+					else if(Ballcolor[2]==0)
+					{
+						no_BallTime++;
+						if(no_BallTime>=150)
+						{
+							PushBallPosition-=32768/2;
+							no_BallTime=0;
+	//						USART_OUT( UART4, (uint8_t*)"Change\r\n ");	
+						}
+	//					USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);					
+					}
+					if(T>=112)
+					{
+						T=0;
+					}
+				}
+				else if(PushballFlag==0)		//射球圈非射球区域
+				{
+					Out_AreaTime++;				//射球圈非射球区域计时
+					T=0;
+					if(Ballcolor[2]==Need_ball_collor)
+					{
+						Out_Area_noballTime=0;
+	//					USART_OUT( UART4, (uint8_t*)"PrepareOK%d\r\n ", Ballcolor[2]);
+					}				
+					if(Ballcolor[2]==No_need_ball_collor&&Out_AreaTime==50)
+					{
+						PushBallPosition-=32768;
+						Out_Area_noballTime=0;
+	//					USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);
+					}
+					else if(Ballcolor[2]==0)
+					{
+						Out_Area_noballTime++;
+						if(Out_Area_noballTime>=150)
+						{
+							PushBallPosition-=32768/2;
+							Out_Area_noballTime=0;
+	//						USART_OUT( UART4, (uint8_t*)"OutArea_Change\r\n ");	
+						}						
+					}
+					if(Out_AreaTime>=112)
+					{
+						Out_AreaTime=0;
+					}
+				}
+			}			 
+		 }
+		 PushBallErrorDeal();
+	   PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,PushBallPosition);
+	
+		if(pointErrDeal==0&&!runAgain)//&&run_again
 	{		
-		OSSemPend(PeriodSem,  0, &os_err);
-		ReadActualPos(CAN2,NEW_PUSH_BALL_ID);
-//		ReadActualPos(CAN1,2);
-	    
-		ADC_A=fort.laserAValueReceive/**2.5112+38.72*/;
-		ADC_B=fort.laserBValueReceive/**2.4267+358.54*/;
-		x=(int)xya.x;
-		y=(int)xya.y;
-		
-		xv=xya.x_v;
-		yv=xya.y_v;
-		angle=(int)xya.angle;
-	    #if car==1	
-
-			
-		
-		//实现逆正时针运行//	
-        //Right_d=Get_Adc_Average(14,10);
-		//Left_d=Get_Adc_Average(15,10);
-//		if(!if_go)		
-//		{if(Right_d<50)
-//			{ 9
-//				
-//				//1为逆时针//
-//				if_go=1;
-//			}
-//		 if(Left_d<50)
-//		    { 
-//				
-//				//-1为顺时针//
-//				if_go=-1;
-//		    }
-//	    }
-//        VelCrl(CAN1,1,32768);
-//	    VelCrl(CAN1,2, 32768);
-		//USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n/",x,y,angle,(int)ADC_A,(int)ADC_B,(int)need_v,time);
-//		Add_V=sqrt(pow(xya.x_v,2)+pow(xya.y_v,2));
-   #elif car!=1
-    	USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",x,y,angle,(int)Dout,(int)Aout,(int)turn_cril,(int)LIGHT_D,(int)new_error);
-		Add_V=sqrt(pow(xya.x_v,2)+pow(xya.y_v,2));
-   #endif		
-		
-		//USART_OUT(USART1,(uint8_t*)"x_v=%d",xv);
-        //USART_OUT(USART1,(uint8_t*)"y_v=%d\r\n",yv);	
-        //move_gun(-2400,4800);
-		ShooterVelCtrl(20/*get_roll_v()*/);	
- //       USART_OUT(UART4,(uint8_t*)"%d\t\n",(int)ActualPos_v.number.get_number_vorpos);
-//		go(car_v);
-//		VelCrl(CAN1,1,-32768*50);
-//	    VelCrl(CAN1,2, 32768*50);
-		YawPosCtrl(-30);
-		push_ball();
-		
-		
-	}
-}
-void go(float v)
-{   
-	 float get_roll_v();
-	 void push_ball(void);
-	
-	 float Turn_v_to_headmaichong(float,float);
-     float Turn_v_to_backmaichong(float);
-	 void Light(float,float,float,int);
-     void Round(float ,float ,float ,float ,float );
-   	 float V=v;	 
-	 int right;
-	 int left;
-	 int car_angle=set_angle;
-     int get_paotai_angle=fort.yawPosReceive;
-	 float send_angle;
-//	if(if_go!=0)	
-//	{ 
-//		if(if_push==1)
-//		{
-//	    //ShooterVelCtrl(get_roll_v());		
-//		//航向电机//
-//		get_sendangle();	
-//		}			
-//		Round(0,2350,R,V,if_go);
-//		//q++;       
-//   }
-	//get_sendangle();
-    //Round(0,2350,R,V,if_go);   
-//	if(q>=100)
-//	{ if(Add_V>150)
-//	 {		
-//		if_back=0;		
-//		if_add=1;
-//		
-//	 }
-//	 else 
-//	 {	
-//		 if_back=1;		 
-//		 if_add=0;
-//		for(i=0;i<=1500;i++)
-//		{   
-//			#if car==1
-//			VelCrl(CAN2,1,-10000);
-//			VelCrl(CAN2,2,10000);
-//			#else
-//			VelCrl(CAN2,6,0);
-//			VelCrl(CAN2,5,-300000);			
-//			#endif
-//			time_number=0;
-//		}
-//		
-//		if(if_go==1)
-//		{for(i=0;i<=500;i++)
-//		 {  
-//			#if car==1
-//			VelCrl(CAN2,1,-5000);
-//			VelCrl(CAN2,2,-5000);
-//			#else
-//			VelCrl(CAN2,5,-100000);
-//			VelCrl(CAN2,6,100000);			
-//			#endif
-//			time_number=0;
-//		 }
-//		}
-//		if(if_go==-1)
-//		{for(i=0;i<=500;i++)
-//		{   
-//			#if car==1
-//			VelCrl(CAN2,1,5000);
-//			VelCrl(CAN2,2,5000);
-//			#else
-//			VelCrl(CAN2,5,-100000);
-//			VelCrl(CAN2,6,-100000);			
-//			#endif
-//			time_number=0;
-//		}
-//		}
-//		right_cril=0;
-//		left_cril=0;	
-//		q=0;
-//	 }
-//	 
-//	}
-	
-    q%=100;
-	if(if_back>last_back)
-	{  
-		   if_go=-if_go;
-	
-		    if(R>=2100)
-			{   R=2100;
-				add_or_dec=-1;
-			}
-			if(R<=600)
-			{	
-				add_or_dec=1;
-				R=1500;
-				if_push=1;
-				car_v=2000;
-			}
-			R=add_or_dec*300+R;
-	   	
-	}
-	 last_back=if_back;
-	 #if car==1
-	 right_cril=Right_cr1+Dout+Aout;
-	 left_cril=Left_cr2+Dout+Aout;
-//     VelCrl(CAN1,1,right_cril);
-//	 VelCrl(CAN1,2, left_cril);
-	 right=right_cril;
-	 left=left_cril;
-//   USART_OUT(USART1,(uint8_t*)"Right=%d\t",right);	   
-//	 USART_OUT(USART1,(uint8_t*)"Left=%d\t",left);
-//	 USART_OUT(USART1,(uint8_t*)"time_number=%d\t",time_number);
-//	 USART_OUT(USART1,(uint8_t*)"if_go=%d\t",if_go);
-	 Aout=0;
-	 Dout=0;
-	 #elif  car==2 	 
-	 turn_cril=-Dout-Aout;
-	 VelCrl(CAN2,5,Turn_v_to_backmaichong(v));
-	 VelCrl(CAN2,6,Turn_v_to_headmaichong(v,R)+turn_cril);
-	 #endif
-	
-
-	 
-
-}
-
-void pid_angle(float angle,int second_driection)
-{
-    float nowerror_angle;
-	int set;
-	int set_kp;
-	#if car==1
-	set_kp=kpa;
-	#else 
-	set_kp=kpa1;
-	#endif
-	if(second_driection==1)
-	{if(xya.angle>-180&&xya.angle<angle-180)		
-		nowerror_angle=angle-xya.angle-360;
-	  else nowerror_angle=angle-xya.angle;
-	}
-	else if(second_driection==-1)
-	{if(xya.angle<180&&xya.angle>angle+180)		
-		nowerror_angle=angle-xya.angle+360;
-
-		else nowerror_angle=angle-xya.angle;
-	}
-	if(t)
-	{
-		 if(xya.angle<0)
-			angle=-180;
-		 else angle=180;
-		 
-		   nowerror_angle=angle-xya.angle;
+       get_sendangle();                                                 //谢尚锦
+      // push_ball();                                                     //谢尚锦
+         
 	}
 	
-	
-		 
-	Aout=set_kp*nowerror_angle;	
-	int n=Aout;
-	set=angle;
-	//USART_OUT(UART4,(uint8_t*)"s=%d\t",s);
-	//USART_OUT(UART4,(uint8_t*)"Aout=%d\t",n);
-	USART_OUT(UART4,(uint8_t*)"set_angle=%d\t",set);
-}
-void pid_xy(float D,int n,int r)
-{
-	
-	
-//  #if car!=1
-//	if(f==1)
-//	{if(up_down==1)
-//	  {
-//		  nowerror_d=-D;			  
-//	  }else nowerror_d=D;
-//	}else if(f==-1)
-//    {
-//		if(up_down==1)
-//	  {
-//		  nowerror_d=D;			  
-//	  }else nowerror_d=-D; 
-//	}
-//	#endif
-	last_error=new_error;
-	new_error=D-r;
-	
-	
-	Dout=kpd*new_error*n;//+kdd*(new_error-last_error);	
-	
- // USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
-//	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
-}
-
-int cril_flag=0;
-int lastcril_flag=0;
-int if_in=0;
-void get_angle(float a,float b,int n,int round)
-{  
-	void pid_angle(float,int);
-	
-
-	//float light=a*xya.x+xya.y*b+c;
-	
-
-	int set_R;
-	int second_driection;
-	
-		
-    //d=fabs(light)/sqrt((a*a)+(b*b));
-	
-	
-	
-	if(b!=0)
-	{ if(n==1)
-		{ if(-a/b>0)
-		  {   
-			  set_angle=atan2(-a/b,1)/3.14159*180;
-		  }
-		  else if(-a/b<0)
-		  {    
-			  set_angle=atan2(a/b,-1)/3.14159*180;
-		  }
-		}else
+	    if(abs(LastpushBallposition-PushBallPosition)>16380)
 		{
-			if(-a/b>0)
-			{
-		     set_angle=atan2(a/b,-1)/3.14159*180;
-				
-			}
-		  else if(-a/b<0)
-		  {   
-			  set_angle=atan2(-a/b,1)/3.14159*180;
-		  }
-		}
-	}
-	else if(b==0)
-	{
-		if(round==-1)
-		{   if(n==1)
-		   	{
-				second_driection=1;
-				set_angle=90;
-			}
-			else 
-			{
-				set_angle=-90;
-		        second_driection=-1;
-				t=1;
-			}
-		}
-        else 
-		{   
-			if(n==1)
-		   {
-				second_driection=-1;
-				set_angle=90;
-			    t=1;
-			}
-			
-			else 
-			{
-				set_angle=-90;
-		        second_driection=1;
-			}       			
-		}
-	} 
-     
-	if(a==0)
-	{
-		if(n==1)
-		{  
-			set_angle=0;
-		
-		}
-        else 
-		{   
-			set_angle=-180;
-            			
-		}
-		
-	}
-    
-  
-    
-	
-	if(round==-1)
-	{ 
-		tangent_angle=set_angle-90;
-		if(tangent_angle<-180)
-			tangent_angle+=360;
-	}else
-	{
-		tangent_angle=set_angle+90;
-		if(tangent_angle>180)
-			tangent_angle-=360;
-	}
-	
-	
-	
-//	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",di);
-//	USART_OUT(UART4,(uint8_t*)"l=%d\t\r\n",l);
-	
-    if(round==-1)
-	{
-		if(b<0)
-			second_driection=-1;
-		else second_driection=1;
-	}else
-	{
-		if(b<0)
-			second_driection=1;
-		else second_driection=-1;
-		
-	}
-  if(if_add&&!if_push)	
-  { if(if_go==1)
-	{if(set_angle>=-100&&set_angle<=-98)
-	{
-		cril_flag=1;
-		if_in=1;
-	}else cril_flag=0;
-    
-    }
-	 if(if_go==-1)
-	{if(set_angle>=-82&&set_angle<=-80)
-	{
-		cril_flag=1;
-		if_in=1;
-	}else cril_flag=0;
-    
-    }
-	if(cril_flag>lastcril_flag)
-	{
-		R=add_or_dec*500+R;
-		if(R>=2100)		
+			BeforePushposition=LastpushBallposition;
+			LastpushBallposition=PushBallPosition;
+		}		 
+		if(shoot_over==1)
 		{
-			add_or_dec=-1;
-			R=2100;
-		}
-		if(R<=600)
-		{   
-            add_or_dec=1;
-			R=1500;
-			car_v=1370;
-			if_add=0;
-			if_push=1;
-		}
-		
-	}
-	
-	lastcril_flag=cril_flag;
-  }
-    change_compere_angle=(int)set_angle;
-    set_R=R;
-	//USART_OUT(UART4,(uint8_t*)"set_R=%d\t",set_R);
-	//USART_OUT(UART4,(uint8_t*)"if_in=%d\t",if_in);
-	pid_angle(tangent_angle,second_driection);
-	t=0;
-	if_in=0;
-    if_add=1;
-}
-void Round(float x,float y,float r,float v,float round)
-{ 
-	
-	int D;
-	d= sqrt(pow((xya.x-x),2)+pow((xya.y-y),2));
-	Right_cr1=(v/r*(r+round*217))/377*4096;
-	Left_cr2=-(v/r*(r-round*217))/377*4096;
-	D=d;
-	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",D);
-	if(xya.y-y)
-	get_angle(xya.y-y,-xya.x+x,(xya.y-y)/fabs((xya.y-y)),round);
-	else
-	{	    if((xya.x-x)>0)
-			get_angle(xya.y-y,-xya.x+x,1,round);
-			else 	get_angle(xya.y-y,-xya.x+x,-1,round);		
-	}
-    pid_xy(d,round,r);
-	
-	 
-}
-
-
-
-
-void Light(float a,float b,float c,int n)
-{  
-	void pid_angle(float,int);
-	void pid_xy2(float ,int );
-    LIGHT_D=fabs(a*xya.x+b*xya.y+c)/(sqrt(pow(a,2)+pow(b,2)));
-	//float light=a*xya.x+xya.y*b+c;
-	
-    
-	int set_R;
-	int second_driection;
-	int f;
-		
-    //d=fabs(light)/sqrt((a*a)+(b*b));
-	if((a*xya.x+xya.y*b+c)>=0)
-	    up_down=1;
-	else if((a*xya.x+xya.y*b+c)<0)
-		up_down=-1;
-	
-	
-	if(b!=0)
-	{ if(n==1)
-		{ if(-a/b>0)
-		  {   f=1;
-			  set_angle=atan2(-a/b,1)/3.14159*180;
-		  }
-		  else if(-a/b<0)
-		  {    f=-1;
-			  set_angle=atan2(a/b,-1)/3.14159*180;
-		  }
-		}else
-		{   
-			if(-a/b>0)
-			{ f=-1;
-		     set_angle=atan2(a/b,-1)/3.14159*180;
-				
+			if(nothingCanDo==1)//被卡死打定点，打完之后
+			{
+				roundCnt=1;//回到第一圈重新开始
+				nothingCanDo=0;
+			}else 
+			{
+				pointErrDeal=0;
+				shoot_over=0;
 			}
-		  else if(-a/b<0)
-		  {   f=1;
-			  set_angle=atan2(-a/b,1)/3.14159*180;
-		  }
 		}
-	}
-	else if(b==0)
-	{
-		
-		 if(n==1)
-		   	
-			{	
-				f=1;
-				set_angle=90;
-			}
-			else 
-			{   f=-1;
-				set_angle=-90;
-		        
-				t=1;
-			}
-		
-    
-		
-	 }
-     
-	if(a==0)
-	{
-		if(n==1)
-		{  f=-1;
-			set_angle=0;
-		
-		}
-        else 
-		{   f=1;
-			set_angle=-180;
-            			
-		}
-		
-	}
-    
-  
-    
-	
-	
-	
-//	USART_OUT(UART4,(uint8_t*)"d=%d\t\r\n",di);
-//	USART_OUT(UART4,(uint8_t*)"l=%d\t\r\n",l);
-	
+		errdeal();////故障处理		
+
+		debugdata();
+//		USART_OUT( UART4, (uint8_t*)"round: %d",roundCnt);
+//		USART_OUT( UART4, (uint8_t*)"\r\n");
+	//	USART_OUT( UART4, (uint8_t*)"%d \r\n", (int)point_errdeal);
+
+
+
+
+////////////////发数测试////////////////////////////
+//	USART_OUT(UART4,(uint8_t*) "%d	%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius(),(int)GetAngle());
+//	USART_OUT(UART4,(uint8_t*) "%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue());
+//	USART_OUT( UART4, (uint8_t*)"%d ", (int)GetX());
+//	USART_OUT( UART4, (uint8_t*)"%d ", (int)GetY());
+//	USART_OUT( UART4, (uint8_t*)"%d ", (int)run_r);
+//USART_OUT( UART4, (uint8_t*)"%d ", (int)get_angle2(GetY()-2400,-GetX()+0,(GetY()-2400)/fabs((GetY()-2400)),Sn));
+//  ShooterVelCtrl(80);
+ // USART_OUT( UART4, (uint8_t*)"\r\n");
+
    
-	
-
-  
-    set_R=R;
-	USART_OUT(UART4,(uint8_t*)"set_R=%d\t",set_R);
-	USART_OUT(UART4,(uint8_t*)"if_in=%d\t",if_in);
-	pid_angle(set_angle,n);
-	pid_xy2(LIGHT_D,f);
-	t=0;
-	if_in=0;
-    if_add=1;
-}
-void pid_xy2(float D,int f)
-{
-	int  nowerror_d;
-	
-  
-	if(f==1)
-	{if(up_down==1)
-	  {
-		  nowerror_d=-D;			  
-	  }else nowerror_d=D;
-	}else if(f==-1)
-    {
-		if(up_down==1)
-	  {
-		  nowerror_d=D;			  
-	  }else nowerror_d=-D; 
 	}
-	
-
-	
-		
-	Dout=kpd1*nowerror_d;//+kdd*(new_error-last_error);	
-	
- // USART_OUT(UART4,(uint8_t*)"Dout=%d\t\r\n",n);
-//	USART_OUT(UART4,(uint8_t*)"f=%d\t\r\n",f);
-}
-//将速度转化为后轮的脉冲数//
-float Turn_v_to_backmaichong(float v)
-{
-	return(v/(Pi*WHEEL_DIAMETER)*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO);
-}
-//将圆弧闭环时将速度转化为前轮的脉冲数//
-float Turn_v_to_headmaichong(float v,float r)
-{
-	return(v/r*TURN_AROUND_WHEEL_TO_BACK_WHEEL/(Pi*TURN_AROUND_WHEEL_DIAMETER)*NEW_CAR_COUNTS_PER_ROUND*REDUCTION_RATIO);
-}	
-//得到炮台转轮速度//新车小球出射点距离轴 y:7.5 z:156 (mm)
-float get_roll_v(void)
-{   
-	float roll_v;
-	//四号车的炮台速度比较小需要加大//
-	//一号车在顺时针 -1 4   1 3.5//	四号炮台+0.2  ///4.5   4
-	float	get_d(float,float);
-	if(s<=4000)
-	{
-	if(if_go==1&&Add_V>=150)
-	{
-		if( diagonal==1)
-		roll_v=((sqrt(19600*pow(s,2)/((sqrt(3))*s-584)))/377*3.44);
-		else
-		roll_v=((sqrt(19600*pow(s,2)/((sqrt(3))*s-584)))/377*3.44);
-	}else
-	{   if( diagonal==-1)
-		roll_v=((sqrt(19600*pow(s,2)/((sqrt(3))*s-584)))/377*3.44);
-		else
-		roll_v=((sqrt(19600*pow(s,2)/((sqrt(3))*s-584)))/377*3.44);
-	}
-
-		
-		
-    }else roll_v=(50);
-	
-	USART_OUT(UART4,(uint8_t*)"roll_v=%d\t",(int)roll_v);
-	if(roll_v<=100)
-		return roll_v;
-	else return 90;
-	
-}
-
-//使航向电机对准目标//
-void get_sendangle(void)
-{   
-	float get_angle2(float a,float b,int n,int round);
-	void push_ball();
-	float point_x;
-	float point_y;
-	float get_d(float x,float y);
-	change_compere_angle=get_angle2(xya.y-2350,-xya.x,(xya.y-2350)/fabs((xya.y-2350)),if_go);
-	if(if_go==-1)
-	{	if(change_compere_angle<=-45&&change_compere_angle>=-135)
-		{
-			point_x=-2400;
-			point_y=200;
-			diagonal=1;
-//			x=get_d(point_x,point_y);
-//			body_angle=get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
-//			cartopoint_angle=body_angle+180;
-//			if(cartopoint_angle>180)
-//			   cartopoint_angle-=360;
-//			add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle,if_goh),x);
-//			body_angle=body_angle+add_angle*0.8;
-//			getget_angle=90+body_angle;
-//			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-60)
-//			YawPosCtrl(-30-body_angle+xya.compare_angle);
-//			else if(xya.compare_angle<getget_angle-60&&xya.compare_angle>=-180 )
-//			YawPosCtrl(330-body_angle+xya.compare_angle);
-			move_gun(point_x,point_y);
-//			if(change_compere_angle<=-50&&change_compere_angle>=-125)
-//				push_ball();
-			
-		}else if((change_compere_angle<=180&&change_compere_angle>=135)||(change_compere_angle>=-180&&change_compere_angle<=-135))
-		{
-			point_x=-2400;
-			point_y=4900;
-		    diagonal=-1;
-//			x=get_d(point_x,point_y);
-//			body_angle=get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
-//			cartopoint_angle=body_angle+180;
-//			if(cartopoint_angle>180)
-//			   cartopoint_angle-=360;
-//			add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle,if_go),x);
-//			body_angle=body_angle+add_angle*0.8;
-//			getget_angle=90+body_angle;
-//			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-60)
-//			YawPosCtrl(-30-body_angle+xya.compare_angle);
-//			else if(xya.compare_angle<getget_angle-60&&xya.compare_angle>=-180 )
-//			YawPosCtrl(330-body_angle+xya.compare_angle);
-			move_gun(point_x,point_y);
-//			if((change_compere_angle<=-140)||(change_compere_angle<=180&&change_compere_angle>=145))
-//			 push_ball();
-			
-		}else if(change_compere_angle<=135&&change_compere_angle>=45)
-		{
-			point_x=2400;
-			point_y=4700;
-           	diagonal=1;
-//			x=get_d(point_x,point_y);
-//			body_angle=get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
-//			cartopoint_angle=body_angle+180;
-//			if(cartopoint_angle>180)
-//			   cartopoint_angle-=360;
-//			add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle,if_go),x);
-//			body_angle=body_angle+add_angle*0.8;
-//			getget_angle=90+body_angle;
-//			if(xya.compare_angle<getget_angle-60&&xya.compare_angle>=180)
-//			YawPosCtrl(-30-body_angle+xya.compare_angle);			
-//			else if(xya.compare_angle>=-180&&xya.compare_angle<=getget_angle-60)
-//				YawPosCtrl(330-body_angle+xya.compare_angle);
-			move_gun(point_x,point_y);
-//			if(change_compere_angle<=125&&change_compere_angle>=55)
-//				push_ball();
-			
-		}else if(change_compere_angle<=45&&change_compere_angle>=-45)
-		{
-			point_x=2280;
-			point_y=-90;
-			diagonal=-1;
-//			x=get_d(point_x,point_y);
-//			body_angle=get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
-//			cartopoint_angle=body_angle+180;
-//			if(cartopoint_angle>180)
-//			   cartopoint_angle-=360;
-//			add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle,if_go),x);
-//			body_angle=body_angle+add_angle*0.8;
-//			getget_angle=-270+body_angle;
-//			if(xya.compare_angle<getget_angle+300&&xya.compare_angle>=-180)
-//			YawPosCtrl(330-body_angle+xya.compare_angle);			
-//			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle-60)
-//				YawPosCtrl(-30-body_angle+xya.compare_angle);
-			move_gun(point_x,point_y);
-//			if(change_compere_angle<=40&&change_compere_angle>=-35)
-//				push_ball();		
-		}
-	  s=get_d(point_x,point_y);
-	}else 
-	{
-		if((change_compere_angle<=-135&&change_compere_angle>=-180)||(change_compere_angle>=135&&change_compere_angle<=180))
-		{ 
-			diagonal=1;
-			point_x=-2400;
-			point_y=0;		    
-//			body_angle=get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
-//			x=get_d(point_x,point_y);
-//			cartopoint_angle=body_angle-180;
-//			if(cartopoint_angle<-180)
-//			   cartopoint_angle+=360;
-//			add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle,if_go),x);
-//			body_angle=body_angle-add_angle*0.9;
-//			getget_angle=90+body_angle;
-//			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-60)
-//			YawPosCtrl(-30-body_angle+xya.compare_angle);
-//			else if(xya.compare_angle<getget_angle-60&&xya.compare_angle>=-180 )
-//			YawPosCtrl(330-body_angle+xya.compare_angle);
-			move_gun(point_x,point_y);
-			if((change_compere_angle>=140)||(change_compere_angle>=-180&&change_compere_angle<=-145))
-			 push_ball();
-			
-		}else if(change_compere_angle<=135&&change_compere_angle>=45)
-		{   diagonal=-1;
-			point_x=-2400;
-			point_y=4700;
-//			body_angle=get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
-//			x=get_d(point_x,point_y);
-//			cartopoint_angle=body_angle-180;
-//			if(cartopoint_angle<-180)
-//			   cartopoint_angle+=360;
-//			add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle,if_go),x);
-//			body_angle=body_angle-add_angle*0.9;
-//			getget_angle=90+body_angle;
-//			if(xya.compare_angle<180&&xya.compare_angle>getget_angle-60)
-//			YawPosCtrl(-30-body_angle+xya.compare_angle);
-//			else if(xya.compare_angle<getget_angle-60&&xya.compare_angle>=-180 )
-//			YawPosCtrl(330-body_angle+xya.compare_angle);
-			move_gun(point_x,point_y);
-			if(change_compere_angle>=50&&change_compere_angle<=125)
-				push_ball();
-			
-		}else if(change_compere_angle<=45&&change_compere_angle>=-45)
-		{   diagonal=1;
-			point_x=2400;
-			point_y=4700;
-//			body_angle=get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
-//			x=get_d(point_x,point_y);
-//			cartopoint_angle=body_angle+180;
-//			if(cartopoint_angle>180)
-//			   cartopoint_angle-=360;
-//			add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle,if_go),x);
-//			body_angle=body_angle-add_angle*0.9;
-//			getget_angle=90+body_angle;
-//			if(xya.compare_angle<getget_angle+300&&xya.compare_angle>=-180)
-//			YawPosCtrl(-30-body_angle+xya.compare_angle);			
-//			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle+60)
-//				YawPosCtrl(170-body_angle+xya.compare_angle);
-			move_gun(point_x,point_y);
-			if(change_compere_angle>=-40&&change_compere_angle<=35)
-				push_ball();
-			
-		}else if(change_compere_angle<=-45&&change_compere_angle>=-135)
-		{    diagonal=-1;
-			point_x=2400;
-			point_y=0;
-//			body_angle=get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);
-//			x=get_d(point_x,point_y);
-//			cartopoint_angle=body_angle+180;
-//			if(cartopoint_angle>180)
-//			   cartopoint_angle-=360;
-//			add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle,if_go),x);
-//			body_angle=body_angle-add_angle*0.9;
-//			getget_angle=-270+body_angle;
-//			
-//			if(xya.compare_angle<getget_angle+300&&xya.compare_angle>=-180)
-//			YawPosCtrl(330-body_angle+xya.compare_angle);			
-//			else if(xya.compare_angle<=180&&xya.compare_angle>=getget_angle-60)
-//			YawPosCtrl(-30-body_angle+xya.compare_angle);
-			move_gun(point_x,point_y);
-//			if(change_compere_angle>=-130&&change_compere_angle<=-55)
-//				push_ball();
-			
-		}
-		s=get_d(point_x,point_y);
-	}
-	USART_OUT(UART4,(uint8_t*)"change_compere_angle=%d\t",(int)change_compere_angle);
-	//USART_OUT(UART4,(uint8_t*)"push_balltime=%d\t",(int)push_balltime);
-}
-float get_angle2(float a,float b,int n,int round)
-{ 	
-	if(b!=0)
-	{ if(n==1)
-		{ if(-a/b>0)
-		  {   
-			  return(atan2(-a/b,1)/3.14159*180);
-		  }
-		  else if(-a/b<0)
-		  {    
-			  return(atan2(a/b,-1)/3.14159*180);
-		  }
-		}else
-		{
-			if(-a/b>0)
-			{
-		    return(atan2(a/b,-1)/3.14159*180);
-				
-			}
-		  else if(-a/b<0)
-		  {   
-			 return(atan2(-a/b,1)/3.14159*180);
-		  }
-		}
-	}
-	else if(b==0)
-	{
-		if(round==-1)//顺指针
-		{   if(n==1)
-		   	{
-				
-				return(90);
-			}
-			else 
-			{
-				return(-90);
-		       
-				
-			}
-		}
-        else 
-		{   
-			if(n==1)
-		   {
-			
-				return(90);
-			  
-			}
-			
-			else 
-			{
-				return(-90);
-		      
-			}       			
-		}
-	} 
-     
-	if(a==0)
-	{
-		if(n==1)
-		{  
-			return(0);
-		
-		}
-        else 
-		{   
-			return(-180);
-            			
-		}
-		
-	}	
-}
-
-//推球//
-int no_ball_time=0;
-int last_ball=0;
-int pushball_time=0;
-int add_mode=0;
-int z=-1;
-void push_ball(void)
-{  	int send_number;
-	
-	if(add_mode==0)
-	{
-		if(vc_message[2]==1)
-		{
-			push_position+=16384;
-			add_mode=1;
-			no_ball_time=0;
-			pushball_time=0;
-			USART_OUT(UART4,(uint8_t*)"ball_collor=%d\t\n",1);
-
-		}
-		else if(vc_message[2]==2)
-		{
-			push_position-=16384;
-			add_mode=1;
-			no_ball_time=0;
-			pushball_time=0;
-			USART_OUT(UART4,(uint8_t*)"ball_collor=%d\t\n",2);
-		}
-		else if(vc_message[2]==0)
-		{
-			add_mode=2;
-			pushball_time=0;
-			USART_OUT(UART4,(uint8_t*)"ball_collor=%d\t\n",0);
-			
-		}
-		
-
-    }
-	
-   
-    if(add_mode==1)
-	{
-		pushball_time++;
-		
-		if(pushball_time<=10)
-		{ 
-			PosCrl(CAN2,NEW_PUSH_BALL_ID,ABSOLUTE_MODE,push_position);        
-			
-			
-		}else if(pushball_time==101)
-		{ 
-			pushball_time=0;
-			add_mode=0;
-		}
-    }else if (add_mode==2)
-	{
-		no_ball_time++;
-		if(no_ball_time==10)
-		{
-			push_position=push_position+z*16384;
-			
-		}else if(no_ball_time==150)
-		{
-			add_mode=0;			
-			z=-z;
-		}
-	  
-		no_ball_time%=150;	
-		PosCrl(CAN2,NEW_PUSH_BALL_ID,ABSOLUTE_MODE,push_position);   
-	}
-	                                   
-}
-//得到车与四个点的距离//
-float get_d(float x,float y)
-{
-	return(sqrt(pow (xya.x-x,2)+pow(xya.y-y,2)));
-}
-//得到车与四个点的角度与 车的速度角度的差值//
-float get_differ_angle(float angle,int round)
-{
-	float nowdiffer_angle;
-
-	if(round==1)
-	{if(xya.angle>-180&&xya.angle<angle-180)		
-		nowdiffer_angle=angle-xya.angle-360;
-	  else nowdiffer_angle=angle-xya.angle;
-	}
-	else if(round==-1)
-	{if(xya.angle<180&&xya.angle>angle+180)		
-		nowdiffer_angle=angle-xya.angle+360;
-
-		else nowdiffer_angle=angle-xya.angle;
-	}
-	return(nowdiffer_angle);
-}
-//得到炮台相对于算出的角度应该加或者减的角//
-float get_addorreduce_angle(float differ_angle,float x)
-{
-	float t=sqrt(2*(sqrt(3)*x-800)/9800);
-	float x_v=x/t;
-	      need_v=sqrt(pow(Add_V,2)+pow(x_v,2)-2*x_v*Add_V*cos(fabs(differ_angle)/180*Pi));
-	float cos_x=(pow(need_v,2)+pow(x_v,2)-pow(Add_V,2))/(2*x_v*need_v);
-	return(acos(cos_x)/Pi*180);
-}
-//将角度限制在0~360度 point angle=0//  //将角度限制在-180~180度 point_angle=-180//
-float make_angle_in_wide(float angle,float point_angle)
-{
-	
-	if(angle>360+point_angle)
-		angle-=360;
-	else if(angle<0+point_angle)
-		angle+=360;
-	
-	return(angle);
-}
-//计算并得到炮台需要运动到的角//
-static float fake_last_angle=0;
-static float real_send_angle=0;
-void move_gun(float point_x,float point_y)
-{
-		float x;
-		float cartopoint_angle;//车指向固定点的角度//
-		float getget_angle;//从bodyangle与y轴正方向的角度//
-	    float begain_angle=0;//炮台的起始角度//       	
-	    float fake_new_angle;
-
-		x=get_d(point_x,point_y);
-		body_angle=get_angle2(xya.y-point_y,-xya.x+point_x,(xya.y-point_y)/fabs((xya.y-point_y)),if_go);//得到固定点指向车的角度//
-	    USART_OUT(UART4,(uint8_t*)"%d\t%d\t%d\t\r\n",(int)xya.x,(int)xya.y,(int)body_angle);
-		cartopoint_angle=make_angle_in_wide(body_angle+180,-180);//将角度限制在-180~180//
-		
-		add_angle=get_addorreduce_angle(get_differ_angle(cartopoint_angle,if_go),x);
-		body_angle=body_angle+add_angle*0.8;//弥补误差//
-		
-		getget_angle=make_angle_in_wide(90+body_angle,-180);//将角度限制在-180~180//
-	    fake_new_angle=make_angle_in_wide(begain_angle-getget_angle+xya.compare_angle,-180);
-	    
-	    real_send_angle=real_send_angle+make_angle_in_wide(fake_new_angle-fake_last_angle,-180);
-
-	    fake_last_angle=fake_new_angle;
-		//发送角度//
-		YawPosCtrl(real_send_angle);
-	
-	
 }

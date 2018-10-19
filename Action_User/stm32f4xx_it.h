@@ -26,6 +26,7 @@
   */
 
 /* Define to prevent recursive inclusion -------------------------------------*/
+#include "stdint.h"
 #ifndef __STM32F4xx_IT_H
 #define __STM32F4xx_IT_H
 
@@ -47,17 +48,11 @@ void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
-
-typedef struct
-{ 
-	float x;
-	float y;
-	float angle;
-	float x_v;
-	float y_v;
-	float angle_v;
-	float compare_angle;
-}pos_t;
+union push_p
+{
+	uint8_t push_data[8];
+	int32_t push_pos[2];
+};
 #ifdef __cplusplus
 }
 #endif

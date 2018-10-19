@@ -43,17 +43,45 @@
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-
-union push_ball_ActualPos_v ActualPos_v;
-extern  uint8_t vc_message[5];
+typedef union
+{
+	uint8_t buffer[8];
+	int32_t receivebuff[2];
+}Msg_t;
+Msg_t Can1Msg,Can2Msg; 
+extern uint8_t Ballcolor[5];
+extern uint8_t readVel[8];
+int32_t rool_v1[2];
+int32_t rool_v2[2];
+union push_p push_position;
 void CAN1_RX0_IRQHandler(void)
-{   u8 data[8];
-	
+{
+	u8 data[8];
 	OS_CPU_SR cpu_sr;
+
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-    CAN_RxMsg(CAN1,0x00,data,8);
+	CAN_RxMsg(CAN1,0,data,8);
+    uint8_t len=8;
+	uint32_t StdId;	
+	if(StdId==0x0281)
+    {
+		for( int LEN=0;LEN<2;LEN++)
+		{
+			rool_v1[LEN]=Can1Msg.buffer[LEN];
+		}
+    }
+	if(StdId==0x0282)
+	{
+		for( int LEN=0;LEN<2;LEN++)
+		{
+			rool_v2[LEN]=Can1Msg.buffer[LEN];
+		}
+	}
+	
+	
+	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -73,16 +101,32 @@ void CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
+
 void CAN2_RX0_IRQHandler(void)
-{ 	u8 data[8];
+{
 	OS_CPU_SR cpu_sr;
-    uint32_t a=1;
-	uint32_t b=7;
+    uint8_t len=8;
+	uint32_t StdId;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
-	OS_EXIT_CRITICAL();    
-	CAN_RxMsg(CAN2,&a,vc_message,5);
-    CAN_RxMsg(CAN2,&b,ActualPos_v.datas,2);
+	OS_EXIT_CRITICAL();
+	CAN_RxMsg(CAN2,&StdId,Can2Msg.buffer,len);
+	//摄像机//
+    if(StdId==0x01)
+    {
+		for( int LEN=0;LEN<5;LEN++)
+		{
+			Ballcolor[LEN]=Can2Msg.buffer[LEN];
+		}
+    }
+	//推球电机//
+	if(StdId==0x0287)
+	{
+		for(int LEN=0;LEN<=7;LEN++)
+		{
+			push_position.push_data[LEN]=Can2Msg.buffer[LEN];
+		}
+	}
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -239,119 +283,98 @@ void USART2_IRQHandler(void)
 	OSIntExit();
 }
 
-//void USART3_IRQHandler(void) //更新频率200Hz
-//{
-//	static uint8_t ch;
-//	static union {
-//		uint8_t data[24];
-//		float ActVal[6];
-//	} posture;
-//	static uint8_t count = 0;
-//	static uint8_t i = 0;
-//	OS_CPU_SR cpu_sr;
-//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-//	OSIntNesting++;
-//	OS_EXIT_CRITICAL();
+void USART6_IRQHandler(void) //更新频率200Hz
+{
+	static uint8_t ch;
+	static union {
+		uint8_t data[24];
+		float ActVal[6];
+	} posture;
+	static uint8_t count = 0;
+	static uint8_t i = 0;
+	OS_CPU_SR cpu_sr;
+	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
+	OSIntNesting++;
+	OS_EXIT_CRITICAL();
 
-//	if(USART_GetITStatus(USART3,USART_IT_ORE_ER)==SET)
-//	{
-//		USART_ClearITPendingBit(USART3,USART_IT_ORE_ER);
-//		USART_ReceiveData(USART3);
-//	}
-//	
-//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-//	{
-//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-//		ch = USART_ReceiveData(USART3);
-//		switch (count)
-//		{
-//		case 0:
-//			if (ch == 0x0d)
-//				count++;
-//			else if(ch=='O')
-//                count=5;
-//			else
-//				count = 0;
-//			break;
+	if (USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
+	{
+		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
+		ch = USART_ReceiveData(USART6);
+		switch (count)
+		{
+		case 0:
+			if (ch == 0x0d)
+				count++;
+			else
+				count = 0;
+			break;
 
-//		case 1:
-//			if (ch == 0x0a)
-//			{
-//				i = 0;
-//				count++;
-//			}
-//			
-//			else
-//				count = 0;
-//			break;
+		case 1:
+			if (ch == 0x0a)
+			{
+				i = 0;
+				count++;
+			}
+			else if (ch == 0x0d)
+				;
+			else
+				count = 0;
+			break;
 
-//		case 2:
-//			posture.data[i] = ch;
-//			i++;
-//			if (i >= 24)
-//			{
-//				i = 0;
-//				count++;
-//			}
-//			break;
+		case 2:
+			posture.data[i] = ch;
+			i++;
+			if (i >= 24)
+			{
+				i = 0;
+				count++;
+			}
+			break;
 
-//		case 3:
-//			if (ch == 0x0a)
-//				count++;
-//			else
-//				count = 0;
-//			break;
+		case 3:
+			if (ch == 0x0a)
+				count++;
+			else
+				count = 0;
+			break;
 
-//		case 4:
-//			if (ch == 0x0d)
-//			{
-//				opsFlag = 1;
+		case 4:
+			if (ch == 0x0d)
+			{
 
-//				#if car == 4
-//				
-//					xya.angle = posture.ActVal[0]+90;
-//				 
-//			    #elif car==1
-//				
-//					xya.angle = -posture.ActVal[0]+90;
-//				 
-//				 #endif
-//				if(xya.angle>180)
-//				   xya.angle-=360;
-//				posture.ActVal[1] = posture.ActVal[1];
-//				posture.ActVal[2] = posture.ActVal[2];
-//				#if car ==4
-//				xya.x=posture.ActVal[3];
-//	            xya.y=posture.ActVal[4];
-//				#elif car==1
-//				xya.x=posture.ActVal[4];
-//	            xya.y=-posture.ActVal[3];
-//				#endif
-//				posture.ActVal[5] = posture.ActVal[5];
-//					
-//			}
-//			count = 0;
-//			break;
-//		case 5:
-//            count=0;
-// 		    if(ch=='K')
-//            iSOKFlag=1;
-//            break;
+				posture.ActVal[0] = posture.ActVal[0];
+				posture.ActVal[1] = posture.ActVal[1];
+				posture.ActVal[2] = posture.ActVal[2];
+				posture.ActVal[3] = posture.ActVal[3];
+				posture.ActVal[4] = posture.ActVal[4];
+				posture.ActVal[5] = posture.ActVal[5];
+			}
+			count = 0;
+			break;
 
-//		default:
-//			count = 0;
-//			break;
-//		}
-//	}
-//	else
-//	{
-
-//		USART_ClearITPendingBit(USART3,USART_IT_RXNE);
-//		USART_ReceiveData(USART3);
-//	}
-//	OSIntExit();
-//		
-//}
+		default:
+			count = 0;
+			break;
+		}
+	}
+	else
+	{
+		USART_ClearITPendingBit(USART6, USART_IT_PE);
+		USART_ClearITPendingBit(USART6, USART_IT_TXE);
+		USART_ClearITPendingBit(USART6, USART_IT_TC);
+		USART_ClearITPendingBit(USART6, USART_IT_ORE_RX);
+		USART_ClearITPendingBit(USART6, USART_IT_IDLE);
+		USART_ClearITPendingBit(USART6, USART_IT_LBD);
+		USART_ClearITPendingBit(USART6, USART_IT_CTS);
+		USART_ClearITPendingBit(USART6, USART_IT_ERR);
+		USART_ClearITPendingBit(USART6, USART_IT_ORE_ER);
+		USART_ClearITPendingBit(USART6, USART_IT_NE);
+		USART_ClearITPendingBit(USART6, USART_IT_FE);
+		USART_ReceiveData(USART6);
+	}
+	OSIntExit();
+}
 
 //void USART3_IRQHandler(void)
 //{

@@ -436,6 +436,26 @@
               <FileType>1</FileType>
               <FilePath>..\Action_User\fort.c</FilePath>
             </File>
+            <File>
+              <FileName>Walk.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\Walk.c</FilePath>
+            </File>
+            <File>
+              <FileName>PushBall.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\PushBall.c</FilePath>
+            </File>
+            <File>
+              <FileName>Point.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\Point.c</FilePath>
+            </File>
+            <File>
+              <FileName>DebugData.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Action_User\DebugData.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
