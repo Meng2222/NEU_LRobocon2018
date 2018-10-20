@@ -347,6 +347,7 @@ void Avoidance()
 		if(errFlag==1)
 		{	
 			backwardCount++;
+			//情况1处理方式
 			if(errSituation1)
 			{
 				Kp=10;
@@ -370,6 +371,7 @@ void Avoidance()
 					statusChangeFlag=0;
 				}	
 			}
+			//情况2处理方式：向速度反方向移动
 			if(errSituation2)
 			{
 				AnglePID(changeAngle,GetAngle());

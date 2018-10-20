@@ -268,12 +268,14 @@ void WalkTask(void)
 				//激光扫描到桶条件未满足
 				if(staticShootFlag != 1)
 				{
-					//如果扫描已结束，记下最大距离处和此时航向电机的角度
+					//如果扫描已结束
 					if(scanOverFlag == 1)
 					{
 						scanOverFlag=0;
 						int t1 = 0,t2=0;
+						//找到符合条件的一组数据
 						mostGroup=findMostGroup();
+						//确定最大距离和对应角度
 						for(int i = 0;i <= 299;i++)
 						{
 							if(scanDistance[mostGroup][t1] < scanDistance[mostGroup][i])
@@ -293,6 +295,7 @@ void WalkTask(void)
 						realDistance = scanDistance[mostGroup][t1];
 						if(realDistance != 0)
 						{
+							//定位系统偏移的角度
 							deflectAngle=(realAngle - lightAngle)/2;
 							staticShootFlag = 1;
 							YawPosCtrl(realAngle);
@@ -323,11 +326,12 @@ void WalkTask(void)
 							}
 						}
 					}
-					//扫描中
+					//扫描中，记下距离和此时航向电机的角度
 					else
 					{
 						if(fabs(ReadyawPos()-(lightAngle-timeAngle)) < 10 )
 						{
+							//采到符合要求的点
 							if(fabs(DistanceA-DistanceB) < 200 && fabs(DistanceA-Distance)<800 && fabs(DistanceA-DistanceB)<800 && DistanceA < 4500 && DistanceB < 4500 && fabs(lastDistanceA-DistanceA) < 50 && fabs(lastDistanceB-DistanceB) < 50 && fabs(fabs(lastDistanceA-DistanceA)-fabs(lastDistanceB-DistanceB)) < 20)
 							{
 								goalFlag = 1;
