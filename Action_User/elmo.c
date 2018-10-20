@@ -3,7 +3,6 @@
 #include "usart.h"
 #include "gpio.h"
 
-
 /*******************************控制驱动器命令************************************/
 /**
 * @brief  Elmo驱动器初始化
@@ -797,6 +796,31 @@ void ReadActualCurrent(CAN_TypeDef* CANx, uint8_t ElmoNum)
 * @author ACTION
  * @note：接收标识符为：0x00005850
 */
+typedef struct
+{
+  uint32_t StdId;  /*!< Specifies the standard identifier.
+                        This parameter can be a value between 0 to 0x7FF. */
+
+  uint32_t ExtId;  /*!< Specifies the extended identifier.
+                        This parameter can be a value between 0 to 0x1FFFFFFF. */
+
+  uint8_t IDE;     /*!< Specifies the type of identifier for the message that 
+                        will be transmitted. This parameter can be a value 
+                        of @ref CAN_identifier_type */
+
+  uint8_t RTR;     /*!< Specifies the type of frame for the message that will 
+                        be transmitted. This parameter can be a value of 
+                        @ref CAN_remote_transmission_request */
+
+  uint8_t DLC;     /*!< Specifies the length of the frame that will be 
+                        transmitted. This parameter can be a value between 
+                        0 to 8 */
+
+  uint8_t Data[8]; /*!< Contains the data to be transmitted. It ranges from 0 
+                        to 0xFF. */
+} posReadcollect;
+float CollectLeftVel;
+float CollectRightVel;
 void ReadActualPos(CAN_TypeDef* CANx, uint8_t ElmoNum)
  {
 	 uint32_t data[1][2]={
@@ -820,6 +844,14 @@ void ReadActualPos(CAN_TypeDef* CANx, uint8_t ElmoNum)
 	TxMessage.Data[5] = (*(unsigned long*)&data[0][1]>>8)&0xff;
 	TxMessage.Data[6] = (*(unsigned long*)&data[0][1]>>16)&0xff;
 	TxMessage.Data[7] = (*(unsigned long*)&data[0][1]>>24)&0xff;
+	if(ElmoNum==5)
+	{
+		CollectLeftVel=TxMessage.Data[4]*256*256*256+TxMessage.Data[5]*256*256+TxMessage.Data[6]*256+TxMessage.Data[7];
+	}
+	if(ElmoNum==6)
+	{
+		CollectRightVel=TxMessage.Data[4]*256*256*256+TxMessage.Data[5]*256*256+TxMessage.Data[6]*256+TxMessage.Data[7];
+	}
 
 	mbox= CAN_Transmit(CANx, &TxMessage);
 	uint16_t timeout = 0;

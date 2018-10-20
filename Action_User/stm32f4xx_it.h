@@ -39,15 +39,19 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-
+#include "stdint.h"
 void NMI_Handler(void);
 void HardFault_Handler(void);
-void MemManage_Handler(void);
+void MemManage_Handle(void);
 void BusFault_Handler(void);
 void UsageFault_Handler(void);
 void SVC_Handler(void);
 void DebugMon_Handler(void);
-
+typedef union{
+	uint8_t data8[8];
+	int data32[2];
+}Msg_t;	
+#define NEW (0)
 #ifdef __cplusplus
 }
 #endif

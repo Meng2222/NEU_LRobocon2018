@@ -57,7 +57,7 @@ float GetSpeedX(void);
 float GetSpeedY(void);
 /*返回定位系统的Z轴角速度值*/
 float GetWZ(void);
-
+void SendUint8(void);
 
 #endif 
 

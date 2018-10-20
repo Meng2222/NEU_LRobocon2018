@@ -349,7 +349,6 @@ void USART_OUT(USART_TypeDef* USARTx, const uint8_t *Data, ...)
 			{
 				case 'r':							          //回车符
 					USART_SendData(USARTx, 0x0d);	   
-
 					Data++;
 					break;
 				case 'n':							          //换行符

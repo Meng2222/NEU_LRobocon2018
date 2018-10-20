@@ -39,19 +39,31 @@
 #include "gpio.h"
 #include "elmo.h"
 #include "fort.h"
-
 /******************************************************************************/
 /*            Cortex-M4 Processor Exceptions Handlers                         */
 /******************************************************************************/
-
+Msg_t frontwheelspeedBuffer;
+Msg_t collectball1speedBuffer;
+Msg_t collectball2speedBuffer;
+Msg_t pushballmotorPosBuffer;
+uint8_t i=0;	
 void CAN1_RX0_IRQHandler(void)
 {
+	uint32_t StdId=0;
 	OS_CPU_SR cpu_sr;
-
+	uint8_t buffer1[8];
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	CanRxMsg RxMessage;
+	CAN_RxMsg(CAN1,&StdId,buffer1,8);//reveive data
+	if(StdId==0x282)
+	{
+		for (i=0;i<8; i++)
+		{
+			frontwheelspeedBuffer.data8[i] = buffer1[i];
+		}
+	}	
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN1, CAN_FLAG_BOF);
@@ -71,14 +83,39 @@ void CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
+int ballColor=1;
 void CAN2_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
-
+	uint32_t StdId=1;
+	uint8_t buffer2[8];
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
+	CAN_RxMsg(CAN2,&StdId,buffer2,8); //reveive data
+	if(StdId==0x01)
+		ballColor=buffer2[2];
+	if(StdId==0x285)
+	{
+		for (i=0;i<8; i++)
+		{
+			collectball1speedBuffer.data8[i] = buffer2[i];
+		}
+	}	
+	if(StdId==0x286)
+	{
+		for (i=0;i<8; i++)
+		{
+			collectball2speedBuffer.data8[i] = buffer2[i];
+		}
+	}	
+	if(StdId==0x287)
+	{
+		for (i=0;i<8; i++)
+		{
+			pushballmotorPosBuffer.data8[i] = buffer2[i];
+		}
+	}	
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -96,22 +133,21 @@ void CAN2_RX0_IRQHandler(void)
 //每1ms调用一次
 
 extern OS_EVENT *PeriodSem;
-
+extern int changeLightTime,touchLaserTime;
 void TIM2_IRQHandler(void)
 {
 #define PERIOD_COUNTER 10
 
 	//用来计数10次，产生10ms的定时器
 	static uint8_t periodCounter = PERIOD_COUNTER;
-
 	OS_CPU_SR cpu_sr;
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-
 	if (TIM_GetITStatus(TIM2, TIM_IT_Update) == SET)
 	{
-
+		changeLightTime++;
+		touchLaserTime++;
 		//实现10ms 发送1次信号量
 		periodCounter--;
 		if (periodCounter == 0)
@@ -123,7 +159,6 @@ void TIM2_IRQHandler(void)
 	}
 	OSIntExit();
 }
-
 void TIM1_UP_TIM10_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -199,7 +234,7 @@ void UART4_IRQHandler(void)
 
 	if (USART_GetITStatus(UART4, USART_IT_RXNE) == SET)
 	{
-
+		
 		USART_ClearITPendingBit(UART4, USART_IT_RXNE);
 	}
 	OSIntExit();
@@ -327,22 +362,6 @@ void USART6_IRQHandler(void) //更新频率200Hz
 	}
 	OSIntExit();
 }
-
-//void USART3_IRQHandler(void)
-//{
-//	OS_CPU_SR cpu_sr;
-//	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
-//	OSIntNesting++;
-//	OS_EXIT_CRITICAL();
-
-//	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
-//	{
-//		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-//	}
-
-//	OSIntExit();
-//}
-
 void UART5_IRQHandler(void)
 {
 	uint8_t data;
@@ -398,6 +417,7 @@ void HardFault_Handler(void)
 	/* Go to infinite loop when Hard Fault exception occurs */
 	while (1)
 	{
+		USART_OUT(UART4,(uint8_t *)"HardFault\t");
 	}
 }
 
