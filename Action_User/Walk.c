@@ -630,6 +630,7 @@ void line(float piontx,float pionty,int zoneOpt)
 									rrun_to(runAng,1.3);
 								}
 					}
+					//达到定点条件，开启定点模式
 					if(BoundaryShoot(1)==1)
 						pointErrDeal=1;
 			
@@ -664,29 +665,39 @@ void line(float piontx,float pionty,int zoneOpt)
 				escape_ang=-90;
 			if(zoneArrive == 0)
 				{
+					//未达到顶点条件时
 					if(pointErrDeal == 0)
 						{
+						//如果机器人姿态调整到位（角度，距离），就进行距离PID冲向目标点
 						if(pionty-action.y < 100&&(fabs(action.angle)<=5))
 							{
 								zoneErrx=piontx-action.x;
 								errValuex=zoneErrx*zoneKpx;
+								
+								//限速
 								if(errValuex>exchange(1.5))
 									errValuex=exchange(1.5);
 								VelCrl(CAN1, 02,-errValuex);
 								VelCrl(CAN1, 01,errValuex);	
 							}else
+								
 								{
+									//靠向目标直线
 									runAng=err(action.y-pionty,0);
 									rrun_to(runAng,1.5);
 								}
 						}
+
+					//达到定点条件，开启定点模式
 					if(BoundaryShoot(2)==1)
 						pointErrDeal=1;
 				}
+			//达到目标死角区域
 			if(fabs(action.x-piontx)<350)
 				zoneArrive=1;
 			if(zoneArrive == 1)
 		{
+			//进行转向
 			zoneAngErr=escape_ang-action.angle;
 			if(zoneAngErr>180)
 				zoneAngErr=zoneAngErr-360;
@@ -697,8 +708,10 @@ void line(float piontx,float pionty,int zoneOpt)
 			VelCrl(CAN1, 01,-zone_angle_value);
 		}
 		
+		//转向完成
 		if(fabs(action.angle + 90)<=30&&zoneArrive == 1)
 		{
+			//进入下一个目标区域，相关标志位清零
 			deadZone++;
 			zoneArrive=0;
 			aimErrorFlag=0;
