@@ -82,11 +82,11 @@ int FirstshootJudge(void);
 void Rchange(int Rchange);
 void IncreaseR(int Radium);
 void DecreaseR(int Radium);
-void Avoidance();
+void Avoidance(void);
 void ShakeShoot(void);
 void BorderSweeping(void);
 float getLingtAngle(float xi,float yi,int tragetCnt);
-int findMostGroup();
+int findMostGroup(void);
 float ReadLaserAValue1(void);
 float ReadLaserBValue1(void);
 #define pi 3.141592f

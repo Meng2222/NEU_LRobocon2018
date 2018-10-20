@@ -15,6 +15,7 @@
 #include "adc.h"
 #include "pps.h"
 #include "fort.h"
+#define SWITCH_ON  GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_0)
 /*
 ===============================================================
 						信号量定义
@@ -42,7 +43,6 @@ void App_Task()
 						  (INT8U)Walk_TASK_PRIO);				
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-int PE0=0;
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
@@ -61,15 +61,13 @@ void ConfigTask(void)
 	ElmoInit(CAN2);
 	VelLoopCfg(CAN2,COLLECT_BALL1_ID,500000,500000);
 	VelLoopCfg(CAN2,COLLECT_BALL2_ID,500000,500000);
-	//比赛结束后吐球程序段
+	//比赛结束后打开行程开关吐球程序段
 	do
 	{
-		//读取按键
-		PE0=GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_0);
 		VelCrl(CAN2,COLLECT_BALL1_ID,-80*32768); 
 		VelCrl(CAN2,COLLECT_BALL2_ID,80*32768);	
 	}
-	while(PE0==1);
+	while(SWITCH_ON==1);
 	PosLoopCfg(CAN2,PUSH_BALL_ID,10000000,10000000,900000);
 	VelLoopCfg(CAN1,1,50000000,50000000);
 	VelLoopCfg(CAN1,2,50000000,50000000);
@@ -83,47 +81,74 @@ void ConfigTask(void)
 	WaitOpsPrepare();
 	OSTaskSuspend(OS_PRIO_SELF);
 }
-float yawAngle=0,T1=0,T0=0,v=1500,angle,Distance,antiRad,realR=0,shootX,shootY,futureX,futureY,lastX=0,lastY=0,x,y;
-int pushBallFlag=1,borderSweepFlag=0,count=0,shakeShootFlag=0,shakeShootCnt=0,errFlag=0,status=1,semiPushCount=0,throwFlag=0,R=500,bingoFlag[4][2]={0},haveShootedFlag=0,errTime=0,StdId,laserModel=0,changeLightTime=0,RchangeFlag,rDecreaseFlag=0,findBallModel=0,banFirstShoot=0,shootCnt=0,circleCnt=1;
-float location[4][2]={{2200,200},{2200,4600},{-2200,4600},{-2200,200}},speedX,speedY,speed,rps=50;
-int scanCnt[20]={0},touchLaserTime,lastTouchLaserTime,quickLaserModel=0,Cnt=0;
+//航向电机角度
+float yawAngle=0;
+//T：发出命令到航向电机响应的延迟时间，1表示顺时针，0表示逆时针  antiRad：圆形走投时延迟时间内走过的弧度
+float T1=0,T0=0,antiRad=0;
+//一些走行的基本参数。angle：现实直角坐标系下的角度  realR：圆形闭环的实际半径，也是车距场中心的距离  shootx(y):炮台的坐标  x(y):后轮轴中心点坐标 lastx(y):10ms前后轮轴中心坐标
+float v=1500,angle,Distance,realR=0,shootX,shootY,futureX,futureY,lastX=0,lastY=0,x,y;
+//桶的ID号，从0到3
+int StdId;
+//行号为桶的ID号，对应四个桶的中心坐标
+float location[4][2]={{2200,200},{2200,4600},{-2200,4600},{-2200,200}};
+//rps:给定的包胶轮转速
+float speedX,speedY,speed,rps=50;
+//定义数组用来存放扫描得到的角度和距离参数
 float scanAngle[20][300]={0},scanDistance[20][300]={0};
+//给定的圆形闭环半径 status：顺逆时针，1为顺，0为逆
+int R=500,status=1;
+//一些标志位，望文生义，表面意思。bingoFlag：用于投球优先级的判断
+int pushBallFlag=1,borderSweepFlag=0,errFlag=0,throwFlag=0,bingoFlag[4][2]={0},haveShootedFlag=0,RchangeFlag,rDecreaseFlag=0,banFirstShoot=0;
+//一些计数。shootCnt:射出球的次数  circleCnt:走过的圈数 Cnt:定点模式的计时器
+int count=0,semiPushCount=0,errTime=0,changeLightTime=0,shootCnt=0,circleCnt=1,touchLaserTime,lastTouchLaserTime,Cnt=0;
+//模式标志位
+int laserModel=0,findBallModel=0,quickLaserModel=0;
+int scanCnt[20]={0};
 extern int ballColor,backwardCount,errSituation1,errSituation2;
 extern float Vk,Kp,lAngle;
+//读取一些电机转速
 extern Msg_t frontwheelspeedBuffer,collectball1speedBuffer,collectball2speedBuffer,pushballmotorPosBuffer;
 void WalkTask(void)
 {
-	int PE1=0,cycleCnt=0,staticShootFlag_1=0,staticShootFlag_2=0,staticShootFlag_3=0,push_Ball_Count=0,noPushCnt=0,noPushFlag=1,notFoundCnt=0,stuckTime=0;
-	int foundRange=15,collectBallSpeed1=0,collectBallSpeed2=0,lastCollectBallSpeed1=0,lastCollectBallSpeed2=0,pushBallMotorPos=0;
-	float D1=0,D2=0,distance,lastDistanceA=0,lastDistanceB=0,realAngle=0,realDistance=0,deflectAngle=0,errDistance=0,RA=0,RB=0;
+	int cycleCnt=0,staticShootFlag=0,push_Ball_Count;
+	//定点扫描的左右角度范围
+	int foundRange=20;
+	//电机转速或位置
+	int collectBallSpeed1=0,collectBallSpeed2=0,lastCollectBallSpeed1=0,lastCollectBallSpeed2=0,pushBallMotorPos=0;
+	//距离和角度
+	float DistanceA=0,DistanceB=0,lastDistanceA=0,lastDistanceB=0,realAngle=0,realDistance=0,deflectAngle=0,errDistance=0;
+	//lastStdId:上次扫描的桶号  squareNode：方形扫边的节点，四个节点说明扫过一圈 nopushCnt：无球反推计数
 	int lastStdId=0,squareNode=0,noBallPushCnt=0;
-	int goalCnt=0,scanFlag_1=0,scanFlag_2=0,goalFlag=0,mostGroup=0,OnlyFlag=1,scanErrCnt=0,scanErrFlag=0,scanFlag_Ok=0;
-	float staticShootAngle_1=0,timeAngle=16,DistanceA=0,DistanceB=0,lightAngle=0,staticShootAngle_2=0;
-	int pushBallCount=0,statusChangeFlag=0,noBallCount=0,staticPushBallFlag=1,laserModelCount=0,findBallModelCount=0,realCount=0,lastSemiPushCount,lastCount,time=0;
-	float dLeft=0,dRight=0,Vx,Vy,V,shootAngle,realRps;
+	//定点时一些计数和标志位。onlyFlag：只射一颗球的标志位。
+	int goalCnt=0,goalFlag=0,mostGroup=0,OnlyFlag=1,scanErrCnt=0,scanErrFlag=0,scanOverFlag=0;
+	//lightAngle:定点扫描时定位系统算出航向电机应给的角度  timeAngle：范围角度
+	float timeAngle=16,lightAngle=0;
+	//计数
+	int pushBallCount=0,noBallCount=0,lastSemiPushCount,lastCount,time=0,stuckTime=0;
+	float Vx,Vy,V,shootAngle;
 	VelCrl(CAN2,COLLECT_BALL1_ID,70*32768); 
 	VelCrl(CAN2,COLLECT_BALL2_ID,-70*32768);
 	do
 	{		
-		//炮台激光读取距离
-		dLeft=ReadLaserAValue1()*2.461+55.43;
-		dRight=ReadLaserBValue1()*2.467+60.87;
+		//左激光读取距离
+		DistanceA=ReadLaserAValue1()*2.461+55.43;
+		//右激光读取距离
+		DistanceB=ReadLaserBValue1()*2.467+60.87;
 		//800mm内挡住激光100ms后触发
-		if(dLeft>800&&dRight>800)
+		if(DistanceA>800&&DistanceB>800)
 		{
 			lastTouchLaserTime=touchLaserTime;
 		}	
-		USART_OUT(UART4,(uint8_t *)"%d\t%d\r\n",(int)dLeft,(int)dRight);
+		USART_OUT(UART4,(uint8_t *)"%d\t%d\r\n",(int)DistanceA,(int)DistanceB);
 	}
 	while(touchLaserTime-lastTouchLaserTime<=100);
-	PE0=GPIO_ReadInputDataBit(GPIOE,GPIO_Pin_0);
-	if(PE0==1)
+	if(SWITCH_ON==1)
 		R=1100;
 	//战术选择
-	if(dRight<=300)
+	if(DistanceB<=300)
 	{
 		status=0;
-		switch(PE0)
+		switch(SWITCH_ON)
 		{
 			//逆时针内圈
 			case 0:
@@ -140,10 +165,10 @@ void WalkTask(void)
 		//推球转盘倒转180度优先使用内舱
 		PosCrl(CAN2,PUSH_BALL_ID,ABSOLUTE_MODE,(--semiPushCount)*PUSH_POSITION/2+count*PUSH_POSITION);
 	}	
-	else if(dLeft<=300)
+	else if(DistanceA<=300)
 	{
 		status=1;
-		switch(PE0)
+		switch(SWITCH_ON)
 		{
 			//顺时针内圈
 			case 0:
@@ -159,12 +184,12 @@ void WalkTask(void)
 		}	
 	}
 	//远处遮挡激光启动快速定点模式
-	else if(dRight>300&&dRight<800)
+	else if(DistanceB>300&&DistanceB<800)
 	{
 		status=0;
 		quickLaserModel=1;
 	}	
-	else if(dLeft>300&&dLeft<800)
+	else if(DistanceA>300&&DistanceA<800)
 	{
 		status=1;
 		quickLaserModel=1;
@@ -175,18 +200,13 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend (PeriodSem,0,&os_err);
-		RA=ReadLaserAValue();
-		RB=ReadLaserBValue();
-		if(RA >= 100)
-		DistanceA = RA*2.461+55.43;
-		if(RB >= 100)
-		DistanceB = RB*2.467+60.87;
+		DistanceA = ReadLaserAValue()*2.461+55.43;
+		DistanceB = ReadLaserBValue()*2.467+60.87;
 		x = GetX();
 		y = GetY();
 		speedX = GetSpeedX();
 		speedY = GetSpeedY();
 		speed = sqrtf(speedX*speedX+speedY*speedY);
-		realRps = ReadRps();
 		realR=sqrtf(x*x+(y-2400)*(y-2400));
 		//将定位系统返回的角度转化为以出发区为原点的直角坐标系的角度
 		angle=GetAngle()+90;
@@ -219,11 +239,12 @@ void WalkTask(void)
 			{ 
 				VelCrl (CAN1,1,0);				
 				VelCrl (CAN1,2,0);
+				//先扫优先级高的桶
 				StdId = FirstshootJudge();	
 			}	
 			else
 			{
-				if(staticShootFlag_3 != 1)
+				if(staticShootFlag != 1)
 				{
 					deflectAngle=0;
 					foundRange=foundRange-deflectAngle;
@@ -240,18 +261,17 @@ void WalkTask(void)
 					if(timeAngle > -foundRange && fabs(ReadyawPos()-(lightAngle-timeAngle)) < 20)
 						timeAngle -= 0.32;
 					if(timeAngle <= -foundRange)
-						scanFlag_Ok=1;
+						scanOverFlag=1;
 				}
 				//通过定位系统得到桶的大致坐标从而算出距离
 				GetDistance1 (StdId);
 				//激光扫描到桶条件未满足
-				if(staticShootFlag_3 != 1)
+				if(staticShootFlag != 1)
 				{
-					if(scanFlag_Ok == 1)
+					//如果扫描已结束，记下最大距离处和此时航向电机的角度
+					if(scanOverFlag == 1)
 					{
-						scanFlag_Ok=0;
-						scanFlag_1 = 0;
-						scanFlag_2 = 0;
+						scanOverFlag=0;
 						int t1 = 0,t2=0;
 						mostGroup=findMostGroup();
 						for(int i = 0;i <= 299;i++)
@@ -274,12 +294,12 @@ void WalkTask(void)
 						if(realDistance != 0)
 						{
 							deflectAngle=(realAngle - lightAngle)/2;
-							staticShootFlag_3 = 1;
+							staticShootFlag = 1;
 							YawPosCtrl(realAngle);
 						}	
 						else
 						{
-							scanFlag_Ok = 0;
+							scanOverFlag = 0;
 							if(foundRange<25)
 								foundRange+=5;
 							if(foundRange>=25)
@@ -303,39 +323,43 @@ void WalkTask(void)
 							}
 						}
 					}
+					//扫描中
 					else
 					{
-						if(fabs(ReadyawPos()-(lightAngle-timeAngle)) < 10 && staticShootFlag_3 != 1)
+						if(fabs(ReadyawPos()-(lightAngle-timeAngle)) < 10 )
 						{
 							if(fabs(DistanceA-DistanceB) < 200 && fabs(DistanceA-Distance)<800 && fabs(DistanceA-DistanceB)<800 && DistanceA < 4500 && DistanceB < 4500 && fabs(lastDistanceA-DistanceA) < 50 && fabs(lastDistanceB-DistanceB) < 50 && fabs(fabs(lastDistanceA-DistanceA)-fabs(lastDistanceB-DistanceB)) < 20)
 							{
 								goalFlag = 1;
+								//记录扫描所得到的角度和距离
 								scanAngle[goalCnt][scanCnt[goalCnt]] = ReadyawPos();
 								scanDistance[goalCnt][scanCnt[goalCnt]] = (DistanceA+DistanceB)/2;
 								if(scanCnt[goalCnt]<=298)
-								scanCnt[goalCnt]++;
+									scanCnt[goalCnt]++;
 							}
 							else
 							{
 								if(goalFlag == 1 && DistanceA>1200 && DistanceB > 1200)
 								{
 									if(goalCnt<=19)
-									goalCnt++;
+										goalCnt++;
 									goalFlag = 0;
 								}
 							}
+							//记录上10ms的激光返回距离，从而扫到突变
 							lastDistanceA = DistanceA;
 							lastDistanceB = DistanceB;
 						}
 					}
 				}
 				//激光扫描到桶
-				if(staticShootFlag_3 == 1)
+				if(staticShootFlag == 1)
 				{
 					YawPosCtrl(realAngle);
-					//航向电机转到给定角度
+					//当航向电机转到给定角度
 					if(fabs(ReadyawPos() - realAngle)<=1)
 					{
+						//满足是桶的判断条件则准备射球
 						if(fabs(DistanceA-DistanceB) <= 500 && DistanceB < 4500 && DistanceB < 4500 && fabs(realDistance-(DistanceA+DistanceB)/2) <=300)			
 						{
 							foundRange=15;
@@ -362,10 +386,11 @@ void WalkTask(void)
 								OnlyFlag=1;
 								timeAngle=foundRange;
 								push_Ball_Count = 0;
-								staticShootFlag_3 = 0;	
+								staticShootFlag = 0;	
 								StdId=FirstshootJudge();
 							}
 						}
+						//否则扫描错误，重新扫描
 						else
 						{
 							scanErrCnt++;
@@ -373,10 +398,8 @@ void WalkTask(void)
 							{
 								timeAngle=foundRange;
 								scanErrCnt = 0;
-								scanFlag_Ok = 0;
-								scanFlag_1 = 0;
-								scanFlag_2 = 0;
-								staticShootFlag_3 = 0;
+								scanOverFlag = 0;
+								staticShootFlag = 0;
 								if(scanErrFlag==1)
 								{
 									bingoFlag[StdId][0] += 5;
@@ -399,31 +422,30 @@ void WalkTask(void)
 					noBallPushCnt=0;
 				}	
 				pushBallCount++;
-				//无球反推三下开始找球
+				//无球反推三下开始进入找球模式
 				if(noBallPushCnt >= 3)
 				{
 					laserModel = 0;
 					findBallModel = 1;
 					R = 800;
 					Cnt = 0;
-					staticShootFlag_3=0;
+					staticShootFlag=0;
 					noBallPushCnt=0;
 					push_Ball_Count = 0;
 				}
 				PosCrl (CAN2, PUSH_BALL_ID,ABSOLUTE_MODE, semiPushCount*PUSH_POSITION/2 + count*PUSH_POSITION);
-				USART_OUT(UART4,(uint8_t *)"laserModel\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",count,(int)realR,StdId,(int)DistanceA,(int)DistanceB,(int)rps,(int)ReadRps(),(int)staticShootFlag_3,(int)realAngle,(int)ReadyawPos(),(int)noBallPushCnt,(int)semiPushCount,(int)realAngle,staticShootFlag_3,ballColor,pushBallFlag,pushBallMotorPos);
-//				USART_OUT(UART4,(uint8_t *)"laserModel\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetX(),(int)GetY(),(int)GetAngle(),(int)GetWZ(),(int)GetSpeedX(),(int)GetSpeedY(),ballColor,pushBallFlag,semiPushCount);
+				USART_OUT(UART4,(uint8_t *)"laserModel\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",count,(int)realR,StdId,(int)DistanceA,(int)DistanceB,(int)rps,(int)ReadRps(),(int)staticShootFlag,(int)realAngle,(int)ReadyawPos(),(int)noBallPushCnt,(int)semiPushCount,(int)realAngle,staticShootFlag,ballColor,pushBallFlag,pushBallMotorPos);
 			}
 		} 									
 		else if(findBallModel)
 		{
-			scanFlag_Ok=0;
-			scanFlag_1 = 0;
-			scanFlag_2 = 0;
+			scanOverFlag=0;
 			if(errFlag==0)
 			{
+				//走圆半径小时先扩大半径
 				if(rDecreaseFlag==0&&R<1800)			
 					IncreaseR(1800);
+				//圆形半径到达边缘时进入扫边
 				if(R>=1800)
 					borderSweepFlag=1;
 				if(borderSweepFlag)
@@ -465,6 +487,7 @@ void WalkTask(void)
 					time=0;
 				}	
 			}
+			//每0.5s检测一次是否有黑球
 			if(pushBallCount%50==0)
 			{	
 				//当拿到对方的球，倒转360度	
@@ -477,15 +500,14 @@ void WalkTask(void)
 				}
 			}	
 			Avoidance();
-			laserModelCount++;
-			if((R<=1600&&rDecreaseFlag)||laserModelCount>3000)
+			//由扫边变为走圆后开始进入定点投
+			if(R<=1600&&rDecreaseFlag)
 			{
 				findBallModel=0;
 				laserModel=1;
 				squareNode=0;
 				rDecreaseFlag=0;
 				errTime=0;
-				laserModelCount=0;
 				R=550;
 				noBallPushCnt=0;
 			}
@@ -497,8 +519,10 @@ void WalkTask(void)
 		{
 			case 0:
 				antiRad=T0*speed/realR;
+				break;
 			case 1:
 				antiRad=T1*speed/realR;
+				break;
 			default:
 				break;
 		}	
@@ -509,9 +533,10 @@ void WalkTask(void)
 			{	
 				//走过圈数计数
 				circleCnt++;
+				//每走一圈，定位系统会有一定的飘移，提前量做出一些补偿
 				if(R>=1600)
 				{
-					switch(PE0)
+					switch(SWITCH_ON)
 					{
 						case 0:
 							T1-=0.0065;
@@ -529,7 +554,7 @@ void WalkTask(void)
 				circleCnt++;
 				if(R>=1600)
 				{
-					switch(PE0)
+					switch(SWITCH_ON)
 					{
 						case 0:
 							T1+=0.006;
@@ -552,6 +577,7 @@ void WalkTask(void)
 			//预判Ts后炮台坐标
 			shootX=futureX-68*sin(GetAngle()*pi/180+antiRad);
 			shootY=futureY+68*cos(GetAngle()*pi/180+antiRad);
+			//划分四个投球区域，每个区域对应投一个桶
 			if(shootX<=800&&shootY<1600)
 			{	
 				if(shootX>-600&&shootX<600)
@@ -639,7 +665,7 @@ void WalkTask(void)
 		//包胶轮应给转速
 		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3200)*0.0051;
 		//逆时针内圈时应给转速
-		if(status==0&&PE0==0)
+		if(status==0&&SWITCH_ON==0)
 			rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3000)*0.0043;
 		ShooterVelCtrl(rps);
 		Avoidance();
@@ -668,21 +694,22 @@ void WalkTask(void)
 			}
 		}	
 		label:pushBallCount++;
+		//快速定点模式一圈后进入定点
 		if(quickLaserModel&&circleCnt>1)
 		{
 			R=500;
 			laserModel=1;
 			noBallPushCnt=0;
 		}	
+		//圆形走五圈后开始进入定点
 		if(circleCnt>5||(errTime>2&&circleCnt>3))
 		{
 			R=500;
-			errTime=0;
 			laserModel=1;
 			noBallPushCnt=0;
 			throwFlag=0;
 		}	
-		//空转三次后进入找球模式
+		//如果外圈空转三次后进入找球模式
 		if(noBallPushCnt>2)
 		{
 			findBallModel=1;
@@ -690,6 +717,7 @@ void WalkTask(void)
 		}	
 		USART_OUT(UART4,(uint8_t *)"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",(int)GetX(),(int)GetY(),(int)GetAngle(),(int)GetWZ(),semiPushCount,count,R,squareNode,ballColor,pushBallFlag,circleCnt,pushBallMotorPos);
 		}
+		//读取各电机的速度或位置
 		ReadActualVel(CAN1,2);
 		ReadActualVel(CAN2,5);
 		ReadActualVel(CAN2,6);
@@ -697,6 +725,7 @@ void WalkTask(void)
 		//防卡球
 		if(abs(pushBallMotorPos-(semiPushCount*PUSH_POSITION/2+count*PUSH_POSITION))>1200)
 		{
+			//当推球转盘不在给定位置，开始计时，2s后恢复倒转回到给定命令之前的状态
 			stuckTime++;
 			if(stuckTime>=200)
 			{	
@@ -707,6 +736,7 @@ void WalkTask(void)
 		}	
 		else
 		{	
+			//当推球转盘未卡住，开始识别球色
 			stuckTime=0;
 			if(ballColor==0)
 				noBallCount++;

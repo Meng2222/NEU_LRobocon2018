@@ -39,7 +39,7 @@
   * @param  
   * @retval None
   */
-
+//Vk时前侧全向轮速度
 float Kp=85,Ki=0,Kd=0,err=0,lastErr=0,Sumi=0,Vk=0,errl,lastErr1;
 extern int R;
 
@@ -180,7 +180,8 @@ void CirclePID(float x0,float y0,float R,float v,int status)
 }	
 /********************* (C) COPYRIGHT NEU_ACTION_2018 ****************END OF FILE************************/
 extern float Distance,shootX,shootY,angle,antiRad,location[4][2],speed;
-extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,shakeShootFlag,banFirstShoot,findBallModel,StdId;
+extern int bingoFlag[4][2],haveShootedFlag,errTime,throwFlag,RchangeFlag,banFirstShoot,findBallModel,StdId;
+//得到航向角度
 void GetYawangle(uint8_t StdId)
 {
 	if(status==0)
@@ -200,6 +201,7 @@ void GetYawangle(uint8_t StdId)
 			yawAngle=(GetAngle()-antiRad*180/pi)-lAngle;	
 	}	
 }
+//得到到桶的距离
 void GetDistance(uint8_t StdId)
 {
 	Distance=sqrtf((shootX-location[StdId][0])*(shootX-location[StdId][0])+(shootY-location[StdId][1])*(shootY-location[StdId][1]));
@@ -332,13 +334,15 @@ void DecreaseR(int Radium)
 	if(RchangeFlag)
 		Rchange(-600);	
 }	
-extern int errFlag,count,shootCnt,shakeShootCnt,ballColor,rDecreaseFlag,circleCnt,semiPushCount,pushBallFlag,borderSweepFlag,Cnt;
+extern int errFlag,count,shootCnt,ballColor,rDecreaseFlag,circleCnt,semiPushCount,pushBallFlag,borderSweepFlag,Cnt;
 extern float angle,speed,speedY,speedX,T0,T1,rps,realR,v;
-int errSituation1,errSituation2,shakeShootOff=200,shutOffCnt=0;
+int errSituation1,errSituation2;
 //避障
 void Avoidance()
 {
-		int errSituation3,statusChangeFlag,lastTime=0,time=0,backwardCount,checkTime=150,correctTime;
+		//checkTime：检测错误的时间  correctTime：避障的时间
+		int statusChangeFlag=0,lastTime=0,time=0,backwardCount=0,checkTime=150,correctTime=0;
+		//changeAngle：转向的角度 speedAngle:速度的方向
 		float changeAngle,speedAngle;
 		if(errFlag==1)
 		{	
@@ -386,6 +390,7 @@ void Avoidance()
 		else
 		{
 			time++;
+			//得到速度方向
 			GetFunction(lastX,lastY,x,y);
 			speedAngle=lAngle;
 			//与对手相持
@@ -438,48 +443,7 @@ void Avoidance()
 			}		
 		}	
 }	
-/*凯化*/
-void ShakeShoot(void)
-{
-	VelCrl(CAN1,1,0);				
-	VelCrl(CAN1,2,0);
-	if(status==0)
-	{
-		if(x>-400&&x<400&&y<2400)
-			GetShootSituation(0);
-		if(y<2800&&y>2000&&x>0)
-			GetShootSituation(1);
-		if(x>-400&&x<400&&y>2400)
-			GetShootSituation(2);			
-		if(y<2800&&y>2000&&x<0)
-			GetShootSituation(3);		
-	}
-	else
-	{
-		if(x>-400&&x<400&&y<2400)
-			GetShootSituation(3);
-		if(y<2800&&y>2000&&x>0)
-			GetShootSituation(0);
-		if(x>-400&&x<400&&y>2400)
-			GetShootSituation(1);			
-		if(y<2800&&y>2000&&x<0)
-			GetShootSituation(2);		
-	}				
-	shutOffCnt++;
-	if(shakeShootCnt>0)
-		shakeShootOff--;
-	if(shakeShootOff==0||(ballColor!=MY_BALL_COLOR&&shakeShootCnt==0))
-	{
-		errFlag=0;
-		shakeShootCnt=0;
-		shakeShootFlag=0;
-		shakeShootOff=100;
-	}	
-	else if(fabs(rps-ReadRps())<1)
-		throwFlag=1;
-	else
-		throwFlag=0;
-}	
+
 //扫边收球
 void BorderSweeping(void)
 {
@@ -557,11 +521,11 @@ float min(float d1,float d2)
 extern int scanCnt[10];
 int findMostGroup()
 {
-	int a=0;
+	int index=0;
 	for(int i=0;i<=19;i++)
 	{
-		if(scanCnt[a]<scanCnt[i])
-			a=i;
+		if(scanCnt[index]<scanCnt[i])
+			index=i;
 	}
-	return a;
+	return index;
 }
