@@ -51,8 +51,12 @@ int PressFlag=1;
 extern int runAgain;
 extern int nothingCanDo;
 uint8_t acceleration_ready=0;
-int no_BallTime=0,Out_AreaTime=0,Out_Area_noballTime=0,No_StableTime=0,No_Stable_noballTime=0;//推球的变量//
-float CountAngle(float a,float b,int n,int round);//n指向,round顺逆时针，ax+by+c=0；
+
+//推球的变量//
+int no_BallTime=0,Out_AreaTime=0,Out_Area_noballTime=0,No_StableTime=0,No_Stable_noballTime=0;
+
+//n指向,round顺逆时针，ax+by+c=0；
+float CountAngle(float a,float b,int n,int round);
 /*
 ===============================================================
 						信号量定义
@@ -93,28 +97,44 @@ void ConfigTask(void)
 	CPU_INT08U os_err;
 	os_err = os_err;
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);//can1初始化
+
+	//can1 can2初始化
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8,GPIO_Pin_9);
 	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5,GPIO_Pin_6);
 	USART3_Init(115200);
 	UART4_Init(921600);
 	UART5_Init(921600);
-	TIM_Init(TIM2,1000-1,83,0x01,0x03);  /////中断位*10  主周期10ms
-	Adc_Init();
-	ElmoInit(CAN2);//驱动初始化
-	ElmoInit(CAN1);//驱动初始化
-	MotorOn(CAN2,5);             //收球电机初始化
-	MotorOn(CAN2,6);             //收球电机初始化
-	GPIO_Init_Pins(GPIOB,4,GPIO_Mode_IN); //初始化按键
-	GPIO_Init_Pins(GPIOE,1,GPIO_Mode_IN); //初始化按键
 
-	
-	
+	 //中断位*10  主周期10ms
+	TIM_Init(TIM2,1000-1,83,0x01,0x03); 
+	Adc_Init();
+
+	//驱动初始化
+	ElmoInit(CAN2);
+
+	//驱动初始化
+	ElmoInit(CAN1);
+
+	//收球电机初始化
+	MotorOn(CAN2,5);             
+
+	//收球电机初始化
+	MotorOn(CAN2,6);             
+
+	 //初始化按键
+	GPIO_Init_Pins(GPIOB,4,GPIO_Mode_IN);
+
+	//初始化按键
+	GPIO_Init_Pins(GPIOE,1,GPIO_Mode_IN); 
+
 	//TIM_Init(TIM2, 99, 839, 1, 0);
 	BEEP_ON;
+	
 	// 配置位置环
 	while(PressFlag==1)
 	{
 		PressFlag=LetBallOut();
+	
 		//反转
 		VelCrl(CAN2,6,80*32768);//80
 		VelCrl(CAN2,5,-80*32768);//-80
@@ -122,16 +142,18 @@ void ConfigTask(void)
 		VelCrl(CAN2,6,0*32768);
 		VelCrl(CAN2,5,0*32768);
 
-	
 	/*一直等待定位系统初始化完成*/
 	delay_s(4);
 	WaitOpsPrepare();
-	VelLoopCfg(CAN1,1,32768*10,32768*100);//速度环初始化
+	VelLoopCfg(CAN1,1,32768*10,32768*100);
 	VelLoopCfg(CAN1,2,32768*10,32768*100);
 	PosLoopCfg(CAN2, PUSH_BALL_ID, 20000000,20000000,20000000);
-	MotorOn(CAN1,1);             //两轮电机初始化
-	MotorOn(CAN1,2);             //两轮电机初始化
-//	MotorOn(CAN2,PUSH_BALL_ID);  //推球电机初始化
+	
+	//两轮电机初始化
+	MotorOn(CAN1,1);             
+	MotorOn(CAN1,2);             
+
+	//	MotorOn(CAN2,PUSH_BALL_ID);  //推球电机初始化
 	VelCrl(CAN2,6,-80*32768);//-60
 	VelCrl(CAN2,5,80*32768);//60
 	AdcFlag();
@@ -158,25 +180,31 @@ void WalkTask(void)
 
 		if(stableFlg==0)
 		{
-		     Walkline(0,2350,run_r,run_V,clockFlg);   ////圆心X坐标  圆心Y坐标 半径  方向  速
-			if(!pointErrDeal&&normalPush)//&&run_again
+			//执行走形
+		     Walkline(0,2350,run_r,run_V,clockFlg);   
+			if(!pointErrDeal&&normalPush)
 			{
 				Out_AreaTime=0;		//射球圈  非射球区域的计时
 				T=0;				//射球圈  射球区域的计时
 				No_StableTime++;	//非射球圈的计时 周期为112
 				no_BallTime=0;		//射球圈  没有球的计时
-				if(Ballcolor[2]==Need_ball_collor)		//在非射球圈识别到白球 把非射球圈的没有球的计时置0 并且准备着
+
+				//在非射球圈识别到白球 把非射球圈的没有球的计时置0 并且准备着
+				if(Ballcolor[2]==Need_ball_collor)		
 				{
 					No_Stable_noballTime=0;	//非射球圈 没有球的计时
 
 				}
-				if(Ballcolor[2]==No_need_ball_collor&&No_StableTime==50)		//黑球 而且非射球圈的计时为50时
-				{
+
+				//黑球 而且非射球圈的计时为50时
+				if(Ballcolor[2]==No_need_ball_collor&&No_StableTime==50)						{
 					pushBallpos-=32768;
 					No_Stable_noballTime=0;
 
 				}
-				else if(Ballcolor[2]==0)	//没有球 持续130ms 反推
+
+				//没有球 持续130ms 反推
+				else if(Ballcolor[2]==0)	
 				{
 					No_Stable_noballTime++;
 					if(No_Stable_noballTime>=130)
@@ -196,9 +224,11 @@ void WalkTask(void)
 		else if(stableFlg==1&&!runAgain)	
 		 {
 			 Walkline(0,2300,run_r,run_V,clockFlg);
-             if(!pointErrDeal&&normalPush)//&&run_again/*&&normalPush*/
+             if(!pointErrDeal&&normalPush)
 			 {		
-				No_StableTime=0;		//进入射球圈 把非射球圈的计时全部置0
+
+				 //进入射球圈 把非射球圈的计时全部置0
+				No_StableTime=0;		
 				No_Stable_noballTime=0;
 				if(pushBallFlag==1)		//如果进入射球区域
 				{
@@ -209,15 +239,13 @@ void WalkTask(void)
 						ifNeedshoot=1;
 						pushBallpos+=32768;
 						no_BallTime=0;
-	//					USART_OUT( UART4, (uint8_t*)"tong__car s=%d\t ",(int) s);
-	//					USART_OUT(UART4,(uint8_t*)" tong_number %d\t\r\n",(int)point_number);
 					}
 					else if(Ballcolor[2]==No_need_ball_collor&&T==10)	//黑球 在t=10时反推
 					{
 						pushBallpos-=32768;
 						no_BallTime
 						=0;
-	//					USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);
+
 					}
 					else if(Ballcolor[2]==0)
 					{
@@ -226,9 +254,9 @@ void WalkTask(void)
 						{
 							pushBallpos-=32768/2;
 							no_BallTime=0;
-	//						USART_OUT( UART4, (uint8_t*)"Change\r\n ");	
+	
 						}
-	//					USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);					
+					
 					}
 					if(T>=112)
 					{
@@ -242,13 +270,13 @@ void WalkTask(void)
 					if(Ballcolor[2]==Need_ball_collor)
 					{
 						Out_Area_noballTime=0;
-	//					USART_OUT( UART4, (uint8_t*)"PrepareOK%d\r\n ", Ballcolor[2]);
+
 					}				
 					if(Ballcolor[2]==No_need_ball_collor&&Out_AreaTime==50)
 					{
 						pushBallpos-=32768;
 						Out_Area_noballTime=0;
-	//					USART_OUT( UART4, (uint8_t*)"%d\r\n ", Ballcolor[2]);
+
 					}
 					else if(Ballcolor[2]==0)
 					{
@@ -257,7 +285,7 @@ void WalkTask(void)
 						{
 							pushBallpos-=32768/2;
 							Out_Area_noballTime=0;
-	//						USART_OUT( UART4, (uint8_t*)"OutArea_Change\r\n ");	
+	
 						}						
 					}
 					if(Out_AreaTime>=112)
@@ -270,11 +298,9 @@ void WalkTask(void)
 		 PushBallErrorDeal();
 	   PosCrl(CAN2, PUSH_BALL_ID,ABSOLUTE_MODE,pushBallpos);
 	
-		if(pointErrDeal==0&&!runAgain)//&&run_again
+		if(pointErrDeal==0&&!runAgain)
 	{		
-       GetSendAngle();                                                 //谢尚锦
-      // push_ball();                                                     //谢尚锦
-         
+       GetSendAngle();                                                          
 	}
 	
 	    if(abs(lastPushPos-pushBallpos)>16380)
@@ -284,9 +310,9 @@ void WalkTask(void)
 		}		 
 		if(shoot_over==1)
 		{
-			if(nothingCanDo==1)//被卡死打定点，打完之后
+			if(nothingCanDo==1)
 			{
-				roundCnt=1;//回到第一圈重新开始
+				roundCnt=1;
 				nothingCanDo=0;
 			}else 
 			{
@@ -294,25 +320,12 @@ void WalkTask(void)
 				shoot_over=0;
 			}
 		}
-		errdeal();////故障处理		
 
+		//故障处理
+		errdeal();		
+
+		//蓝牙发数
 		debugdata();
-//		USART_OUT( UART4, (uint8_t*)"round: %d",roundCnt);
-//		USART_OUT( UART4, (uint8_t*)"\r\n");
-	//	USART_OUT( UART4, (uint8_t*)"%d \r\n", (int)point_errdeal);
-
-
-
-
-////////////////发数测试////////////////////////////
-//	USART_OUT(UART4,(uint8_t*) "%d	%d	%d	%d\r\n",(int)(GetX()),(int)(GetY()),Radius(),(int)GetAngle());
-//	USART_OUT(UART4,(uint8_t*) "%d	%d\r\n",(int)ReadLaserAValue(),(int)ReadLaserBValue());
-//	USART_OUT( UART4, (uint8_t*)"%d ", (int)GetX());
-//	USART_OUT( UART4, (uint8_t*)"%d ", (int)GetY());
-//	USART_OUT( UART4, (uint8_t*)"%d ", (int)run_r);
-//USART_OUT( UART4, (uint8_t*)"%d ", (int)CountAngle(GetY()-2400,-GetX()+0,(GetY()-2400)/fabs((GetY()-2400)),clockFlg));
-//  ShooterVelCtrl(80);
- // USART_OUT( UART4, (uint8_t*)"\r\n");
 
    
 	}
