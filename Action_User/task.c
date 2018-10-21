@@ -114,7 +114,7 @@ void WalkTask(void)
 	//定点扫描的左右角度范围
 	int foundRange=20;
 	//电机转速或位置
-	int collectBallSpeed1=0,collectBallSpeed2=0,lastCollectBallSpeed1=0,lastCollectBallSpeed2=0,pushBallMotorPos=0;
+	int /*collectBallSpeed1=0,collectBallSpeed2=0,lastCollectBallSpeed1=0,lastCollectBallSpeed2=0,*/pushBallMotorPos=0;
 	//距离和角度
 	float DistanceA=0,DistanceB=0,lastDistanceA=0,lastDistanceB=0,realAngle=0,realDistance=0,deflectAngle=0,errDistance=0;
 	//lastStdId:上次扫描的桶号  squareNode：方形扫边的节点，四个节点说明扫过一圈 nopushCnt：无球反推计数
@@ -131,9 +131,9 @@ void WalkTask(void)
 	do
 	{		
 		//左激光读取距离
-		DistanceA=ReadLaserAValue1()*2.461+55.43;
+		DistanceA=ReadLaserAValue1()*2.461f+55.43f;
 		//右激光读取距离
-		DistanceB=ReadLaserBValue1()*2.467+60.87;
+		DistanceB=ReadLaserBValue1()*2.467f+60.87f;
 		//800mm内挡住激光100ms后触发
 		if(DistanceA>800&&DistanceB>800)
 		{
@@ -200,8 +200,8 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend (PeriodSem,0,&os_err);
-		DistanceA = ReadLaserAValue()*2.461+55.43;
-		DistanceB = ReadLaserBValue()*2.467+60.87;
+		DistanceA = ReadLaserAValue()*2.461f+55.43f;
+		DistanceB = ReadLaserBValue()*2.467f+60.87f;
 		x = GetX();
 		y = GetY();
 		speedX = GetSpeedX();
@@ -211,8 +211,8 @@ void WalkTask(void)
 		//将定位系统返回的角度转化为以出发区为原点的直角坐标系的角度
 		angle=GetAngle()+90;
 		//读取收球辊子速度
-		collectBallSpeed1 = collectball1speedBuffer.data32[1]/32768;
-		collectBallSpeed2 = collectball2speedBuffer.data32[1]/32768;
+//		collectBallSpeed1 = collectball1speedBuffer.data32[1]/32768;
+//		collectBallSpeed2 = collectball2speedBuffer.data32[1]/32768;
 		//读取推球转盘位置
 		pushBallMotorPos = pushballmotorPosBuffer.data32[1];
 		//不同速度用不同Kp调节
@@ -259,7 +259,7 @@ void WalkTask(void)
 					//航向角在定位系统给出的大概角度左右20度扫描，扫描速度32度/s
 					YawPosCtrl (lightAngle-timeAngle);
 					if(timeAngle > -foundRange && fabs(ReadyawPos()-(lightAngle-timeAngle)) < 20)
-						timeAngle -= 0.32;
+						timeAngle -= 0.32f;
 					if(timeAngle <= -foundRange)
 						scanOverFlag=1;
 				}
@@ -289,7 +289,7 @@ void WalkTask(void)
 								break;
 						}
 						//枪口与激光有一定角度误差，给出一定的补偿角度
-						realAngle=scanAngle[mostGroup][t1]+1.6;
+						realAngle=scanAngle[mostGroup][t1]+1.6f;
 						USART_OUT(UART4,(uint8_t *)"laserModel\t%d\t%d\t%d\t%d\t%d\t%d\t%d\r\n",StdId,(int)DistanceA,(int)DistanceB,(int)(scanAngle[mostGroup][t2]*100),(int)(scanAngle[mostGroup][0]*100),(int)(realAngle*100),(int)scanAngle[mostGroup][t2]*100,(int)realDistance);
 						//激光返回的精确距离
 						realDistance = scanDistance[mostGroup][t1];
@@ -368,9 +368,9 @@ void WalkTask(void)
 						{
 							foundRange=15;
 							push_Ball_Count++;
-							rps=-0.000001104*(DistanceA+DistanceB)*(DistanceA+DistanceB)/4+0.01964*(DistanceA+DistanceB)/2+26.71+((DistanceA+DistanceB)/2-3700)/1300;
+							rps=-0.000001104f*(DistanceA+DistanceB)*(DistanceA+DistanceB)/4.0f+0.01964f*(DistanceA+DistanceB)/2.0f+26.71f+((DistanceA+DistanceB)/2.0f-3700.0f)/1300.0f;
 							if(2200<DistanceA/2+DistanceB/2&&DistanceA/2+DistanceB/2<3200)
-								rps+=(DistanceA/2+DistanceB/2-3200)*0.0037;
+								rps+=(DistanceA/2+DistanceB/2-3200)*0.0037f;
 							//转速限幅
 							if(rps > 100)
 								rps = 100;
@@ -543,12 +543,12 @@ void WalkTask(void)
 					switch(SWITCH_ON)
 					{
 						case 0:
-							T1-=0.0065;
-							T0+=0.0065;
+							T1-=0.0065f;
+							T0+=0.0065f;
 							break;
 						case 1:
-							T1-=0.007;
-							T0+=0.007;
+							T1-=0.007f;
+							T0+=0.007f;
 							break;
 					}	
 				}	
@@ -561,12 +561,12 @@ void WalkTask(void)
 					switch(SWITCH_ON)
 					{
 						case 0:
-							T1+=0.006;
-							T0-=0.006;
+							T1+=0.006f;
+							T0-=0.006f;
 							break;
 						case 1:
-							T1+=0.006;
-							T0-=0.006;
+							T1+=0.006f;
+							T0-=0.006f;
 							break;
 					}	
 				}		
@@ -667,10 +667,10 @@ void WalkTask(void)
 		shootAngle=yawAngle+atan(Vy/V)*180/pi;
 		YawPosCtrl(shootAngle);
 		//包胶轮应给转速
-		rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3200)*0.0051;
+		rps=(sqrtf(V*V+Vy*Vy)-166.59f)/39.574f+(Distance-3200)*0.0051f;
 		//逆时针内圈时应给转速
 		if(status==0&&SWITCH_ON==0)
-			rps=(sqrtf(V*V+Vy*Vy)-166.59)/39.574+(Distance-3000)*0.0043;
+			rps=(sqrtf(V*V+Vy*Vy)-166.59f)/39.574f+(Distance-3000)*0.0043f;
 		ShooterVelCtrl(rps);
 		Avoidance();
 		if(R>=1100&&circleCnt<=5)
@@ -766,8 +766,8 @@ void WalkTask(void)
 		}	
 		lastX=x;
 		lastY=y;
-		//试图通过收球辊子转速变化数球（未完成）
-		lastCollectBallSpeed1=collectBallSpeed1;
-		lastCollectBallSpeed2=collectBallSpeed2;
+//		//试图通过收球辊子转速变化数球（未完成）
+//		lastCollectBallSpeed1=collectBallSpeed1;
+//		lastCollectBallSpeed2=collectBallSpeed2;
 	}
 }

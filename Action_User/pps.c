@@ -220,7 +220,7 @@ float GetX(void)
 /*返回定位系统的Y值*/
 float GetY(void)
 {
-	return ppsReturn.ppsY+245.61-OPS_TO_BACK_WHEEL*cos(GetAngle()*pi/180);
+	return ppsReturn.ppsY+245.61f-OPS_TO_BACK_WHEEL*cos(GetAngle()*pi/180);
 }
 /*返回定位系统的X轴的速度*/
 float GetSpeedX(void)

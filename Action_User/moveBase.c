@@ -74,7 +74,7 @@ extern float yawAngle,x,y,lastX,lastY;
 extern int status;
 void GetFunction(float x1,float y1,float x2,float y2)
 {
-		if(x1-0.1<x2&&x2<x1+0.1)
+		if(x1-0.1f<x2&&x2<x1+0.1f)
 		{
 			if(y2-y1>0)
 				lAngle=0;
@@ -100,7 +100,7 @@ void GetFunction(float x1,float y1,float x2,float y2)
 				else 
 					lAngle=(atan(k)*180/pi)-90;
 			}	
-			if(y1-0.5<y2&&y2<y1+0.5)
+			if(y1-0.5f<y2&&y2<y1+0.5f)
 			{	
 				if(x2-x1>0)
 					lAngle=-90;
@@ -127,7 +127,7 @@ void linePID(float x1,float y1,float x2,float y2,float v)
 				else
 					setAngle=lAngle-90*(1-1000/(-y+k*x+b+1000));
 			//斜率为0	
-			if(y1-0.5<y2&&y2<y1+0.5)
+			if(y1-0.5f<y2&&y2<y1+0.5f)
 			{	
 				if(x2>x1)
 					if(y>y1)
@@ -261,13 +261,11 @@ void GetShootSituation(uint8_t StdId)
 //投球优先级
 int FirstshootJudge(void)
 {
-	int StdId=0,maxPriority=0,i=0;
-	maxPriority=bingoFlag[0][0];
+	int StdId=0,i=0;
 	for(i=0;i<=3;i++)
 	{
 		if(bingoFlag[i][0]<bingoFlag[0][0])
 		{
-			maxPriority=bingoFlag[i][0];
 			StdId=i;
 		}	
 	}	
@@ -496,7 +494,7 @@ void BorderSweeping(void)
 		throwFlag=0;
 	GetShootSituation(StdId);
 	YawPosCtrl(yawAngle);
-	rps=((Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*speed*speed)-sqrt(3)*speed)-speed)-166.59)/39.574+(Distance-4200)*0.0035;
+	rps=((Distance*9800/(sqrtf(4*4900*(sqrt(3)*Distance-650)+3*speed*speed)-sqrt(3)*speed)-speed)-166.59f)/39.574f+(Distance-4200)*0.0035f;
 	ShooterVelCtrl(rps);		
 }	
 /*激光模式*/

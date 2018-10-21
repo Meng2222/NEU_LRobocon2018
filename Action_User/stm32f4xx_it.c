@@ -55,7 +55,7 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
-	CanRxMsg RxMessage;
+//	CanRxMsg RxMessage;
 	CAN_RxMsg(CAN1,&StdId,buffer1,8);//reveive data
 	if(StdId==0x282)
 	{
