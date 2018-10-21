@@ -1,3 +1,6 @@
+#ifndef __WALK_H
+#define __WALK_H
+
 void systerm_change(void);
 int AdcFlag(void);//启动ADC，第一次挡设置顺逆时针，第二次挡设置启动半径
 void start_mode(void);
@@ -21,6 +24,7 @@ float CountAngle(float a,float b,int n,int round);
 void errdeal(void);//故障处理主控制
 int round_counter(void);
 void errdealtest(void);
+int boomAccident(void);
  typedef struct{
 
 	float x;
@@ -29,3 +33,4 @@ void errdealtest(void);
     float x_speed;
 	float y_speed;	   
 	}pos_t;
+#endif

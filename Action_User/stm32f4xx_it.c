@@ -63,7 +63,7 @@ void CAN1_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 	CAN_RxMsg(CAN1,0,data,8);
-    uint8_t len=8;
+//    uint8_t len=8;
 	uint32_t StdId;	
 	if(StdId==0x0281)
     {

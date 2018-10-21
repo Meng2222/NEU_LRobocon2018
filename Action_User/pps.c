@@ -257,12 +257,12 @@ float GetAngle(void)
 /*返回定位系统的X值*/
 float GetX(void)
 {
-	return ppsReturn.ppsX+OPS_TO_BACK_WHEEL*sin(GetAngle()*pi/180);
+	return ppsReturn.ppsX+OPS_TO_BACK_WHEEL*sin(GetAngle()*pi/180.0f);
 }
 /*返回定位系统的Y值*/
 float GetY(void)
 {
-	return ppsReturn.ppsY+OPS_TO_BACK_WHEEL*(1-cos(GetAngle()*3.14/180));
+	return ppsReturn.ppsY+OPS_TO_BACK_WHEEL*(1.0f-cos(GetAngle()*3.14f/180.0f));
 
 }
 /*返回定位系统的X轴的速度*/

@@ -1,3 +1,6 @@
+#ifndef __PUSHBALL_H
+#define __PUSHBALL_H
+
 float GetRollV(void);
 void GetSendAngle(void);
 float GetDis(float x,float y);
@@ -11,3 +14,5 @@ void PushBallErrorDeal(void);
 void push_ball(void);
 #define Need_ball_collor 2
 #define No_need_ball_collor 1			//1|2为白，2|1为黑
+
+#endif

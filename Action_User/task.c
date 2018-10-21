@@ -17,7 +17,6 @@
 #include "Point.h" 
 #include "PushBall.h"
 #include "DebugData.h"
-void boomAccident();
 uint8_t Ballcolor[5];
 int beforePushPos=0;
 int lastPushPos;

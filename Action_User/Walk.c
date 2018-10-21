@@ -17,7 +17,7 @@
 #include "PushBall.h" 
 #define adcStandard1 150
 #define adcStandard2 300
-#define PAI 3.14159
+#define PAI 3.14159f
 #define BOTTOM_LIMIT 180
 //走圆的PID参数
 float rate=0.05;
@@ -1032,14 +1032,14 @@ void runTo(float beta,float Vm)//由当前角度pao向beta
 	float R= exchange(Vm);
 	float L= exchange(Vm);
 	float max=0;
-	float D_value=0;
-	float Deta_err=0;
-	float last_err=0;
+//	float D_value=0;
+//	float Deta_err=0;
+//	float last_err=0;
 	
 	//当前角度与设定值的偏差
 	B_err=beta-action.angle;
-	Deta_err=B_err-last_err;
-	D_value=Deta_err*20;
+//	Deta_err=B_err-last_err;
+//	D_value=Deta_err*20;
 	
 	//偏差超过180，优弧转劣弧
 	if(B_err>180)
@@ -1240,12 +1240,13 @@ float a_genforRadius(float a,float b,int n)
 void Walkline( float corex,float corey,float Radium,float V_loop,int clockFlg )//正常走行,输入圆心坐标，半径，速度，方向
 {
 	//限速
-	if(V_loop <= 1.5)
+	if(V_loop <= 1.5f)
 		V_loop=1.5;
-	if(V_loop>3.5)
+	if(V_loop>3.5f)
 		V_loop=3.5;
 	float mid=0;
-    float index=1;
+//    float index=1;
+	
 	corex=mid;
 	corex=-corey;
 	corey=mid;
@@ -1261,12 +1262,12 @@ void Walkline( float corex,float corey,float Radium,float V_loop,int clockFlg )/
 	
 	//偏离圆周的距离
 	distance_err=DISTANCE-Radium;
-	if (fabs(distance_err)>500)
-		index=0.02;
-	if(fabs(distance_err)<50&&fabs(distance_err)>100)
-		index=(300-fabs(distance_err))/400;
-	if(distance_err < 100)
-		index=1;
+//	if (fabs(distance_err)>500)
+//		index=0.02;
+//	if(fabs(distance_err)<50&&fabs(distance_err)>100)
+//		index=(300-fabs(distance_err))/400;
+//	if(distance_err < 100)
+//		index=1;
 	
 	//逆时针
 	if(clockFlg == 1)
@@ -1623,7 +1624,8 @@ float CountAngle(float a,float b,int n,int round)//n指向,round顺逆时针，a
             			
 		}
 		
-	}	
+	}
+	return 0; 	
 }
 
 
@@ -1643,6 +1645,8 @@ float get_positive_angle(float a1,float b1,int n1)
 		return (a_genforRadius( a1,b1,n1) + 360.f);
 	if(a_genforRadius( a1,b1,n1)>=0)
 		return a_genforRadius( a1,b1,n1);
+	
+	return 0;
 }
 
 int8_t no_round5=0;
@@ -2129,7 +2133,7 @@ float car_angle_gen(float xV,float yV)
 * @param			
 * @retval		
 */
-int boomAccident()
+int boomAccident(void)
 {
 	static int accidentTime=0; 
 		
@@ -2170,11 +2174,11 @@ void errdeal(void)
 		static int errkind5 = 0;
 		static int errkind7 = 0;
 		static int stoptime = 0;
-		float move_angle = 0;
-		int8_t needtomove = 0;
-		int errpos[3];//记录每次避障的位置
+//		float move_angle = 0;
+//		int8_t needtomove = 0;
+//		int errpos[3];//记录每次避障的位置
 		int turntime = 600;
-		static int qianZhi = 0;
+//		static int qianZhi = 0;
 		static int errtime = 0;
 		static int8_t dead_err = 0;
 		static int8_t nextzone = 0;
@@ -2499,5 +2503,5 @@ void errdeal(void)
 				errtime=0;
 				err_kind=0; 
 			}
-		dead_err=0;
-			}	
+	dead_err=0;
+}	
