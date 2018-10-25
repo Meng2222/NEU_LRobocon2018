@@ -225,7 +225,7 @@ int exchange(float v)//
 	int pulse=0;
 	
 	//电机转一圈的脉冲数为32768
-	pulse=(int)(v * 32768 / (PAI * WHEEL_DIAMETER * 0.01f));
+	pulse=(int)(v * 32768 / (PAI * 0.12));
 	return pulse;
 }
 /**
@@ -1025,6 +1025,7 @@ void line(float piontx,float pionty,int zoneOpt)
 */
 void runTo(float beta,float Vm)//由当前角度pao向beta
 {
+	
 	float B_err=0;
 	float B_Uk=0;
 	
@@ -1053,6 +1054,7 @@ void runTo(float beta,float Vm)//由当前角度pao向beta
 		B_Uk=max;
 	if(B_Uk<-max)
 		B_Uk=-max;
+	
 	R=(R-B_Uk*32768/4096);
 	L=-(L + B_Uk*32768/4096);
 	if(pointErrDeal == 0)
@@ -1240,6 +1242,7 @@ float a_genforRadius(float a,float b,int n)
 void Walkline( float corex,float corey,float Radium,float V_loop,int clockFlg )//正常走行,输入圆心坐标，半径，速度，方向
 {
 	//限速
+	USART_OUT( UART4, (uint8_t*)"case2: walkline  ");
 	if(V_loop <= 1.5f)
 		V_loop=1.5;
 	if(V_loop>3.5f)
@@ -1681,7 +1684,8 @@ int Radius(void)
 		
 		//如果启动模式为定点的话，在半圈的地方换半径
 	  else if(runAgain==-1)
-	  {		if(clockFlg == 1)
+	  {		
+		  if(clockFlg == 1)
 			change_angle=0 + clockFlg*20;
 		  if(clockFlg==-1)
 			  change_angle=360 + clockFlg*20;
@@ -1807,6 +1811,7 @@ switch (roundCnt)
 		if(runAgain == 1)
 		{
 			roundCnt = 7;
+			stableFlg=0;
 		}
 
 	
@@ -1821,6 +1826,7 @@ switch (roundCnt)
 		//第8轨道的相关参数设置
 		pointErrDeal = 1;
 		againCnt++ ;
+		stableFlg=0;
 		break;
 	
 	default:
@@ -1855,6 +1861,7 @@ if(troubleFlg == 0)
 				{
 					V_buff(1,5,0.005,1);
 				}
+
 			break;
 			
 		case 3:
@@ -1925,21 +1932,22 @@ if(troubleFlg == 0)
 				}
 				KP=250;
 			break;
-			default:
+		case 8:
 		//第八轨道为定点模式		
 		if(pointErrDeal == 1)
 		{
-			pointErrDeal=1;
 			roundCnt=8;
 		}
 		
 		//定点结束退出定点模式，需要往后退一段距离为了给下次入圆留出空间
 		if(pointErrDeal == 0)
 		{
-			Walkback(600);
+		//	Walkback(600);
+			stableFlg=0;
 			roundCnt=2;
 			runAgain=1;
 		}
+	
 		break;
 		
 	}

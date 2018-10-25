@@ -133,7 +133,7 @@ void ConfigTask(void)
 	while(PressFlag==1)
 	{
 		PressFlag=LetBallOut();
-	
+		USART_OUT( UART4, (uint8_t*)"point: %d ", pointErrDeal);
 		//反转
 		VelCrl(CAN2,6,80*32768);//80
 		VelCrl(CAN2,5,-80*32768);//-80
@@ -176,9 +176,9 @@ void WalkTask(void)
 
 		ReadActualPos(CAN2, 7);
 		run_r=Radius();
-
 		if(stableFlg==0)
 		{
+	
 			//执行走形
 		     Walkline(0,2350,run_r,run_V,clockFlg);   
 			if(!pointErrDeal&&normalPush)
