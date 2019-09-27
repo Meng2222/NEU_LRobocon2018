@@ -30,6 +30,7 @@ typedef struct{
 		float ppsWZ ;
 }Pos_t;
 
+extern Pos_t ppsReturn;
 
 void TalkOpsToGetReady(void);
 /*初始化并且让程序等待定位系统发数*/

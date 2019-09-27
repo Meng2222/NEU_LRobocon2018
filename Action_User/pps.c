@@ -20,14 +20,14 @@
 #include  <ucos_ii.h>
 #include "timer.h"
 #include "pps.h"
-
+#include "math.h"
 /*告诉定位系统准备开始积分*/
 static uint8_t ppsTalkOk = 0;
 /*定位系统准备完毕开始发数*/
 static uint8_t ppsReady = 0;
 static PosSend_t posture={0};
 /*定义定位系统返回值结构体*/
-static Pos_t ppsReturn={0.f};
+Pos_t ppsReturn={0.f};
 
 
 void USART3_IRQHandler(void)
@@ -91,6 +91,7 @@ void USART3_IRQHandler(void)
 					{
 						SetOpsReady(1);
 						/*传入定位系统返回的值*/
+						
 						SetAngle( posture.value[0]);
 						SetSpeedX(posture.value[1]);
 						SetSpeedY(posture.value[2]);

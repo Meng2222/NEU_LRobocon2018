@@ -32,14 +32,23 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#include "stdint.h"
 /* Includes ------------------------------------------------------------------*/
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
+typedef union  
+{
+	uint8_t Buffer[8];
+	int speed[2];
+}Speed_t;
 
+extern int wheel1Speed ; 
+extern int wheel2Speed ; 
+extern int wheel3Speed ; 
+	
 void NMI_Handler(void);
 void HardFault_Handler(void);
 void MemManage_Handler(void);

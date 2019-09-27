@@ -12,6 +12,9 @@
 #include "stm32f4xx_usart.h"
 #include "pps.h"
 #include "fort.h"
+#include  "movebase.h" 
+
+
 /*
 ===============================================================
 						信号量定义
@@ -48,22 +51,46 @@ void App_Task()
    初始化任务
    ===============================================================
    */
+void MotorInit(void);
+
 void ConfigTask(void)
 {
 	CPU_INT08U os_err;
 	os_err = os_err;
+	delay_ms(500);
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-	
-	USART3_Init(115200);
-	UART5_Init(921600);
+	USART1_Init(921600);//蓝牙
+	USART3_Init(115200);//定位系统
+	CAN_Config(CAN1,500,GPIOB,GPIO_Pin_8, GPIO_Pin_9);
+	CAN_Config(CAN2,500,GPIOB,GPIO_Pin_5, GPIO_Pin_6);
 	TIM_Init(TIM2, 99, 839, 1, 0);
 	/*一直等待定位系统初始化完成*/
+	delay_ms(500);
+	MotorInit();
 	BEEP_ON;
 	WaitOpsPrepare();
-	
 	OSTaskSuspend(OS_PRIO_SELF);
 }
+
+void MotorInit(void)
+{
+	ElmoInit(CAN2);
+	
+	VelLoopCfg(CAN2, 1, 2000 * 10, 2000 * 10);
+	VelLoopCfg(CAN2, 2, 2000 * 10, 2000 * 10);
+	VelLoopCfg(CAN2, 3, 2000 * 10, 2000 * 10);
+	
+	MotorOn(CAN2, 1);
+	MotorOn(CAN2, 2);
+	MotorOn(CAN2, 3);
+	
+	VelCrl(CAN2,1,0);
+	VelCrl(CAN2,2,0);
+	VelCrl(CAN2,3,0);
+}
+
 extern FortType fort;
+
 void WalkTask(void)
 {
 
@@ -73,5 +100,30 @@ void WalkTask(void)
 	while (1)
 	{
 		OSSemPend(PeriodSem, 0, &os_err);
+//		MotorOff(CAN2,1);
+//		MotorOff(CAN2,2);
+//		MotorOff(CAN2,3);
+		float vell = 3.0f;
+		if(ppsReturn.ppsX < 2000.0f)
+		{
+			OpenLoopLine(vell * 2000 * (91/6), 0 );
+		}
+		else
+		{
+			OpenLoopLine(0, 0);
+		}
+		
+		ReadActualVel(CAN2, 1);
+		ReadActualVel(CAN2, 2);
+		ReadActualVel(CAN2, 3);
+		USART_OUT(USART1,(uint8_t*)"%d\t%d\t%d\t",wheel1Speed,wheel2Speed,wheel3Speed);
+//		OpenLoopCircle(1 * 2000 * (91/6),0.0f,1000.0f);
+//		CloseLoopLine(0.5,45,0, GetAngle(), GetX(),GetY(),100.0f,100.0f);
+//			CloseLoopCircle(0.5,1000.0f,0.0f,90.0f, 89.0f,0.0f,GetAngle(),800.0f);
+		USART_OUT(USART1,(uint8_t*)"X=\t%d\tY=\t%d\tdis=\t%d\t%d\tAng=\t%d\r\n",\
+		(int)ppsReturn.ppsX,(int)ppsReturn.ppsY,(int)sqrt(ppsReturn.ppsX * ppsReturn.ppsX + ppsReturn.ppsY * ppsReturn.ppsY),\
+			(int)sqrt(ppsReturn.ppsSpeedX * ppsReturn.ppsSpeedX + ppsReturn.ppsSpeedY * ppsReturn.ppsSpeedY),(int)ppsReturn.ppsAngle);
 	}
 }
+
+

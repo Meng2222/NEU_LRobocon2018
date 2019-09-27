@@ -51,6 +51,13 @@ void CAN1_RX0_IRQHandler(void)
 	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR          */
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
+	
+	uint32_t StdId = 0;
+	uint8_t CAN1Buffer[8] = {0};
+	uint8_t receiveLength = 0;
+	CAN_ClearFlag(CAN1, CAN_FLAG_FMP0);
+	
+	CAN_RxMsg(CAN1,(uint32_t*)StdId,(uint8_t*)&CAN1Buffer,(uint8_t)receiveLength);
 
 	CAN_ClearFlag(CAN1, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN1, CAN_FLAG_EPV);
@@ -71,6 +78,13 @@ void CAN1_RX0_IRQHandler(void)
   * @param  None
   * @retval None
   */
+
+Speed_t vellSpeed;
+
+int wheel1Speed = 0;
+int wheel2Speed = 0;
+int wheel3Speed = 0;
+
 void CAN2_RX0_IRQHandler(void)
 {
 	OS_CPU_SR cpu_sr;
@@ -79,6 +93,32 @@ void CAN2_RX0_IRQHandler(void)
 	OSIntNesting++;
 	OS_EXIT_CRITICAL();
 
+	uint32_t StdId = 0;
+//	uint8_t CAN2Buffer[8] = {0};
+	uint8_t receiveLength = 8;
+
+	CAN_RxMsg(CAN2,&StdId,vellSpeed.Buffer,(uint8_t)receiveLength);
+	if(StdId == 0x281)
+	{
+		if(vellSpeed.speed[0] == 0x5856)
+		{
+			wheel1Speed = vellSpeed.speed[1];
+		}
+	}
+	if(StdId == 0x282)
+	{
+		if(vellSpeed.speed[0] == 0x5856)
+		{
+			wheel2Speed = vellSpeed.speed[1];
+		}
+	}
+	if(StdId == 0x283)
+	{
+		if(vellSpeed.speed[0] == 0x5856)
+		{
+			wheel3Speed = vellSpeed.speed[1];
+		}
+	}
 	CAN_ClearFlag(CAN2, CAN_FLAG_EWG);
 	CAN_ClearFlag(CAN2, CAN_FLAG_EPV);
 	CAN_ClearFlag(CAN2, CAN_FLAG_BOF);
@@ -330,6 +370,13 @@ void USART6_IRQHandler(void) //更新频率200Hz
 
 //void USART3_IRQHandler(void)
 //{
+//	static uint8_t ch;
+//	static union {
+//		uint8_t data[24];
+//		float ActVal[6];
+//	} posture;
+//	static uint8_t count = 0;
+//	static uint8_t i = 0;
 //	OS_CPU_SR cpu_sr;
 //	OS_ENTER_CRITICAL(); /* Tell uC/OS-II that we are starting an ISR*/
 //	OSIntNesting++;
@@ -338,8 +385,79 @@ void USART6_IRQHandler(void) //更新频率200Hz
 //	if (USART_GetITStatus(USART3, USART_IT_RXNE) == SET)
 //	{
 //		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
-//	}
+//		ch = USART_ReceiveData(USART3);
+//		switch (count)
+//		{
+//		case 0:
+//			if (ch == 0x0d)
+//				count++;
+//			else
+//				count = 0;
+//			break;
 
+//		case 1:
+//			if (ch == 0x0a)
+//			{
+//				i = 0;
+//				count++;
+//			}
+//			else if (ch == 0x0d)
+//				;
+//			else
+//				count = 0;
+//			break;
+
+//		case 2:
+//			posture.data[i] = ch;
+//			i++;
+//			if (i >= 24)
+//			{
+//				i = 0;
+//				count++;
+//			}
+//			break;
+
+//		case 3:
+//			if (ch == 0x0a)
+//				count++;
+//			else
+//				count = 0;
+//			break;
+
+//		case 4:
+//			if (ch == 0x0d)
+//			{
+
+//				posture.ActVal[0] = posture.ActVal[0];
+//				posture.ActVal[1] = posture.ActVal[1];
+//				posture.ActVal[2] = posture.ActVal[2];
+//				posture.ActVal[3] = posture.ActVal[3];
+//				posture.ActVal[4] = posture.ActVal[4];
+//				posture.ActVal[5] = posture.ActVal[5];
+//			}
+//			count = 0;
+//			break;
+
+//		default:
+//			count = 0;
+//			break;
+//		}
+//	}
+//	else
+//	{
+//		USART_ClearITPendingBit(USART3, USART_IT_PE);
+//		USART_ClearITPendingBit(USART3, USART_IT_TXE);
+//		USART_ClearITPendingBit(USART3, USART_IT_TC);
+//		USART_ClearITPendingBit(USART3, USART_IT_ORE_RX);
+//		USART_ClearITPendingBit(USART3, USART_IT_IDLE);
+//		USART_ClearITPendingBit(USART3, USART_IT_LBD);
+//		USART_ClearITPendingBit(USART3, USART_IT_CTS);
+//		USART_ClearITPendingBit(USART3, USART_IT_ERR);
+//		USART_ClearITPendingBit(USART3, USART_IT_ORE_ER);
+//		USART_ClearITPendingBit(USART3, USART_IT_NE);
+//		USART_ClearITPendingBit(USART3, USART_IT_FE);
+//		USART_ReceiveData(USART3);
+//	}
 //	OSIntExit();
 //}
 
