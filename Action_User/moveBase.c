@@ -245,15 +245,6 @@ void CloseLoopLine(float vel, float ward, float exPos,
 	
 	//计算垂直直线方向速度
 
-//	if(posPidout > 0.0f)
-//	{
-//		speedBack = CalcVel(posPidout,ward + 90,0,actPos);
-//	}
-//	else
-//	{
-//		posPidout = -posPidout;
-//		speedBack = CalcVel(posPidout,ward - 90,0,actPos);
-//	}
 	 if((float)(ward + errPosSign) > 180.0f )
 	 {
 		 ward -= 360.0f;
@@ -357,10 +348,6 @@ void CloseLoopCircle(float velRotate, float cenX, float cenY,
 	if(angle > 180) angle -= 360;
 	if(angle < -180) angle += 360;
 	//设置弧上点坐标
-//    	if(fabs(angle - endWard) <= 0.2)
-//	{
-//		signForStop = 1;
-//	}
 	if(checkResult == 1)
 	{
 		if(signForStop==1)
